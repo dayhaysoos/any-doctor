@@ -1,0 +1,37 @@
+{
+  "name": "any-doctor",
+  "version": "0.0.1",
+  "description": "Your agent writes the analyzer, fixtures prove it, CI reruns it forever.",
+  "license": "MIT",
+  "bin": {
+    "any-doctor": "bin/cli.js"
+  },
+  "types": "./bin/contract.d.ts",
+  "exports": {
+    ".": {
+      "types": "./bin/contract.d.ts",
+      "default": "./bin/cli.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node -e \"const fs=require('fs');['bin/cli.js','bin/doctor-loader.mjs'].forEach(f=>fs.chmodSync(f,0o755))\"",
+    "prepublishOnly": "npm run build",
+    "pretest": "npm run build",
+    "test": "node --test"
+  },
+  "files": [
+    "bin",
+    "doctors",
+    "fixtures",
+    "docs",
+    "CONTEXT.md",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
