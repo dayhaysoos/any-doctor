@@ -6,11 +6,12 @@ import * as path from "path";
 
 const [prog, second, third] = process.argv.slice(2);
 if (!prog) {
-  console.error("usage: doctor-loader.mjs <program.(m)js> <root> | <program.(m)js> --verify <fixtures.(m)js>");
+  console.error("usage: doctor-loader.mjs <program.(m)js> <root> | <program.(m)js> --verify <fixtures.(m)js> | <program.(m)js> --meta");
   process.exit(2);
 }
 const verifyMode = second === "--verify";
-if (!verifyMode && !second) {
+const metaMode = second === "--meta";
+if (!verifyMode && !metaMode && !second) {
   console.error("usage: doctor-loader.mjs <program.(m)js> <root>");
   process.exit(2);
 }
@@ -74,7 +75,13 @@ try {
   console.log = (...args) => process.stderr.write(args.map(a => String(a)).join(" ") + "\n");
 
   try {
-    if (!verifyMode) {
+    if (metaMode) {
+      process.stdout.write("\n" + contract.RESULT_SENTINEL + JSON.stringify({
+        protocolVersion: contract.PROTOCOL_VERSION,
+        kind: "meta",
+        meta: mod.meta,
+      }) + "\n");
+    } else if (!verifyMode) {
       const result = await runOnce(second, mod);
       process.stdout.write("\n" + contract.RESULT_SENTINEL + JSON.stringify(result) + "\n");
     } else {

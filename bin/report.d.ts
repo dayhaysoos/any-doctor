@@ -1,11 +1,12 @@
-import { Finding, Severity } from "./contract";
-export interface ReportInput {
+import { DoctorMeta, Finding } from "./contract";
+export interface ReportGroup {
     programName: string;
-    description: string;
-    severity: Severity;
-    blindSpots?: string[];
+    meta: DoctorMeta;
+    findings: Finding[];
+}
+export interface ReportInput {
     fileCount: number;
     durationMs: number;
-    findings: Finding[];
+    groups: ReportGroup[];
 }
 export declare function renderReport(input: ReportInput, useColor: boolean): string;

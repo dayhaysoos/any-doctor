@@ -40,6 +40,8 @@ const path = __importStar(require("path"));
 const contract_1 = require("./contract");
 const report_1 = require("./report");
 const browse_1 = require("./browse");
+const discover_1 = require("./discover");
+const picker_1 = require("./picker");
 const GREEN = "\x1b[32m", RED = "\x1b[31m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 function fail(msg) {
     console.error(RED + msg + RESET);
@@ -47,19 +49,30 @@ function fail(msg) {
 function ok(msg) {
     console.log(GREEN + msg + RESET);
 }
-function warn(msg) {
-    console.log(YELLOW + msg + RESET);
-}
 function dim(msg) {
     return DIM + msg + RESET;
 }
-function sh(cmd, args, timeoutMs = 5 * 60 * 1000) {
+function sh(cmd, args, opts = {}) {
+    var _a;
     const r = (0, child_process_1.spawnSync)(cmd, args, {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
-        timeout: timeoutMs,
+        timeout: (_a = opts.timeoutMs) !== null && _a !== void 0 ? _a : 5 * 60 * 1000,
+        cwd: opts.cwd,
     });
     return { status: r.status, stdout: r.stdout || "", stderr: r.stderr || "" };
+}
+function skillText() {
+    const p = path.join(__dirname, "..", "skill", "any-doctor.skill.md");
+    try {
+        return fs.readFileSync(p, "utf8");
+    }
+    catch {
+        return null;
+    }
+}
+function useColor() {
+    return Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
 }
 function parseResult(stdout) {
     const lines = stdout.split("\n");
@@ -85,88 +98,256 @@ function executeLoader(programPath, mode, arg, targetDir) {
     }
     return parseResult(r.stdout);
 }
-function useColor() {
-    return Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
+function parseArgs(args) {
+    const out = { targetDir: path.resolve("."), all: false, global: false };
+    let targetDirSet = false;
+    for (let i = 0; i < args.length; i++) {
+        const a = args[i];
+        if (a === "--all")
+            out.all = true;
+        else if (a === "--global")
+            out.global = true;
+        else if (a === "--agent")
+            out.agent = args[++i];
+        else if (out.doctorPath === undefined && /\.(m|c)?js$/.test(a))
+            out.doctorPath = a;
+        else if (!targetDirSet) {
+            out.targetDir = path.resolve(a);
+            targetDirSet = true;
+        }
+    }
+    return out;
+}
+async function pickDoctor(cwd, action) {
+    const discovered = (0, discover_1.discoverDoctors)(cwd);
+    const valid = discovered.filter(d => d.meta !== null);
+    const broken = discovered.filter(d => d.meta === null);
+    if (valid.length === 0) {
+        fail(`no doctors discovered in ${cwd}/doctors or ~/.any-doctor/doctors`);
+        fail('create one with: any-doctor generate "<intent>"');
+        for (const b of broken) {
+            fail("broken: " + b.slug + " — " + (b.error || "invalid meta"));
+        }
+        process.exit(1);
+    }
+    for (const b of broken) {
+        console.log(YELLOW + "⚠ skipping broken doctor " + b.slug + RESET + dim(" — " + (b.error || "invalid meta")));
+    }
+    if (!process.stdin.isTTY || !process.stdout.isTTY) {
+        console.log("available doctors:");
+        for (const d of valid) {
+            console.log("  " + d.scope.padEnd(7) + d.slug.padEnd(32) + dim(d.meta.description));
+        }
+        fail("non-interactive session — specify a doctor path");
+        process.exit(1);
+    }
+    const chosen = await (0, picker_1.pickItem)(valid.map(d => ({
+        id: d.slug,
+        label: d.meta.description,
+        sub: d.scope + "/" + d.slug + ".mjs",
+        severity: d.meta.severity,
+    })), useColor());
+    if (chosen === null)
+        process.exit(0);
+    const match = valid.find(v => v.slug === chosen.id);
+    void action;
+    return match;
 }
 async function cmdRun(args) {
-    const programPath = args[0];
-    const targetDir = path.resolve(args[1] || ".");
-    if (!programPath) {
-        fail("usage: any-doctor run <doctor-program.(m)js> [targetDir]");
-        process.exit(1);
+    const parsed = parseArgs(args);
+    const started = Date.now();
+    const groups = [];
+    let fileCount = 0;
+    if (parsed.all) {
+        const discovered = (0, discover_1.discoverDoctors)(process.cwd()).filter(d => d.meta !== null);
+        if (discovered.length === 0) {
+            fail("no doctors discovered — run from a directory with doctors/, or specify a doctor path");
+            process.exit(1);
+        }
+        for (const d of discovered) {
+            const r = executeLoader(d.path, null, null, parsed.targetDir);
+            fileCount = Math.max(fileCount, r.fileCount);
+            groups.push({ programName: path.basename(d.path), meta: r.meta, findings: r.findings });
+        }
     }
-    const result = executeLoader(programPath, null, null, targetDir);
-    const text = (0, report_1.renderReport)({
-        programName: path.basename(programPath),
-        description: result.meta.description,
-        severity: result.meta.severity,
-        blindSpots: result.meta.blindSpots,
-        fileCount: result.fileCount,
-        durationMs: result.durationMs,
-        findings: result.findings,
-    }, useColor());
+    else {
+        let doctorPath = parsed.doctorPath;
+        if (!doctorPath) {
+            const chosen = await pickDoctor(process.cwd(), "run");
+            doctorPath = chosen.path;
+        }
+        const r = executeLoader(doctorPath, null, null, parsed.targetDir);
+        fileCount = r.fileCount;
+        groups.push({ programName: path.basename(doctorPath), meta: r.meta, findings: r.findings });
+        const text = (0, report_1.renderReport)({ fileCount, durationMs: Date.now() - started, groups }, useColor());
+        console.log(text);
+        if (r.findings.length > 0 && process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS) {
+            console.log("");
+            await (0, browse_1.browseFindings)({
+                root: parsed.targetDir,
+                description: r.meta.description,
+                severity: r.meta.severity,
+                findings: r.findings,
+            }, useColor());
+        }
+        return;
+    }
+    const text = (0, report_1.renderReport)({ fileCount, durationMs: Date.now() - started, groups }, useColor());
     console.log(text);
-    if (result.findings.length > 0 && process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS) {
-        console.log("");
-        await (0, browse_1.browseFindings)({
-            root: targetDir,
-            description: result.meta.description,
-            severity: result.meta.severity,
-            findings: result.findings,
-        }, useColor());
-    }
 }
-function cmdVerify(args) {
-    const programPath = args[0];
-    const fixturesPath = programPath.replace(/\.(m|c)?js$/, "") + ".fixtures.mjs";
-    if (!programPath || !fs.existsSync(path.resolve(fixturesPath))) {
-        fail("usage: any-doctor verify <doctor-program.(m)js>  (expects " + fixturesPath + ")");
-        process.exit(1);
-    }
-    const result = executeLoader(programPath, "--verify", path.resolve(fixturesPath));
+function printVerifyResult(result) {
     const color = useColor();
     const g = (s) => (color ? GREEN + s + RESET : s);
     const r = (s) => (color ? RED + s + RESET : s);
     let failures = 0;
     for (const c of result.results) {
         if (c.ok) {
-            console.log(g("✔ " + c.name));
-        }
-        else if (c.error) {
-            failures++;
-            console.log(r("✖ " + c.name));
-            console.log("  " + r("crashed: ") + c.error);
+            console.log(g("  ✔ " + c.name));
         }
         else {
             failures++;
-            console.log(r("✖ " + c.name));
+            console.log(r("  ✖ " + c.name));
             for (const m of c.missing)
-                console.log("  " + r("missing expected finding") + " " + m.file + ":" + m.line);
+                console.log("    " + r("missing expected finding") + " " + m.file + ":" + m.line);
             for (const u of c.unexpected)
-                console.log("  " + r("unexpected finding") + " " + u.file + ":" + u.line);
+                console.log("    " + r("unexpected finding") + " " + u.file + ":" + u.line);
+            if (c.error)
+                console.log("    " + r("crashed: ") + c.error);
         }
     }
-    const passed = result.results.length - failures;
+    return failures;
+}
+function fixturesPathFor(doctorPath) {
+    return doctorPath.replace(/\.(m|c)?js$/, "") + ".fixtures.mjs";
+}
+async function cmdVerify(args) {
+    const parsed = parseArgs(args);
+    if (parsed.all) {
+        const discovered = (0, discover_1.discoverDoctors)(process.cwd()).filter(d => d.meta !== null);
+        if (discovered.length === 0) {
+            fail("no doctors discovered");
+            process.exit(1);
+        }
+        let totalFailures = 0;
+        for (const d of discovered) {
+            console.log(BOLD + d.meta.id + RESET);
+            const r = executeLoader(d.path, "--verify", path.resolve(fixturesPathFor(d.path)));
+            const f = printVerifyResult(r);
+            totalFailures += f;
+            console.log("");
+        }
+        if (totalFailures > 0) {
+            fail(totalFailures + " fixture(s) failed");
+            process.exit(1);
+        }
+        ok("all doctors fixture-green");
+        return;
+    }
+    let doctorPath = parsed.doctorPath;
+    if (!doctorPath) {
+        const chosen = await pickDoctor(process.cwd(), "verify");
+        doctorPath = chosen.path;
+    }
+    const fixturesPath = fixturesPathFor(doctorPath);
+    if (!fs.existsSync(path.resolve(fixturesPath))) {
+        fail("no fixtures found for this doctor — expected " + fixturesPath);
+        process.exit(1);
+    }
+    const result = executeLoader(doctorPath, "--verify", path.resolve(fixturesPath));
+    const failures = printVerifyResult(result);
     console.log("");
-    console.log(dim(`${passed}/${result.results.length} fixtures passed for ${result.meta.id}`));
+    console.log(dim(`${result.results.length - failures}/${result.results.length} fixtures passed for ${result.meta.id}`));
     if (failures > 0)
         process.exit(1);
 }
-const STOP_WORDS = new Set(["a", "an", "the", "find", "flag", "all", "that",
-    "which", "is", "are", "in", "on", "of", "to", "and", "or", "not"]);
-function slugify(intent) {
-    const words = intent.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").trim().split(/\s+/);
-    const kept = words.filter(w => w && !STOP_WORDS.has(w)).slice(0, 5);
-    return (kept.length ? kept : ["custom-doctor"]).join("-").slice(0, 60);
+function registerDoctor(scopeDir, slug, intent) {
+    const idxPath = path.join(scopeDir, "index.json");
+    let idx = {};
+    if (fs.existsSync(idxPath)) {
+        try {
+            idx = JSON.parse(fs.readFileSync(idxPath, "utf8"));
+        }
+        catch {
+            idx = {};
+        }
+    }
+    idx.version = 1;
+    idx.doctors = (idx.doctors || []).filter(d => d.slug !== slug);
+    idx.doctors.push({ slug, intent, createdAt: new Date().toISOString(), protocolVersion: 1 });
+    fs.writeFileSync(idxPath, JSON.stringify(idx, null, 2));
 }
-function skillText() {
-    const p = path.join(__dirname, "..", "skill", "any-doctor.skill.md");
-    try {
-        return fs.readFileSync(p, "utf8");
+async function cmdGenerate(args) {
+    let intent;
+    let explicitAgent;
+    let global = false;
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--agent")
+            explicitAgent = args[++i];
+        else if (args[i] === "--global")
+            global = true;
+        else if (intent === undefined)
+            intent = args[i];
     }
-    catch {
-        return null;
+    if (!intent) {
+        fail('usage: any-doctor generate "<one-line intent>" [--agent <cmd>] [--global]');
+        process.exit(1);
     }
+    const skill = skillText();
+    if (skill === null) {
+        fail("generation skill not found (skill/any-doctor.skill.md missing).");
+        process.exit(1);
+    }
+    const agent = resolveAgent(explicitAgent);
+    if (agent === null) {
+        fail("No coding agent found. Any Doctor does not bundle an LLM — it delegates");
+        fail("to the agent you already have. Install one of: claude, codex, opencode,");
+        fail("or set ANY_DOCTOR_AGENT / --agent to a command taking the prompt as its last arg.");
+        process.exit(1);
+    }
+    const slug = slugify(intent);
+    const scopeDir = global
+        ? (fs.mkdirSync((0, discover_1.globalDoctorsDir)(), { recursive: true }), (0, discover_1.globalDoctorsDir)())
+        : path.resolve("doctors");
+    fs.mkdirSync(scopeDir, { recursive: true });
+    const cliJs = path.join(__dirname, "cli.js");
+    const prompt = [
+        skill,
+        "",
+        "## Your task",
+        "",
+        "INTENT (the entire specification):",
+        "  " + intent,
+        "",
+        "Working directory is the doctor pack root. Write exactly two files:",
+        "  " + slug + ".mjs",
+        "  " + slug + ".fixtures.mjs",
+        "",
+        "Then verify with exactly this command and iterate until every fixture passes:",
+        '  node "' + cliJs + '" verify "' + path.join(scopeDir, slug + ".mjs") + '"',
+        "Then stop and report.",
+    ].join("\n");
+    console.log(BOLD + "generating doctor " + CYAN + slug + RESET + dim(" via " + agent.raw) + dim(global ? " (global scope)" : ""));
+    const r = sh(agent.bin, agentArgs(agent, prompt), { timeoutMs: 12 * 60 * 1000, cwd: scopeDir });
+    if (r.status !== 0) {
+        fail("generation agent exited non-zero (" + r.status + ")");
+        process.exit(r.status || 1);
+    }
+    console.log("");
+    console.log(BOLD + "verifying (deterministic — no model in this part):" + RESET);
+    const doctorAbs = path.join(scopeDir, slug + ".mjs");
+    const fixturesAbs = path.join(scopeDir, slug + ".fixtures.mjs");
+    if (!fs.existsSync(doctorAbs) || !fs.existsSync(fixturesAbs)) {
+        fail("agent did not create " + slug + ".mjs / " + slug + ".fixtures.mjs in " + scopeDir);
+        process.exit(1);
+    }
+    const result = executeLoader(doctorAbs, "--verify", fixturesAbs);
+    const failures = printVerifyResult(result);
+    if (failures > 0) {
+        fail(failures + " fixture(s) failed — the agent's doctor did not pass the gate. Fix or delete " + doctorAbs);
+        process.exit(1);
+    }
+    registerDoctor(scopeDir, slug, intent);
+    ok(slug + " generated, fixture-green, registered in " + (global ? "~/.any-doctor" : "repo-local") + " scope");
 }
 function resolveAgent(explicit) {
     const candidates = [];
@@ -188,8 +369,7 @@ function resolveAgent(explicit) {
 }
 function agentArgs(agent, prompt) {
     if (agent.bin === "claude") {
-        return ["-p", prompt, "--allowedTools", "Read,Edit,Write,Bash",
-            "--permission-mode", "acceptEdits"];
+        return ["-p", prompt, "--allowedTools", "Read,Edit,Write,Bash", "--permission-mode", "acceptEdits"];
     }
     if (agent.bin === "codex") {
         return ["exec", "--full-auto", prompt];
@@ -202,107 +382,44 @@ function agentArgs(agent, prompt) {
     }
     return agent.raw.split(/\s+/).slice(1).concat([prompt]);
 }
-async function cmdGenerate(args) {
-    let intent;
-    let explicitAgent;
-    for (let i = 0; i < args.length; i++) {
-        if (args[i] === "--agent")
-            explicitAgent = args[++i];
-        else if (intent === undefined)
-            intent = args[i];
-    }
-    if (!intent) {
-        fail('usage: any-doctor generate "<one-line intent>" [--agent <cmd>]');
-        process.exit(1);
-    }
-    const skill = skillText();
-    if (skill === null) {
-        fail("generation skill not found (skill/any-doctor.skill.md missing).");
-        process.exit(1);
-    }
-    const agent = resolveAgent(explicitAgent);
-    if (agent === null) {
-        fail("No coding agent found. Any Doctor does not bundle an LLM — it delegates");
-        fail("to the agent you already have. Install one of: claude, codex, opencode,");
-        fail("or set ANY_DOCTOR_AGENT / --agent to a command taking the prompt as its last arg.");
-        process.exit(1);
-    }
-    const slug = slugify(intent);
-    const prompt = [
-        skill,
-        "",
-        "## Your task",
-        "",
-        "INTENT (the entire specification):",
-        "  " + intent,
-        "",
-        "Working directory is the rule pack root. Write exactly two files:",
-        "  doctors/" + slug + ".mjs",
-        "  doctors/" + slug + ".fixtures.mjs",
-        "Then run: any-doctor verify doctors/" + slug + ".mjs",
-        "Iterate until every fixture passes. Then stop and report.",
-    ].join("\n");
-    console.log(BOLD + "generating doctor " + CYAN + slug + RESET + dim(" via " + agent.raw));
-    const r = sh(agent.bin, agentArgs(agent, prompt), 12 * 60 * 1000);
-    if (r.status !== 0) {
-        fail("generation agent exited non-zero (" + r.status + ")");
-        process.exit(r.status || 1);
-    }
-    console.log("");
-    console.log(BOLD + "verifying (deterministic — no model in this part):" + RESET);
-    const doctorPath = path.join("doctors", slug + ".mjs");
-    if (!fs.existsSync(doctorPath)) {
-        fail("agent did not create " + doctorPath);
-        process.exit(1);
-    }
-    const result = executeLoader(doctorPath, "--verify", path.resolve(doctorPath.replace(/\.mjs$/, "") + ".fixtures.mjs"));
-    let failures = 0;
-    for (const c of result.results) {
-        if (c.ok) {
-            console.log(GREEN + "✔ " + c.name + RESET);
-        }
-        else {
-            failures++;
-            console.log(RED + "✖ " + c.name + RESET);
-            for (const m of c.missing)
-                console.log("  " + RED + "missing expected finding" + RESET + " " + m.file + ":" + m.line);
-            for (const u of c.unexpected)
-                console.log("  " + RED + "unexpected finding" + RESET + " " + u.file + ":" + u.line);
-            if (c.error)
-                console.log("  " + RED + "crashed: " + c.error + RESET);
-        }
-    }
-    if (failures > 0) {
-        fail(failures + " fixture(s) failed — the agent's doctor did not pass the gate. Fix or delete " + doctorPath);
-        process.exit(1);
-    }
-    ok(slug + " generated and fixture-green. Review it, then: any-doctor run " + doctorPath + " <target>");
+const STOP_WORDS = new Set(["a", "an", "the", "find", "flag", "all", "that", "which", "is", "are", "in", "on", "of", "to", "and", "or", "not"]);
+function slugify(intent) {
+    const words = intent.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").trim().split(/\s+/);
+    const kept = words.filter(w => w && !STOP_WORDS.has(w)).slice(0, 5);
+    return (kept.length ? kept : ["custom-doctor"]).join("-").slice(0, 60);
 }
 function usage() {
     console.log(BOLD + "any-doctor" + RESET + dim(" — your agent writes the analyzer, fixtures prove it, CI reruns it forever"));
     console.log("");
-    console.log('  generate "<intent>" [--agent <cmd>]  have your agent write a doctor + fixtures');
-    console.log("  run <doctor.(m)js> [dir]     execute a doctor program and render the report");
-    console.log("  verify <doctor.(m)js>        run the doctor against its fixtures (exact-set diff)");
+    console.log('  generate "<intent>" [--global] [--agent <cmd>]  your agent writes a doctor + fixtures, verify gates it');
+    console.log("  run [--all] [doctor.(m)js] [dir]  scan + report (no doctor: fuzzy picker; --all: every doctor)");
+    console.log("  verify [--all] [doctor.(m)js]     fixture gate (no doctor: fuzzy picker; --all: every doctor)");
     console.log("");
-    console.log(dim("doctors live next to their fixtures: <name>.mjs + <name>.fixtures.mjs"));
-    console.log(dim("generation uses your agent (claude | codex | opencode | ANY_DOCTOR_AGENT/--agent cmd)."));
-    console.log(dim("run and verify never touch a model — safe for CI."));
+    console.log(dim("doctors live in ./doctors/ (repo) and ~/.any-doctor/doctors/ (global)."));
+    console.log(dim("generation delegates to your installed agent — run and verify never touch a model."));
 }
 async function main() {
+    const major = Number(process.versions.node.split(".")[0]);
+    if (major < 18) {
+        fail("any-doctor requires Node >= 18 — you are running " + process.versions.node);
+        process.exit(1);
+    }
     const argv = process.argv.slice(2);
     const cmd = argv[0];
     const rest = argv.slice(1);
     if (!cmd || cmd === "help" || cmd === "--help")
         return usage();
+    if (cmd === "generate")
+        return cmdGenerate(rest);
     if (cmd === "run")
         return cmdRun(rest);
     if (cmd === "verify")
         return cmdVerify(rest);
-    if (cmd === "generate")
-        return cmdGenerate(rest);
     fail("unknown command: " + cmd);
     usage();
     process.exit(1);
 }
-main();
+main().catch(e => {
+    console.error(RED + (e && e.stack ? e.stack : String(e)) + RESET);
+    process.exit(1);
+});
