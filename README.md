@@ -14,9 +14,17 @@ Everything runs locally. No Cloudflare, no API keys, no server.
 ## Usage
 
 ```bash
-any-doctor run doctors/unawaited-async-map.mjs path/to/repo   # scan + report (+ interactive browser on a TTY)
-any-doctor verify doctors/unawaited-async-map.mjs             # fixture gate
+any-doctor generate "find fetch calls without an AbortSignal"   # your agent writes the doctor
+any-doctor verify doctors/fetch-without-abort-signal.mjs        # fixture gate (exact-set)
+any-doctor run doctors/fetch-without-abort-signal.mjs path/to/repo   # scan + report (+ browser on a TTY)
 ```
+
+`generate` delegates to your installed agent (claude/codex/opencode, or
+`--agent`/`ANY_DOCTOR_AGENT`); the CLI then independently re-runs `verify` —
+an agent's doctor doesn't count until the deterministic harness passes it.
+`run` and `verify` never touch a model. Pipe the output (or set
+`ANY_DOCTOR_HEADLESS=1`) and the interactive browser disables itself —
+headless output is stable for CI. Requires Node ≥ 18.
 
 Pipe the output (or set `ANY_DOCTOR_HEADLESS=1`) and the interactive browser
 disables itself — headless output is stable for CI and `--json`-style
@@ -45,9 +53,10 @@ working example.
 1. ✅ Vision, decisions D1–D10, kill test (precision/recall measured), React Doctor UX bar experienced first-hand
 2. ✅ **Doctor contract v0**: typed `ctx` ([src/contract.ts](src/contract.ts), [src/sdk.ts](src/sdk.ts)), framed runner protocol ([bin/doctor-loader.mjs](bin/doctor-loader.mjs)), pure report renderer ([src/report.ts](src/report.ts)), `verify` fixture harness with exact-set matching
 3. ✅ Pilot doctor proves the pivot: same intent, program beats the YAML rule at its measured failure point (cross-statement dataflow)
-4. ⬜ Program-generation skill (rewrite from REPAIR-LOG lessons) + agent adapter; first-shot yield is the core metric
-5. ⬜ Grow `ctx`: symbols/imports resolution, JS-family languages
-6. ⬜ Front doors: vision.md refresh to D9/D10 language; launch post
+4. ✅ Program-generation skill + `generate` command (agent adapter, verify gate) — first-shot yield measurement pending real agent
+5. ⬜ Doctor discovery & registry: no-arg fuzzy picker, auto-save registry, run/verify --all — spec in [docs/features.md](docs/features.md)
+6. ⬜ Grow `ctx`: symbols/imports resolution, JS-family languages
+7. ⬜ Front doors: vision.md refresh to D9/D10 language; launch post
 
 ## Principles
 

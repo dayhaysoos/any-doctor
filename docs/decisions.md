@@ -240,6 +240,47 @@ deliberately left to Nick.
 
 ---
 
+## D12 — Generation returns: skill for doctor programs, agent adapter restored
+
+**Date:** 2026-08-29
+
+**Context:** D10 deleted the YAML-era generation flow. Nick clarified the
+deletion intent (the YAML files specifically) and greenlit restoring what
+the doctor-program experience needs.
+
+**Decision:** Restored, rewritten for the program contract: the generation
+skill (`skill/any-doctor.skill.md` — contract, workflow, fixture discipline,
+honesty rules, and the failure lessons from REPAIR-LOG), the
+`any-doctor generate "<intent>"` command (agent adapter: claude/codex/
+opencode, custom via `--agent`/`ANY_DOCTOR_AGENT`; the CLI independently
+re-runs `verify` as the post-generation gate), and `dev/fake-agent.sh` for
+plumbing tests without a real agent. The YAML-era fixtures and rule pack
+remain retired — their role is played by `.fixtures.mjs` files.
+
+**Consequences:** The full loop works: intent → agent writes doctor + fixtures
+→ verify gate → scan. What is still unmeasured: first-shot yield with a real
+agent (requires a working agent install; plumbing proven via fake agent).
+D8's adapter design is hereby re-instantiated in src/cli.ts.
+
+---
+
+## D13 — Doctor discovery & registry UX (planned; spec in docs/features.md)
+
+**Date:** 2026-08-29
+
+**Context:** Nick's desired experience: `any-doctor verify` / `run` without
+a doctor argument should offer a fuzzy-searchable picker; doctors created
+by generate should be automatically saved in their own non-interfering
+directory. Not previously documented anywhere.
+
+**Decision:** Adopted as the next feature set after generation. The build
+spec lives in `docs/features.md` (F1 no-arg fuzzy selection, F2
+repo-local + user-global registry with auto-save and a non-interference
+rule, F3 related batch commands). Implementation follows that file;
+deviations update it in the same commit.
+
+---
+
 ## Open questions
 
 - Name: "any-doctor" is a working title.
