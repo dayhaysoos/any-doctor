@@ -54,7 +54,7 @@ working example.
 2. ✅ **Doctor contract v0**: typed `ctx` ([src/contract.ts](src/contract.ts), [src/sdk.ts](src/sdk.ts)), framed runner protocol ([bin/doctor-loader.mjs](bin/doctor-loader.mjs)), pure report renderer ([src/report.ts](src/report.ts)), `verify` fixture harness with exact-set matching
 3. ✅ Pilot doctor proves the pivot: same intent, program beats the YAML rule at its measured failure point (cross-statement dataflow)
 4. ✅ Program-generation skill + `generate` command (agent adapter, verify gate) — first-shot yield measurement pending real agent
-5. ⬜ Doctor discovery & registry: no-arg fuzzy picker, auto-save registry, run/verify --all — spec in [docs/features.md](docs/features.md)
+5. ✅ Doctor discovery & registry built (buildout branch): no-arg fuzzy picker, auto-save registry, run/verify --all — [docs/features.md](docs/features.md)
 6. ⬜ Grow `ctx`: symbols/imports resolution, JS-family languages
 7. ⬜ Front doors: vision.md refresh to D9/D10 language; launch post
 

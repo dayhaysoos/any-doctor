@@ -64,3 +64,17 @@ passes.
 The process boundary that loads a doctor program, injects ctx, and
 returns framed results. Today a local node child process; the same
 contract must hold for any future sandbox.
+
+## Registry
+
+The record of installed doctor programs per scope. Each doctor's meta is
+its registry entry; a thin index.json cache per scope records creation
+metadata (slug, intent, date). The index is a cache — discovery works
+from the directory alone if the index is missing.
+
+## Scope
+
+Where a doctor program lives: repo-local (`./doctors/`, committed with
+the consuming repo) or user-global (`~/.any-doctor/doctors/`, available
+in every repo). Repo-local wins slug collisions. Scanning a target repo
+never writes to any scope.

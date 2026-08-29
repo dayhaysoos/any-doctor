@@ -1,8 +1,8 @@
 # Planned features — doctor discovery & registry
 
-Status: DESIGNED, NOT BUILT. This file is the build spec. Any session
-implementing these features should follow it and, where reality forces
-deviations, update this file in the same commit.
+Status: F1 and F2 are BUILT on the `buildout` branch (discovery scopes,
+fuzzy picker, auto-registration with index.json, non-interference).
+F3 remains designed-not-built.
 
 Source: Nick's direction (2026-08-29) — "when someone types any-doctor
 verify or any-doctor run without specifying which doctor, there should be
