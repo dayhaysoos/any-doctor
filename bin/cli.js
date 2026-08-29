@@ -309,6 +309,10 @@ async function cmdGenerate(args) {
         ? (fs.mkdirSync((0, discover_1.globalDoctorsDir)(), { recursive: true }), (0, discover_1.globalDoctorsDir)())
         : path.resolve("doctors");
     fs.mkdirSync(scopeDir, { recursive: true });
+    const agentsPath = path.join(scopeDir, "AGENTS.md");
+    if (!fs.existsSync(agentsPath)) {
+        fs.writeFileSync(agentsPath, skill);
+    }
     const cliJs = path.join(__dirname, "cli.js");
     const prompt = [
         skill,
@@ -375,7 +379,7 @@ function agentArgs(agent, prompt) {
         return ["exec", "--full-auto", prompt];
     }
     if (agent.bin === "opencode") {
-        return ["run", prompt];
+        return ["run", "--auto", prompt];
     }
     if (agent.raw.includes("{prompt}")) {
         return agent.raw.split(/\s+/).slice(1).map(a => a.replace("{prompt}", prompt));
