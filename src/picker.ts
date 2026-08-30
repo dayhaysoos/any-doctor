@@ -14,10 +14,10 @@ export interface PickerItem {
   severity?: Severity;
 }
 
-export function pickerFrame(items: PickerItem[], selected: number, query: string, useColor: boolean): string {
+export function pickerFrame(title: string, items: PickerItem[], selected: number, query: string, useColor: boolean): string {
   const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
   const lines: string[] = [];
-  lines.push(c("Select a doctor", BOLD) + c("  (type to filter · ↑↓ move · enter select · esc cancel)", DIM));
+  lines.push(c(title, BOLD) + c("  (type to filter · ↑↓ move · enter select · esc cancel)", DIM));
   lines.push("");
   lines.push(c("❯ " + query, BOLD) + c("▏", DIM));
   lines.push("");
@@ -44,7 +44,7 @@ export function isPrintable(s: string): boolean {
   return s.length === 1 && s >= " " && s !== "\x7f";
 }
 
-export async function pickItem(items: PickerItem[], useColor: boolean): Promise<PickerItem | null> {
+export async function pickItem(items: PickerItem[], useColor: boolean, title: string = "Select an option"): Promise<PickerItem | null> {
   const stdin = process.stdin;
   const stdout = process.stdout;
   if (!stdin.isTTY || !stdout.isTTY || items.length === 0) return null;
@@ -58,7 +58,7 @@ export async function pickItem(items: PickerItem[], useColor: boolean): Promise<
   const draw = (): void => {
     const list = filtered();
     if (selected >= list.length) selected = Math.max(0, list.length - 1);
-    stdout.write("\x1b[H\x1b[2J" + pickerFrame(list, selected, query, useColor));
+    stdout.write("\x1b[H\x1b[2J" + pickerFrame(title, list, selected, query, useColor));
   };
 
   return new Promise<PickerItem | null>((resolve) => {

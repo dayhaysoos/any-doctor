@@ -1,9 +1,4 @@
-import { DoctorMeta, Finding } from "./contract";
-export interface ReportGroup {
-    programName: string;
-    meta: DoctorMeta;
-    findings: Finding[];
-}
+import { ReportGroup } from "./contract";
 export interface ReportInput {
     fileCount: number;
     durationMs: number;

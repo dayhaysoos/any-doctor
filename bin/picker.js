@@ -8,10 +8,10 @@ const fuzzy_1 = require("./fuzzy");
 const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
 const COLOR = { error: GREEN, warning: YELLOW, info: CYAN };
-function pickerFrame(items, selected, query, useColor) {
+function pickerFrame(title, items, selected, query, useColor) {
     const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
     const lines = [];
-    lines.push(c("Select a doctor", BOLD) + c("  (type to filter · ↑↓ move · enter select · esc cancel)", DIM));
+    lines.push(c(title, BOLD) + c("  (type to filter · ↑↓ move · enter select · esc cancel)", DIM));
     lines.push("");
     lines.push(c("❯ " + query, BOLD) + c("▏", DIM));
     lines.push("");
@@ -36,7 +36,7 @@ function filterPickerItems(items, query) {
 function isPrintable(s) {
     return s.length === 1 && s >= " " && s !== "\x7f";
 }
-async function pickItem(items, useColor) {
+async function pickItem(items, useColor, title = "Select an option") {
     const stdin = process.stdin;
     const stdout = process.stdout;
     if (!stdin.isTTY || !stdout.isTTY || items.length === 0)
@@ -49,7 +49,7 @@ async function pickItem(items, useColor) {
         const list = filtered();
         if (selected >= list.length)
             selected = Math.max(0, list.length - 1);
-        stdout.write("\x1b[H\x1b[2J" + pickerFrame(list, selected, query, useColor));
+        stdout.write("\x1b[H\x1b[2J" + pickerFrame(title, list, selected, query, useColor));
     };
     return new Promise((resolve) => {
         const wasRaw = stdin.isRaw;

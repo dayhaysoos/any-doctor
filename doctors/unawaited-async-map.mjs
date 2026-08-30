@@ -2,6 +2,7 @@ export const meta = {
   id: "unawaited-async-map",
   description: ".map(async ...) result is never awaited — the promises are dropped",
   severity: "warning",
+  category: "bugs",
   blindSpots: [
     "consumption inside template strings or dynamic property access",
     "reassignable bindings (let) with conditional awaits",

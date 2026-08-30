@@ -3,7 +3,13 @@ export interface DoctorMeta {
     id: string;
     description: string;
     severity: Severity;
+    category?: string;
     blindSpots?: string[];
+}
+export interface ReportGroup {
+    programName: string;
+    meta: DoctorMeta;
+    findings: Finding[];
 }
 export interface Finding {
     file: string;

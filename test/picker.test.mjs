@@ -11,7 +11,7 @@ const items = [
 ];
 
 test("pickerFrame: header, query line, and items render", () => {
-  const out = pickerFrame(items, 0, "", false);
+  const out = pickerFrame("Select a doctor", items, 0, "", false);
   assert.match(out, /Select a doctor/);
   assert.match(out, /❯ ▏/);
   assert.match(out, /unawaited-async-map\.mjs/);
@@ -19,13 +19,13 @@ test("pickerFrame: header, query line, and items render", () => {
 });
 
 test("pickerFrame: selected item is marked", () => {
-  const out = pickerFrame(items, 1, "", false);
+  const out = pickerFrame("Select a doctor", items, 1, "", false);
   const lines = out.split("\n").filter(l => l.includes("console.log left in code"));
   assert.ok(lines[0].startsWith("❯ "));
 });
 
 test("pickerFrame: no matches shows the empty state", () => {
-  const out = pickerFrame([], 0, "zzz", false);
+  const out = pickerFrame("Select a doctor", [], 0, "zzz", false);
   assert.match(out, /no matching doctors/);
 });
 

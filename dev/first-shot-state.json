@@ -1,0 +1,52 @@
+{
+  "Find fetch calls without an AbortSignal": {
+    "result": "PASS",
+    "detail": "",
+    "slug": "find-fetch-calls-without-an"
+  },
+  "Find .map(async ...) results that are never wrapped in Promise.all": {
+    "result": "PASS",
+    "detail": "",
+    "slug": "find-map-async-results-that"
+  },
+  "Find empty catch blocks that swallow errors": {
+    "result": "PASS",
+    "detail": "",
+    "slug": "find-empty-catch-blocks-that"
+  },
+  "Find direct imports of the openai or anthropic SDK outside lib/ai": {
+    "result": "PASS",
+    "detail": "",
+    "slug": "find-direct-imports-of-the"
+  },
+  "Find Date.now used inside Effect.gen blocks": {
+    "result": "PASS",
+    "detail": "",
+    "slug": "find-date-now-used-inside"
+  },
+  "Find z.record called with a single argument": {
+    "result": "PASS",
+    "detail": "",
+    "slug": "find-z-record-called-with"
+  },
+  "Find route handlers that touch the database before calling requireUser": {
+    "result": "PASS",
+    "detail": "",
+    "slug": "find-route-handlers-that-touch"
+  },
+  "Find setTimeout calls inside useEffect without a matching clearTimeout": {
+    "result": "PASS",
+    "detail": "",
+    "slug": "find-settimeout-calls-inside-useeffect"
+  },
+  "Find JSON.parse calls on LLM API responses without schema validation": {
+    "result": "PASS",
+    "detail": "",
+    "slug": "find-json-parse-calls-on"
+  },
+  "Find API route files that do not import the auth middleware": {
+    "result": "PASS",
+    "detail": "",
+    "slug": "find-api-route-files-that"
+  }
+}

@@ -42,6 +42,8 @@ const report_1 = require("./report");
 const browse_1 = require("./browse");
 const discover_1 = require("./discover");
 const picker_1 = require("./picker");
+const agents_1 = require("./agents");
+const handoff_1 = require("./handoff");
 const GREEN = "\x1b[32m", RED = "\x1b[31m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 function fail(msg) {
     console.error(RED + msg + RESET);
@@ -118,7 +120,7 @@ function parseArgs(args) {
     }
     return out;
 }
-async function pickDoctor(cwd, action) {
+async function pickDoctor(cwd) {
     const discovered = (0, discover_1.discoverDoctors)(cwd);
     const valid = discovered.filter(d => d.meta !== null);
     const broken = discovered.filter(d => d.meta === null);
@@ -146,54 +148,95 @@ async function pickDoctor(cwd, action) {
         label: d.meta.description,
         sub: d.scope + "/" + d.slug + ".mjs",
         severity: d.meta.severity,
-    })), useColor());
+    })), useColor(), "Select a doctor");
     if (chosen === null)
         process.exit(0);
-    const match = valid.find(v => v.slug === chosen.id);
-    void action;
-    return match;
+    return valid.find(v => v.slug === chosen.id);
+}
+function scanOnce(doctorAbs, targetDir) {
+    const result = executeLoader(doctorAbs, null, null, targetDir);
+    return {
+        result,
+        groups: [{ programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings }],
+        findings: result.findings,
+        fileCount: result.fileCount,
+        durationMs: result.durationMs,
+    };
 }
 async function cmdRun(args) {
     const parsed = parseArgs(args);
     const started = Date.now();
-    const groups = [];
-    let fileCount = 0;
     if (parsed.all) {
         const discovered = (0, discover_1.discoverDoctors)(process.cwd()).filter(d => d.meta !== null);
         if (discovered.length === 0) {
             fail("no doctors discovered — run from a directory with doctors/, or specify a doctor path");
             process.exit(1);
         }
+        const groups = [];
+        let fileCount = 0;
         for (const d of discovered) {
-            const r = executeLoader(d.path, null, null, parsed.targetDir);
-            fileCount = Math.max(fileCount, r.fileCount);
-            groups.push({ programName: path.basename(d.path), meta: r.meta, findings: r.findings });
+            const scan = scanOnce(d.path, parsed.targetDir);
+            fileCount = Math.max(fileCount, scan.fileCount);
+            groups.push(...scan.groups);
         }
+        console.log((0, report_1.renderReport)({ fileCount, durationMs: Date.now() - started, groups }, useColor()));
+        return;
+    }
+    let doctorAbs;
+    if (parsed.doctorPath) {
+        doctorAbs = path.resolve(parsed.doctorPath);
     }
     else {
-        let doctorPath = parsed.doctorPath;
-        if (!doctorPath) {
-            const chosen = await pickDoctor(process.cwd(), "run");
-            doctorPath = chosen.path;
+        const chosen = await pickDoctor(process.cwd());
+        doctorAbs = chosen.path;
+    }
+    let scan = scanOnce(doctorAbs, parsed.targetDir);
+    const interactive = process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS;
+    if (!interactive) {
+        console.log((0, report_1.renderReport)({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, useColor()));
+        return;
+    }
+    const color = useColor();
+    const agent = (0, agents_1.resolveAgent)(parsed.agent);
+    for (;;) {
+        console.log((0, report_1.renderReport)({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, color));
+        if (scan.findings.length === 0) {
+            console.log(dim("\nnothing to do — clean run"));
+            return;
         }
-        const r = executeLoader(doctorPath, null, null, parsed.targetDir);
-        fileCount = r.fileCount;
-        groups.push({ programName: path.basename(doctorPath), meta: r.meta, findings: r.findings });
-        const text = (0, report_1.renderReport)({ fileCount, durationMs: Date.now() - started, groups }, useColor());
-        console.log(text);
-        if (r.findings.length > 0 && process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS) {
+        const n = scan.findings.length;
+        const items = [
+            { id: "review", label: `Review ${n} issue${n === 1 ? "" : "s"}` },
+            ...(agent ? [{ id: "agent", label: `Hand off to an agent (${agent.bin})`, sub: "fixes the findings in place" }] : []),
+            { id: "rescan", label: "Re-scan" },
+            { id: "quit", label: "Quit" },
+        ];
+        const chosen = await (0, picker_1.pickItem)(items, color, "What next?");
+        if (chosen === null || chosen.id === "quit")
+            break;
+        if (chosen.id === "review") {
             console.log("");
             await (0, browse_1.browseFindings)({
                 root: parsed.targetDir,
-                description: r.meta.description,
-                severity: r.meta.severity,
-                findings: r.findings,
-            }, useColor());
+                description: scan.result.meta.description,
+                severity: scan.result.meta.severity,
+                findings: scan.findings,
+            }, color);
         }
-        return;
+        else if (chosen.id === "agent" && agent) {
+            const verifyCmd = `node "${path.join(__dirname, "cli.js")}" run "${doctorAbs}" "${parsed.targetDir}"`;
+            const prompt = (0, handoff_1.buildFixPrompt)(scan.groups, parsed.targetDir, verifyCmd);
+            console.log(dim("\nhanding off to " + agent.raw + " — it will edit the repository in place\n"));
+            const fix = sh(agent.bin, (0, agents_1.agentArgs)(agent, prompt), { timeoutMs: 20 * 60 * 1000, cwd: parsed.targetDir });
+            if (fix.status !== 0) {
+                fail("fix agent exited non-zero (" + fix.status + ") — re-scan anyway\n");
+            }
+            scan = scanOnce(doctorAbs, parsed.targetDir);
+        }
+        else if (chosen.id === "rescan") {
+            scan = scanOnce(doctorAbs, parsed.targetDir);
+        }
     }
-    const text = (0, report_1.renderReport)({ fileCount, durationMs: Date.now() - started, groups }, useColor());
-    console.log(text);
 }
 function printVerifyResult(result) {
     const color = useColor();
@@ -232,8 +275,7 @@ async function cmdVerify(args) {
         for (const d of discovered) {
             console.log(BOLD + d.meta.id + RESET);
             const r = executeLoader(d.path, "--verify", path.resolve(fixturesPathFor(d.path)));
-            const f = printVerifyResult(r);
-            totalFailures += f;
+            totalFailures += printVerifyResult(r);
             console.log("");
         }
         if (totalFailures > 0) {
@@ -245,7 +287,7 @@ async function cmdVerify(args) {
     }
     let doctorPath = parsed.doctorPath;
     if (!doctorPath) {
-        const chosen = await pickDoctor(process.cwd(), "verify");
+        const chosen = await pickDoctor(process.cwd());
         doctorPath = chosen.path;
     }
     const fixturesPath = fixturesPathFor(doctorPath);
@@ -297,7 +339,7 @@ async function cmdGenerate(args) {
         fail("generation skill not found (skill/any-doctor.skill.md missing).");
         process.exit(1);
     }
-    const agent = resolveAgent(explicitAgent);
+    const agent = (0, agents_1.resolveAgent)(explicitAgent);
     if (agent === null) {
         fail("No coding agent found. Any Doctor does not bundle an LLM — it delegates");
         fail("to the agent you already have. Install one of: claude, codex, opencode,");
@@ -331,7 +373,7 @@ async function cmdGenerate(args) {
         "Then stop and report.",
     ].join("\n");
     console.log(BOLD + "generating doctor " + CYAN + slug + RESET + dim(" via " + agent.raw) + dim(global ? " (global scope)" : ""));
-    const r = sh(agent.bin, agentArgs(agent, prompt), { timeoutMs: 12 * 60 * 1000, cwd: scopeDir });
+    const r = sh(agent.bin, (0, agents_1.agentArgs)(agent, prompt), { timeoutMs: 12 * 60 * 1000, cwd: scopeDir });
     if (r.status !== 0) {
         fail("generation agent exited non-zero (" + r.status + ")");
         process.exit(r.status || 1);
@@ -353,39 +395,6 @@ async function cmdGenerate(args) {
     registerDoctor(scopeDir, slug, intent);
     ok(slug + " generated, fixture-green, registered in " + (global ? "~/.any-doctor" : "repo-local") + " scope");
 }
-function resolveAgent(explicit) {
-    const candidates = [];
-    if (explicit)
-        candidates.push(explicit);
-    if (process.env.ANY_DOCTOR_AGENT)
-        candidates.push(process.env.ANY_DOCTOR_AGENT);
-    candidates.push("claude", "codex", "opencode");
-    for (const cand of candidates) {
-        if (!cand)
-            continue;
-        const bin = cand.split(/\s+/)[0];
-        const r = (0, child_process_1.spawnSync)("sh", ["-c", "command -v " + bin], { encoding: "utf8" });
-        if (r.status === 0 && r.stdout.trim()) {
-            return { raw: cand, bin, path: r.stdout.trim() };
-        }
-    }
-    return null;
-}
-function agentArgs(agent, prompt) {
-    if (agent.bin === "claude") {
-        return ["-p", prompt, "--allowedTools", "Read,Edit,Write,Bash", "--permission-mode", "acceptEdits"];
-    }
-    if (agent.bin === "codex") {
-        return ["exec", "--full-auto", prompt];
-    }
-    if (agent.bin === "opencode") {
-        return ["run", "--auto", prompt];
-    }
-    if (agent.raw.includes("{prompt}")) {
-        return agent.raw.split(/\s+/).slice(1).map(a => a.replace("{prompt}", prompt));
-    }
-    return agent.raw.split(/\s+/).slice(1).concat([prompt]);
-}
 const STOP_WORDS = new Set(["a", "an", "the", "find", "flag", "all", "that", "which", "is", "are", "in", "on", "of", "to", "and", "or", "not"]);
 function slugify(intent) {
     const words = intent.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").trim().split(/\s+/);
@@ -396,7 +405,7 @@ function usage() {
     console.log(BOLD + "any-doctor" + RESET + dim(" — your agent writes the analyzer, fixtures prove it, CI reruns it forever"));
     console.log("");
     console.log('  generate "<intent>" [--global] [--agent <cmd>]  your agent writes a doctor + fixtures, verify gates it');
-    console.log("  run [--all] [doctor.(m)js] [dir]  scan + report (no doctor: fuzzy picker; --all: every doctor)");
+    console.log("  run [--all] [doctor.(m)js] [dir]  scan + report + interactive review and agent handoff");
     console.log("  verify [--all] [doctor.(m)js]     fixture gate (no doctor: fuzzy picker; --all: every doctor)");
     console.log("");
     console.log(dim("doctors live in ./doctors/ (repo) and ~/.any-doctor/doctors/ (global)."));

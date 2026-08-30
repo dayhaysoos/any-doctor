@@ -5,7 +5,7 @@ export interface PickerItem {
     sub?: string;
     severity?: Severity;
 }
-export declare function pickerFrame(items: PickerItem[], selected: number, query: string, useColor: boolean): string;
+export declare function pickerFrame(title: string, items: PickerItem[], selected: number, query: string, useColor: boolean): string;
 export declare function filterPickerItems(items: PickerItem[], query: string): PickerItem[];
 export declare function isPrintable(s: string): boolean;
-export declare function pickItem(items: PickerItem[], useColor: boolean): Promise<PickerItem | null>;
+export declare function pickItem(items: PickerItem[], useColor: boolean, title?: string): Promise<PickerItem | null>;

@@ -3,11 +3,13 @@ import { spawnSync, SpawnSyncReturns } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { RunResult, VerifyRunResult, RESULT_SENTINEL, DoctorMeta } from "./contract";
-import { renderReport, ReportGroup } from "./report";
+import { RunResult, VerifyRunResult, RESULT_SENTINEL, ReportGroup, Finding } from "./contract";
+import { renderReport } from "./report";
 import { browseFindings } from "./browse";
 import { discoverDoctors, globalDoctorsDir, DiscoveredDoctor } from "./discover";
 import { pickItem } from "./picker";
+import { resolveAgent, agentArgs } from "./agents";
+import { buildFixPrompt } from "./handoff";
 
 const GREEN = "\x1b[32m", RED = "\x1b[31m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
       DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
@@ -16,12 +18,6 @@ interface ExecResult {
   status: number | null;
   stdout: string;
   stderr: string;
-}
-
-interface Agent {
-  raw: string;
-  bin: string;
-  path: string;
 }
 
 interface ShOptions {
@@ -115,7 +111,7 @@ function parseArgs(args: string[]): ParsedArgs {
   return out;
 }
 
-async function pickDoctor(cwd: string, action: string): Promise<DiscoveredDoctor> {
+async function pickDoctor(cwd: string): Promise<DiscoveredDoctor> {
   const discovered = discoverDoctors(cwd);
   const valid = discovered.filter(d => d.meta !== null);
   const broken = discovered.filter(d => d.meta === null);
@@ -146,18 +142,33 @@ async function pickDoctor(cwd: string, action: string): Promise<DiscoveredDoctor
     label: d.meta!.description,
     sub: d.scope + "/" + d.slug + ".mjs",
     severity: d.meta!.severity,
-  })), useColor());
+  })), useColor(), "Select a doctor");
   if (chosen === null) process.exit(0);
-  const match = valid.find(v => v.slug === chosen.id)!;
-  void action;
-  return match;
+  return valid.find(v => v.slug === chosen.id)!;
+}
+
+interface Scan {
+  result: RunResult;
+  groups: ReportGroup[];
+  findings: Finding[];
+  fileCount: number;
+  durationMs: number;
+}
+
+function scanOnce(doctorAbs: string, targetDir: string): Scan {
+  const result = executeLoader(doctorAbs, null, null, targetDir);
+  return {
+    result,
+    groups: [{ programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings }],
+    findings: result.findings,
+    fileCount: result.fileCount,
+    durationMs: result.durationMs,
+  };
 }
 
 async function cmdRun(args: string[]): Promise<void> {
   const parsed = parseArgs(args);
   const started = Date.now();
-  const groups: ReportGroup[] = [];
-  let fileCount = 0;
 
   if (parsed.all) {
     const discovered = discoverDoctors(process.cwd()).filter(d => d.meta !== null);
@@ -165,37 +176,74 @@ async function cmdRun(args: string[]): Promise<void> {
       fail("no doctors discovered — run from a directory with doctors/, or specify a doctor path");
       process.exit(1);
     }
+    const groups: ReportGroup[] = [];
+    let fileCount = 0;
     for (const d of discovered) {
-      const r = executeLoader(d.path, null, null, parsed.targetDir);
-      fileCount = Math.max(fileCount, r.fileCount);
-      groups.push({ programName: path.basename(d.path), meta: r.meta, findings: r.findings });
+      const scan = scanOnce(d.path, parsed.targetDir);
+      fileCount = Math.max(fileCount, scan.fileCount);
+      groups.push(...scan.groups);
     }
-  } else {
-    let doctorPath = parsed.doctorPath;
-    if (!doctorPath) {
-      const chosen = await pickDoctor(process.cwd(), "run");
-      doctorPath = chosen.path;
-    }
-    const r = executeLoader(doctorPath, null, null, parsed.targetDir);
-    fileCount = r.fileCount;
-    groups.push({ programName: path.basename(doctorPath), meta: r.meta, findings: r.findings });
-
-    const text = renderReport({ fileCount, durationMs: Date.now() - started, groups }, useColor());
-    console.log(text);
-    if (r.findings.length > 0 && process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS) {
-      console.log("");
-      await browseFindings({
-        root: parsed.targetDir,
-        description: r.meta.description,
-        severity: r.meta.severity,
-        findings: r.findings,
-      }, useColor());
-    }
+    console.log(renderReport({ fileCount, durationMs: Date.now() - started, groups }, useColor()));
     return;
   }
 
-  const text = renderReport({ fileCount, durationMs: Date.now() - started, groups }, useColor());
-  console.log(text);
+  let doctorAbs: string;
+  if (parsed.doctorPath) {
+    doctorAbs = path.resolve(parsed.doctorPath);
+  } else {
+    const chosen = await pickDoctor(process.cwd());
+    doctorAbs = chosen.path;
+  }
+
+  let scan = scanOnce(doctorAbs, parsed.targetDir);
+  const interactive = process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS;
+
+  if (!interactive) {
+    console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, useColor()));
+    return;
+  }
+
+  const color = useColor();
+  const agent = resolveAgent(parsed.agent);
+
+  for (;;) {
+    console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, color));
+    if (scan.findings.length === 0) {
+      console.log(dim("\nnothing to do — clean run"));
+      return;
+    }
+
+    const n = scan.findings.length;
+    const items = [
+      { id: "review", label: `Review ${n} issue${n === 1 ? "" : "s"}` },
+      ...(agent ? [{ id: "agent", label: `Hand off to an agent (${agent.bin})`, sub: "fixes the findings in place" }] : []),
+      { id: "rescan", label: "Re-scan" },
+      { id: "quit", label: "Quit" },
+    ];
+    const chosen = await pickItem(items, color, "What next?");
+    if (chosen === null || chosen.id === "quit") break;
+
+    if (chosen.id === "review") {
+      console.log("");
+      await browseFindings({
+        root: parsed.targetDir,
+        description: scan.result.meta.description,
+        severity: scan.result.meta.severity,
+        findings: scan.findings,
+      }, color);
+    } else if (chosen.id === "agent" && agent) {
+      const verifyCmd = `node "${path.join(__dirname, "cli.js")}" run "${doctorAbs}" "${parsed.targetDir}"`;
+      const prompt = buildFixPrompt(scan.groups, parsed.targetDir, verifyCmd);
+      console.log(dim("\nhanding off to " + agent.raw + " — it will edit the repository in place\n"));
+      const fix = sh(agent.bin, agentArgs(agent, prompt), { timeoutMs: 20 * 60 * 1000, cwd: parsed.targetDir });
+      if (fix.status !== 0) {
+        fail("fix agent exited non-zero (" + fix.status + ") — re-scan anyway\n");
+      }
+      scan = scanOnce(doctorAbs, parsed.targetDir);
+    } else if (chosen.id === "rescan") {
+      scan = scanOnce(doctorAbs, parsed.targetDir);
+    }
+  }
 }
 
 interface VerifyCase {
@@ -242,8 +290,7 @@ async function cmdVerify(args: string[]): Promise<void> {
     for (const d of discovered) {
       console.log(BOLD + d.meta!.id + RESET);
       const r = executeLoader(d.path, "--verify", path.resolve(fixturesPathFor(d.path))) as unknown as VerifyRunResult;
-      const f = printVerifyResult(r);
-      totalFailures += f;
+      totalFailures += printVerifyResult(r);
       console.log("");
     }
     if (totalFailures > 0) {
@@ -256,7 +303,7 @@ async function cmdVerify(args: string[]): Promise<void> {
 
   let doctorPath = parsed.doctorPath;
   if (!doctorPath) {
-    const chosen = await pickDoctor(process.cwd(), "verify");
+    const chosen = await pickDoctor(process.cwd());
     doctorPath = chosen.path;
   }
   const fixturesPath = fixturesPathFor(doctorPath);
@@ -367,39 +414,6 @@ async function cmdGenerate(args: string[]): Promise<void> {
   ok(slug + " generated, fixture-green, registered in " + (global ? "~/.any-doctor" : "repo-local") + " scope");
 }
 
-function resolveAgent(explicit?: string): Agent | null {
-  const candidates: string[] = [];
-  if (explicit) candidates.push(explicit);
-  if (process.env.ANY_DOCTOR_AGENT) candidates.push(process.env.ANY_DOCTOR_AGENT);
-  candidates.push("claude", "codex", "opencode");
-
-  for (const cand of candidates) {
-    if (!cand) continue;
-    const bin = cand.split(/\s+/)[0];
-    const r = spawnSync("sh", ["-c", "command -v " + bin], { encoding: "utf8" });
-    if (r.status === 0 && r.stdout.trim()) {
-      return { raw: cand, bin, path: r.stdout.trim() };
-    }
-  }
-  return null;
-}
-
-function agentArgs(agent: Agent, prompt: string): string[] {
-  if (agent.bin === "claude") {
-    return ["-p", prompt, "--allowedTools", "Read,Edit,Write,Bash", "--permission-mode", "acceptEdits"];
-  }
-  if (agent.bin === "codex") {
-    return ["exec", "--full-auto", prompt];
-  }
-  if (agent.bin === "opencode") {
-    return ["run", "--auto", prompt];
-  }
-  if (agent.raw.includes("{prompt}")) {
-    return agent.raw.split(/\s+/).slice(1).map(a => a.replace("{prompt}", prompt));
-  }
-  return agent.raw.split(/\s+/).slice(1).concat([prompt]);
-}
-
 const STOP_WORDS = new Set(["a", "an", "the", "find", "flag", "all", "that", "which", "is", "are", "in", "on", "of", "to", "and", "or", "not"]);
 
 function slugify(intent: string): string {
@@ -412,7 +426,7 @@ function usage(): void {
   console.log(BOLD + "any-doctor" + RESET + dim(" — your agent writes the analyzer, fixtures prove it, CI reruns it forever"));
   console.log("");
   console.log('  generate "<intent>" [--global] [--agent <cmd>]  your agent writes a doctor + fixtures, verify gates it');
-  console.log("  run [--all] [doctor.(m)js] [dir]  scan + report (no doctor: fuzzy picker; --all: every doctor)");
+  console.log("  run [--all] [doctor.(m)js] [dir]  scan + report + interactive review and agent handoff");
   console.log("  verify [--all] [doctor.(m)js]     fixture gate (no doctor: fuzzy picker; --all: every doctor)");
   console.log("");
   console.log(dim("doctors live in ./doctors/ (repo) and ~/.any-doctor/doctors/ (global)."));
