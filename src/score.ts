@@ -13,6 +13,18 @@ export function findingSeverity(g: ReportGroup, f: Finding): Severity {
   return check?.severity ?? g.meta.severity;
 }
 
+export function scoreFromSeverities(sevs: Severity[]): ScoreResult {
+  let score = 100;
+  for (const s of sevs) score -= WEIGHTS[s];
+  score = Math.max(0, Math.min(100, score));
+  let grade = "Critical";
+  if (score >= 90) grade = "Excellent";
+  else if (score >= 75) grade = "Good";
+  else if (score >= 50) grade = "Fair";
+  else if (score >= 25) grade = "Poor";
+  return { score, grade };
+}
+
 export function computeScore(groups: ReportGroup[]): ScoreResult {
   let score = 100;
   for (const g of groups) {

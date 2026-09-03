@@ -39,10 +39,10 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const contract_1 = require("./contract");
 const report_1 = require("./report");
-const browse_1 = require("./browse");
+const clipboard_1 = require("./clipboard");
+const dashboard_1 = require("./dashboard");
 const discover_1 = require("./discover");
 const picker_1 = require("./picker");
-const handoff_1 = require("./handoff");
 const GREEN = "\x1b[32m", RED = "\x1b[31m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 function fail(msg) {
     console.error(RED + msg + RESET);
@@ -164,6 +164,7 @@ function scanOnce(doctorAbs, targetDir) {
     };
 }
 async function cmdRun(args) {
+    var _a;
     const parsed = parseArgs(args);
     const started = Date.now();
     if (parsed.all) {
@@ -190,73 +191,23 @@ async function cmdRun(args) {
         const chosen = await pickDoctor(process.cwd());
         doctorAbs = chosen.path;
     }
-    let scan = scanOnce(doctorAbs, parsed.targetDir);
-    const interactive = process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS;
-    if (!interactive) {
+    const scan = scanOnce(doctorAbs, parsed.targetDir);
+    const ttyCols = (_a = process.stdout.columns) !== null && _a !== void 0 ? _a : 0;
+    const interactive = process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
+    if (!interactive || scan.findings.length === 0) {
         console.log((0, report_1.renderReport)({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, useColor()));
+        if (scan.findings.length === 0 && interactive)
+            console.log(dim("\nnothing to do — clean run"));
         return;
     }
-    const color = useColor();
-    let notice;
-    let showReport = true;
-    for (;;) {
-        if (showReport) {
-            console.log((0, report_1.renderReport)({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, color));
-            showReport = false;
-        }
-        if (scan.findings.length === 0) {
-            console.log(dim("\nnothing to do — clean run"));
-            return;
-        }
-        const n = scan.findings.length;
-        const items = [
-            { id: "review", label: `Review ${n} issue${n === 1 ? "" : "s"}` },
-            { id: "copy", label: "Copy findings for your agent", sub: "paste into your own agent session" },
-            { id: "rescan", label: "Re-scan" },
-            { id: "quit", label: "Quit" },
-        ];
-        const chosen = await (0, picker_1.pickItem)(items, color, "What next?", notice);
-        notice = undefined;
-        if (chosen === null || chosen.id === "quit")
-            break;
-        if (chosen.id === "review") {
-            console.log("");
-            await (0, browse_1.browseFindings)({
-                root: parsed.targetDir,
-                description: scan.result.meta.description,
-                severity: scan.result.meta.severity,
-                findings: scan.findings,
-            }, color);
-            showReport = true;
-        }
-        else if (chosen.id === "copy") {
-            const verifyCmd = `node "${path.join(__dirname, "cli.js")}" run "${doctorAbs}" "${parsed.targetDir}"`;
-            const prompt = (0, handoff_1.buildFixPrompt)(scan.groups, parsed.targetDir, verifyCmd);
-            if (copyToClipboard(prompt)) {
-                notice = `${n} finding${n === 1 ? "" : "s"} copied to clipboard — paste into your agent`;
-            }
-            else {
-                console.log("");
-                console.log(prompt);
-                warn("clipboard unavailable — copy the prompt above");
-                showReport = true;
-            }
-        }
-        else if (chosen.id === "rescan") {
-            scan = scanOnce(doctorAbs, parsed.targetDir);
-            notice = "re-scanned";
-            showReport = true;
-        }
-    }
-}
-function copyToClipboard(text) {
-    const bins = [["pbcopy", []], ["wl-copy", []], ["clip", []]];
-    for (const [bin, args] of bins) {
-        const r = (0, child_process_1.spawnSync)(bin, args, { input: text, encoding: "utf8" });
-        if (r.status === 0)
-            return true;
-    }
-    return false;
+    await (0, dashboard_1.runDashboard)({
+        root: parsed.targetDir,
+        groups: scan.groups,
+        doctorFile: doctorAbs,
+        fileCount: scan.fileCount,
+        durationMs: scan.durationMs,
+        useColor: useColor(),
+    });
 }
 function printVerifyResult(result) {
     const color = useColor();
@@ -369,7 +320,7 @@ async function cmdGenerate(args) {
     ].join("\n");
     console.log(BOLD + "doctor prompt ready: " + CYAN + slug + RESET + dim(global ? " (global scope)" : ""));
     console.log("");
-    if (copyToClipboard(prompt)) {
+    if ((0, clipboard_1.copyToClipboard)(prompt)) {
         ok("prompt copied to clipboard — paste it into your own agent session");
         console.log(dim("run the agent with this as its working directory: " + scopeDir));
         console.log(dim("(the skill is planted there as AGENTS.md — most agents load it automatically)"));

@@ -21,7 +21,14 @@ export const meta = {
     "<honest limitation>",
   ],
   checks: [                           // optional: multiple related checks in ONE doctor
-    { id: "<check-id>", description: "<finding text>", severity: "warning" },
+    {
+      id: "<check-id>",
+      description: "<finding text>",
+      severity: "warning",
+      impact: "<one line: what goes wrong for the user if this ships>",
+      why: "<one line: what in the code triggers this>",
+      fix: "<one line: the corrective action>",
+    },
   ],
 };
 
@@ -102,6 +109,15 @@ own `severity` only for exceptions.
   syntax allows.
 - Findings are locations. Wording lives in `meta.description`; use
   per-finding `message` only when one violation needs its own explanation.
+
+## Authoring for the report
+
+The report's detail pane shows, per check: category · severity · location,
+then **Impact**, the code frame, and **Fix**. Write `impact`, `why`, and
+`fix` on every check — one line each, plain language, no code in them.
+They are what the user reads while deciding whether to care. `impact` =
+consequence if it ships; `why` = the code shape that triggers the check;
+`fix` = the corrective action in one sentence.
 
 ## Honesty rules
 

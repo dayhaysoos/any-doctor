@@ -5,7 +5,8 @@ import * as os from "os";
 import * as path from "path";
 import { RunResult, VerifyRunResult, RESULT_SENTINEL, ReportGroup, Finding } from "./contract";
 import { renderReport } from "./report";
-import { browseFindings } from "./browse";
+import { copyToClipboard } from "./clipboard";
+import { runDashboard } from "./dashboard";
 import { discoverDoctors, globalDoctorsDir, DiscoveredDoctor } from "./discover";
 import { pickItem } from "./picker";
 import { buildFixPrompt } from "./handoff";
@@ -196,75 +197,27 @@ async function cmdRun(args: string[]): Promise<void> {
     doctorAbs = chosen.path;
   }
 
-  let scan = scanOnce(doctorAbs, parsed.targetDir);
-  const interactive = process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS;
+  const scan = scanOnce(doctorAbs, parsed.targetDir);
+  const ttyCols = process.stdout.columns ?? 0;
+  const interactive = process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
 
-  if (!interactive) {
+  if (!interactive || scan.findings.length === 0) {
     console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, useColor()));
+    if (scan.findings.length === 0 && interactive) console.log(dim("\nnothing to do — clean run"));
     return;
   }
 
-  const color = useColor();
-  let notice: string | undefined;
-  let showReport = true;
-
-  for (;;) {
-    if (showReport) {
-      console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, color));
-      showReport = false;
-    }
-    if (scan.findings.length === 0) {
-      console.log(dim("\nnothing to do — clean run"));
-      return;
-    }
-
-    const n = scan.findings.length;
-    const items = [
-      { id: "review", label: `Review ${n} issue${n === 1 ? "" : "s"}` },
-      { id: "copy", label: "Copy findings for your agent", sub: "paste into your own agent session" },
-      { id: "rescan", label: "Re-scan" },
-      { id: "quit", label: "Quit" },
-    ];
-    const chosen = await pickItem(items, color, "What next?", notice);
-    notice = undefined;
-    if (chosen === null || chosen.id === "quit") break;
-
-    if (chosen.id === "review") {
-      console.log("");
-      await browseFindings({
-        root: parsed.targetDir,
-        description: scan.result.meta.description,
-        severity: scan.result.meta.severity,
-        findings: scan.findings,
-      }, color);
-      showReport = true;
-    } else if (chosen.id === "copy") {
-      const verifyCmd = `node "${path.join(__dirname, "cli.js")}" run "${doctorAbs}" "${parsed.targetDir}"`;
-      const prompt = buildFixPrompt(scan.groups, parsed.targetDir, verifyCmd);
-      if (copyToClipboard(prompt)) {
-        notice = `${n} finding${n === 1 ? "" : "s"} copied to clipboard — paste into your agent`;
-      } else {
-        console.log("");
-        console.log(prompt);
-        warn("clipboard unavailable — copy the prompt above");
-        showReport = true;
-      }
-    } else if (chosen.id === "rescan") {
-      scan = scanOnce(doctorAbs, parsed.targetDir);
-      notice = "re-scanned";
-      showReport = true;
-    }
-  }
+  await runDashboard({
+    root: parsed.targetDir,
+    groups: scan.groups,
+    doctorFile: doctorAbs,
+    fileCount: scan.fileCount,
+    durationMs: scan.durationMs,
+    useColor: useColor(),
+  });
 }
 
-function copyToClipboard(text: string): boolean {
-  const bins: [string, string[]][] = [["pbcopy", []], ["wl-copy", []], ["clip", []]];
-  for (const [bin, args] of bins) {
-    const r = spawnSync(bin, args, { input: text, encoding: "utf8" });
-    if (r.status === 0) return true;
-  }
-  return false;
-}
+
 
 interface VerifyCase {
   name: string;

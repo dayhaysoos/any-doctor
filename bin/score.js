@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findingSeverity = findingSeverity;
+exports.scoreFromSeverities = scoreFromSeverities;
 exports.computeScore = computeScore;
 exports.categoryRollup = categoryRollup;
 const WEIGHTS = { error: 10, warning: 4, info: 1 };
@@ -10,6 +11,22 @@ function findingSeverity(g, f) {
         return f.severity;
     const check = f.rule ? (_a = g.meta.checks) === null || _a === void 0 ? void 0 : _a.find(c => c.id === f.rule) : undefined;
     return (_b = check === null || check === void 0 ? void 0 : check.severity) !== null && _b !== void 0 ? _b : g.meta.severity;
+}
+function scoreFromSeverities(sevs) {
+    let score = 100;
+    for (const s of sevs)
+        score -= WEIGHTS[s];
+    score = Math.max(0, Math.min(100, score));
+    let grade = "Critical";
+    if (score >= 90)
+        grade = "Excellent";
+    else if (score >= 75)
+        grade = "Good";
+    else if (score >= 50)
+        grade = "Fair";
+    else if (score >= 25)
+        grade = "Poor";
+    return { score, grade };
 }
 function computeScore(groups) {
     let score = 100;

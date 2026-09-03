@@ -1,12 +1,22 @@
 export const meta = {
   id: "unawaited-async-map",
-  description: ".map(async ...) result is never awaited — the promises are dropped",
+  description: "Unawaited async array work",
   severity: "warning",
   category: "bugs",
   blindSpots: [
     "consumption inside template strings or dynamic property access",
     "reassignable bindings (let) with conditional awaits",
     "results passed to a helper that awaits them internally",
+  ],
+  checks: [
+    {
+      id: "unawaited-async-map",
+      description: ".map(async ...) result is never awaited — the promises are dropped",
+      severity: "warning",
+      impact: "The async work starts but nothing waits for it: errors vanish silently and the results are lost mid-flight.",
+      why: "Array.map returns a new array of promises. Without Promise.all or an await on the result, the async callbacks run fire-and-forget.",
+      fix: "Wrap the mapped array in Promise.all and await it — or drop the async if the work should actually be sequential.",
+    },
   ],
 };
 
@@ -27,6 +37,7 @@ export async function doctor(ctx) {
       if (consumer.test(rest)) continue;
 
       ctx.report.finding({
+        rule: "unawaited-async-map",
         file: file,
         line: i + 1,
         column: decl.index + 1,

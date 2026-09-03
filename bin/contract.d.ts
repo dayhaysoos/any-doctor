@@ -3,6 +3,9 @@ export interface CheckMeta {
     id: string;
     description: string;
     severity?: Severity;
+    impact?: string;
+    why?: string;
+    fix?: string;
 }
 export interface DoctorMeta {
     id: string;
