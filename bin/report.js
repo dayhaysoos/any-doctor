@@ -112,7 +112,7 @@ function renderReport(input, useColor) {
                 lines.push(`  ${c(`… and ${n - 20} more`, DIM)}`);
             lines.push("");
         }
-        if (g.meta.blindSpots && g.meta.blindSpots.length > 0) {
+        if (g.findings.length > 0 && g.meta.blindSpots && g.meta.blindSpots.length > 0) {
             lines.push(`  ${c("blind spots: " + g.meta.blindSpots.join("; "), DIM)}`);
             lines.push("");
         }
