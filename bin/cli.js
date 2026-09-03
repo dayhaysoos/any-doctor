@@ -123,9 +123,10 @@ function parseArgs(args) {
 function countIssues(loader, doctorAbs, targetDir) {
     return new Promise(resolve => {
         var _a;
-        const child = (0, child_process_1.spawn)(process.execPath, [loader, doctorAbs, targetDir], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+        const spawnOpts = { stdio: ["ignore", "pipe", "pipe"] };
+        const child = (0, child_process_1.spawn)(process.execPath, [loader, doctorAbs, targetDir], spawnOpts);
         let stdout = "";
-        (_a = child.stdout) === null || _a === void 0 ? void 0 : _a.on("data", chunk => stdout += chunk);
+        (_a = child.stdout) === null || _a === void 0 ? void 0 : _a.on("data", (chunk) => stdout += chunk);
         child.on("error", () => resolve(0));
         child.on("close", () => {
             var _a, _b;

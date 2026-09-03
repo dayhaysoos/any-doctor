@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn, spawnSync, SpawnSyncReturns } from "child_process";
+import { spawn, spawnSync, SpawnSyncReturns, ChildProcess, SpawnOptions } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -115,9 +115,10 @@ function parseArgs(args: string[]): ParsedArgs {
 
 function countIssues(loader: string, doctorAbs: string, targetDir: string): Promise<number> {
   return new Promise(resolve => {
-    const child = spawn(process.execPath, [loader, doctorAbs, targetDir], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    const spawnOpts: SpawnOptions = { stdio: ["ignore", "pipe", "pipe"] };
+    const child: ChildProcess = spawn(process.execPath, [loader, doctorAbs, targetDir], spawnOpts);
     let stdout = "";
-    child.stdout?.on("data", chunk => stdout += chunk);
+    child.stdout?.on("data", (chunk: string) => stdout += chunk);
     child.on("error", () => resolve(0));
     child.on("close", () => {
       try {

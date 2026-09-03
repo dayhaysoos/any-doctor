@@ -15,6 +15,7 @@ const ALT_EXIT = "\x1b[?1049l";
 
 export interface DashItem {
   key: string;
+  checkKey: string;
   doctorId: string;
   checkId: string;
   description: string;
@@ -50,6 +51,7 @@ export function buildItems(groups: ReportGroup[], doctorFile: string): DashItem[
       const check = g.meta.checks?.find(c => c.id === checkId);
       items.push({
         key: g.meta.id + "/" + checkId + "@" + f.file + ":" + f.line,
+        checkKey: g.meta.id + "/" + checkId,
         doctorId: g.meta.id,
         checkId,
         description: check?.description ?? g.meta.description,
@@ -72,7 +74,7 @@ export function issuePrompt(item: DashItem, verifyCommand: string): string {
   const lines: string[] = [
     `Fix exactly one any-doctor check:`,
     "",
-    `${item.severity.toUpperCase()} · ${item.description} (${item.key}, ×${n})`,
+    `${item.severity.toUpperCase()} · ${item.description} (${item.checkKey}, ×${n})`,
   ];
   if (item.impact) lines.push("", "Impact " + item.impact);
   lines.push("", "Affected sites:");
@@ -82,7 +84,7 @@ export function issuePrompt(item: DashItem, verifyCommand: string): string {
   lines.push(
     "",
     "Scope:",
-    `- Fix only ${item.key}.`,
+    `- Fix only ${item.checkKey}.`,
     "- Fix the root cause; do not suppress, disable, or silence the check.",
     "- Keep unrelated refactors out of this pass.",
     "",

@@ -61,6 +61,7 @@ function buildItems(groups, doctorFile) {
             const check = (_b = g.meta.checks) === null || _b === void 0 ? void 0 : _b.find(c => c.id === checkId);
             items.push({
                 key: g.meta.id + "/" + checkId + "@" + f.file + ":" + f.line,
+                checkKey: g.meta.id + "/" + checkId,
                 doctorId: g.meta.id,
                 checkId,
                 description: (_c = check === null || check === void 0 ? void 0 : check.description) !== null && _c !== void 0 ? _c : g.meta.description,
@@ -82,7 +83,7 @@ function issuePrompt(item, verifyCommand) {
     const lines = [
         `Fix exactly one any-doctor check:`,
         "",
-        `${item.severity.toUpperCase()} · ${item.description} (${item.key}, ×${n})`,
+        `${item.severity.toUpperCase()} · ${item.description} (${item.checkKey}, ×${n})`,
     ];
     if (item.impact)
         lines.push("", "Impact " + item.impact);
@@ -93,7 +94,7 @@ function issuePrompt(item, verifyCommand) {
         lines.push("", "Why " + item.why);
     if (item.fix)
         lines.push("", "Suggested fix: " + item.fix);
-    lines.push("", "Scope:", `- Fix only ${item.key}.`, "- Fix the root cause; do not suppress, disable, or silence the check.", "- Keep unrelated refactors out of this pass.", "", `Verify with \`${verifyCommand}\` and confirm ${item.key} is gone before moving on.`);
+    lines.push("", "Scope:", `- Fix only ${item.checkKey}.`, "- Fix the root cause; do not suppress, disable, or silence the check.", "- Keep unrelated refactors out of this pass.", "", `Verify with \`${verifyCommand}\` and confirm ${item.key} is gone before moving on.`);
     return lines.join("\n");
 }
 function buildSections(items) {

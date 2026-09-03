@@ -1,6 +1,7 @@
 import { Finding, ReportGroup, Severity } from "./contract";
 export interface DashItem {
     key: string;
+    checkKey: string;
     doctorId: string;
     checkId: string;
     description: string;
