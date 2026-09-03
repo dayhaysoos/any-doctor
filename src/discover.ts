@@ -18,6 +18,17 @@ export function globalDoctorsDir(): string {
   return path.join(os.homedir(), ".any-doctor", "doctors");
 }
 
+export function findRepoDoctorsDir(cwd: string): string | null {
+  let dir = path.resolve(cwd);
+  for (;;) {
+    const candidate = path.join(dir, "doctors");
+    if (fs.existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
 function loaderPath(): string {
   return path.join(__dirname, "doctor-loader.mjs");
 }
@@ -37,8 +48,9 @@ export function readMeta(doctorPath: string): { meta: DoctorMeta | null; error?:
 }
 
 export function discoverDoctors(cwd: string, opts?: { globalDir?: string }): DiscoveredDoctor[] {
+  const repoDir = findRepoDoctorsDir(cwd);
   const scopes: { scope: Scope; dir: string }[] = [
-    { scope: "repo", dir: path.join(cwd, "doctors") },
+    ...(repoDir ? [{ scope: "repo" as Scope, dir: repoDir }] : []),
     { scope: "global", dir: opts?.globalDir ?? globalDoctorsDir() },
   ];
   const bySlug = new Map<string, DiscoveredDoctor>();

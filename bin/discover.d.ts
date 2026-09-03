@@ -8,6 +8,7 @@ export interface DiscoveredDoctor {
     error?: string;
 }
 export declare function globalDoctorsDir(): string;
+export declare function findRepoDoctorsDir(cwd: string): string | null;
 export declare function readMeta(doctorPath: string): {
     meta: DoctorMeta | null;
     error?: string;

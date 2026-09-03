@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.globalDoctorsDir = globalDoctorsDir;
+exports.findRepoDoctorsDir = findRepoDoctorsDir;
 exports.readMeta = readMeta;
 exports.discoverDoctors = discoverDoctors;
 const child_process_1 = require("child_process");
@@ -43,6 +44,18 @@ const path = __importStar(require("path"));
 const contract_1 = require("./contract");
 function globalDoctorsDir() {
     return path.join(os.homedir(), ".any-doctor", "doctors");
+}
+function findRepoDoctorsDir(cwd) {
+    let dir = path.resolve(cwd);
+    for (;;) {
+        const candidate = path.join(dir, "doctors");
+        if (fs.existsSync(candidate))
+            return candidate;
+        const parent = path.dirname(dir);
+        if (parent === dir)
+            return null;
+        dir = parent;
+    }
 }
 function loaderPath() {
     return path.join(__dirname, "doctor-loader.mjs");
@@ -62,8 +75,9 @@ function readMeta(doctorPath) {
 }
 function discoverDoctors(cwd, opts) {
     var _a;
+    const repoDir = findRepoDoctorsDir(cwd);
     const scopes = [
-        { scope: "repo", dir: path.join(cwd, "doctors") },
+        ...(repoDir ? [{ scope: "repo", dir: repoDir }] : []),
         { scope: "global", dir: (_a = opts === null || opts === void 0 ? void 0 : opts.globalDir) !== null && _a !== void 0 ? _a : globalDoctorsDir() },
     ];
     const bySlug = new Map();
