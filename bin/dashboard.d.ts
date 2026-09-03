@@ -1,4 +1,5 @@
 import { Finding, ReportGroup, Severity } from "./contract";
+export declare function highlightCode(line: string, useColor: boolean): string;
 export interface DashItem {
     key: string;
     checkKey: string;

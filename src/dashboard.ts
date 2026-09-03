@@ -15,6 +15,19 @@ const ALT_EXIT = "\x1b[?1049l";
 
 const SPLIT_MIN_COLS = 100;
 
+const TOKEN_RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|await|async|try|catch|finally|import|export|from|new|class|extends|throw|typeof|instanceof|in|of|do|switch|case|break|continue|default|yield)\b|\b(\d+(?:\.\d+)?)\b/g;
+
+export function highlightCode(line: string, useColor: boolean): string {
+  if (!useColor) return line;
+  return line.replace(TOKEN_RE, (m, comment, str, kw, num) => {
+    if (comment) return DIM + m + RESET;
+    if (str) return "\x1b[38;5;114m" + m + RESET;
+    if (kw) return "\x1b[38;5;75m" + m + RESET;
+    if (num) return ORANGE + m + RESET;
+    return m;
+  });
+}
+
 export interface DashItem {
   key: string;
   checkKey: string;
@@ -246,7 +259,9 @@ export function dashboardFrame(state: {
       for (const l of wordWrap(sel.fix, layout.detailWidth - 2)) detail.push("  " + l);
     }
     if (sel.blindSpots && sel.blindSpots.length > 0) {
-      detail.push(c("  blind spots: " + sel.blindSpots.join("; "), DIM));
+      for (const l of wordWrap("blind spots: " + sel.blindSpots.join("; "), layout.detailWidth - 2)) {
+        detail.push(c("  " + l, DIM));
+      }
     }
   }
 
@@ -284,8 +299,8 @@ function codeFrame(root: string, file: string, line: number, width: number, useC
     for (let i = from; i < to; i++) {
       const marker = i === line - 1 ? c(">", BOLD) : "  ";
       const num = c(String(i + 1).padStart(4), DIM);
-      const text = all[i] ?? "";
-      out.push(`${marker} ${num} │ ${truncateVisible(text, Math.max(10, width))}`);
+      const text = truncateVisible(all[i] ?? "", Math.max(10, width));
+      out.push(`${marker} ${num} │ ${highlightCode(text, useColor)}`);
     }
   } catch {
     out.push(c("  (source unavailable)", DIM));
@@ -312,7 +327,7 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
   const draw = (): void => {
     const it = items[selected];
     readKeys.add(it.key);
-    stdout.write(dashboardFrame({
+    const frame = dashboardFrame({
       items,
       selected,
       readKeys,
@@ -323,7 +338,8 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
       notice,
       cols: stdout.columns || 120,
       rows: stdout.rows || 34,
-    }));
+    });
+    stdout.write("\x1b[H" + frame.split("\n").map(l => l + "\x1b[K").join("\n") + "\x1b[J");
   };
 
   await new Promise<void>((resolve) => {

@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.highlightCode = highlightCode;
 exports.scoreBar = scoreBar;
 exports.buildItems = buildItems;
 exports.issuePrompt = issuePrompt;
@@ -52,6 +53,22 @@ const COLOR = { error: RED, warning: ORANGE, info: YELLOW };
 const ALT_ENTER = "\x1b[?1049h";
 const ALT_EXIT = "\x1b[?1049l";
 const SPLIT_MIN_COLS = 100;
+const TOKEN_RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|await|async|try|catch|finally|import|export|from|new|class|extends|throw|typeof|instanceof|in|of|do|switch|case|break|continue|default|yield)\b|\b(\d+(?:\.\d+)?)\b/g;
+function highlightCode(line, useColor) {
+    if (!useColor)
+        return line;
+    return line.replace(TOKEN_RE, (m, comment, str, kw, num) => {
+        if (comment)
+            return DIM + m + RESET;
+        if (str)
+            return "\x1b[38;5;114m" + m + RESET;
+        if (kw)
+            return "\x1b[38;5;75m" + m + RESET;
+        if (num)
+            return ORANGE + m + RESET;
+        return m;
+    });
+}
 function scoreBar(score, width) {
     const filled = Math.round((score / 100) * width);
     return "█".repeat(filled) + "░".repeat(Math.max(0, width - filled));
@@ -234,7 +251,9 @@ function dashboardFrame(state) {
                 detail.push("  " + l);
         }
         if (sel.blindSpots && sel.blindSpots.length > 0) {
-            detail.push(c("  blind spots: " + sel.blindSpots.join("; "), DIM));
+            for (const l of wordWrap("blind spots: " + sel.blindSpots.join("; "), layout.detailWidth - 2)) {
+                detail.push(c("  " + l, DIM));
+            }
         }
     }
     const body = [];
@@ -272,8 +291,8 @@ function codeFrame(root, file, line, width, useColor) {
         for (let i = from; i < to; i++) {
             const marker = i === line - 1 ? c(">", BOLD) : "  ";
             const num = c(String(i + 1).padStart(4), DIM);
-            const text = (_a = all[i]) !== null && _a !== void 0 ? _a : "";
-            out.push(`${marker} ${num} │ ${truncateVisible(text, Math.max(10, width))}`);
+            const text = truncateVisible((_a = all[i]) !== null && _a !== void 0 ? _a : "", Math.max(10, width));
+            out.push(`${marker} ${num} │ ${highlightCode(text, useColor)}`);
         }
     }
     catch {
@@ -299,7 +318,7 @@ async function runDashboard(input) {
     const draw = () => {
         const it = items[selected];
         readKeys.add(it.key);
-        stdout.write(dashboardFrame({
+        const frame = dashboardFrame({
             items,
             selected,
             readKeys,
@@ -310,7 +329,8 @@ async function runDashboard(input) {
             notice,
             cols: stdout.columns || 120,
             rows: stdout.rows || 34,
-        }));
+        });
+        stdout.write("\x1b[H" + frame.split("\n").map(l => l + "\x1b[K").join("\n") + "\x1b[J");
     };
     await new Promise((resolve) => {
         draw();
