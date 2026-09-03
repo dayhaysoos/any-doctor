@@ -7,12 +7,11 @@ export interface DashItem {
     description: string;
     severity: Severity;
     category: string;
-    sites: Finding[];
+    site: Finding;
     impact?: string;
     why?: string;
     fix?: string;
     blindSpots?: string[];
-    doctorFile: string;
 }
 export interface DashboardInput {
     root: string;
@@ -25,23 +24,34 @@ export interface DashboardInput {
 export declare function scoreBar(score: number, width: number): string;
 export declare function buildItems(groups: ReportGroup[], doctorFile: string): DashItem[];
 export declare function issuePrompt(item: DashItem, verifyCommand: string): string;
-export interface DashSection {
-    title: string;
-    itemIndexes: number[];
+export declare function visibleWidth(s: string): number;
+export declare function truncateVisible(s: string, width: number): string;
+export interface DashboardLayout {
+    mode: "split" | "stacked";
+    listWidth: number;
+    detailWidth: number;
+    listHeight: number;
+    detailHeight: number;
 }
-export declare function buildSections(items: DashItem[]): DashSection[];
-export declare function dashboardFrame(opts: {
+export declare function resolveDashboardLayout(cols: number, rows: number, itemCount: number): DashboardLayout;
+interface ListRow {
+    kind: "section" | "item";
+    text: string;
+    severity: Severity;
+    itemIndex: number;
+}
+export declare function buildListRows(items: DashItem[], useColor: boolean, selected: number, readKeys: Set<string>): ListRow[];
+export declare function dashboardFrame(state: {
     items: DashItem[];
-    sections: DashSection[];
     selected: number;
     readKeys: Set<string>;
-    query: string;
-    cols: number;
-    rows: number;
     root: string;
     fileCount: number;
     durationMs: number;
     useColor: boolean;
     notice?: string;
+    cols: number;
+    rows: number;
 }): string;
 export declare function runDashboard(input: DashboardInput): Promise<void>;
+export {};

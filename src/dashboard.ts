@@ -13,6 +13,8 @@ const COLOR: Record<Severity, string> = { error: RED, warning: ORANGE, info: YEL
 const ALT_ENTER = "\x1b[?1049h";
 const ALT_EXIT = "\x1b[?1049l";
 
+const SPLIT_MIN_COLS = 100;
+
 export interface DashItem {
   key: string;
   checkKey: string;
@@ -21,12 +23,11 @@ export interface DashItem {
   description: string;
   severity: Severity;
   category: string;
-  sites: Finding[];
+  site: Finding;
   impact?: string;
   why?: string;
   fix?: string;
   blindSpots?: string[];
-  doctorFile: string;
 }
 
 export interface DashboardInput {
@@ -57,12 +58,11 @@ export function buildItems(groups: ReportGroup[], doctorFile: string): DashItem[
         description: check?.description ?? g.meta.description,
         severity: f.severity ?? check?.severity ?? g.meta.severity,
         category: g.meta.category ?? "general",
-        sites: [f],
+        site: f,
         impact: check?.impact,
         why: check?.why,
         fix: check?.fix,
         blindSpots: g.meta.blindSpots,
-        doctorFile,
       });
     }
   }
@@ -70,190 +70,227 @@ export function buildItems(groups: ReportGroup[], doctorFile: string): DashItem[
 }
 
 export function issuePrompt(item: DashItem, verifyCommand: string): string {
-  const n = item.sites.length;
+  const site = item.site;
   const lines: string[] = [
-    `Fix exactly one any-doctor check:`,
+    "Fix exactly one any-doctor check:",
     "",
-    `${item.severity.toUpperCase()} · ${item.description} (${item.checkKey}, ×${n})`,
+    `${item.severity.toUpperCase()} · ${item.description} (${item.checkKey})`,
+    "",
+    `Affected site: ${site.file}:${site.line}`,
   ];
   if (item.impact) lines.push("", "Impact " + item.impact);
-  lines.push("", "Affected sites:");
-  for (const s of item.sites.slice(0, 50)) lines.push(`- ${s.file}:${s.line}`);
   if (item.why) lines.push("", "Why " + item.why);
   if (item.fix) lines.push("", "Suggested fix: " + item.fix);
   lines.push(
     "",
     "Scope:",
-    `- Fix only ${item.checkKey}.`,
+    `- Fix only ${item.checkKey} at this site.`,
     "- Fix the root cause; do not suppress, disable, or silence the check.",
     "- Keep unrelated refactors out of this pass.",
     "",
-    `Verify with \`${verifyCommand}\` and confirm ${item.key} is gone before moving on.`,
+    `Verify with \`${verifyCommand}\` and confirm the finding is gone before moving on.`,
   );
   return lines.join("\n");
 }
 
-export interface DashSection {
-  title: string;
-  itemIndexes: number[];
+export function visibleWidth(s: string): number {
+  return s.replace(/\x1b\[[0-9;]*m/g, "").length;
 }
 
-export function buildSections(items: DashItem[]): DashSection[] {
-  const sections: DashSection[] = [];
-  const byDoctor = new Map<string, number[]>();
-  items.forEach((it, i) => {
-    if (!byDoctor.has(it.doctorId)) byDoctor.set(it.doctorId, []);
-    byDoctor.get(it.doctorId)!.push(i);
-  });
-  for (const [doctorId, indexes] of byDoctor) {
-    sections.push({ title: doctorId, itemIndexes: indexes });
+export function truncateVisible(s: string, width: number): string {
+  if (visibleWidth(s) <= width) return s;
+  let out = "";
+  let w = 0;
+  for (const ch of s.replace(/\x1b\[[0-9;]*m/g, "")) {
+    if (w + 1 > width - 1) break;
+    out += ch;
+    w++;
   }
-  return sections;
+  return out + "…";
 }
 
-export function dashboardFrame(opts: {
+function padVisible(s: string, width: number): string {
+  return s + " ".repeat(Math.max(0, width - visibleWidth(s)));
+}
+
+function wordWrap(text: string, width: number): string[] {
+  if (!text) return [];
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    if (!current) { current = word; continue; }
+    if (current.length + 1 + word.length <= width) current += " " + word;
+    else { lines.push(current); current = word; }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+export interface DashboardLayout {
+  mode: "split" | "stacked";
+  listWidth: number;
+  detailWidth: number;
+  listHeight: number;
+  detailHeight: number;
+}
+
+export function resolveDashboardLayout(cols: number, rows: number, itemCount: number): DashboardLayout {
+  const bodyRows = Math.max(6, rows - 7);
+  if (cols >= SPLIT_MIN_COLS) {
+    const listWidth = Math.min(56, Math.max(32, Math.floor(cols * 0.44)));
+    const detailWidth = cols - listWidth - 2;
+    return { mode: "split", listWidth, detailWidth, listHeight: bodyRows, detailHeight: bodyRows };
+  }
+  const listHeight = Math.min(Math.max(4, Math.ceil(bodyRows * 0.4)), Math.max(1, itemCount));
+  return {
+    mode: "stacked",
+    listWidth: cols,
+    detailWidth: cols,
+    listHeight,
+    detailHeight: Math.max(4, bodyRows - listHeight),
+  };
+}
+
+interface ListRow {
+  kind: "section" | "item";
+  text: string;
+  severity: Severity;
+  itemIndex: number;
+}
+
+export function buildListRows(items: DashItem[], useColor: boolean, selected: number, readKeys: Set<string>): ListRow[] {
+  const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
+  const rows: ListRow[] = [];
+  let currentDoctor: string | null = null;
+  let currentCheck: string | null = null;
+  items.forEach((it, index) => {
+    if (it.doctorId !== currentDoctor) {
+      currentDoctor = it.doctorId;
+      currentCheck = null;
+      rows.push({ kind: "section", text: c(it.doctorId, BOLD), severity: it.severity, itemIndex: index });
+    }
+    const isSelected = index === selected;
+    const isRead = readKeys.has(it.key);
+    const glyph = c(GLYPH[it.severity], COLOR[it.severity]);
+    const wrap = isSelected ? BOLD : isRead ? DIM : undefined;
+    const row: ListRow = {
+      kind: "item",
+      text: `${isSelected ? c("›", BOLD) : " "}${glyph} ${c(it.site.file + ":" + it.site.line, wrap)}${it.checkId !== it.doctorId ? c("  " + it.checkId, DIM) : ""}`,
+      severity: it.severity,
+      itemIndex: index,
+    };
+    rows.push(row);
+    void currentCheck;
+  });
+  return rows;
+}
+
+export function dashboardFrame(state: {
   items: DashItem[];
-  sections: DashSection[];
   selected: number;
   readKeys: Set<string>;
-  query: string;
-  cols: number;
-  rows: number;
   root: string;
   fileCount: number;
   durationMs: number;
   useColor: boolean;
   notice?: string;
+  cols: number;
+  rows: number;
 }): string {
-  const { items, selected, readKeys, cols, rows, useColor } = opts;
+  const { items, selected, readKeys, root, useColor, cols, rows } = state;
   const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
-
+  const layout = resolveDashboardLayout(cols, rows, items.length);
   const { score, grade } = scoreFromSeverities(items.map(it => it.severity));
-  const barWidth = Math.min(46, Math.max(20, cols - 52));
   const gradeColor = score >= 75 ? GREEN : score >= 50 ? YELLOW : RED;
-  const bar = useColor ? c(scoreBar(score, barWidth), gradeColor) : scoreBar(score, barWidth);
-  const doctorWord = items.length === 1 ? "doctor" : "doctors";
-  const header = [
-    c(`┌${"─".repeat(9)}┐`, DIM),
-    `${c(`│ ${String(score).padEnd(3)} │`, DIM)} ${c(`${score} / 100 ${grade}`, BOLD + gradeColor)}  ${dim2(`· ${items.length} ${doctorWord} · ${opts.fileCount} files · ${opts.durationMs}ms`, useColor)}`,
-    `${c(`│ ${gradeGlyph(score)} │`, DIM)} ${bar}`,
-    `${c(`└${"─".repeat(9)}┘`, DIM)} ${c("any-doctor", DIM)}`,
+  const barWidth = Math.min(46, Math.max(16, cols - 60));
+
+  const header: string[] = [
+    c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor),
+    c(scoreBar(score, barWidth), gradeColor),
+    c(`${items.length} finding${items.length === 1 ? "" : "s"} · ${input0(state.fileCount)}`, DIM),
+    "",
   ];
+  function input0(n: number): string {
+    return n + " files · " + state.durationMs + "ms";
+  }
+
+  const rowsData = buildListRows(items, useColor, selected, readKeys);
+  const viewport = Math.max(3, layout.listHeight);
+  let firstVisible = Math.max(0, Math.min(selected - viewport + 1, Math.max(0, rowsData.length - viewport)));
+  const visibleRows = rowsData.slice(firstVisible, firstVisible + viewport);
+  const listLines: string[] = [];
+  for (const row of visibleRows) {
+    listLines.push(truncateVisible(row.text, layout.listWidth));
+  }
+  while (listLines.length < viewport) listLines.push("");
+  listLines.push("");
 
   const sel = items[selected];
-  const detailWidth = Math.max(20, cols - 52);
-  const detailLines = sel ? wrapDetail(detailFor(sel, opts.root, useColor), detailWidth) : [];
-
-  const left: string[] = [];
-  left.push(c("Issues by doctor", BOLD));
-  left.push("");
-  let leftCount = 0;
-  const maxList = Math.max(4, rows - 10);
-  for (const section of buildSections(items)) {
-    if (leftCount >= maxList) break;
-    left.push(c(section.title, BOLD));
-    leftCount++;
-    let prevCheckId: string | null = null;
-    for (const idx of section.itemIndexes) {
-      if (leftCount >= maxList) break;
-      const it = items[idx];
-      const cursor = idx === selected ? c("› ", BOLD) : "  ";
-      const glyph = c(GLYPH[it.severity], COLOR[it.severity]);
-      const isRead = readKeys.has(it.key);
-      const site = it.sites[0];
-      const rowLabel = prevCheckId === it.checkId
-        ? c(`${site.file}:${site.line}`, DIM)
-        : c(it.description, isRead ? DIM : "");
-      prevCheckId = it.checkId;
-      left.push(`${cursor}${glyph} ${rowLabel}${c("  " + site.file + ":" + site.line, DIM)}`);
-      leftCount++;
+  const detail: string[] = [];
+  if (sel) {
+    detail.push(c(`${sel.site.file}:${sel.site.line}`, BOLD));
+    detail.push(c(`${cap(sel.category)} · ${sel.severity}`, DIM));
+    detail.push("");
+    const impact = sel.impact ?? sel.description;
+    for (const l of wordWrap(impact, layout.detailWidth - 2)) detail.push(c(l, sel.severity === "error" ? RED : sel.severity === "warning" ? ORANGE : CYAN));
+    detail.push("");
+    detail.push(c("Why", DIM));
+    for (const l of wordWrap(sel.why ?? "Not documented for this check.", layout.detailWidth - 2)) detail.push("  " + l);
+    detail.push("");
+    detail.push(c("Code", DIM));
+    for (const l of codeFrame(root, sel.site.file, sel.site.line, layout.detailWidth - 2, useColor)) detail.push("  " + l);
+    detail.push("");
+    if (sel.fix) {
+      detail.push(c("Fix", DIM));
+      for (const l of wordWrap(sel.fix, layout.detailWidth - 2)) detail.push("  " + l);
     }
-    left.push("");
-  }
-
-  const frame: string[] = ["\x1b[H\x1b[2J", ...header];
-  frame.push("");
-  const bodyRows = Math.max(6, rows - header.length - 4);
-  for (let i = 0; i < bodyRows; i++) {
-    const l = (left[i] ?? "").padEnd(0);
-    const r = detailLines[i] ?? "";
-    frame.push(padTo(l, Math.min(50, Math.floor(cols / 2))) + r);
-  }
-  frame.push("");
-  if (opts.notice) frame.push(c("✔ " + opts.notice, GREEN));
-  frame.push(c("↑↓ move · enter copy issue context · q quit", DIM));
-  return frame.join("\n");
-
-  function dim2(s: string, on: boolean): string {
-    return on ? DIM + s + RESET : s;
-  }
-}
-
-function gradeGlyph(score: number): string {
-  return score >= 75 ? "▽" : score >= 50 ? "▽" : "x x";
-}
-
-function padTo(s: string, width: number): string {
-  const plain = s.replace(/\x1b\[[0-9;]*m/g, "");
-  const pad = Math.max(0, width - plain.length);
-  return s + " ".repeat(pad);
-}
-
-function wrapDetail(lines: string[], width: number): string[] {
-  const out: string[] = [];
-  for (const l of lines) {
-    if (l.length <= width) out.push(l);
-    else {
-      for (let i = 0; i < l.length; i += width) out.push(l.slice(i, i + width));
+    if (sel.blindSpots && sel.blindSpots.length > 0) {
+      detail.push(c("  blind spots: " + sel.blindSpots.join("; "), DIM));
     }
   }
-  return out;
-}
 
-function detailFor(item: DashItem, root: string, useColor: boolean): string[] {
-  const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
-  const site = item.sites[0];
-  const lines: string[] = [];
-  const first = item.sites[0];
-  lines.push(c(`${cap(item.category)} · ${item.severity} · ${first.file}:${first.line}`, DIM));
-  lines.push("");
-  if (item.impact) {
-    lines.push(c("  Impact " + item.impact, DIM));
-    lines.push("");
+  const body: string[] = [];
+  if (layout.mode === "split") {
+    const bodyRows = Math.max(listLines.length, Math.min(detail.length, layout.detailHeight));
+    for (let i = 0; i < bodyRows; i++) {
+      body.push(padVisible(truncateVisible(listLines[i] ?? "", layout.listWidth), layout.listWidth) + "  " + (detail[i] ?? ""));
+    }
   } else {
-    lines.push(c("  Impact " + item.description, DIM));
-    lines.push("");
+    for (const l of listLines) body.push(l);
+    body.push("");
+    body.push(c("─".repeat(Math.max(10, Math.min(cols - 2, 80))), DIM));
+    for (const l of detail.slice(0, layout.detailHeight)) body.push(l);
   }
-  if (item.why) {
-    lines.push(c("  Why " + item.why, DIM));
-    lines.push("");
-  }
-  const codeLines = codeFrame(root, site.file, site.line, useColor);
-  lines.push(...codeLines);
-  lines.push("");
-  if (item.fix) lines.push(c("  Fix " + item.fix, DIM));
-  return lines;
+
+  const footer: string[] = [];
+  if (state.notice) footer.push(c("✔ " + state.notice, GREEN));
+  footer.push(c("↑↓ move · enter copy issue context · q quit", DIM));
+
+  return [...header, "", ...body, "", ...footer].join("\n");
 }
 
-function codeFrame(root: string, file: string, line: number, useColor: boolean): string[] {
-  const out: string[] = [];
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function codeFrame(root: string, file: string, line: number, width: number, useColor: boolean): string[] {
   const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
+  const out: string[] = [];
   try {
     const all = fs.readFileSync(path.resolve(root, file), "utf8").split("\n");
     const from = Math.max(0, line - 3);
     const to = Math.min(all.length, line + 2);
     for (let i = from; i < to; i++) {
-      const marker = i === line - 1 ? "> " : "  ";
-      out.push(`${c(String(i + 1).padStart(5), DIM)} │ ${marker}${all[i]}`);
+      const marker = i === line - 1 ? c(">", BOLD) : "  ";
+      const num = c(String(i + 1).padStart(4), DIM);
+      const text = all[i] ?? "";
+      out.push(`${marker} ${num} │ ${truncateVisible(text, Math.max(10, width))}`);
     }
   } catch {
     out.push(c("  (source unavailable)", DIM));
   }
   return out;
-}
-
-function cap(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export async function runDashboard(input: DashboardInput): Promise<void> {
@@ -264,7 +301,6 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
   const useColor = input.useColor;
   const items = buildItems(input.groups, input.doctorFile);
   if (items.length === 0) return;
-  const sections = buildSections(items);
   let selected = 0;
   const readKeys = new Set<string>();
   let notice: string | undefined;
@@ -278,17 +314,15 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
     readKeys.add(it.key);
     stdout.write(dashboardFrame({
       items,
-      sections,
       selected,
       readKeys,
-      query: "",
-      cols: stdout.columns || 120,
-      rows: stdout.rows || 34,
       root: input.root,
       fileCount: input.fileCount,
       durationMs: input.durationMs,
       useColor,
       notice,
+      cols: stdout.columns || 120,
+      rows: stdout.rows || 34,
     }));
   };
 
@@ -301,7 +335,7 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
       if (s === "\x1b[B" || s === "j") { selected = Math.min(items.length - 1, selected + 1); notice = undefined; return draw(); }
       if (s === "\r" || s === "\n") {
         const it = items[selected];
-        const verifyCommand = `node "${path.resolve(__dirname, "cli.js")}" run "${input.doctorFile}" "${input.root}"`;
+        const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
         if (copyToClipboard(issuePrompt(it, verifyCommand))) {
           notice = "copied issue context — paste into your agent";
         } else {
