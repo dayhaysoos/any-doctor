@@ -5,7 +5,6 @@ exports.filterPickerItems = filterPickerItems;
 exports.isPrintable = isPrintable;
 exports.pickItem = pickItem;
 const fuzzy_1 = require("./fuzzy");
-const screen_1 = require("./screen");
 const keys_1 = require("./keys");
 const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
@@ -52,12 +51,11 @@ async function pickItem(items, useColor, title = "Select an option", notice) {
     let query = "";
     let selected = 0;
     const filtered = () => filterPickerItems(items, query);
-    const screen = new screen_1.Screen(stdout);
     const draw = () => {
         const list = filtered();
         if (selected >= list.length)
             selected = Math.max(0, list.length - 1);
-        screen.render(pickerFrame(title, list, selected, query, useColor, notice).split("\n"));
+        stdout.write("\x1b[H\x1b[2J" + pickerFrame(title, list, selected, query, useColor, notice));
     };
     return new Promise((resolve) => {
         const wasRaw = stdin.isRaw;
@@ -71,7 +69,6 @@ async function pickItem(items, useColor, title = "Select an option", notice) {
                 stdin.setRawMode(wasRaw);
             stdin.pause();
             stdout.write("\x1b[?25h");
-            screen.exit();
             resolve(result);
         };
         const onKey = (key) => {

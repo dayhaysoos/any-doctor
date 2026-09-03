@@ -3,7 +3,6 @@ import * as path from "path";
 import { copyToClipboard } from "./clipboard";
 import { Finding, ReportGroup, Severity } from "./contract";
 import { scoreFromSeverities } from "./score";
-import { Screen } from "./screen";
 import { createKeyFeed } from "./keys";
 
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
@@ -319,12 +318,10 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
   const readKeys = new Set<string>();
   let notice: string | undefined;
 
-  const screen = new Screen(stdout);
-
   const draw = (): void => {
     const it = items[selected];
     readKeys.add(it.key);
-    screen.render(dashboardFrame({
+    const frame = dashboardFrame({
       items,
       selected,
       readKeys,
@@ -335,13 +332,14 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
       notice,
       cols: stdout.columns || 120,
       rows: stdout.rows || 34,
-    }).split("\n"));
+    });
+    stdout.write("\x1b[H\x1b[2J" + frame);
   };
 
   await new Promise<void>((resolve) => {
     draw();
     const onKey = (key: string): void => {
-      if (key === "q" || key === "\x03" || key === "esc") return finish();
+      if (key === "q" || key === "\x03") return finish();
       if (key === "up" || key === "k") { selected = Math.max(0, selected - 1); notice = undefined; return draw(); }
       if (key === "down" || key === "j") { selected = Math.min(items.length - 1, selected + 1); notice = undefined; return draw(); }
       if (key === "\r" || key === "\n") {
@@ -360,7 +358,6 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
       stdin.removeListener("data", feed);
       stdin.setRawMode(false);
       stdin.pause();
-      screen.exit();
       resolve();
     };
     stdin.on("data", feed);

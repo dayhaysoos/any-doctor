@@ -47,7 +47,6 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const clipboard_1 = require("./clipboard");
 const score_1 = require("./score");
-const screen_1 = require("./screen");
 const keys_1 = require("./keys");
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
@@ -312,11 +311,10 @@ async function runDashboard(input) {
     let selected = 0;
     const readKeys = new Set();
     let notice;
-    const screen = new screen_1.Screen(stdout);
     const draw = () => {
         const it = items[selected];
         readKeys.add(it.key);
-        screen.render(dashboardFrame({
+        const frame = dashboardFrame({
             items,
             selected,
             readKeys,
@@ -327,12 +325,13 @@ async function runDashboard(input) {
             notice,
             cols: stdout.columns || 120,
             rows: stdout.rows || 34,
-        }).split("\n"));
+        });
+        stdout.write("\x1b[H\x1b[2J" + frame);
     };
     await new Promise((resolve) => {
         draw();
         const onKey = (key) => {
-            if (key === "q" || key === "\x03" || key === "esc")
+            if (key === "q" || key === "\x03")
                 return finish();
             if (key === "up" || key === "k") {
                 selected = Math.max(0, selected - 1);
@@ -361,7 +360,6 @@ async function runDashboard(input) {
             stdin.removeListener("data", feed);
             stdin.setRawMode(false);
             stdin.pause();
-            screen.exit();
             resolve();
         };
         stdin.on("data", feed);
