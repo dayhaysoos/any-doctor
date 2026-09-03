@@ -336,21 +336,29 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
     stdout.write("\x1b[H\x1b[2J" + frame);
   };
 
+  function handleKey(key: string): void {
+    if (key === "q" || key === "\x03" || key === "ignore") return;
+    if (key === "up" || key === "k") { selected = Math.max(0, selected - 1); notice = undefined; return draw(); }
+    if (key === "down" || key === "j") { selected = Math.min(items.length - 1, selected + 1); notice = undefined; return draw(); }
+    if (key === "\r" || key === "\n") {
+      const it = items[selected];
+      const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
+      if (copyToClipboard(issuePrompt(it, verifyCommand))) {
+        notice = "copied issue context — paste into your agent";
+      } else {
+        notice = "clipboard unavailable";
+      }
+      return draw();
+    }
+  }
+
   await new Promise<void>((resolve) => {
     draw();
     const onKey = (key: string): void => {
-      if (key === "q" || key === "\x03") return finish();
-      if (key === "up" || key === "k") { selected = Math.max(0, selected - 1); notice = undefined; return draw(); }
-      if (key === "down" || key === "j") { selected = Math.min(items.length - 1, selected + 1); notice = undefined; return draw(); }
-      if (key === "\r" || key === "\n") {
-        const it = items[selected];
-        const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
-        if (copyToClipboard(issuePrompt(it, verifyCommand))) {
-          notice = "copied issue context — paste into your agent";
-        } else {
-          notice = "clipboard unavailable";
-        }
-        return draw();
+      try {
+        handleKey(key);
+      } catch (e) {
+        process.stderr.write("key handling error: " + String(e));
       }
     };
     const feed = createKeyFeed(onKey);
@@ -363,3 +371,4 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
     stdin.on("data", feed);
   });
 }
+

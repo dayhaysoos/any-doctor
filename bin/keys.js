@@ -37,7 +37,7 @@ function createKeyFeed(onKey) {
                 holdTimer = setTimeout(flushHeldEsc, FLUSH_MS);
                 return;
             }
-            if (buf[i + 1] === "[") {
+            if (buf[i + 1] === "[" || buf[i + 1] === "O") {
                 let j = i + 2;
                 while (j < buf.length && !/[A-Za-z~]/.test(buf[j]))
                     j++;
@@ -47,12 +47,12 @@ function createKeyFeed(onKey) {
                     return;
                 }
                 const seq = buf.slice(i, j + 1);
-                if (seq === "\x1b[A")
+                if (seq === "\x1b[A" || seq === "\x1bOA")
                     onKey("up");
-                else if (seq === "\x1b[B")
+                else if (seq === "\x1b[B" || seq === "\x1bOB")
                     onKey("down");
                 else
-                    onKey("esc");
+                    onKey("ignore");
                 i = j + 1;
                 continue;
             }

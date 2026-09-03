@@ -328,31 +328,39 @@ async function runDashboard(input) {
         });
         stdout.write("\x1b[H\x1b[2J" + frame);
     };
+    function handleKey(key) {
+        if (key === "q" || key === "\x03" || key === "ignore")
+            return;
+        if (key === "up" || key === "k") {
+            selected = Math.max(0, selected - 1);
+            notice = undefined;
+            return draw();
+        }
+        if (key === "down" || key === "j") {
+            selected = Math.min(items.length - 1, selected + 1);
+            notice = undefined;
+            return draw();
+        }
+        if (key === "\r" || key === "\n") {
+            const it = items[selected];
+            const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
+            if ((0, clipboard_1.copyToClipboard)(issuePrompt(it, verifyCommand))) {
+                notice = "copied issue context — paste into your agent";
+            }
+            else {
+                notice = "clipboard unavailable";
+            }
+            return draw();
+        }
+    }
     await new Promise((resolve) => {
         draw();
         const onKey = (key) => {
-            if (key === "q" || key === "\x03")
-                return finish();
-            if (key === "up" || key === "k") {
-                selected = Math.max(0, selected - 1);
-                notice = undefined;
-                return draw();
+            try {
+                handleKey(key);
             }
-            if (key === "down" || key === "j") {
-                selected = Math.min(items.length - 1, selected + 1);
-                notice = undefined;
-                return draw();
-            }
-            if (key === "\r" || key === "\n") {
-                const it = items[selected];
-                const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
-                if ((0, clipboard_1.copyToClipboard)(issuePrompt(it, verifyCommand))) {
-                    notice = "copied issue context — paste into your agent";
-                }
-                else {
-                    notice = "clipboard unavailable";
-                }
-                return draw();
+            catch (e) {
+                process.stderr.write("key handling error: " + String(e));
             }
         };
         const feed = (0, keys_1.createKeyFeed)(onKey);
