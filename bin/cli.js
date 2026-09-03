@@ -381,8 +381,8 @@ function slugify(intent) {
 function usage() {
     console.log(BOLD + "any-doctor" + RESET + dim(" — your agent writes the analyzer, fixtures prove it, CI reruns it forever"));
     console.log("");
-    console.log('  generate "<intent>" [--global] [--agent <cmd>]  your agent writes a doctor + fixtures, verify gates it');
-    console.log("  run [--all] [doctor.(m)js] [dir]  scan + report + interactive review and agent handoff");
+    console.log('  generate "<intent>" [--global]      print the exact prompt for your agent to build a doctor');
+    console.log("  run [--all] [doctor.(m)js] [dir]   scan + report + interactive review + copy findings");
     console.log("  verify [--all] [doctor.(m)js]     fixture gate (no doctor: fuzzy picker; --all: every doctor)");
     console.log("");
     console.log(dim("doctors live in ./doctors/ (repo) and ~/.any-doctor/doctors/ (global)."));
