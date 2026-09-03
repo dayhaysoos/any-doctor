@@ -8,7 +8,6 @@ import { renderReport } from "./report";
 import { browseFindings } from "./browse";
 import { discoverDoctors, globalDoctorsDir, DiscoveredDoctor } from "./discover";
 import { pickItem } from "./picker";
-import { resolveAgent, agentArgs } from "./agents";
 import { buildFixPrompt } from "./handoff";
 
 const GREEN = "\x1b[32m", RED = "\x1b[31m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
@@ -31,6 +30,10 @@ function fail(msg: string): void {
 
 function ok(msg: string): void {
   console.log(GREEN + msg + RESET);
+}
+
+function warn(msg: string): void {
+  console.log(YELLOW + msg + RESET);
 }
 
 function dim(msg: string): string {
@@ -90,7 +93,6 @@ interface ParsedArgs {
   doctorPath?: string;
   targetDir: string;
   all: boolean;
-  agent?: string;
   global: boolean;
 }
 
@@ -101,7 +103,6 @@ function parseArgs(args: string[]): ParsedArgs {
     const a = args[i];
     if (a === "--all") out.all = true;
     else if (a === "--global") out.global = true;
-    else if (a === "--agent") out.agent = args[++i];
     else if (out.doctorPath === undefined && /\.(m|c)?js$/.test(a)) out.doctorPath = a;
     else if (!targetDirSet) {
       out.targetDir = path.resolve(a);
@@ -204,7 +205,6 @@ async function cmdRun(args: string[]): Promise<void> {
   }
 
   const color = useColor();
-  const agent = resolveAgent(parsed.agent);
 
   for (;;) {
     console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, color));
@@ -216,7 +216,7 @@ async function cmdRun(args: string[]): Promise<void> {
     const n = scan.findings.length;
     const items = [
       { id: "review", label: `Review ${n} issue${n === 1 ? "" : "s"}` },
-      ...(agent ? [{ id: "agent", label: `Hand off to an agent (${agent.bin})`, sub: "fixes the findings in place" }] : []),
+      { id: "copy", label: "Copy findings for your agent", sub: "paste into your own agent session" },
       { id: "rescan", label: "Re-scan" },
       { id: "quit", label: "Quit" },
     ];
@@ -231,19 +231,29 @@ async function cmdRun(args: string[]): Promise<void> {
         severity: scan.result.meta.severity,
         findings: scan.findings,
       }, color);
-    } else if (chosen.id === "agent" && agent) {
+    } else if (chosen.id === "copy") {
       const verifyCmd = `node "${path.join(__dirname, "cli.js")}" run "${doctorAbs}" "${parsed.targetDir}"`;
       const prompt = buildFixPrompt(scan.groups, parsed.targetDir, verifyCmd);
-      console.log(dim("\nhanding off to " + agent.raw + " — it will edit the repository in place\n"));
-      const fix = sh(agent.bin, agentArgs(agent, prompt), { timeoutMs: 20 * 60 * 1000, cwd: parsed.targetDir });
-      if (fix.status !== 0) {
-        fail("fix agent exited non-zero (" + fix.status + ") — re-scan anyway\n");
+      if (copyToClipboard(prompt)) {
+        ok("\nfindings copied — paste them into your own agent session\n");
+      } else {
+        console.log("");
+        console.log(prompt);
+        warn("clipboard unavailable — copy the prompt above");
       }
-      scan = scanOnce(doctorAbs, parsed.targetDir);
     } else if (chosen.id === "rescan") {
       scan = scanOnce(doctorAbs, parsed.targetDir);
     }
   }
+}
+
+function copyToClipboard(text: string): boolean {
+  const bins: [string, string[]][] = [["pbcopy", []], ["wl-copy", []], ["clip", []]];
+  for (const [bin, args] of bins) {
+    const r = spawnSync(bin, args, { input: text, encoding: "utf8" });
+    if (r.status === 0) return true;
+  }
+  return false;
 }
 
 interface VerifyCase {
@@ -318,45 +328,20 @@ async function cmdVerify(args: string[]): Promise<void> {
   if (failures > 0) process.exit(1);
 }
 
-function registerDoctor(scopeDir: string, slug: string, intent: string): void {
-  const idxPath = path.join(scopeDir, "index.json");
-  let idx: { version?: number; doctors?: { slug: string; intent: string; createdAt: string; protocolVersion: number }[] } = {};
-  if (fs.existsSync(idxPath)) {
-    try {
-      idx = JSON.parse(fs.readFileSync(idxPath, "utf8"));
-    } catch {
-      idx = {};
-    }
-  }
-  idx.version = 1;
-  idx.doctors = (idx.doctors || []).filter(d => d.slug !== slug);
-  idx.doctors.push({ slug, intent, createdAt: new Date().toISOString(), protocolVersion: 1 });
-  fs.writeFileSync(idxPath, JSON.stringify(idx, null, 2));
-}
-
 async function cmdGenerate(args: string[]): Promise<void> {
   let intent: string | undefined;
-  let explicitAgent: string | undefined;
   let global = false;
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--agent") explicitAgent = args[++i];
-    else if (args[i] === "--global") global = true;
+    if (args[i] === "--global") global = true;
     else if (intent === undefined) intent = args[i];
   }
   if (!intent) {
-    fail('usage: any-doctor generate "<one-line intent>" [--agent <cmd>] [--global]');
+    fail('usage: any-doctor generate "<one-line intent>" [--global]');
     process.exit(1);
   }
   const skill = skillText();
   if (skill === null) {
     fail("generation skill not found (skill/any-doctor.skill.md missing).");
-    process.exit(1);
-  }
-  const agent = resolveAgent(explicitAgent);
-  if (agent === null) {
-    fail("No coding agent found. Any Doctor does not bundle an LLM — it delegates");
-    fail("to the agent you already have. Install one of: claude, codex, opencode,");
-    fail("or set ANY_DOCTOR_AGENT / --agent to a command taking the prompt as its last arg.");
     process.exit(1);
   }
 
@@ -372,6 +357,7 @@ async function cmdGenerate(args: string[]): Promise<void> {
   }
 
   const cliJs = path.join(__dirname, "cli.js");
+  const doctorAbs = path.join(scopeDir, slug + ".mjs");
   const prompt = [
     skill,
     "",
@@ -385,33 +371,23 @@ async function cmdGenerate(args: string[]): Promise<void> {
     "  " + slug + ".fixtures.mjs",
     "",
     "Then verify with exactly this command and iterate until every fixture passes:",
-    '  node "' + cliJs + '" verify "' + path.join(scopeDir, slug + ".mjs") + '"',
+    '  node "' + cliJs + '" verify "' + doctorAbs + '"',
     "Then stop and report.",
   ].join("\n");
 
-  console.log(BOLD + "generating doctor " + CYAN + slug + RESET + dim(" via " + agent.raw) + dim(global ? " (global scope)" : ""));
-  const r = sh(agent.bin, agentArgs(agent, prompt), { timeoutMs: 12 * 60 * 1000, cwd: scopeDir });
-  if (r.status !== 0) {
-    fail("generation agent exited non-zero (" + r.status + ")");
-    process.exit(r.status || 1);
-  }
-
+  console.log(BOLD + "doctor prompt ready: " + CYAN + slug + RESET + dim(global ? " (global scope)" : ""));
   console.log("");
-  console.log(BOLD + "verifying (deterministic — no model in this part):" + RESET);
-  const doctorAbs = path.join(scopeDir, slug + ".mjs");
-  const fixturesAbs = path.join(scopeDir, slug + ".fixtures.mjs");
-  if (!fs.existsSync(doctorAbs) || !fs.existsSync(fixturesAbs)) {
-    fail("agent did not create " + slug + ".mjs / " + slug + ".fixtures.mjs in " + scopeDir);
-    process.exit(1);
+  if (copyToClipboard(prompt)) {
+    ok("prompt copied to clipboard — paste it into your own agent session");
+    console.log(dim("run the agent with this as its working directory: " + scopeDir));
+    console.log(dim("(the skill is planted there as AGENTS.md — most agents load it automatically)"));
+  } else {
+    console.log(prompt);
+    warn("clipboard unavailable — copy the prompt above");
   }
-  const result = executeLoader(doctorAbs, "--verify", fixturesAbs) as unknown as VerifyRunResult;
-  const failures = printVerifyResult(result);
-  if (failures > 0) {
-    fail(failures + " fixture(s) failed — the agent's doctor did not pass the gate. Fix or delete " + doctorAbs);
-    process.exit(1);
-  }
-  registerDoctor(scopeDir, slug, intent);
-  ok(slug + " generated, fixture-green, registered in " + (global ? "~/.any-doctor" : "repo-local") + " scope");
+  console.log("");
+  console.log(dim("once your agent has written both files, gate it:"));
+  console.log(dim('  node "' + cliJs + '" verify "' + doctorAbs + '"'));
 }
 
 const STOP_WORDS = new Set(["a", "an", "the", "find", "flag", "all", "that", "which", "is", "are", "in", "on", "of", "to", "and", "or", "not"]);

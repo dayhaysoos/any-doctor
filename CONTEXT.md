@@ -78,3 +78,10 @@ Where a doctor program lives: repo-local (`./doctors/`, committed with
 the consuming repo) or user-global (`~/.any-doctor/doctors/`, available
 in every repo). Repo-local wins slug collisions. Scanning a target repo
 never writes to any scope.
+
+## Skill
+
+The instructions any-doctor provides so an agent can create a doctor that
+fits the contract. Planted as `AGENTS.md` in a scope directory and also
+served verbatim by `generate`. Any Doctor equips agents with the skill;
+it never launches, deploys, or speaks for an agent.

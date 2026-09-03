@@ -281,6 +281,36 @@ deviations update it in the same commit.
 
 ---
 
+## D14 — Any Doctor equips agents; it never deploys them
+
+**Date:** 2026-08-29 (amended 2026-09-03)
+
+**Context:** The run menu shipped a "Hand off to an agent" item that spawned
+the user's agent, and `generate` spawned the agent headlessly. Nick
+corrected the model: React Doctor's actual pattern is copy-the-findings;
+Any Doctor's only relationship to agents is *equipping* them — the skill
+and the contract — so they can create doctors that fit the interface.
+
+**Decision:** No Any Doctor product command ever launches an agent process.
+- The run menu's handoff is now **"Copy findings for your agent"** — a
+  ready-to-paste fix prompt on the clipboard (pbcopy/wl-copy/clip).
+- `generate` is **prompt-only**: it plants the skill as `AGENTS.md` in the
+  scope dir (agents load it natively), copies the exact generation prompt
+  (skill + intent + verify command), and tells the user to run `verify`
+  afterward. No spawning, no API keys, no adapter — works with any agent,
+  including GUI agents that have no CLI.
+- `dev/first-shot.mjs` remains the sole spawner: it is a measurement tool,
+  not product.
+- Deleted: `src/agents.ts`, the agent adapter, and registration-on-generate
+  (discovery scans directories; the index is an optional cache).
+
+**Consequences:** `generate` is instant and free. Generation quality now
+depends on the skill + the user's agent in the user's own session, which is
+exactly the surface we maintain. The first-shot measurement runs in the
+user's environment by design.
+
+---
+
 ## Open questions
 
 - Name: "any-doctor" is a working title.
