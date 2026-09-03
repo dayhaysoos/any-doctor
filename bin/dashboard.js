@@ -47,11 +47,10 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const clipboard_1 = require("./clipboard");
 const score_1 = require("./score");
+const screen_1 = require("./screen");
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
 const COLOR = { error: RED, warning: ORANGE, info: YELLOW };
-const ALT_ENTER = "\x1b[?1049h";
-const ALT_EXIT = "\x1b[?1049l";
 const SPLIT_MIN_COLS = 100;
 const TOKEN_RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|await|async|try|catch|finally|import|export|from|new|class|extends|throw|typeof|instanceof|in|of|do|switch|case|break|continue|default|yield)\b|\b(\d+(?:\.\d+)?)\b/g;
 function highlightCode(line, useColor) {
@@ -312,13 +311,11 @@ async function runDashboard(input) {
     let selected = 0;
     const readKeys = new Set();
     let notice;
-    stdin.setRawMode(true);
-    stdin.resume();
-    stdout.write(ALT_ENTER);
+    const screen = new screen_1.Screen(stdout);
     const draw = () => {
         const it = items[selected];
         readKeys.add(it.key);
-        const frame = dashboardFrame({
+        screen.render(dashboardFrame({
             items,
             selected,
             readKeys,
@@ -329,8 +326,7 @@ async function runDashboard(input) {
             notice,
             cols: stdout.columns || 120,
             rows: stdout.rows || 34,
-        });
-        stdout.write("\x1b[H" + frame.split("\n").map(l => l + "\x1b[K").join("\n") + "\x1b[J");
+        }).split("\n"));
     };
     await new Promise((resolve) => {
         draw();
@@ -364,7 +360,7 @@ async function runDashboard(input) {
             stdin.removeListener("data", onData);
             stdin.setRawMode(false);
             stdin.pause();
-            stdout.write(ALT_EXIT);
+            screen.exit();
             resolve();
         };
         stdin.on("data", onData);

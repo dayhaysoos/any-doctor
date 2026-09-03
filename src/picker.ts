@@ -1,5 +1,6 @@
 import { fuzzyFilter } from "./fuzzy";
 import { Severity } from "./contract";
+import { Screen } from "./screen";
 
 const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
       DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
@@ -59,10 +60,12 @@ export async function pickItem(items: PickerItem[], useColor: boolean, title: st
 
   const filtered = (): PickerItem[] => filterPickerItems(items, query);
 
+  const screen = new Screen(stdout);
+
   const draw = (): void => {
     const list = filtered();
     if (selected >= list.length) selected = Math.max(0, list.length - 1);
-    stdout.write("\x1b[H\x1b[2J" + pickerFrame(title, list, selected, query, useColor, notice));
+    screen.render(pickerFrame(title, list, selected, query, useColor, notice).split("\n"));
   };
 
   return new Promise<PickerItem | null>((resolve) => {
@@ -77,6 +80,7 @@ export async function pickItem(items: PickerItem[], useColor: boolean, title: st
       if (wasRaw !== undefined) stdin.setRawMode(wasRaw);
       stdin.pause();
       stdout.write("\x1b[?25h");
+      screen.exit();
       resolve(result);
     };
 

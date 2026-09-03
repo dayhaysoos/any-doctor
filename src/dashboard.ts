@@ -3,15 +3,13 @@ import * as path from "path";
 import { copyToClipboard } from "./clipboard";
 import { Finding, ReportGroup, Severity } from "./contract";
 import { scoreFromSeverities } from "./score";
+import { Screen } from "./screen";
 
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
       ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 
 const GLYPH: Record<Severity, string> = { error: "✖", warning: "⚠", info: "ℹ" };
 const COLOR: Record<Severity, string> = { error: RED, warning: ORANGE, info: YELLOW };
-
-const ALT_ENTER = "\x1b[?1049h";
-const ALT_EXIT = "\x1b[?1049l";
 
 const SPLIT_MIN_COLS = 100;
 
@@ -320,14 +318,12 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
   const readKeys = new Set<string>();
   let notice: string | undefined;
 
-  stdin.setRawMode(true);
-  stdin.resume();
-  stdout.write(ALT_ENTER);
+  const screen = new Screen(stdout);
 
   const draw = (): void => {
     const it = items[selected];
     readKeys.add(it.key);
-    const frame = dashboardFrame({
+    screen.render(dashboardFrame({
       items,
       selected,
       readKeys,
@@ -338,8 +334,7 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
       notice,
       cols: stdout.columns || 120,
       rows: stdout.rows || 34,
-    });
-    stdout.write("\x1b[H" + frame.split("\n").map(l => l + "\x1b[K").join("\n") + "\x1b[J");
+    }).split("\n"));
   };
 
   await new Promise<void>((resolve) => {
@@ -364,7 +359,7 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
       stdin.removeListener("data", onData);
       stdin.setRawMode(false);
       stdin.pause();
-      stdout.write(ALT_EXIT);
+      screen.exit();
       resolve();
     };
     stdin.on("data", onData);
