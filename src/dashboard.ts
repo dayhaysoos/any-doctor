@@ -4,6 +4,7 @@ import { copyToClipboard } from "./clipboard";
 import { Finding, ReportGroup, Severity } from "./contract";
 import { scoreFromSeverities } from "./score";
 import { Screen } from "./screen";
+import { createKeyFeed } from "./keys";
 
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
       ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
@@ -339,12 +340,11 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
 
   await new Promise<void>((resolve) => {
     draw();
-    const onData = (buf: Buffer): void => {
-      const s = buf.toString("utf8");
-      if (s === "q" || s === "\x03") return finish();
-      if (s === "\x1b[A" || s === "k") { selected = Math.max(0, selected - 1); notice = undefined; return draw(); }
-      if (s === "\x1b[B" || s === "j") { selected = Math.min(items.length - 1, selected + 1); notice = undefined; return draw(); }
-      if (s === "\r" || s === "\n") {
+    const onKey = (key: string): void => {
+      if (key === "q" || key === "\x03" || key === "esc") return finish();
+      if (key === "up" || key === "k") { selected = Math.max(0, selected - 1); notice = undefined; return draw(); }
+      if (key === "down" || key === "j") { selected = Math.min(items.length - 1, selected + 1); notice = undefined; return draw(); }
+      if (key === "\r" || key === "\n") {
         const it = items[selected];
         const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
         if (copyToClipboard(issuePrompt(it, verifyCommand))) {
@@ -355,13 +355,14 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
         return draw();
       }
     };
+    const feed = createKeyFeed(onKey);
     const finish = (): void => {
-      stdin.removeListener("data", onData);
+      stdin.removeListener("data", feed);
       stdin.setRawMode(false);
       stdin.pause();
       screen.exit();
       resolve();
     };
-    stdin.on("data", onData);
+    stdin.on("data", feed);
   });
 }

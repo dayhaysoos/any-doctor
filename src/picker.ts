@@ -1,6 +1,7 @@
 import { fuzzyFilter } from "./fuzzy";
 import { Severity } from "./contract";
 import { Screen } from "./screen";
+import { createKeyFeed } from "./keys";
 
 const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
       DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
@@ -76,7 +77,7 @@ export async function pickItem(items: PickerItem[], useColor: boolean, title: st
     draw();
 
     const cleanup = (result: PickerItem | null): void => {
-      stdin.removeListener("data", onData);
+      stdin.removeListener("data", feed);
       if (wasRaw !== undefined) stdin.setRawMode(wasRaw);
       stdin.pause();
       stdout.write("\x1b[?25h");
@@ -84,34 +85,35 @@ export async function pickItem(items: PickerItem[], useColor: boolean, title: st
       resolve(result);
     };
 
-    const onData = (buf: Buffer): void => {
-      const s = buf.toString("utf8");
-      if (s === "\x03" || s === "\x1b") return cleanup(null);
-      if (s === "\x7f" || s === "\b") {
+    const onKey = (key: string): void => {
+      const s = key;
+      if (s === "\x03" || s === "esc") return cleanup(null);
+      if (key === "\x7f" || key === "\b") {
         query = query.slice(0, -1);
         selected = 0;
         return draw();
       }
-      if (s === "\x1b[A" || s === "k") {
+      if (key === "up" || key === "k") {
         selected = Math.max(0, selected - 1);
         return draw();
       }
-      if (s === "\x1b[B" || s === "j") {
+      if (key === "down" || key === "j") {
         selected = Math.min(filtered().length - 1, selected + 1);
         return draw();
       }
-      if (s === "\r" || s === "\n") {
+      if (key === "\r" || key === "\n") {
         const list = filtered();
         if (list.length === 0) return;
         return cleanup(list[Math.min(selected, list.length - 1)]);
       }
-      if (isPrintable(s)) {
-        query += s;
+      if (isPrintable(key)) {
+        query += key;
         selected = 0;
         return draw();
       }
     };
 
-    stdin.on("data", onData);
+    const feed = createKeyFeed(onKey);
+    stdin.on("data", feed);
   });
 }

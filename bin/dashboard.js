@@ -48,6 +48,7 @@ const path = __importStar(require("path"));
 const clipboard_1 = require("./clipboard");
 const score_1 = require("./score");
 const screen_1 = require("./screen");
+const keys_1 = require("./keys");
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
 const COLOR = { error: RED, warning: ORANGE, info: YELLOW };
@@ -330,21 +331,20 @@ async function runDashboard(input) {
     };
     await new Promise((resolve) => {
         draw();
-        const onData = (buf) => {
-            const s = buf.toString("utf8");
-            if (s === "q" || s === "\x03")
+        const onKey = (key) => {
+            if (key === "q" || key === "\x03" || key === "esc")
                 return finish();
-            if (s === "\x1b[A" || s === "k") {
+            if (key === "up" || key === "k") {
                 selected = Math.max(0, selected - 1);
                 notice = undefined;
                 return draw();
             }
-            if (s === "\x1b[B" || s === "j") {
+            if (key === "down" || key === "j") {
                 selected = Math.min(items.length - 1, selected + 1);
                 notice = undefined;
                 return draw();
             }
-            if (s === "\r" || s === "\n") {
+            if (key === "\r" || key === "\n") {
                 const it = items[selected];
                 const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
                 if ((0, clipboard_1.copyToClipboard)(issuePrompt(it, verifyCommand))) {
@@ -356,13 +356,14 @@ async function runDashboard(input) {
                 return draw();
             }
         };
+        const feed = (0, keys_1.createKeyFeed)(onKey);
         const finish = () => {
-            stdin.removeListener("data", onData);
+            stdin.removeListener("data", feed);
             stdin.setRawMode(false);
             stdin.pause();
             screen.exit();
             resolve();
         };
-        stdin.on("data", onData);
+        stdin.on("data", feed);
     });
 }

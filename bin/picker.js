@@ -6,6 +6,7 @@ exports.isPrintable = isPrintable;
 exports.pickItem = pickItem;
 const fuzzy_1 = require("./fuzzy");
 const screen_1 = require("./screen");
+const keys_1 = require("./keys");
 const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
 const COLOR = { error: GREEN, warning: YELLOW, info: CYAN };
@@ -65,7 +66,7 @@ async function pickItem(items, useColor, title = "Select an option", notice) {
         stdout.write("\x1b[?25l");
         draw();
         const cleanup = (result) => {
-            stdin.removeListener("data", onData);
+            stdin.removeListener("data", feed);
             if (wasRaw !== undefined)
                 stdin.setRawMode(wasRaw);
             stdin.pause();
@@ -73,35 +74,36 @@ async function pickItem(items, useColor, title = "Select an option", notice) {
             screen.exit();
             resolve(result);
         };
-        const onData = (buf) => {
-            const s = buf.toString("utf8");
-            if (s === "\x03" || s === "\x1b")
+        const onKey = (key) => {
+            const s = key;
+            if (s === "\x03" || s === "esc")
                 return cleanup(null);
-            if (s === "\x7f" || s === "\b") {
+            if (key === "\x7f" || key === "\b") {
                 query = query.slice(0, -1);
                 selected = 0;
                 return draw();
             }
-            if (s === "\x1b[A" || s === "k") {
+            if (key === "up" || key === "k") {
                 selected = Math.max(0, selected - 1);
                 return draw();
             }
-            if (s === "\x1b[B" || s === "j") {
+            if (key === "down" || key === "j") {
                 selected = Math.min(filtered().length - 1, selected + 1);
                 return draw();
             }
-            if (s === "\r" || s === "\n") {
+            if (key === "\r" || key === "\n") {
                 const list = filtered();
                 if (list.length === 0)
                     return;
                 return cleanup(list[Math.min(selected, list.length - 1)]);
             }
-            if (isPrintable(s)) {
-                query += s;
+            if (isPrintable(key)) {
+                query += key;
                 selected = 0;
                 return draw();
             }
         };
-        stdin.on("data", onData);
+        const feed = (0, keys_1.createKeyFeed)(onKey);
+        stdin.on("data", feed);
     });
 }
