@@ -1,11 +1,18 @@
 export type Severity = "error" | "warning" | "info";
 
+export interface CheckMeta {
+  id: string;
+  description: string;
+  severity?: Severity;
+}
+
 export interface DoctorMeta {
   id: string;
   description: string;
   severity: Severity;
   category?: string;
   blindSpots?: string[];
+  checks?: CheckMeta[];
 }
 
 export interface ReportGroup {
@@ -15,6 +22,7 @@ export interface ReportGroup {
 }
 
 export interface Finding {
+  rule?: string;
   file: string;
   line: number;
   column?: number;

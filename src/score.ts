@@ -1,4 +1,4 @@
-import { ReportGroup, Severity } from "./contract";
+import { Finding, ReportGroup, Severity } from "./contract";
 
 export interface ScoreResult {
   score: number;
@@ -7,11 +7,17 @@ export interface ScoreResult {
 
 const WEIGHTS: Record<Severity, number> = { error: 10, warning: 4, info: 1 };
 
+export function findingSeverity(g: ReportGroup, f: Finding): Severity {
+  if (f.severity) return f.severity;
+  const check = f.rule ? g.meta.checks?.find(c => c.id === f.rule) : undefined;
+  return check?.severity ?? g.meta.severity;
+}
+
 export function computeScore(groups: ReportGroup[]): ScoreResult {
   let score = 100;
   for (const g of groups) {
     for (const f of g.findings) {
-      score -= WEIGHTS[f.severity ?? g.meta.severity];
+      score -= WEIGHTS[findingSeverity(g, f)];
     }
   }
   score = Math.max(0, Math.min(100, score));
@@ -29,7 +35,7 @@ export function categoryRollup(groups: ReportGroup[]): { category: string; count
     const category = g.meta.category ?? "general";
     if (!map.has(category)) map.set(category, { error: 0, warning: 0, info: 0 });
     for (const f of g.findings) {
-      map.get(category)![f.severity ?? g.meta.severity]++;
+      map.get(category)![findingSeverity(g, f)]++;
     }
   }
   return [...map.entries()].map(([category, counts]) => ({ category, counts }));

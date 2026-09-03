@@ -37,6 +37,7 @@ const golden = [
   "⚠ .map(async ...) result is never awaited — the promises are dropped",
   "  unawaited-async-map",
   "  src/services/chat.ts:15",
+  "",
   "  blind spots: results passed to a helper that awaits them internally",
 ].join("\n");
 
@@ -75,4 +76,39 @@ test("renderReport: multiple clean groups list each as clean", () => {
   assert.match(out, /2 doctors/);
   assert.match(out, /unawaited-async-map — clean/);
   assert.match(out, /other — clean/);
+});
+
+test("renderReport: multiple checks group under one doctor with their own headings and severities", () => {
+  const out = renderReport({
+    fileCount: 9,
+    durationMs: 40,
+    groups: [
+      {
+        programName: "stripe-doctor.mjs",
+        meta: {
+          id: "stripe-doctor",
+          description: "Deprecated Stripe usage",
+          severity: "warning",
+          category: "bugs",
+          checks: [
+            { id: "charges-create", description: "Direct legacy charge creation", severity: "error" },
+            { id: "refunds-legacy", description: "Legacy refund path", severity: "warning" },
+          ],
+        },
+        findings: [
+          { rule: "refunds-legacy", file: "src/refund.ts", line: 4 },
+          { rule: "charges-create", file: "src/capture-charge.ts", line: 2 },
+          { rule: "charges-create", file: "src/capture-charge.ts", line: 9 },
+        ],
+      },
+    ],
+  }, false);
+  assert.match(out, /Score: 76 \/ 100 — Good/);
+  assert.match(out, /✖ Direct legacy charge creation ×2/);
+  assert.match(out, /stripe-doctor\/charges-create/);
+  assert.match(out, /⚠ Legacy refund path/);
+  assert.match(out, /stripe-doctor\/refunds-legacy/);
+  assert.match(out, /src\/capture-charge\.ts:2/);
+  assert.match(out, /src\/refund\.ts:4/);
+  assert.match(out, /Bugs: 2 error, 1 warning/);
 });

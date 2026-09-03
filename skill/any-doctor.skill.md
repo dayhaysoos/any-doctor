@@ -15,14 +15,19 @@ Two files, exactly:
 export const meta = {
   id: "<slug>",                       // kebab-case, matches the filename
   description: "<one-line finding text, shown in reports>",
-  severity: "warning",                // "error" | "warning" | "info"
+  severity: "warning",                // default: "error" | "warning" | "info"
+  category: "<bugs | performance | security | style | ...>",
   blindSpots: [                       // what this approach CANNOT see — required
     "<honest limitation>",
+  ],
+  checks: [                           // optional: multiple related checks in ONE doctor
+    { id: "<check-id>", description: "<finding text>", severity: "warning" },
   ],
 };
 
 export async function doctor(ctx) {
   // inspect the codebase, emit findings
+  // ctx.report.finding({ rule: "<check-id>", file, line, column?, message?, severity? })
 }
 ```
 
@@ -48,6 +53,34 @@ export const fixtures = [
 - `ctx.report.finding({ file, line, column?, message?, severity? })`
 
 Zero dependencies. Node >= 18. The only imports allowed are `node:` builtins.
+
+## One doctor, many checks
+
+If the intent covers several related patterns (an SDK migration with
+multiple outdated calls, a family of anti-patterns, "all the stripe
+practices we deprecated"), build ONE doctor with multiple checks — not one
+doctor per pattern:
+
+- Declare each check in `meta.checks` (`{ id, description, severity? }`).
+- Emit each finding with `rule: "<check-id>"` matching a declared check.
+- The report groups findings under each check's description, under the
+  doctor's umbrella.
+
+Bundle when the checks share a theme or a codebase area. Stay separate
+when the checks are unrelated concerns that would be deleted or shared
+independently.
+
+## Severity judgment
+
+If the intent dictates criticality ("make the findings critical"), follow
+it. Otherwise judge by consequence:
+
+- `error` — will break, lose, or expose data at runtime
+- `warning` — wrong or risky but non-fatal
+- `info` — stylistic or informational
+
+Per-check severity lives in `meta.checks`; a finding may override with its
+own `severity` only for exceptions.
 
 ## Hard workflow
 

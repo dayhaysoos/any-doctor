@@ -1,11 +1,11 @@
 import { DoctorMeta, Finding, ReportGroup, Severity } from "./contract";
-import { categoryRollup, computeScore } from "./score";
+import { categoryRollup, computeScore, findingSeverity } from "./score";
 
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
-      DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
+      ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 
 const GLYPH: Record<Severity, string> = { error: "✖", warning: "⚠", info: "ℹ" };
-const COLOR: Record<Severity, string> = { error: RED, warning: YELLOW, info: CYAN };
+const COLOR: Record<Severity, string> = { error: RED, warning: ORANGE, info: YELLOW };
 
 export interface ReportInput {
   fileCount: number;
@@ -17,7 +17,32 @@ const SEVERITY_ORDER: Severity[] = ["error", "warning", "info"];
 
 function groupSeverity(g: ReportGroup): Severity {
   const explicit = g.findings.find(f => f.severity);
-  return (explicit ? explicit.severity : undefined) ?? g.meta.severity;
+  return (explicit ? findingSeverity(g, explicit) : undefined) ?? g.meta.severity;
+}
+
+interface CheckBucket {
+  ruleId: string | null;
+  heading: string;
+  severity: Severity;
+  findings: Finding[];
+}
+
+function expandChecks(g: ReportGroup): CheckBucket[] {
+  const buckets = new Map<string, CheckBucket>();
+  for (const f of g.findings) {
+    const check = f.rule ? g.meta.checks?.find(c => c.id === f.rule) : undefined;
+    const key = f.rule ?? g.meta.id;
+    if (!buckets.has(key)) {
+      buckets.set(key, {
+        ruleId: f.rule ?? null,
+        heading: check?.description ?? g.meta.description,
+        severity: check?.severity ?? g.meta.severity,
+        findings: [],
+      });
+    }
+    buckets.get(key)!.findings.push(f);
+  }
+  return [...buckets.values()];
 }
 
 export function renderReport(input: ReportInput, useColor: boolean): string {
@@ -47,7 +72,7 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
 
   const bySeverity: Record<Severity, number> = { error: 0, warning: 0, info: 0 };
   for (const g of input.groups) {
-    for (const f of g.findings) bySeverity[f.severity ?? g.meta.severity]++;
+    for (const f of g.findings) bySeverity[findingSeverity(g, f)]++;
   }
   const rollup = SEVERITY_ORDER
     .filter(s => bySeverity[s] > 0)
@@ -69,19 +94,21 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
     (a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
 
   for (const g of ordered) {
-    const n = g.findings.length;
-    const sev = groupSeverity(g);
-    lines.push(`${c(GLYPH[sev], COLOR[sev])} ${c(g.meta.description, n > 1 ? BOLD : "")}${n > 1 ? c(` ×${n}`, COLOR[sev]) : ""}`);
-    lines.push(`  ${c(g.programName.replace(/\.(m|c)?js$/, ""), DIM)}`);
-    for (const f of g.findings.slice(0, 20)) {
-      lines.push(`  ${f.file}:${f.line}`);
-      if (f.message) lines.push(`    ${c(f.message, DIM)}`);
+    for (const bucket of expandChecks(g)) {
+      const n = bucket.findings.length;
+      lines.push(`${c(GLYPH[bucket.severity], COLOR[bucket.severity])} ${c(bucket.heading, n > 1 ? BOLD : "")}${n > 1 ? c(` ×${n}`, COLOR[bucket.severity]) : ""}`);
+      lines.push(`  ${c(bucket.ruleId ? `${g.meta.id}/${bucket.ruleId}` : g.meta.id, DIM)}`);
+      for (const f of bucket.findings.slice(0, 20)) {
+        lines.push(`  ${f.file}:${f.line}`);
+        if (f.message) lines.push(`    ${c(f.message, DIM)}`);
+      }
+      if (n > 20) lines.push(`  ${c(`… and ${n - 20} more`, DIM)}`);
+      lines.push("");
     }
-    if (n > 20) lines.push(`  ${c(`… and ${n - 20} more`, DIM)}`);
     if (g.meta.blindSpots && g.meta.blindSpots.length > 0) {
       lines.push(`  ${c("blind spots: " + g.meta.blindSpots.join("; "), DIM)}`);
+      lines.push("");
     }
-    lines.push("");
   }
 
   return lines.join("\n").replace(/\n+$/, "");

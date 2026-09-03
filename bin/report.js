@@ -2,17 +2,34 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.renderReport = renderReport;
 const score_1 = require("./score");
-const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
+const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
-const COLOR = { error: RED, warning: YELLOW, info: CYAN };
+const COLOR = { error: RED, warning: ORANGE, info: YELLOW };
 const SEVERITY_ORDER = ["error", "warning", "info"];
 function groupSeverity(g) {
     var _a;
     const explicit = g.findings.find(f => f.severity);
-    return (_a = (explicit ? explicit.severity : undefined)) !== null && _a !== void 0 ? _a : g.meta.severity;
+    return (_a = (explicit ? (0, score_1.findingSeverity)(g, explicit) : undefined)) !== null && _a !== void 0 ? _a : g.meta.severity;
+}
+function expandChecks(g) {
+    var _a, _b, _c, _d, _e;
+    const buckets = new Map();
+    for (const f of g.findings) {
+        const check = f.rule ? (_a = g.meta.checks) === null || _a === void 0 ? void 0 : _a.find(c => c.id === f.rule) : undefined;
+        const key = (_b = f.rule) !== null && _b !== void 0 ? _b : g.meta.id;
+        if (!buckets.has(key)) {
+            buckets.set(key, {
+                ruleId: (_c = f.rule) !== null && _c !== void 0 ? _c : null,
+                heading: (_d = check === null || check === void 0 ? void 0 : check.description) !== null && _d !== void 0 ? _d : g.meta.description,
+                severity: (_e = check === null || check === void 0 ? void 0 : check.severity) !== null && _e !== void 0 ? _e : g.meta.severity,
+                findings: [],
+            });
+        }
+        buckets.get(key).findings.push(f);
+    }
+    return [...buckets.values()];
 }
 function renderReport(input, useColor) {
-    var _a;
     const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
     const lines = [];
     const total = input.groups.reduce((n, g) => n + g.findings.length, 0);
@@ -36,7 +53,7 @@ function renderReport(input, useColor) {
     const bySeverity = { error: 0, warning: 0, info: 0 };
     for (const g of input.groups) {
         for (const f of g.findings)
-            bySeverity[(_a = f.severity) !== null && _a !== void 0 ? _a : g.meta.severity]++;
+            bySeverity[(0, score_1.findingSeverity)(g, f)]++;
     }
     const rollup = SEVERITY_ORDER
         .filter(s => bySeverity[s] > 0)
@@ -54,21 +71,23 @@ function renderReport(input, useColor) {
     lines.push("");
     const ordered = [...input.groups].sort((a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
     for (const g of ordered) {
-        const n = g.findings.length;
-        const sev = groupSeverity(g);
-        lines.push(`${c(GLYPH[sev], COLOR[sev])} ${c(g.meta.description, n > 1 ? BOLD : "")}${n > 1 ? c(` ×${n}`, COLOR[sev]) : ""}`);
-        lines.push(`  ${c(g.programName.replace(/\.(m|c)?js$/, ""), DIM)}`);
-        for (const f of g.findings.slice(0, 20)) {
-            lines.push(`  ${f.file}:${f.line}`);
-            if (f.message)
-                lines.push(`    ${c(f.message, DIM)}`);
+        for (const bucket of expandChecks(g)) {
+            const n = bucket.findings.length;
+            lines.push(`${c(GLYPH[bucket.severity], COLOR[bucket.severity])} ${c(bucket.heading, n > 1 ? BOLD : "")}${n > 1 ? c(` ×${n}`, COLOR[bucket.severity]) : ""}`);
+            lines.push(`  ${c(bucket.ruleId ? `${g.meta.id}/${bucket.ruleId}` : g.meta.id, DIM)}`);
+            for (const f of bucket.findings.slice(0, 20)) {
+                lines.push(`  ${f.file}:${f.line}`);
+                if (f.message)
+                    lines.push(`    ${c(f.message, DIM)}`);
+            }
+            if (n > 20)
+                lines.push(`  ${c(`… and ${n - 20} more`, DIM)}`);
+            lines.push("");
         }
-        if (n > 20)
-            lines.push(`  ${c(`… and ${n - 20} more`, DIM)}`);
         if (g.meta.blindSpots && g.meta.blindSpots.length > 0) {
             lines.push(`  ${c("blind spots: " + g.meta.blindSpots.join("; "), DIM)}`);
+            lines.push("");
         }
-        lines.push("");
     }
     return lines.join("\n").replace(/\n+$/, "");
 }

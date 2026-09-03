@@ -1,8 +1,9 @@
-import { ReportGroup, Severity } from "./contract";
+import { Finding, ReportGroup, Severity } from "./contract";
 export interface ScoreResult {
     score: number;
     grade: string;
 }
+export declare function findingSeverity(g: ReportGroup, f: Finding): Severity;
 export declare function computeScore(groups: ReportGroup[]): ScoreResult;
 export declare function categoryRollup(groups: ReportGroup[]): {
     category: string;
