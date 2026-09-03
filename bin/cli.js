@@ -197,8 +197,13 @@ async function cmdRun(args) {
         return;
     }
     const color = useColor();
+    let notice;
+    let showReport = true;
     for (;;) {
-        console.log((0, report_1.renderReport)({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, color));
+        if (showReport) {
+            console.log((0, report_1.renderReport)({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, color));
+            showReport = false;
+        }
         if (scan.findings.length === 0) {
             console.log(dim("\nnothing to do — clean run"));
             return;
@@ -210,7 +215,8 @@ async function cmdRun(args) {
             { id: "rescan", label: "Re-scan" },
             { id: "quit", label: "Quit" },
         ];
-        const chosen = await (0, picker_1.pickItem)(items, color, "What next?");
+        const chosen = await (0, picker_1.pickItem)(items, color, "What next?", notice);
+        notice = undefined;
         if (chosen === null || chosen.id === "quit")
             break;
         if (chosen.id === "review") {
@@ -221,21 +227,25 @@ async function cmdRun(args) {
                 severity: scan.result.meta.severity,
                 findings: scan.findings,
             }, color);
+            showReport = true;
         }
         else if (chosen.id === "copy") {
             const verifyCmd = `node "${path.join(__dirname, "cli.js")}" run "${doctorAbs}" "${parsed.targetDir}"`;
             const prompt = (0, handoff_1.buildFixPrompt)(scan.groups, parsed.targetDir, verifyCmd);
             if (copyToClipboard(prompt)) {
-                ok("\nfindings copied — paste them into your own agent session\n");
+                notice = `${n} finding${n === 1 ? "" : "s"} copied to clipboard — paste into your agent`;
             }
             else {
                 console.log("");
                 console.log(prompt);
                 warn("clipboard unavailable — copy the prompt above");
+                showReport = true;
             }
         }
         else if (chosen.id === "rescan") {
             scan = scanOnce(doctorAbs, parsed.targetDir);
+            notice = "re-scanned";
+            showReport = true;
         }
     }
 }

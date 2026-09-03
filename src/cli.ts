@@ -205,9 +205,14 @@ async function cmdRun(args: string[]): Promise<void> {
   }
 
   const color = useColor();
+  let notice: string | undefined;
+  let showReport = true;
 
   for (;;) {
-    console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, color));
+    if (showReport) {
+      console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, color));
+      showReport = false;
+    }
     if (scan.findings.length === 0) {
       console.log(dim("\nnothing to do — clean run"));
       return;
@@ -220,7 +225,8 @@ async function cmdRun(args: string[]): Promise<void> {
       { id: "rescan", label: "Re-scan" },
       { id: "quit", label: "Quit" },
     ];
-    const chosen = await pickItem(items, color, "What next?");
+    const chosen = await pickItem(items, color, "What next?", notice);
+    notice = undefined;
     if (chosen === null || chosen.id === "quit") break;
 
     if (chosen.id === "review") {
@@ -231,18 +237,22 @@ async function cmdRun(args: string[]): Promise<void> {
         severity: scan.result.meta.severity,
         findings: scan.findings,
       }, color);
+      showReport = true;
     } else if (chosen.id === "copy") {
       const verifyCmd = `node "${path.join(__dirname, "cli.js")}" run "${doctorAbs}" "${parsed.targetDir}"`;
       const prompt = buildFixPrompt(scan.groups, parsed.targetDir, verifyCmd);
       if (copyToClipboard(prompt)) {
-        ok("\nfindings copied — paste them into your own agent session\n");
+        notice = `${n} finding${n === 1 ? "" : "s"} copied to clipboard — paste into your agent`;
       } else {
         console.log("");
         console.log(prompt);
         warn("clipboard unavailable — copy the prompt above");
+        showReport = true;
       }
     } else if (chosen.id === "rescan") {
       scan = scanOnce(doctorAbs, parsed.targetDir);
+      notice = "re-scanned";
+      showReport = true;
     }
   }
 }

@@ -8,7 +8,7 @@ const fuzzy_1 = require("./fuzzy");
 const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
 const COLOR = { error: GREEN, warning: YELLOW, info: CYAN };
-function pickerFrame(title, items, selected, query, useColor) {
+function pickerFrame(title, items, selected, query, useColor, notice) {
     const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
     const lines = [];
     lines.push(c(title, BOLD) + c("  (type to filter · ↑↓ move · enter select · esc cancel)", DIM));
@@ -17,17 +17,22 @@ function pickerFrame(title, items, selected, query, useColor) {
     lines.push("");
     if (items.length === 0) {
         lines.push(c("  no matching doctors", DIM));
-        return lines.join("\n");
     }
-    const cap = Math.min(items.length, 12);
-    for (let i = 0; i < cap; i++) {
-        const it = items[i];
-        const glyph = it.severity ? c(GLYPH[it.severity] + " ", COLOR[it.severity]) : "";
-        const row = `${glyph}${it.label}${it.sub ? c("  " + it.sub, DIM) : ""}`;
-        lines.push(i === selected ? c("❯ " + row, BOLD) : "  " + row);
+    else {
+        const cap = Math.min(items.length, 12);
+        for (let i = 0; i < cap; i++) {
+            const it = items[i];
+            const glyph = it.severity ? c(GLYPH[it.severity] + " ", COLOR[it.severity]) : "";
+            const row = `${glyph}${it.label}${it.sub ? c("  " + it.sub, DIM) : ""}`;
+            lines.push(i === selected ? c("❯ " + row, BOLD) : "  " + row);
+        }
+        if (items.length > cap)
+            lines.push(c(`  … +${items.length - cap} more`, DIM));
     }
-    if (items.length > cap)
-        lines.push(c(`  … +${items.length - cap} more`, DIM));
+    if (notice) {
+        lines.push("");
+        lines.push(c("✔ " + notice, GREEN));
+    }
     return lines.join("\n");
 }
 function filterPickerItems(items, query) {
@@ -36,7 +41,7 @@ function filterPickerItems(items, query) {
 function isPrintable(s) {
     return s.length === 1 && s >= " " && s !== "\x7f";
 }
-async function pickItem(items, useColor, title = "Select an option") {
+async function pickItem(items, useColor, title = "Select an option", notice) {
     const stdin = process.stdin;
     const stdout = process.stdout;
     if (!stdin.isTTY || !stdout.isTTY || items.length === 0)
@@ -49,7 +54,7 @@ async function pickItem(items, useColor, title = "Select an option") {
         const list = filtered();
         if (selected >= list.length)
             selected = Math.max(0, list.length - 1);
-        stdout.write("\x1b[H\x1b[2J" + pickerFrame(title, list, selected, query, useColor));
+        stdout.write("\x1b[H\x1b[2J" + pickerFrame(title, list, selected, query, useColor, notice));
     };
     return new Promise((resolve) => {
         const wasRaw = stdin.isRaw;

@@ -14,7 +14,7 @@ export interface PickerItem {
   severity?: Severity;
 }
 
-export function pickerFrame(title: string, items: PickerItem[], selected: number, query: string, useColor: boolean): string {
+export function pickerFrame(title: string, items: PickerItem[], selected: number, query: string, useColor: boolean, notice?: string): string {
   const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
   const lines: string[] = [];
   lines.push(c(title, BOLD) + c("  (type to filter · ↑↓ move · enter select · esc cancel)", DIM));
@@ -23,16 +23,20 @@ export function pickerFrame(title: string, items: PickerItem[], selected: number
   lines.push("");
   if (items.length === 0) {
     lines.push(c("  no matching doctors", DIM));
-    return lines.join("\n");
+  } else {
+    const cap = Math.min(items.length, 12);
+    for (let i = 0; i < cap; i++) {
+      const it = items[i];
+      const glyph = it.severity ? c(GLYPH[it.severity] + " ", COLOR[it.severity]) : "";
+      const row = `${glyph}${it.label}${it.sub ? c("  " + it.sub, DIM) : ""}`;
+      lines.push(i === selected ? c("❯ " + row, BOLD) : "  " + row);
+    }
+    if (items.length > cap) lines.push(c(`  … +${items.length - cap} more`, DIM));
   }
-  const cap = Math.min(items.length, 12);
-  for (let i = 0; i < cap; i++) {
-    const it = items[i];
-    const glyph = it.severity ? c(GLYPH[it.severity] + " ", COLOR[it.severity]) : "";
-    const row = `${glyph}${it.label}${it.sub ? c("  " + it.sub, DIM) : ""}`;
-    lines.push(i === selected ? c("❯ " + row, BOLD) : "  " + row);
+  if (notice) {
+    lines.push("");
+    lines.push(c("✔ " + notice, GREEN));
   }
-  if (items.length > cap) lines.push(c(`  … +${items.length - cap} more`, DIM));
   return lines.join("\n");
 }
 
@@ -44,7 +48,7 @@ export function isPrintable(s: string): boolean {
   return s.length === 1 && s >= " " && s !== "\x7f";
 }
 
-export async function pickItem(items: PickerItem[], useColor: boolean, title: string = "Select an option"): Promise<PickerItem | null> {
+export async function pickItem(items: PickerItem[], useColor: boolean, title: string = "Select an option", notice?: string): Promise<PickerItem | null> {
   const stdin = process.stdin;
   const stdout = process.stdout;
   if (!stdin.isTTY || !stdout.isTTY || items.length === 0) return null;
@@ -58,7 +62,7 @@ export async function pickItem(items: PickerItem[], useColor: boolean, title: st
   const draw = (): void => {
     const list = filtered();
     if (selected >= list.length) selected = Math.max(0, list.length - 1);
-    stdout.write("\x1b[H\x1b[2J" + pickerFrame(title, list, selected, query, useColor));
+    stdout.write("\x1b[H\x1b[2J" + pickerFrame(title, list, selected, query, useColor, notice));
   };
 
   return new Promise<PickerItem | null>((resolve) => {
