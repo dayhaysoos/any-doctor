@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawnSync, SpawnSyncReturns } from "child_process";
+import { spawn, spawnSync, SpawnSyncReturns } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -113,7 +113,25 @@ function parseArgs(args: string[]): ParsedArgs {
   return out;
 }
 
-async function pickDoctor(cwd: string): Promise<DiscoveredDoctor> {
+function countIssues(loader: string, doctorAbs: string, targetDir: string): Promise<number> {
+  return new Promise(resolve => {
+    const child = spawn(process.execPath, [loader, doctorAbs, targetDir], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    child.stdout?.on("data", chunk => stdout += chunk);
+    child.on("error", () => resolve(0));
+    child.on("close", () => {
+      try {
+        const lines = stdout.split("\n");
+        const idx = lines.findLastIndex(l => l.startsWith(RESULT_SENTINEL));
+        resolve(idx === -1 ? 0 : (JSON.parse(lines[idx].slice(RESULT_SENTINEL.length)).findings?.length ?? 0));
+      } catch {
+        resolve(0);
+      }
+    });
+  });
+}
+
+async function pickDoctor(cwd: string, opts?: { targetDir?: string; withCounts?: boolean }): Promise<DiscoveredDoctor> {
   const discovered = discoverDoctors(cwd);
   const valid = discovered.filter(d => d.meta !== null);
   const broken = discovered.filter(d => d.meta === null);
@@ -130,23 +148,36 @@ async function pickDoctor(cwd: string): Promise<DiscoveredDoctor> {
     console.log(YELLOW + "⚠ skipping broken doctor " + b.slug + RESET + dim(" — " + (b.error || "invalid meta")));
   }
 
+  const loader = path.join(__dirname, "doctor-loader.mjs");
+  let counted = valid.map(d => ({ d, count: -1 }));
+  if (opts?.withCounts && opts.targetDir) {
+    counted = await Promise.all(valid.map(async d => ({
+      d,
+      count: await countIssues(loader, d.path, opts.targetDir!),
+    })));
+    counted.sort((a, b) => b.count - a.count);
+  }
+
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     console.log("available doctors:");
-    for (const d of valid) {
-      console.log("  " + d.scope.padEnd(7) + d.slug.padEnd(32) + dim(d.meta!.description));
+    for (const { d, count } of counted) {
+      const suffix = count >= 0 ? dim(" " + count + " issue" + (count === 1 ? "" : "s")) : "";
+      console.log("  " + d.scope.padEnd(7) + d.slug.padEnd(32) + dim(d.meta!.description) + suffix);
     }
     fail("non-interactive session — specify a doctor path");
     process.exit(1);
   }
 
-  const chosen = await pickItem(valid.map(d => ({
+  const chosen = await pickItem(counted.map(({ d, count }) => ({
     id: d.slug,
     label: d.meta!.description,
-    sub: d.scope + "/" + d.slug + ".mjs",
+    sub: count >= 0
+      ? `${count} issue${count === 1 ? "" : "s"} · ${d.scope}`
+      : d.scope,
     severity: d.meta!.severity,
   })), useColor(), "Select a doctor");
   if (chosen === null) process.exit(0);
-  return valid.find(v => v.slug === chosen.id)!;
+  return counted.find(x => x.d.slug === chosen.id)!.d;
 }
 
 interface Scan {
@@ -193,7 +224,7 @@ async function cmdRun(args: string[]): Promise<void> {
   if (parsed.doctorPath) {
     doctorAbs = path.resolve(parsed.doctorPath);
   } else {
-    const chosen = await pickDoctor(process.cwd());
+    const chosen = await pickDoctor(process.cwd(), { targetDir: parsed.targetDir, withCounts: true });
     doctorAbs = chosen.path;
   }
 
