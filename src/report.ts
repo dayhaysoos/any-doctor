@@ -45,25 +45,53 @@ function expandChecks(g: ReportGroup): CheckBucket[] {
   return [...buckets.values()];
 }
 
+export function dedupeGroups(groups: ReportGroup[]): { groups: ReportGroup[]; hidden: number } {
+  const seen = new Set<string>();
+  const key = (f: Finding): string => `${f.file}:${f.line}`;
+  const ordered = [...groups].sort(
+    (a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
+  const out: ReportGroup[] = [];
+  let hidden = 0;
+  for (const g of ordered) {
+    if (g.findings.length === 0) {
+      out.push(g);
+      continue;
+    }
+    const kept: Finding[] = [];
+    for (const f of g.findings) {
+      const k = key(f);
+      if (seen.has(k)) {
+        hidden++;
+        continue;
+      }
+      seen.add(k);
+      kept.push(f);
+    }
+    if (kept.length > 0) out.push({ ...g, findings: kept });
+  }
+  return { groups: out, hidden };
+}
+
 export function renderReport(input: ReportInput, useColor: boolean): string {
   const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
   const lines: string[] = [];
 
-  const total = input.groups.reduce((n, g) => n + g.findings.length, 0);
-  const { score, grade } = computeScore(input.groups);
+  const { groups, hidden } = dedupeGroups(input.groups);
+  const total = groups.reduce((n, g) => n + g.findings.length, 0);
+  const { score, grade } = computeScore(groups);
   const gradeColor = score >= 75 ? GREEN : score >= 50 ? YELLOW : RED;
 
   lines.push(`✔ Scanned ${input.fileCount} files in ${input.durationMs}ms`);
   lines.push("");
-  const doctorWord = input.groups.length === 1 ? "doctor" : "doctors";
-  lines.push(c(`Any Doctor — ${input.groups.length} ${doctorWord}`, BOLD));
+  const doctorWord = groups.length === 1 ? "doctor" : "doctors";
+  lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
   lines.push(c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor));
 
   if (total === 0) {
     lines.push(c("No issues found", BOLD + GREEN));
-    if (input.groups.length > 1) {
+    if (groups.length > 1) {
       lines.push("");
-      for (const g of input.groups) {
+      for (const g of groups) {
         lines.push(`${c("✔", GREEN)} ${c(g.meta.id, DIM)} — clean`);
       }
     }
@@ -71,7 +99,7 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
   }
 
   const bySeverity: Record<Severity, number> = { error: 0, warning: 0, info: 0 };
-  for (const g of input.groups) {
+  for (const g of groups) {
     for (const f of g.findings) bySeverity[findingSeverity(g, f)]++;
   }
   const rollup = SEVERITY_ORDER
@@ -81,7 +109,7 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
 
   lines.push("");
   lines.push(`${c(`${total} issue${total === 1 ? "" : "s"} found`, BOLD)}  ${c(`(${rollup})`, DIM)}`);
-  for (const { category, counts } of categoryRollup(input.groups)) {
+  for (const { category, counts } of categoryRollup(groups)) {
     const catParts = SEVERITY_ORDER.filter(s => counts[s] > 0).map(s => c(`${counts[s]} ${s}`, COLOR[s]));
     if (catParts.length > 0) {
       const cap = category.charAt(0).toUpperCase() + category.slice(1);
@@ -90,7 +118,7 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
   }
   lines.push("");
 
-  const ordered = [...input.groups].sort(
+  const ordered = [...groups].sort(
     (a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
 
   for (const g of ordered) {
@@ -109,6 +137,10 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
       lines.push(`  ${c("blind spots: " + g.meta.blindSpots.join("; "), DIM)}`);
       lines.push("");
     }
+  }
+
+  if (hidden > 0) {
+    lines.push(c(`${hidden} duplicate finding${hidden === 1 ? "" : "s"} hidden (same location, different doctor)`, DIM));
   }
 
   return lines.join("\n").replace(/\n+$/, "");

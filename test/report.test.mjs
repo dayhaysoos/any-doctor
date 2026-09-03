@@ -112,3 +112,19 @@ test("renderReport: multiple checks group under one doctor with their own headin
   assert.match(out, /src\/refund\.ts:4/);
   assert.match(out, /Bugs: 2 error, 1 warning/);
 });
+
+test("renderReport: cross-doctor duplicates at the same location are hidden once", () => {
+  const out = renderReport({
+    fileCount: 6,
+    durationMs: 111,
+    groups: [
+      { programName: "unawaited-async-map.mjs", meta, findings: [{ file: "src/services/chat.ts", line: 15 }] },
+      { programName: "map-async-variant.mjs", meta: { ...meta, id: "map-async-variant", description: "Async .map results must be wrapped in Promise.all." }, findings: [{ file: "src/services/chat.ts", line: 15 }] },
+    ],
+  }, false);
+  assert.match(out, /1 issue found/);
+  assert.match(out, /1 duplicate finding hidden/);
+  assert.match(out, /Score: 96/);
+  const occurrences = out.split("chat.ts:15").length - 1;
+  assert.equal(occurrences, 1);
+});
