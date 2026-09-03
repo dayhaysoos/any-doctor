@@ -289,8 +289,8 @@ function codeFrame(root, file, line, width, useColor) {
         const from = Math.max(0, line - 3);
         const to = Math.min(all.length, line + 2);
         for (let i = from; i < to; i++) {
-            const marker = i === line - 1 ? c(">", BOLD) : "  ";
-            const num = c(String(i + 1).padStart(4), DIM);
+            const marker = i === line - 1 ? c(">  ", BOLD) : "   ";
+            const num = c(String(i + 1).padStart(3), DIM);
             const text = truncateVisible((_a = all[i]) !== null && _a !== void 0 ? _a : "", Math.max(10, width));
             out.push(`${marker} ${num} │ ${highlightCode(text, useColor)}`);
         }
