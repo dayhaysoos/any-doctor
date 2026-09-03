@@ -7,7 +7,7 @@ import { RunResult, VerifyRunResult, RESULT_SENTINEL, ReportGroup, Finding } fro
 import { renderReport } from "./report";
 import { copyToClipboard } from "./clipboard";
 import { runDashboard } from "./dashboard";
-import { discoverDoctors, globalDoctorsDir, DiscoveredDoctor } from "./discover";
+import { discoverDoctors, globalDoctorsDir, resolveDoctorPath, DiscoveredDoctor } from "./discover";
 import { pickItem } from "./picker";
 import { buildFixPrompt } from "./handoff";
 
@@ -223,7 +223,13 @@ async function cmdRun(args: string[]): Promise<void> {
 
   let doctorAbs: string;
   if (parsed.doctorPath) {
-    doctorAbs = path.resolve(parsed.doctorPath);
+    const resolved = resolveDoctorPath(parsed.doctorPath, process.cwd());
+    if (resolved === null) {
+      fail(`no doctor program found for "${parsed.doctorPath}"`);
+      fail(`searched ./doctors (walking up from ${process.cwd()}) and ~/.any-doctor/doctors`);
+      process.exit(1);
+    }
+    doctorAbs = resolved;
   } else {
     const chosen = await pickDoctor(process.cwd(), { targetDir: parsed.targetDir, withCounts: true });
     doctorAbs = chosen.path;
@@ -311,6 +317,12 @@ async function cmdVerify(args: string[]): Promise<void> {
     const chosen = await pickDoctor(process.cwd());
     doctorPath = chosen.path;
   }
+  const resolvedVerify = resolveDoctorPath(doctorPath, process.cwd());
+  if (resolvedVerify === null) {
+    fail(`no doctor program found for "${doctorPath}"`);
+    process.exit(1);
+  }
+  doctorPath = resolvedVerify;
   const fixturesPath = fixturesPathFor(doctorPath);
   if (!fs.existsSync(path.resolve(fixturesPath))) {
     fail("no fixtures found for this doctor — expected " + fixturesPath);

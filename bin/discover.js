@@ -37,6 +37,7 @@ exports.globalDoctorsDir = globalDoctorsDir;
 exports.findRepoDoctorsDir = findRepoDoctorsDir;
 exports.readMeta = readMeta;
 exports.discoverDoctors = discoverDoctors;
+exports.resolveDoctorPath = resolveDoctorPath;
 const child_process_1 = require("child_process");
 const fs = __importStar(require("fs"));
 const os = __importStar(require("os"));
@@ -97,4 +98,21 @@ function discoverDoctors(cwd, opts) {
         }
     }
     return [...bySlug.values()];
+}
+function resolveDoctorPath(arg, cwd) {
+    const direct = path.resolve(cwd, arg);
+    if (fs.existsSync(direct))
+        return direct;
+    const base = path.basename(arg);
+    const repoDir = findRepoDoctorsDir(cwd);
+    const scopes = [repoDir, opts_globalDir()].filter((d) => Boolean(d));
+    for (const dir of scopes) {
+        const candidate = path.join(dir, base);
+        if (fs.existsSync(candidate))
+            return candidate;
+    }
+    return null;
+}
+function opts_globalDir() {
+    return globalDoctorsDir();
 }

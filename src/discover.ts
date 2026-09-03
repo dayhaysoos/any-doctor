@@ -69,3 +69,20 @@ export function discoverDoctors(cwd: string, opts?: { globalDir?: string }): Dis
   }
   return [...bySlug.values()];
 }
+
+export function resolveDoctorPath(arg: string, cwd: string): string | null {
+  const direct = path.resolve(cwd, arg);
+  if (fs.existsSync(direct)) return direct;
+  const base = path.basename(arg);
+  const repoDir = findRepoDoctorsDir(cwd);
+  const scopes = [repoDir, opts_globalDir()].filter((d): d is string => Boolean(d));
+  for (const dir of scopes) {
+    const candidate = path.join(dir, base);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+function opts_globalDir(): string {
+  return globalDoctorsDir();
+}

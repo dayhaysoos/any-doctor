@@ -16,3 +16,4 @@ export declare function readMeta(doctorPath: string): {
 export declare function discoverDoctors(cwd: string, opts?: {
     globalDir?: string;
 }): DiscoveredDoctor[];
+export declare function resolveDoctorPath(arg: string, cwd: string): string | null;
