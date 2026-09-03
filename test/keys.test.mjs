@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 const { createKeyFeed } = require("../bin/keys.js");
 
 function collect() {
-  const keys: string[] = [];
+  const keys = [];
   const feed = createKeyFeed(key => keys.push(key));
   return { keys, feed };
 }
