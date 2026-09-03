@@ -45,30 +45,24 @@ export function scoreBar(score: number, width: number): string {
 export function buildItems(groups: ReportGroup[], doctorFile: string): DashItem[] {
   const items: DashItem[] = [];
   for (const g of groups) {
-    const buckets = new Map<string, DashItem>();
     for (const f of g.findings) {
       const checkId = f.rule ?? g.meta.id;
-      const key = g.meta.id + "/" + checkId;
-      if (!buckets.has(key)) {
-        const check = g.meta.checks?.find(c => c.id === checkId);
-        buckets.set(key, {
-          key,
-          doctorId: g.meta.id,
-          checkId,
-          description: check?.description ?? g.meta.description,
-          severity: f.severity ?? check?.severity ?? g.meta.severity,
-          category: g.meta.category ?? "general",
-          sites: [],
-          impact: check?.impact,
-          why: check?.why,
-          fix: check?.fix,
-          blindSpots: g.meta.blindSpots,
-          doctorFile,
-        });
-      }
-      buckets.get(key)!.sites.push(f);
+      const check = g.meta.checks?.find(c => c.id === checkId);
+      items.push({
+        key: g.meta.id + "/" + checkId + "@" + f.file + ":" + f.line,
+        doctorId: g.meta.id,
+        checkId,
+        description: check?.description ?? g.meta.description,
+        severity: f.severity ?? check?.severity ?? g.meta.severity,
+        category: g.meta.category ?? "general",
+        sites: [f],
+        impact: check?.impact,
+        why: check?.why,
+        fix: check?.fix,
+        blindSpots: g.meta.blindSpots,
+        doctorFile,
+      });
     }
-    for (const it of buckets.values()) items.push(it);
   }
   return items;
 }
@@ -157,14 +151,19 @@ export function dashboardFrame(opts: {
     if (leftCount >= maxList) break;
     left.push(c(section.title, BOLD));
     leftCount++;
+    let prevCheckId: string | null = null;
     for (const idx of section.itemIndexes) {
       if (leftCount >= maxList) break;
       const it = items[idx];
       const cursor = idx === selected ? c("› ", BOLD) : "  ";
       const glyph = c(GLYPH[it.severity], COLOR[it.severity]);
       const isRead = readKeys.has(it.key);
-      const label = isRead ? c(it.description, DIM) : c(it.description, useColor ? "" : "");
-      left.push(`${cursor}${glyph} ${label}${it.sites.length > 1 ? c(` ×${it.sites.length}`, DIM) : ""}`);
+      const site = it.sites[0];
+      const rowLabel = prevCheckId === it.checkId
+        ? c(`${site.file}:${site.line}`, DIM)
+        : c(it.description, isRead ? DIM : "");
+      prevCheckId = it.checkId;
+      left.push(`${cursor}${glyph} ${rowLabel}${c("  " + site.file + ":" + site.line, DIM)}`);
       leftCount++;
     }
     left.push("");
@@ -231,7 +230,6 @@ function detailFor(item: DashItem, root: string, useColor: boolean): string[] {
   lines.push(...codeLines);
   lines.push("");
   if (item.fix) lines.push(c("  Fix " + item.fix, DIM));
-  if (item.sites.length > 1) lines.push(c(`  ${item.sites.length - 1} more site${item.sites.length - 1 === 1 ? "" : "s"} — enter copies the full context`, DIM));
   return lines;
 }
 

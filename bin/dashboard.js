@@ -56,31 +56,24 @@ function buildItems(groups, doctorFile) {
     var _a, _b, _c, _d, _e, _f;
     const items = [];
     for (const g of groups) {
-        const buckets = new Map();
         for (const f of g.findings) {
             const checkId = (_a = f.rule) !== null && _a !== void 0 ? _a : g.meta.id;
-            const key = g.meta.id + "/" + checkId;
-            if (!buckets.has(key)) {
-                const check = (_b = g.meta.checks) === null || _b === void 0 ? void 0 : _b.find(c => c.id === checkId);
-                buckets.set(key, {
-                    key,
-                    doctorId: g.meta.id,
-                    checkId,
-                    description: (_c = check === null || check === void 0 ? void 0 : check.description) !== null && _c !== void 0 ? _c : g.meta.description,
-                    severity: (_e = (_d = f.severity) !== null && _d !== void 0 ? _d : check === null || check === void 0 ? void 0 : check.severity) !== null && _e !== void 0 ? _e : g.meta.severity,
-                    category: (_f = g.meta.category) !== null && _f !== void 0 ? _f : "general",
-                    sites: [],
-                    impact: check === null || check === void 0 ? void 0 : check.impact,
-                    why: check === null || check === void 0 ? void 0 : check.why,
-                    fix: check === null || check === void 0 ? void 0 : check.fix,
-                    blindSpots: g.meta.blindSpots,
-                    doctorFile,
-                });
-            }
-            buckets.get(key).sites.push(f);
+            const check = (_b = g.meta.checks) === null || _b === void 0 ? void 0 : _b.find(c => c.id === checkId);
+            items.push({
+                key: g.meta.id + "/" + checkId + "@" + f.file + ":" + f.line,
+                doctorId: g.meta.id,
+                checkId,
+                description: (_c = check === null || check === void 0 ? void 0 : check.description) !== null && _c !== void 0 ? _c : g.meta.description,
+                severity: (_e = (_d = f.severity) !== null && _d !== void 0 ? _d : check === null || check === void 0 ? void 0 : check.severity) !== null && _e !== void 0 ? _e : g.meta.severity,
+                category: (_f = g.meta.category) !== null && _f !== void 0 ? _f : "general",
+                sites: [f],
+                impact: check === null || check === void 0 ? void 0 : check.impact,
+                why: check === null || check === void 0 ? void 0 : check.why,
+                fix: check === null || check === void 0 ? void 0 : check.fix,
+                blindSpots: g.meta.blindSpots,
+                doctorFile,
+            });
         }
-        for (const it of buckets.values())
-            items.push(it);
     }
     return items;
 }
@@ -144,6 +137,7 @@ function dashboardFrame(opts) {
             break;
         left.push(c(section.title, BOLD));
         leftCount++;
+        let prevCheckId = null;
         for (const idx of section.itemIndexes) {
             if (leftCount >= maxList)
                 break;
@@ -151,8 +145,12 @@ function dashboardFrame(opts) {
             const cursor = idx === selected ? c("› ", BOLD) : "  ";
             const glyph = c(GLYPH[it.severity], COLOR[it.severity]);
             const isRead = readKeys.has(it.key);
-            const label = isRead ? c(it.description, DIM) : c(it.description, useColor ? "" : "");
-            left.push(`${cursor}${glyph} ${label}${it.sites.length > 1 ? c(` ×${it.sites.length}`, DIM) : ""}`);
+            const site = it.sites[0];
+            const rowLabel = prevCheckId === it.checkId
+                ? c(`${site.file}:${site.line}`, DIM)
+                : c(it.description, isRead ? DIM : "");
+            prevCheckId = it.checkId;
+            left.push(`${cursor}${glyph} ${rowLabel}${c("  " + site.file + ":" + site.line, DIM)}`);
             leftCount++;
         }
         left.push("");
@@ -218,8 +216,6 @@ function detailFor(item, root, useColor) {
     lines.push("");
     if (item.fix)
         lines.push(c("  Fix " + item.fix, DIM));
-    if (item.sites.length > 1)
-        lines.push(c(`  ${item.sites.length - 1} more site${item.sites.length - 1 === 1 ? "" : "s"} — enter copies the full context`, DIM));
     return lines;
 }
 function codeFrame(root, file, line, useColor) {
