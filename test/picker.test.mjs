@@ -29,6 +29,11 @@ test("pickerFrame: no matches shows the empty state", () => {
   assert.match(out, /no matching doctors/);
 });
 
+test("pickerFrame: notice survives rendering (copy confirmation)", () => {
+  const out = pickerFrame("What next?", items, 0, "", false, "1 finding copied to clipboard — paste into your agent");
+  assert.match(out, /✔ 1 finding copied to clipboard — paste into your agent/);
+});
+
 test("filterPickerItems: fuzzy query narrows the list", () => {
   const out = filterPickerItems(items, "console");
   assert.equal(out.length, 1);
