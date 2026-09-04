@@ -318,20 +318,28 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
   let notice: string | undefined;
 
   const draw = (): void => {
-    const it = items[selected];
-    if (it) readKeys.add(it.key);
-    const frame = dashboardFrame({
-      items,
-      selected,
-      readKeys,
-      root: input.root,
-      fileCount: input.fileCount,
-      durationMs: input.durationMs,
-      useColor,
-      notice,
-      cols: stdout.columns || 120,
-      rows: stdout.rows || 34,
-    });
+    let frame: string;
+    try {
+      const it = items[selected];
+      if (it) readKeys.add(it.key);
+      frame = dashboardFrame({
+        items,
+        selected,
+        readKeys,
+        root: input.root,
+        fileCount: input.fileCount,
+        durationMs: input.durationMs,
+        useColor,
+        notice,
+        cols: stdout.columns || 120,
+        rows: stdout.rows || 34,
+      });
+    } catch (e) {
+      const err = e as Error;
+      frame = "DASHBOARD RENDER ERROR — the view is frozen, press q to quit.\n"
+        + "Send a screenshot of this to the maintainer:\n\n"
+        + String(err && err.stack ? err.stack : err);
+    }
     stdout.write("\x1b[H\x1b[2J" + frame);
   };
 
