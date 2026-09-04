@@ -233,10 +233,8 @@ async function cmdRun(args) {
     const scan = scanOnce(doctorAbs, parsed.targetDir);
     const ttyCols = (_a = process.stdout.columns) !== null && _a !== void 0 ? _a : 0;
     const interactive = process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
-    if (!interactive || scan.findings.length === 0) {
+    if (!interactive) {
         console.log((0, report_1.renderReport)({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, useColor()));
-        if (scan.findings.length === 0 && interactive)
-            console.log(dim("\nnothing to do — clean run"));
         return;
     }
     await (0, dashboard_1.runDashboard)({

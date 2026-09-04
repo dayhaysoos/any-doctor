@@ -306,8 +306,6 @@ async function runDashboard(input) {
         return;
     const useColor = input.useColor;
     const items = buildItems(input.groups, input.doctorFile);
-    if (items.length === 0)
-        return;
     let selected = 0;
     const readKeys = new Set();
     let notice;

@@ -239,9 +239,8 @@ async function cmdRun(args: string[]): Promise<void> {
   const ttyCols = process.stdout.columns ?? 0;
   const interactive = process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
 
-  if (!interactive || scan.findings.length === 0) {
+  if (!interactive) {
     console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, useColor()));
-    if (scan.findings.length === 0 && interactive) console.log(dim("\nnothing to do — clean run"));
     return;
   }
 

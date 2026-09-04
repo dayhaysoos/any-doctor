@@ -313,7 +313,6 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
 
   const useColor = input.useColor;
   const items = buildItems(input.groups, input.doctorFile);
-  if (items.length === 0) return;
   let selected = 0;
   const readKeys = new Set<string>();
   let notice: string | undefined;
