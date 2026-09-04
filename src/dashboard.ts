@@ -319,7 +319,7 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
 
   const draw = (): void => {
     const it = items[selected];
-    readKeys.add(it.key);
+    if (it) readKeys.add(it.key);
     const frame = dashboardFrame({
       items,
       selected,

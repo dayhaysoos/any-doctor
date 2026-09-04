@@ -311,7 +311,8 @@ async function runDashboard(input) {
     let notice;
     const draw = () => {
         const it = items[selected];
-        readKeys.add(it.key);
+        if (it)
+            readKeys.add(it.key);
         const frame = dashboardFrame({
             items,
             selected,
