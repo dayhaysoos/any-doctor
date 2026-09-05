@@ -143,7 +143,7 @@ export function buildListRows(items, useColor, selected, readKeys) {
 }
 export function dashboardFrame(state) {
     var _a, _b, _c, _d, _e;
-    const { items, selected, readKeys, root, useColor, cols, rows } = state;
+    const { items, selected, readKeys, useColor, cols, rows } = state;
     const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
     const layout = resolveDashboardLayout(cols, rows, items.length);
     const { score, grade } = scoreFromSeverities(items.map(it => it.severity));
@@ -182,7 +182,7 @@ export function dashboardFrame(state) {
             detail.push("  " + l);
         detail.push("");
         detail.push(c("Code", DIM));
-        for (const l of codeFrame(root, sel.site.file, sel.site.line, layout.detailWidth - 2, useColor))
+        for (const l of codeFrameLines(state.readSource(sel.site.file), sel.site.line, layout.detailWidth - 2, useColor))
             detail.push("  " + l);
         detail.push("");
         if (sel.fix) {
@@ -225,23 +225,21 @@ export function dashboardFrame(state) {
 function cap(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
-function codeFrame(root, file, line, width, useColor) {
+function codeFrameLines(source, line, width, useColor) {
     var _a;
     const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
     const out = [];
-    try {
-        const all = fs.readFileSync(path.resolve(root, file), "utf8").split("\n");
-        const from = Math.max(0, line - 3);
-        const to = Math.min(all.length, line + 2);
-        for (let i = from; i < to; i++) {
-            const marker = i === line - 1 ? c(">  ", BOLD) : "   ";
-            const num = c(String(i + 1).padStart(3), DIM);
-            const text = truncateVisible((_a = all[i]) !== null && _a !== void 0 ? _a : "", Math.max(10, width));
-            out.push(`${marker} ${num} │ ${highlightCode(text, useColor)}`);
-        }
-    }
-    catch {
+    if (source === null) {
         out.push(c("  (source unavailable)", DIM));
+        return out;
+    }
+    const from = Math.max(0, line - 3);
+    const to = Math.min(source.length, line + 2);
+    for (let i = from; i < to; i++) {
+        const marker = i === line - 1 ? c(">  ", BOLD) : "   ";
+        const num = c(String(i + 1).padStart(3), DIM);
+        const text = truncateVisible((_a = source[i]) !== null && _a !== void 0 ? _a : "", Math.max(10, width));
+        out.push(`${marker} ${num} │ ${highlightCode(text, useColor)}`);
     }
     return out;
 }
@@ -256,6 +254,14 @@ export async function runDashboardOn(stdin, stdout, input, deps = {}) {
     let selected = 0;
     const readKeys = new Set();
     let notice;
+    const readSource = (file) => {
+        try {
+            return fs.readFileSync(path.resolve(input.root, file), "utf8").split("\n");
+        }
+        catch {
+            return null;
+        }
+    };
     const frame = () => {
         try {
             const it = items[selected];
@@ -265,7 +271,7 @@ export async function runDashboardOn(stdin, stdout, input, deps = {}) {
                 items,
                 selected,
                 readKeys,
-                root: input.root,
+                readSource,
                 fileCount: input.fileCount,
                 durationMs: input.durationMs,
                 useColor,

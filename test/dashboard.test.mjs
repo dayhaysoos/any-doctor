@@ -166,7 +166,7 @@ test("runDashboard: enter on an empty findings list draws instead of crashing", 
 test("dashboardFrame: frame height is exactly rows - 1 in every state (notice never resizes it)", () => {
   const items = buildItems(groups);
   const height = (notice, cols, selected) =>
-    dashboardFrame({ items, selected, readKeys: new Set(), root: ".", fileCount: 2, durationMs: 10, useColor: false, notice, cols, rows: 34 })
+    dashboardFrame({ items, selected, readKeys: new Set(), readSource: () => null, fileCount: 2, durationMs: 10, useColor: false, notice, cols, rows: 34 })
       .split("\n").length;
   assert.equal(height(undefined, 120, 0), 33, "split, no notice");
   assert.equal(height("copied issue context — paste into your agent", 120, 0), 33, "split, with notice");
@@ -195,4 +195,17 @@ test("runDashboard: repaints in place — no full-screen erase after the first p
 
   stdin.send("q");
   assert.equal(await settle(done), "resolved");
+});
+
+test("dashboardFrame: pure state -> string; code frames come from the injected source", async () => {
+  const items = buildItems(groups);
+  const source = ["one", "two", "const three = 3", "four", "five"];
+  const readSource = (file) => (file === "src/a.ts" ? source : null);
+  const state = { items, selected: 0, readKeys: new Set(), readSource, fileCount: 2, durationMs: 10, useColor: false, cols: 120, rows: 34 };
+
+  const once = dashboardFrame(state);
+  assert.equal(dashboardFrame(state), once, "same state, same frame — no hidden I/O");
+  assert.match(once, /> +2 │ two/, "code frame renders the injected source with the marker line");
+  const bare = dashboardFrame({ ...state, readSource: () => null });
+  assert.match(bare, /\(source unavailable\)/, "a file with no source renders the fallback");
 });

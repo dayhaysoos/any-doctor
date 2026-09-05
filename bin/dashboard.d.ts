@@ -44,11 +44,14 @@ interface ListRow {
     itemIndex: number;
 }
 export declare function buildListRows(items: DashItem[], useColor: boolean, selected: number, readKeys: Set<string>): ListRow[];
+export interface FrameSource {
+    (file: string): string[] | null;
+}
 export declare function dashboardFrame(state: {
     items: DashItem[];
     selected: number;
     readKeys: Set<string>;
-    root: string;
+    readSource: FrameSource;
     fileCount: number;
     durationMs: number;
     useColor: boolean;

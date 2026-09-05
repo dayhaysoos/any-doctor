@@ -187,11 +187,15 @@ export function buildListRows(items: DashItem[], useColor: boolean, selected: nu
   return rows;
 }
 
+export interface FrameSource {
+  (file: string): string[] | null;
+}
+
 export function dashboardFrame(state: {
   items: DashItem[];
   selected: number;
   readKeys: Set<string>;
-  root: string;
+  readSource: FrameSource;
   fileCount: number;
   durationMs: number;
   useColor: boolean;
@@ -199,7 +203,7 @@ export function dashboardFrame(state: {
   cols: number;
   rows: number;
 }): string {
-  const { items, selected, readKeys, root, useColor, cols, rows } = state;
+  const { items, selected, readKeys, useColor, cols, rows } = state;
   const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
   const layout = resolveDashboardLayout(cols, rows, items.length);
   const { score, grade } = scoreFromSeverities(items.map(it => it.severity));
@@ -238,7 +242,7 @@ export function dashboardFrame(state: {
     for (const l of wordWrap(sel.why ?? "Not documented for this check.", layout.detailWidth - 2)) detail.push("  " + l);
     detail.push("");
     detail.push(c("Code", DIM));
-    for (const l of codeFrame(root, sel.site.file, sel.site.line, layout.detailWidth - 2, useColor)) detail.push("  " + l);
+    for (const l of codeFrameLines(state.readSource(sel.site.file), sel.site.line, layout.detailWidth - 2, useColor)) detail.push("  " + l);
     detail.push("");
     if (sel.fix) {
       detail.push(c("Fix", DIM));
@@ -282,21 +286,20 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function codeFrame(root: string, file: string, line: number, width: number, useColor: boolean): string[] {
+function codeFrameLines(source: string[] | null, line: number, width: number, useColor: boolean): string[] {
   const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
   const out: string[] = [];
-  try {
-    const all = fs.readFileSync(path.resolve(root, file), "utf8").split("\n");
-    const from = Math.max(0, line - 3);
-    const to = Math.min(all.length, line + 2);
-    for (let i = from; i < to; i++) {
-      const marker = i === line - 1 ? c(">  ", BOLD) : "   ";
-      const num = c(String(i + 1).padStart(3), DIM);
-      const text = truncateVisible(all[i] ?? "", Math.max(10, width));
-      out.push(`${marker} ${num} │ ${highlightCode(text, useColor)}`);
-    }
-  } catch {
+  if (source === null) {
     out.push(c("  (source unavailable)", DIM));
+    return out;
+  }
+  const from = Math.max(0, line - 3);
+  const to = Math.min(source.length, line + 2);
+  for (let i = from; i < to; i++) {
+    const marker = i === line - 1 ? c(">  ", BOLD) : "   ";
+    const num = c(String(i + 1).padStart(3), DIM);
+    const text = truncateVisible(source[i] ?? "", Math.max(10, width));
+    out.push(`${marker} ${num} │ ${highlightCode(text, useColor)}`);
   }
   return out;
 }
@@ -321,6 +324,14 @@ export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStd
   const readKeys = new Set<string>();
   let notice: string | undefined;
 
+  const readSource: FrameSource = (file) => {
+    try {
+      return fs.readFileSync(path.resolve(input.root, file), "utf8").split("\n");
+    } catch {
+      return null;
+    }
+  };
+
   const frame = (): string => {
     try {
       const it = items[selected];
@@ -329,7 +340,7 @@ export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStd
         items,
         selected,
         readKeys,
-        root: input.root,
+        readSource,
         fileCount: input.fileCount,
         durationMs: input.durationMs,
         useColor,
