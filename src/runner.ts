@@ -33,6 +33,11 @@ export class NoFramedResult extends Schema.TaggedError<NoFramedResult>()("NoFram
 
 export type RunnerError = ProgramMissing | FixturesMissing | DoctorCrashed | NoFramedResult;
 
+export function isRunnerError(e: unknown): e is RunnerError {
+  return e instanceof ProgramMissing || e instanceof FixturesMissing
+    || e instanceof DoctorCrashed || e instanceof NoFramedResult;
+}
+
 export function describeRunnerError(e: RunnerError): string {
   switch (e._tag) {
     case "ProgramMissing": return "no such doctor program: " + e.programPath;
@@ -145,13 +150,34 @@ const asVerifyResult = (frame: Record<string, unknown>): Effect.Effect<VerifyRun
     return frame as unknown as VerifyRunResult;
   });
 
-export const runDoctor = ({ programPath, targetDir }: RunOptions): Effect.Effect<RunResult, RunnerError> =>
+// ---- the public interface: plain async, typed failures thrown ----
+//
+// Effect is an implementation detail of this module. The public functions
+// throw the tagged errors above (they extend Error, so callers get _tag
+// matching and a stack); concurrency and composition stay inside.
+
+const squash = (cause: Cause.Cause<RunnerError>): RunnerError => {
+  const e = Cause.squash(cause);
+  // Defects (interrupt/die) never occur in this module's code paths, but a
+  // defect must not escape the typed channel.
+  return isRunnerError(e) ? e : new DoctorCrashed({ programPath: "", detail: String(e) });
+};
+
+async function drain<T>(effect: Effect.Effect<T, RunnerError>): Promise<T> {
+  const exit = await Effect.runPromiseExit(effect);
+  return Exit.match(exit, {
+    onFailure: (cause) => { throw squash(cause); },
+    onSuccess: (value) => value,
+  });
+}
+
+const runDoctorE = ({ programPath, targetDir }: RunOptions): Effect.Effect<RunResult, RunnerError> =>
   Effect.flatMap(
     execLoader(programPath, [path.resolve(targetDir)]),
     asRunResult,
   );
 
-export const verifyDoctor = ({ programPath, fixturesPath }: VerifyOptions): Effect.Effect<VerifyRunResult, RunnerError> =>
+const verifyDoctorE = ({ programPath, fixturesPath }: VerifyOptions): Effect.Effect<VerifyRunResult, RunnerError> =>
   Effect.gen(function* () {
     const abs = path.resolve(programPath);
     const fixtures = path.resolve(fixturesPath ?? fixturesPathFor(abs));
@@ -162,18 +188,44 @@ export const verifyDoctor = ({ programPath, fixturesPath }: VerifyOptions): Effe
     return yield* asVerifyResult(frame);
   });
 
-export const countIssues = (options: RunOptions): Effect.Effect<number, RunnerError> =>
-  Effect.map(runDoctor(options), (r) => r.findings.length);
+const countIssuesE = (options: RunOptions): Effect.Effect<number, RunnerError> =>
+  Effect.map(runDoctorE(options), (r) => r.findings.length);
+
+export async function runDoctor(options: RunOptions): Promise<RunResult> {
+  return drain(runDoctorE(options));
+}
+
+export async function verifyDoctor(options: VerifyOptions): Promise<VerifyRunResult> {
+  return drain(verifyDoctorE(options));
+}
+
+export type CountResult = { programPath: string; count: number } | { programPath: string; error: RunnerError };
+
+// Parallel counting for the picker: one capability, order preserved, a
+// crashed doctor reported as data instead of aborting the fan-out.
+export async function countAll({ programPaths, targetDir }: { programPaths: string[]; targetDir: string }): Promise<CountResult[]> {
+  const exits = await Effect.runPromise(
+    Effect.all(programPaths.map(p => Effect.exit(countIssuesE({ programPath: p, targetDir }))), { concurrency: "unbounded" }),
+  );
+  return programPaths.map((programPath, i) => Exit.match(exits[i], {
+    onFailure: (cause) => ({ programPath, error: squash(cause) }),
+    onSuccess: (count) => ({ programPath, count }),
+  }));
+}
 
 // A doctor whose meta cannot be read is data (a broken doctor), not a
-// failure: metaDoctor never errors, it reports { meta: null, error }.
-export const metaDoctor = ({ programPath }: { programPath: string }): Effect.Effect<MetaRead> =>
-  Effect.gen(function* () {
-    const exit = yield* Effect.exit(execLoader(programPath, ["--meta"], META_TIMEOUT_MS));
-    return Exit.match(exit, {
-      onFailure: (cause) => ({ meta: null, error: describeRunnerError(Cause.squash(cause) as RunnerError) }),
-      onSuccess: (frame) => ({
-        meta: frame.meta !== null && typeof frame.meta === "object" ? frame.meta as DoctorMeta : null,
-      }),
-    });
-  });
+// failure: metaDoctor never throws, it returns { meta: null, error }.
+export async function metaDoctor({ programPath }: { programPath: string }): Promise<MetaRead> {
+  const frame = await Effect.runPromise(
+    Effect.flatMap(
+      Effect.exit(execLoader(programPath, ["--meta"], META_TIMEOUT_MS)),
+      (exit) => Effect.succeed(Exit.match(exit, {
+        onFailure: (cause) => ({ meta: null, error: describeRunnerError(squash(cause)) }),
+        onSuccess: (f) => ({
+          meta: f.meta !== null && typeof f.meta === "object" ? f.meta as DoctorMeta : null,
+        }),
+      })),
+    ),
+  );
+  return frame;
+}

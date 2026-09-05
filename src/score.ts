@@ -1,4 +1,4 @@
-import { Finding, ReportGroup, Severity } from "./contract.js";
+import { Finding, ReportGroup, resolveFinding, Severity } from "./contract.js";
 
 export interface ScoreResult {
   score: number;
@@ -8,9 +8,7 @@ export interface ScoreResult {
 const WEIGHTS: Record<Severity, number> = { error: 10, warning: 4, info: 1 };
 
 export function findingSeverity(g: ReportGroup, f: Finding): Severity {
-  if (f.severity) return f.severity;
-  const check = f.rule ? g.meta.checks?.find(c => c.id === f.rule) : undefined;
-  return check?.severity ?? g.meta.severity;
+  return resolveFinding(g.meta, f).severity;
 }
 
 export function scoreFromSeverities(sevs: Severity[]): ScoreResult {

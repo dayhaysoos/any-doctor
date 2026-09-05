@@ -1,10 +1,7 @@
+import { resolveFinding } from "./contract.js";
 const WEIGHTS = { error: 10, warning: 4, info: 1 };
 export function findingSeverity(g, f) {
-    var _a, _b;
-    if (f.severity)
-        return f.severity;
-    const check = f.rule ? (_a = g.meta.checks) === null || _a === void 0 ? void 0 : _a.find(c => c.id === f.rule) : undefined;
-    return (_b = check === null || check === void 0 ? void 0 : check.severity) !== null && _b !== void 0 ? _b : g.meta.severity;
+    return resolveFinding(g.meta, f).severity;
 }
 export function scoreFromSeverities(sevs) {
     let score = 100;

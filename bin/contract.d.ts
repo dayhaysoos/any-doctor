@@ -90,3 +90,18 @@ export declare function compareFindings(expected: {
     file: string;
     line: number;
 }[], actual: Finding[]): FixtureDiff;
+export interface JoinedFinding {
+    doctorId: string;
+    checkId: string;
+    checkKey: string;
+    description: string;
+    severity: Severity;
+    declaredSeverity: Severity;
+    category: string;
+    impact?: string;
+    why?: string;
+    fix?: string;
+    blindSpots?: string[];
+    finding: Finding;
+}
+export declare function resolveFinding(meta: DoctorMeta, finding: Finding): JoinedFinding;

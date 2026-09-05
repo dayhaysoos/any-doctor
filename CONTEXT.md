@@ -22,6 +22,33 @@ message or severity override. The doctor-level truth (id, description,
 default severity, blind spots) lives in the program's meta, not in
 individual findings.
 
+## Check
+
+One rule within a doctor program. A finding names its check via `rule`;
+the check's meta supplies description, severity, impact, why, and fix;
+the doctor's meta supplies the defaults when a finding names no check.
+One doctor program, many checks.
+
+## Doctor contract
+
+The interface shared by doctor programs, the runner, the report, the
+fixture harness, and the generator prompt. The single place where the
+shape of ctx, meta, findings, and the runner protocol is defined.
+
+## DoctorCtx (ctx)
+
+The capability boundary a doctor program is expected to use: read-only,
+repo-scoped file access, structural search, and a finding emitter.
+Honoring this boundary is a contract expectation enforced by review today;
+the runner seam is where a technical sandbox will enforce it.
+
+## Engine
+
+The structural-search backend a DoctorCtx uses to answer ctx.search.
+ast-grep is the engine today; oxc is a candidate for TypeScript-heavy
+repos. Engine selection is invisible to doctor programs: one doctor
+program runs unchanged on any engine.
+
 ## Meta
 
 A doctor program's declared data: id, description, default severity,

@@ -1,4 +1,4 @@
-import { Cause, Effect, Schema } from "effect";
+import { Cause, Schema } from "effect";
 import { DoctorMeta, RunResult, VerifyRunResult } from "./contract.js";
 declare const ProgramMissing_base: Schema.Class<ProgramMissing, Schema.TaggedStruct<"ProgramMissing", {
     readonly programPath: Schema.String;
@@ -24,6 +24,7 @@ declare const NoFramedResult_base: Schema.Class<NoFramedResult, Schema.TaggedStr
 export declare class NoFramedResult extends NoFramedResult_base {
 }
 export type RunnerError = ProgramMissing | FixturesMissing | DoctorCrashed | NoFramedResult;
+export declare function isRunnerError(e: unknown): e is RunnerError;
 export declare function describeRunnerError(e: RunnerError): string;
 export interface RunOptions {
     programPath: string;
@@ -38,10 +39,20 @@ export interface MetaRead {
     error?: string;
 }
 export declare function fixturesPathFor(programPath: string): string;
-export declare const runDoctor: ({ programPath, targetDir }: RunOptions) => Effect.Effect<RunResult, RunnerError>;
-export declare const verifyDoctor: ({ programPath, fixturesPath }: VerifyOptions) => Effect.Effect<VerifyRunResult, RunnerError>;
-export declare const countIssues: (options: RunOptions) => Effect.Effect<number, RunnerError>;
-export declare const metaDoctor: ({ programPath }: {
+export declare function runDoctor(options: RunOptions): Promise<RunResult>;
+export declare function verifyDoctor(options: VerifyOptions): Promise<VerifyRunResult>;
+export type CountResult = {
     programPath: string;
-}) => Effect.Effect<MetaRead>;
+    count: number;
+} | {
+    programPath: string;
+    error: RunnerError;
+};
+export declare function countAll({ programPaths, targetDir }: {
+    programPaths: string[];
+    targetDir: string;
+}): Promise<CountResult[]>;
+export declare function metaDoctor({ programPath }: {
+    programPath: string;
+}): Promise<MetaRead>;
 export {};

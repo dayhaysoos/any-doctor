@@ -1,7 +1,6 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { Effect } from "effect";
 import { DoctorMeta } from "./contract.js";
 import { metaDoctor } from "./runner.js";
 
@@ -46,7 +45,7 @@ export async function discoverDoctors(cwd: string, opts?: { globalDir?: string }
       const slug = f.replace(/\.(m|c)?js$/, "");
       if (bySlug.has(slug)) continue;
       const abs = path.join(dir, f);
-      const { meta, error } = await Effect.runPromise(metaDoctor({ programPath: abs }));
+      const { meta, error } = await metaDoctor({ programPath: abs });
       bySlug.set(slug, { slug, scope, path: abs, meta, error });
     }
   }

@@ -23,7 +23,7 @@ export interface DashboardInput {
     useColor: boolean;
 }
 export declare function scoreBar(score: number, width: number): string;
-export declare function buildItems(groups: ReportGroup[], doctorFile: string): DashItem[];
+export declare function buildItems(groups: ReportGroup[]): DashItem[];
 export declare function issuePrompt(item: DashItem, verifyCommand: string): string;
 export declare function visibleWidth(s: string): number;
 export declare function truncateVisible(s: string, width: number): string;

@@ -2,7 +2,6 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { Cause, Effect, Exit } from "effect";
 import { RunResult, VerifyRunResult, ReportGroup, Finding } from "./contract.js";
 import { renderReport } from "./report.js";
 import { copyToClipboard } from "./clipboard.js";
@@ -10,7 +9,7 @@ import { runDashboard } from "./dashboard.js";
 import { discoverDoctors, globalDoctorsDir, resolveDoctorPath, DiscoveredDoctor } from "./discover.js";
 import { pickItem } from "./picker.js";
 import { buildFixPrompt } from "./handoff.js";
-import { countIssues, describeRunnerError, RunnerError, runDoctor, verifyDoctor } from "./runner.js";
+import { countAll, describeRunnerError, isRunnerError, runDoctor, verifyDoctor } from "./runner.js";
 
 const GREEN = "\x1b[32m", RED = "\x1b[31m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
       DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
@@ -47,15 +46,13 @@ function useColor(): boolean {
 // The one place the command layer crosses the Runner seam: a failure here is
 // a failure of the whole command, so it renders and exits. Exit policy lives
 // in this layer, never in the Runner.
-async function runOrExit<T>(effect: Effect.Effect<T, RunnerError>): Promise<T> {
-  const exit = await Effect.runPromiseExit(effect);
-  return Exit.match(exit, {
-    onFailure: (cause) => {
-      fail(describeRunnerError(Cause.squash(cause) as RunnerError));
-      return process.exit(1);
-    },
-    onSuccess: (value) => value,
-  });
+async function runOrExit<T>(work: Promise<T>): Promise<T> {
+  try {
+    return await work;
+  } catch (e) {
+    fail(isRunnerError(e) ? describeRunnerError(e) : String(e));
+    return process.exit(1);
+  }
 }
 
 interface ParsedArgs {
@@ -102,17 +99,11 @@ async function pickDoctor(cwd: string, opts?: { targetDir?: string; withCounts?:
   // issues" candidate: failures sort last and say so.
   let counted: { d: DiscoveredDoctor; count: number | "error" }[] = valid.map(d => ({ d, count: "error" as const }));
   if (opts?.withCounts && opts.targetDir) {
-    const targetDir = opts.targetDir;
-    const exits = await Effect.runPromise(
-      Effect.all(valid.map(d => Effect.exit(countIssues({ programPath: d.path, targetDir }))), { concurrency: "unbounded" }),
-    );
-    counted = valid.map((d, i) => ({
-      d,
-      count: Exit.match(exits[i], {
-        onFailure: () => "error" as const,
-        onSuccess: (n) => n,
-      }),
-    }));
+    const results = await countAll({ programPaths: valid.map(d => d.path), targetDir: opts.targetDir });
+    counted = valid.map((d, i) => {
+      const r = results[i];
+      return { d, count: "count" in r ? r.count : "error" as const };
+    });
     counted.sort((a, b) => {
       const av = a.count === "error" ? -1 : a.count;
       const bv = b.count === "error" ? -1 : b.count;

@@ -99,3 +99,40 @@ export function compareFindings(expected: { file: string; line: number }[], actu
   return { missing, unexpected };
 }
 
+// The single home of the Finding↔Meta join. Every consumer — score, report,
+// dashboard — projects from this record instead of re-implementing the
+// lookup-and-fallback ladder.
+export interface JoinedFinding {
+  doctorId: string;
+  checkId: string;
+  checkKey: string;
+  description: string;
+  severity: Severity;
+  declaredSeverity: Severity;
+  category: string;
+  impact?: string;
+  why?: string;
+  fix?: string;
+  blindSpots?: string[];
+  finding: Finding;
+}
+
+export function resolveFinding(meta: DoctorMeta, finding: Finding): JoinedFinding {
+  const checkId = finding.rule ?? meta.id;
+  const check = meta.checks?.find(c => c.id === checkId);
+  return {
+    doctorId: meta.id,
+    checkId,
+    checkKey: meta.id + "/" + checkId,
+    description: check?.description ?? meta.description,
+    severity: finding.severity ?? check?.severity ?? meta.severity,
+    declaredSeverity: check?.severity ?? meta.severity,
+    category: meta.category ?? "general",
+    impact: check?.impact,
+    why: check?.why,
+    fix: check?.fix,
+    blindSpots: meta.blindSpots,
+    finding,
+  };
+}
+

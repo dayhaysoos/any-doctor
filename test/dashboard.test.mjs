@@ -33,7 +33,7 @@ const groups = [
 ];
 
 test("buildItems: one item per finding instance, not per check", () => {
-  const items = buildItems(groups, "doctors/stripe-doctor.mjs");
+  const items = buildItems(groups);
   assert.equal(items.length, 3);
   assert.equal(items[0].key, "stripe-doctor/charges-create@src/a.ts:2");
   assert.equal(items[1].key, "stripe-doctor/charges-create@src/a.ts:9");
@@ -46,7 +46,7 @@ test("buildItems: one item per finding instance, not per check", () => {
 });
 
 test("buildListRows: section rows per doctor, item rows per instance", () => {
-  const items = buildItems(groups, "doctors/stripe-doctor.mjs");
+  const items = buildItems(groups);
   const rows = buildListRows(items, false, 0, new Set());
   assert.equal(rows.filter(r => r.kind === "section").length, 2);
   assert.equal(rows.filter(r => r.kind === "item").length, 3);
@@ -56,7 +56,7 @@ test("buildListRows: section rows per doctor, item rows per instance", () => {
 });
 
 test("issuePrompt: per-instance scope with single affected site", () => {
-  const items = buildItems(groups, "doctors/stripe-doctor.mjs");
+  const items = buildItems(groups);
   const prompt = issuePrompt(items[0], "any-doctor verify doctors/stripe-doctor.mjs");
   assert.match(prompt, /Fix exactly one any-doctor check/);
   assert.match(prompt, /ERROR · Direct legacy charge creation \(stripe-doctor\/charges-create\)/);
@@ -164,7 +164,7 @@ test("runDashboard: enter on an empty findings list draws instead of crashing", 
 });
 
 test("dashboardFrame: frame height is exactly rows - 1 in every state (notice never resizes it)", () => {
-  const items = buildItems(groups, "doctors/stripe-doctor.mjs");
+  const items = buildItems(groups);
   const height = (notice, cols, selected) =>
     dashboardFrame({ items, selected, readKeys: new Set(), root: ".", fileCount: 2, durationMs: 10, useColor: false, notice, cols, rows: 34 })
       .split("\n").length;

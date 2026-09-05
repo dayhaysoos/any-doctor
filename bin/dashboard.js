@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
+import { resolveFinding } from "./contract.js";
 import { scoreFromSeverities } from "./score.js";
 import { createKeyFeed } from "./keys.js";
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
@@ -27,26 +28,24 @@ export function scoreBar(score, width) {
     const filled = Math.round((score / 100) * width);
     return "█".repeat(filled) + "░".repeat(Math.max(0, width - filled));
 }
-export function buildItems(groups, doctorFile) {
-    var _a, _b, _c, _d, _e, _f;
+export function buildItems(groups) {
     const items = [];
     for (const g of groups) {
         for (const f of g.findings) {
-            const checkId = (_a = f.rule) !== null && _a !== void 0 ? _a : g.meta.id;
-            const check = (_b = g.meta.checks) === null || _b === void 0 ? void 0 : _b.find(c => c.id === checkId);
+            const j = resolveFinding(g.meta, f);
             items.push({
-                key: g.meta.id + "/" + checkId + "@" + f.file + ":" + f.line,
-                checkKey: g.meta.id + "/" + checkId,
-                doctorId: g.meta.id,
-                checkId,
-                description: (_c = check === null || check === void 0 ? void 0 : check.description) !== null && _c !== void 0 ? _c : g.meta.description,
-                severity: (_e = (_d = f.severity) !== null && _d !== void 0 ? _d : check === null || check === void 0 ? void 0 : check.severity) !== null && _e !== void 0 ? _e : g.meta.severity,
-                category: (_f = g.meta.category) !== null && _f !== void 0 ? _f : "general",
+                key: j.checkKey + "@" + f.file + ":" + f.line,
+                checkKey: j.checkKey,
+                doctorId: j.doctorId,
+                checkId: j.checkId,
+                description: j.description,
+                severity: j.severity,
+                category: j.category,
                 site: f,
-                impact: check === null || check === void 0 ? void 0 : check.impact,
-                why: check === null || check === void 0 ? void 0 : check.why,
-                fix: check === null || check === void 0 ? void 0 : check.fix,
-                blindSpots: g.meta.blindSpots,
+                impact: j.impact,
+                why: j.why,
+                fix: j.fix,
+                blindSpots: j.blindSpots,
             });
         }
     }
@@ -280,7 +279,7 @@ export async function runDashboardOn(stdin, stdout, input, deps = {}) {
     if (!stdin.isTTY || !stdout.isTTY)
         return;
     const useColor = input.useColor;
-    const items = buildItems(input.groups, input.doctorFile);
+    const items = buildItems(input.groups);
     let selected = 0;
     const readKeys = new Set();
     let notice;

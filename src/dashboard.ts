@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
-import { Finding, ReportGroup, Severity } from "./contract.js";
+import { Finding, ReportGroup, resolveFinding, Severity } from "./contract.js";
 import { scoreFromSeverities } from "./score.js";
 import { createKeyFeed } from "./keys.js";
 
@@ -55,25 +55,24 @@ export function scoreBar(score: number, width: number): string {
   return "█".repeat(filled) + "░".repeat(Math.max(0, width - filled));
 }
 
-export function buildItems(groups: ReportGroup[], doctorFile: string): DashItem[] {
+export function buildItems(groups: ReportGroup[]): DashItem[] {
   const items: DashItem[] = [];
   for (const g of groups) {
     for (const f of g.findings) {
-      const checkId = f.rule ?? g.meta.id;
-      const check = g.meta.checks?.find(c => c.id === checkId);
+      const j = resolveFinding(g.meta, f);
       items.push({
-        key: g.meta.id + "/" + checkId + "@" + f.file + ":" + f.line,
-        checkKey: g.meta.id + "/" + checkId,
-        doctorId: g.meta.id,
-        checkId,
-        description: check?.description ?? g.meta.description,
-        severity: f.severity ?? check?.severity ?? g.meta.severity,
-        category: g.meta.category ?? "general",
+        key: j.checkKey + "@" + f.file + ":" + f.line,
+        checkKey: j.checkKey,
+        doctorId: j.doctorId,
+        checkId: j.checkId,
+        description: j.description,
+        severity: j.severity,
+        category: j.category,
         site: f,
-        impact: check?.impact,
-        why: check?.why,
-        fix: check?.fix,
-        blindSpots: g.meta.blindSpots,
+        impact: j.impact,
+        why: j.why,
+        fix: j.fix,
+        blindSpots: j.blindSpots,
       });
     }
   }
@@ -359,7 +358,7 @@ export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStd
   if (!stdin.isTTY || !stdout.isTTY) return;
 
   const useColor = input.useColor;
-  const items = buildItems(input.groups, input.doctorFile);
+  const items = buildItems(input.groups);
   let selected = 0;
   const readKeys = new Set<string>();
   let notice: string | undefined;

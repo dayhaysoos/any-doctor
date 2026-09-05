@@ -1,3 +1,4 @@
+import { resolveFinding } from "./contract.js";
 import { categoryRollup, computeScore, findingSeverity } from "./score.js";
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
@@ -9,20 +10,19 @@ function groupSeverity(g) {
     return (_a = (explicit ? findingSeverity(g, explicit) : undefined)) !== null && _a !== void 0 ? _a : g.meta.severity;
 }
 function expandChecks(g) {
-    var _a, _b, _c, _d, _e;
+    var _a;
     const buckets = new Map();
     for (const f of g.findings) {
-        const check = f.rule ? (_a = g.meta.checks) === null || _a === void 0 ? void 0 : _a.find(c => c.id === f.rule) : undefined;
-        const key = (_b = f.rule) !== null && _b !== void 0 ? _b : g.meta.id;
-        if (!buckets.has(key)) {
-            buckets.set(key, {
-                ruleId: (_c = f.rule) !== null && _c !== void 0 ? _c : null,
-                heading: (_d = check === null || check === void 0 ? void 0 : check.description) !== null && _d !== void 0 ? _d : g.meta.description,
-                severity: (_e = check === null || check === void 0 ? void 0 : check.severity) !== null && _e !== void 0 ? _e : g.meta.severity,
+        const j = resolveFinding(g.meta, f);
+        if (!buckets.has(j.checkKey)) {
+            buckets.set(j.checkKey, {
+                ruleId: (_a = f.rule) !== null && _a !== void 0 ? _a : null,
+                heading: j.description,
+                severity: j.declaredSeverity,
                 findings: [],
             });
         }
-        buckets.get(key).findings.push(f);
+        buckets.get(j.checkKey).findings.push(f);
     }
     return [...buckets.values()];
 }

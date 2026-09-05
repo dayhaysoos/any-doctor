@@ -1,4 +1,4 @@
-import { DoctorMeta, Finding, ReportGroup, Severity } from "./contract.js";
+import { DoctorMeta, Finding, ReportGroup, resolveFinding, Severity } from "./contract.js";
 import { categoryRollup, computeScore, findingSeverity } from "./score.js";
 
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
@@ -30,17 +30,16 @@ interface CheckBucket {
 function expandChecks(g: ReportGroup): CheckBucket[] {
   const buckets = new Map<string, CheckBucket>();
   for (const f of g.findings) {
-    const check = f.rule ? g.meta.checks?.find(c => c.id === f.rule) : undefined;
-    const key = f.rule ?? g.meta.id;
-    if (!buckets.has(key)) {
-      buckets.set(key, {
+    const j = resolveFinding(g.meta, f);
+    if (!buckets.has(j.checkKey)) {
+      buckets.set(j.checkKey, {
         ruleId: f.rule ?? null,
-        heading: check?.description ?? g.meta.description,
-        severity: check?.severity ?? g.meta.severity,
+        heading: j.description,
+        severity: j.declaredSeverity,
         findings: [],
       });
     }
-    buckets.get(key)!.findings.push(f);
+    buckets.get(j.checkKey)!.findings.push(f);
   }
   return [...buckets.values()];
 }
