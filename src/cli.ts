@@ -1,29 +1,19 @@
 #!/usr/bin/env node
-import { spawn, spawnSync, SpawnSyncReturns, ChildProcess, SpawnOptions } from "child_process";
 import * as fs from "fs";
-import * as os from "os";
 import * as path from "path";
-import { RunResult, VerifyRunResult, RESULT_SENTINEL, ReportGroup, Finding } from "./contract";
-import { renderReport } from "./report";
-import { copyToClipboard } from "./clipboard";
-import { runDashboard } from "./dashboard";
-import { discoverDoctors, globalDoctorsDir, resolveDoctorPath, DiscoveredDoctor } from "./discover";
-import { pickItem } from "./picker";
-import { buildFixPrompt } from "./handoff";
+import { fileURLToPath } from "url";
+import { Cause, Effect, Exit } from "effect";
+import { RunResult, VerifyRunResult, ReportGroup, Finding } from "./contract.js";
+import { renderReport } from "./report.js";
+import { copyToClipboard } from "./clipboard.js";
+import { runDashboard } from "./dashboard.js";
+import { discoverDoctors, globalDoctorsDir, resolveDoctorPath, DiscoveredDoctor } from "./discover.js";
+import { pickItem } from "./picker.js";
+import { buildFixPrompt } from "./handoff.js";
+import { countIssues, describeRunnerError, RunnerError, runDoctor, verifyDoctor } from "./runner.js";
 
 const GREEN = "\x1b[32m", RED = "\x1b[31m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
       DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
-
-interface ExecResult {
-  status: number | null;
-  stdout: string;
-  stderr: string;
-}
-
-interface ShOptions {
-  timeoutMs?: number;
-  cwd?: string;
-}
 
 function fail(msg: string): void {
   console.error(RED + msg + RESET);
@@ -41,18 +31,8 @@ function dim(msg: string): string {
   return DIM + msg + RESET;
 }
 
-function sh(cmd: string, args: string[], opts: ShOptions = {}): ExecResult {
-  const r: SpawnSyncReturns<string> = spawnSync(cmd, args, {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-    timeout: opts.timeoutMs ?? 5 * 60 * 1000,
-    cwd: opts.cwd,
-  });
-  return { status: r.status, stdout: r.stdout || "", stderr: r.stderr || "" };
-}
-
 function skillText(): string | null {
-  const p = path.join(__dirname, "..", "skill", "any-doctor.skill.md");
+  const p = fileURLToPath(new URL("../skill/any-doctor.skill.md", import.meta.url));
   try {
     return fs.readFileSync(p, "utf8");
   } catch {
@@ -64,30 +44,18 @@ function useColor(): boolean {
   return Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
 }
 
-function parseResult(stdout: string): RunResult {
-  const lines = stdout.split("\n");
-  const idx = lines.findLastIndex(l => l.startsWith(RESULT_SENTINEL));
-  if (idx === -1) {
-    fail("doctor produced no framed result — stdout was:\n" + stdout.slice(0, 500));
-    process.exit(1);
-  }
-  return JSON.parse(lines[idx].slice(RESULT_SENTINEL.length));
-}
-
-function executeLoader(programPath: string, mode: string | null, arg: string | null, targetDir?: string): RunResult {
-  const abs = path.resolve(programPath);
-  if (!fs.existsSync(abs)) {
-    fail("no such doctor program: " + abs);
-    process.exit(1);
-  }
-  const loader = path.join(__dirname, "doctor-loader.mjs");
-  const argv: string[] = mode && arg !== null ? [loader, abs, mode, arg] : [loader, abs, targetDir ?? "."];
-  const r = sh(process.execPath, argv);
-  if (r.status !== 0) {
-    fail("doctor crashed:\n" + (r.stderr || "exit " + r.status));
-    process.exit(1);
-  }
-  return parseResult(r.stdout);
+// The one place the command layer crosses the Runner seam: a failure here is
+// a failure of the whole command, so it renders and exits. Exit policy lives
+// in this layer, never in the Runner.
+async function runOrExit<T>(effect: Effect.Effect<T, RunnerError>): Promise<T> {
+  const exit = await Effect.runPromiseExit(effect);
+  return Exit.match(exit, {
+    onFailure: (cause) => {
+      fail(describeRunnerError(Cause.squash(cause) as RunnerError));
+      return process.exit(1);
+    },
+    onSuccess: (value) => value,
+  });
 }
 
 interface ParsedArgs {
@@ -113,27 +81,8 @@ function parseArgs(args: string[]): ParsedArgs {
   return out;
 }
 
-function countIssues(loader: string, doctorAbs: string, targetDir: string): Promise<number> {
-  return new Promise(resolve => {
-    const spawnOpts: SpawnOptions = { stdio: ["ignore", "pipe", "pipe"] };
-    const child: ChildProcess = spawn(process.execPath, [loader, doctorAbs, targetDir], spawnOpts);
-    let stdout = "";
-    child.stdout?.on("data", (chunk: string) => stdout += chunk);
-    child.on("error", () => resolve(0));
-    child.on("close", () => {
-      try {
-        const lines = stdout.split("\n");
-        const idx = lines.findLastIndex(l => l.startsWith(RESULT_SENTINEL));
-        resolve(idx === -1 ? 0 : (JSON.parse(lines[idx].slice(RESULT_SENTINEL.length)).findings?.length ?? 0));
-      } catch {
-        resolve(0);
-      }
-    });
-  });
-}
-
 async function pickDoctor(cwd: string, opts?: { targetDir?: string; withCounts?: boolean }): Promise<DiscoveredDoctor> {
-  const discovered = discoverDoctors(cwd);
+  const discovered = await discoverDoctors(cwd);
   const valid = discovered.filter(d => d.meta !== null);
   const broken = discovered.filter(d => d.meta === null);
 
@@ -149,20 +98,34 @@ async function pickDoctor(cwd: string, opts?: { targetDir?: string; withCounts?:
     console.log(YELLOW + "⚠ skipping broken doctor " + b.slug + RESET + dim(" — " + (b.error || "invalid meta")));
   }
 
-  const loader = path.join(__dirname, "doctor-loader.mjs");
-  let counted = valid.map(d => ({ d, count: -1 }));
+  // A doctor whose count fails must not masquerade as the healthiest "0
+  // issues" candidate: failures sort last and say so.
+  let counted: { d: DiscoveredDoctor; count: number | "error" }[] = valid.map(d => ({ d, count: "error" as const }));
   if (opts?.withCounts && opts.targetDir) {
-    counted = await Promise.all(valid.map(async d => ({
+    const targetDir = opts.targetDir;
+    const exits = await Effect.runPromise(
+      Effect.all(valid.map(d => Effect.exit(countIssues({ programPath: d.path, targetDir }))), { concurrency: "unbounded" }),
+    );
+    counted = valid.map((d, i) => ({
       d,
-      count: await countIssues(loader, d.path, opts.targetDir!),
-    })));
-    counted.sort((a, b) => b.count - a.count);
+      count: Exit.match(exits[i], {
+        onFailure: () => "error" as const,
+        onSuccess: (n) => n,
+      }),
+    }));
+    counted.sort((a, b) => {
+      const av = a.count === "error" ? -1 : a.count;
+      const bv = b.count === "error" ? -1 : b.count;
+      return bv - av;
+    });
   }
 
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     console.log("available doctors:");
     for (const { d, count } of counted) {
-      const suffix = count >= 0 ? dim(" " + count + " issue" + (count === 1 ? "" : "s")) : "";
+      const suffix = count === "error"
+        ? RED + " count failed" + RESET
+        : dim(" " + count + " issue" + (count === 1 ? "" : "s"));
       console.log("  " + d.scope.padEnd(7) + d.slug.padEnd(32) + dim(d.meta!.description) + suffix);
     }
     fail("non-interactive session — specify a doctor path");
@@ -172,9 +135,9 @@ async function pickDoctor(cwd: string, opts?: { targetDir?: string; withCounts?:
   const chosen = await pickItem(counted.map(({ d, count }) => ({
     id: d.slug,
     label: d.meta!.description,
-    sub: count >= 0
-      ? `${count} issue${count === 1 ? "" : "s"} · ${d.scope}`
-      : d.scope,
+    sub: count === "error"
+      ? `count failed · ${d.scope}`
+      : `${count} issue${count === 1 ? "" : "s"} · ${d.scope}`,
     severity: d.meta!.severity,
   })), useColor(), "Select a doctor");
   if (chosen === null) process.exit(0);
@@ -189,8 +152,8 @@ interface Scan {
   durationMs: number;
 }
 
-function scanOnce(doctorAbs: string, targetDir: string): Scan {
-  const result = executeLoader(doctorAbs, null, null, targetDir);
+async function scanOnce(doctorAbs: string, targetDir: string): Promise<Scan> {
+  const result = await runOrExit(runDoctor({ programPath: doctorAbs, targetDir }));
   return {
     result,
     groups: [{ programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings }],
@@ -205,7 +168,7 @@ async function cmdRun(args: string[]): Promise<void> {
   const started = Date.now();
 
   if (parsed.all) {
-    const discovered = discoverDoctors(process.cwd()).filter(d => d.meta !== null);
+    const discovered = (await discoverDoctors(process.cwd())).filter(d => d.meta !== null);
     if (discovered.length === 0) {
       fail("no doctors discovered — run from a directory with doctors/, or specify a doctor path");
       process.exit(1);
@@ -213,7 +176,7 @@ async function cmdRun(args: string[]): Promise<void> {
     const groups: ReportGroup[] = [];
     let fileCount = 0;
     for (const d of discovered) {
-      const scan = scanOnce(d.path, parsed.targetDir);
+      const scan = await scanOnce(d.path, parsed.targetDir);
       fileCount = Math.max(fileCount, scan.fileCount);
       groups.push(...scan.groups);
     }
@@ -235,7 +198,7 @@ async function cmdRun(args: string[]): Promise<void> {
     doctorAbs = chosen.path;
   }
 
-  const scan = scanOnce(doctorAbs, parsed.targetDir);
+  const scan = await scanOnce(doctorAbs, parsed.targetDir);
   const ttyCols = process.stdout.columns ?? 0;
   const interactive = process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
 
@@ -283,15 +246,11 @@ function printVerifyResult(result: VerifyRunResult): number {
   return failures;
 }
 
-function fixturesPathFor(doctorPath: string): string {
-  return doctorPath.replace(/\.(m|c)?js$/, "") + ".fixtures.mjs";
-}
-
 async function cmdVerify(args: string[]): Promise<void> {
   const parsed = parseArgs(args);
 
   if (parsed.all) {
-    const discovered = discoverDoctors(process.cwd()).filter(d => d.meta !== null);
+    const discovered = (await discoverDoctors(process.cwd())).filter(d => d.meta !== null);
     if (discovered.length === 0) {
       fail("no doctors discovered");
       process.exit(1);
@@ -299,7 +258,7 @@ async function cmdVerify(args: string[]): Promise<void> {
     let totalFailures = 0;
     for (const d of discovered) {
       console.log(BOLD + d.meta!.id + RESET);
-      const r = executeLoader(d.path, "--verify", path.resolve(fixturesPathFor(d.path))) as unknown as VerifyRunResult;
+      const r = await runOrExit(verifyDoctor({ programPath: d.path }));
       totalFailures += printVerifyResult(r);
       console.log("");
     }
@@ -322,12 +281,7 @@ async function cmdVerify(args: string[]): Promise<void> {
     process.exit(1);
   }
   doctorPath = resolvedVerify;
-  const fixturesPath = fixturesPathFor(doctorPath);
-  if (!fs.existsSync(path.resolve(fixturesPath))) {
-    fail("no fixtures found for this doctor — expected " + fixturesPath);
-    process.exit(1);
-  }
-  const result = executeLoader(doctorPath, "--verify", path.resolve(fixturesPath)) as unknown as VerifyRunResult;
+  const result = await runOrExit(verifyDoctor({ programPath: doctorPath }));
   const failures = printVerifyResult(result);
   console.log("");
   console.log(dim(`${result.results.length - failures}/${result.results.length} fixtures passed for ${result.meta.id}`));
@@ -362,7 +316,7 @@ async function cmdGenerate(args: string[]): Promise<void> {
     fs.writeFileSync(agentsPath, skill);
   }
 
-  const cliJs = path.join(__dirname, "cli.js");
+  const cliJs = fileURLToPath(new URL("cli.js", import.meta.url));
   const doctorAbs = path.join(scopeDir, slug + ".mjs");
   const prompt = [
     skill,

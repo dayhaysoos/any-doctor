@@ -1,15 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.pickerFrame = pickerFrame;
-exports.filterPickerItems = filterPickerItems;
-exports.isPrintable = isPrintable;
-exports.pickItem = pickItem;
-const fuzzy_1 = require("./fuzzy");
-const keys_1 = require("./keys");
+import { fuzzyFilter } from "./fuzzy.js";
+import { createKeyFeed } from "./keys.js";
 const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
 const COLOR = { error: GREEN, warning: YELLOW, info: CYAN };
-function pickerFrame(title, items, selected, query, useColor, notice) {
+export function pickerFrame(title, items, selected, query, useColor, notice) {
     const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
     const lines = [];
     lines.push(c(title, BOLD) + c("  (type to filter · ↑↓ move · enter select · esc cancel)", DIM));
@@ -36,13 +30,13 @@ function pickerFrame(title, items, selected, query, useColor, notice) {
     }
     return lines.join("\n");
 }
-function filterPickerItems(items, query) {
-    return (0, fuzzy_1.fuzzyFilter)(items, it => { var _a; return `${it.id} ${it.label} ${(_a = it.sub) !== null && _a !== void 0 ? _a : ""}`; }, query);
+export function filterPickerItems(items, query) {
+    return fuzzyFilter(items, it => { var _a; return `${it.id} ${it.label} ${(_a = it.sub) !== null && _a !== void 0 ? _a : ""}`; }, query);
 }
-function isPrintable(s) {
+export function isPrintable(s) {
     return s.length === 1 && s >= " " && s !== "\x7f";
 }
-async function pickItem(items, useColor, title = "Select an option", notice) {
+export async function pickItem(items, useColor, title = "Select an option", notice) {
     const stdin = process.stdin;
     const stdout = process.stdout;
     if (!stdin.isTTY || !stdout.isTTY || items.length === 0)
@@ -100,7 +94,7 @@ async function pickItem(items, useColor, title = "Select an option", notice) {
                 return draw();
             }
         };
-        const feed = (0, keys_1.createKeyFeed)(onKey);
+        const feed = createKeyFeed(onKey);
         stdin.on("data", feed);
     });
 }

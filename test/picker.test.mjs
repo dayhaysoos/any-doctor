@@ -1,9 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createRequire } from "module";
 
-const require = createRequire(import.meta.url);
-const { pickerFrame, filterPickerItems } = require("../bin/picker.js");
+const { pickerFrame, filterPickerItems } = (await import("../bin/picker.js"));
 
 const items = [
   { id: "unawaited-async-map", label: ".map(async ...) result is never awaited", sub: "repo/unawaited-async-map.mjs", severity: "warning" },

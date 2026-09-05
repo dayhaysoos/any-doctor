@@ -1,6 +1,6 @@
-import { fuzzyFilter } from "./fuzzy";
-import { Severity } from "./contract";
-import { createKeyFeed } from "./keys";
+import { fuzzyFilter } from "./fuzzy.js";
+import { Severity } from "./contract.js";
+import { createKeyFeed } from "./keys.js";
 
 const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
       DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";

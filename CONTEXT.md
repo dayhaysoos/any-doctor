@@ -22,19 +22,6 @@ message or severity override. The doctor-level truth (id, description,
 default severity, blind spots) lives in the program's meta, not in
 individual findings.
 
-## Doctor contract
-
-The interface shared by doctor programs, the runner, the report, the
-fixture harness, and the generator prompt. The single place where the
-shape of ctx, meta, findings, and the runner protocol is defined.
-
-## DoctorCtx (ctx)
-
-The capability boundary a doctor program is expected to use: read-only,
-repo-scoped file access, structural search, and a finding emitter.
-Honoring this boundary is a contract expectation enforced by review today;
-the runner seam is where a technical sandbox will enforce it.
-
 ## Meta
 
 A doctor program's declared data: id, description, default severity,

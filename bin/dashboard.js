@@ -1,60 +1,14 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.highlightCode = highlightCode;
-exports.scoreBar = scoreBar;
-exports.buildItems = buildItems;
-exports.issuePrompt = issuePrompt;
-exports.visibleWidth = visibleWidth;
-exports.truncateVisible = truncateVisible;
-exports.resolveDashboardLayout = resolveDashboardLayout;
-exports.buildListRows = buildListRows;
-exports.dashboardFrame = dashboardFrame;
-exports.runDashboard = runDashboard;
-exports.runDashboardOn = runDashboardOn;
-const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
-const clipboard_1 = require("./clipboard");
-const score_1 = require("./score");
-const keys_1 = require("./keys");
+import * as fs from "fs";
+import * as path from "path";
+import { copyToClipboard } from "./clipboard.js";
+import { scoreFromSeverities } from "./score.js";
+import { createKeyFeed } from "./keys.js";
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
 const COLOR = { error: RED, warning: ORANGE, info: YELLOW };
 const SPLIT_MIN_COLS = 100;
 const TOKEN_RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|await|async|try|catch|finally|import|export|from|new|class|extends|throw|typeof|instanceof|in|of|do|switch|case|break|continue|default|yield)\b|\b(\d+(?:\.\d+)?)\b/g;
-function highlightCode(line, useColor) {
+export function highlightCode(line, useColor) {
     if (!useColor)
         return line;
     return line.replace(TOKEN_RE, (m, comment, str, kw, num) => {
@@ -69,11 +23,11 @@ function highlightCode(line, useColor) {
         return m;
     });
 }
-function scoreBar(score, width) {
+export function scoreBar(score, width) {
     const filled = Math.round((score / 100) * width);
     return "█".repeat(filled) + "░".repeat(Math.max(0, width - filled));
 }
-function buildItems(groups, doctorFile) {
+export function buildItems(groups, doctorFile) {
     var _a, _b, _c, _d, _e, _f;
     const items = [];
     for (const g of groups) {
@@ -98,7 +52,7 @@ function buildItems(groups, doctorFile) {
     }
     return items;
 }
-function issuePrompt(item, verifyCommand) {
+export function issuePrompt(item, verifyCommand) {
     const site = item.site;
     const lines = [
         "Fix exactly one any-doctor check:",
@@ -116,10 +70,10 @@ function issuePrompt(item, verifyCommand) {
     lines.push("", "Scope:", `- Fix only ${item.checkKey} at this site.`, "- Fix the root cause; do not suppress, disable, or silence the check.", "- Keep unrelated refactors out of this pass.", "", `Verify with \`${verifyCommand}\` and confirm the finding is gone before moving on.`);
     return lines.join("\n");
 }
-function visibleWidth(s) {
+export function visibleWidth(s) {
     return s.replace(/\x1b\[[0-9;]*m/g, "").length;
 }
-function truncateVisible(s, width) {
+export function truncateVisible(s, width) {
     if (visibleWidth(s) <= width)
         return s;
     let out = "";
@@ -161,7 +115,7 @@ function wordWrap(text, width) {
 // lines (the notice line is always reserved), plus the bottom terminal row,
 // which is never written so no repaint can make the terminal scroll.
 const CHROME_ROWS = 9;
-function resolveDashboardLayout(cols, rows, itemCount) {
+export function resolveDashboardLayout(cols, rows, itemCount) {
     const bodyRows = Math.max(1, rows - CHROME_ROWS);
     if (cols >= SPLIT_MIN_COLS) {
         const listWidth = Math.min(56, Math.max(32, Math.floor(cols * 0.44)));
@@ -178,7 +132,7 @@ function resolveDashboardLayout(cols, rows, itemCount) {
         bodyRows,
     };
 }
-function buildListRows(items, useColor, selected, readKeys) {
+export function buildListRows(items, useColor, selected, readKeys) {
     const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
     const rows = [];
     let currentDoctor = null;
@@ -204,12 +158,12 @@ function buildListRows(items, useColor, selected, readKeys) {
     });
     return rows;
 }
-function dashboardFrame(state) {
+export function dashboardFrame(state) {
     var _a, _b, _c, _d, _e;
     const { items, selected, readKeys, root, useColor, cols, rows } = state;
     const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
     const layout = resolveDashboardLayout(cols, rows, items.length);
-    const { score, grade } = (0, score_1.scoreFromSeverities)(items.map(it => it.severity));
+    const { score, grade } = scoreFromSeverities(items.map(it => it.severity));
     const gradeColor = score >= 75 ? GREEN : score >= 50 ? YELLOW : RED;
     const barWidth = Math.min(46, Math.max(16, cols - 60));
     const header = [
@@ -309,7 +263,7 @@ function codeFrame(root, file, line, width, useColor) {
     }
     return out;
 }
-async function runDashboard(input) {
+export async function runDashboard(input) {
     await runDashboardOn(process.stdin, process.stdout, input);
 }
 // In-place repaint: home the cursor and rewrite every line with a
@@ -322,7 +276,7 @@ function paintFrame(stdout, frame, cols, first) {
     const lines = frame.split("\n").map(l => truncateVisible(l, width) + "\x1b[K");
     stdout.write((first ? "\x1b[H\x1b[2J" : "\x1b[H") + lines.join("\n") + "\x1b[J");
 }
-async function runDashboardOn(stdin, stdout, input) {
+export async function runDashboardOn(stdin, stdout, input, deps = {}) {
     if (!stdin.isTTY || !stdout.isTTY)
         return;
     const useColor = input.useColor;
@@ -378,6 +332,7 @@ async function runDashboardOn(stdin, stdout, input) {
             resolve();
         };
         function handleKey(key) {
+            var _a;
             if (key === "q" || key === "\x03" || key === "esc")
                 return finish();
             if (key === "ignore")
@@ -397,7 +352,7 @@ async function runDashboardOn(stdin, stdout, input) {
                 if (!it)
                     return draw();
                 const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
-                if ((0, clipboard_1.copyToClipboard)(issuePrompt(it, verifyCommand))) {
+                if (((_a = deps.copy) !== null && _a !== void 0 ? _a : copyToClipboard)(issuePrompt(it, verifyCommand))) {
                     notice = "copied issue context — paste into your agent";
                 }
                 else {
@@ -414,7 +369,7 @@ async function runDashboardOn(stdin, stdout, input) {
                 process.stderr.write("key handling error: " + String(e));
             }
         };
-        const feed = (0, keys_1.createKeyFeed)(onKey);
+        const feed = createKeyFeed(onKey);
         stdin.on("data", feed);
     });
 }

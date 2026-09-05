@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildFixPrompt = buildFixPrompt;
-function buildFixPrompt(groups, targetDir, verifyCommand) {
+export function buildFixPrompt(groups, targetDir, verifyCommand) {
     const lines = [
         "Fix the issues below that any-doctor found in this repository.",
         "",

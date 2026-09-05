@@ -1,48 +1,14 @@
 #!/usr/bin/env node
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-const child_process_1 = require("child_process");
-const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
-const contract_1 = require("./contract");
-const report_1 = require("./report");
-const clipboard_1 = require("./clipboard");
-const dashboard_1 = require("./dashboard");
-const discover_1 = require("./discover");
-const picker_1 = require("./picker");
+import * as fs from "fs";
+import * as path from "path";
+import { fileURLToPath } from "url";
+import { Cause, Effect, Exit } from "effect";
+import { renderReport } from "./report.js";
+import { copyToClipboard } from "./clipboard.js";
+import { runDashboard } from "./dashboard.js";
+import { discoverDoctors, globalDoctorsDir, resolveDoctorPath } from "./discover.js";
+import { pickItem } from "./picker.js";
+import { countIssues, describeRunnerError, runDoctor, verifyDoctor } from "./runner.js";
 const GREEN = "\x1b[32m", RED = "\x1b[31m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 function fail(msg) {
     console.error(RED + msg + RESET);
@@ -56,18 +22,8 @@ function warn(msg) {
 function dim(msg) {
     return DIM + msg + RESET;
 }
-function sh(cmd, args, opts = {}) {
-    var _a;
-    const r = (0, child_process_1.spawnSync)(cmd, args, {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-        timeout: (_a = opts.timeoutMs) !== null && _a !== void 0 ? _a : 5 * 60 * 1000,
-        cwd: opts.cwd,
-    });
-    return { status: r.status, stdout: r.stdout || "", stderr: r.stderr || "" };
-}
 function skillText() {
-    const p = path.join(__dirname, "..", "skill", "any-doctor.skill.md");
+    const p = fileURLToPath(new URL("../skill/any-doctor.skill.md", import.meta.url));
     try {
         return fs.readFileSync(p, "utf8");
     }
@@ -78,29 +34,18 @@ function skillText() {
 function useColor() {
     return Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
 }
-function parseResult(stdout) {
-    const lines = stdout.split("\n");
-    const idx = lines.findLastIndex(l => l.startsWith(contract_1.RESULT_SENTINEL));
-    if (idx === -1) {
-        fail("doctor produced no framed result — stdout was:\n" + stdout.slice(0, 500));
-        process.exit(1);
-    }
-    return JSON.parse(lines[idx].slice(contract_1.RESULT_SENTINEL.length));
-}
-function executeLoader(programPath, mode, arg, targetDir) {
-    const abs = path.resolve(programPath);
-    if (!fs.existsSync(abs)) {
-        fail("no such doctor program: " + abs);
-        process.exit(1);
-    }
-    const loader = path.join(__dirname, "doctor-loader.mjs");
-    const argv = mode && arg !== null ? [loader, abs, mode, arg] : [loader, abs, targetDir !== null && targetDir !== void 0 ? targetDir : "."];
-    const r = sh(process.execPath, argv);
-    if (r.status !== 0) {
-        fail("doctor crashed:\n" + (r.stderr || "exit " + r.status));
-        process.exit(1);
-    }
-    return parseResult(r.stdout);
+// The one place the command layer crosses the Runner seam: a failure here is
+// a failure of the whole command, so it renders and exits. Exit policy lives
+// in this layer, never in the Runner.
+async function runOrExit(effect) {
+    const exit = await Effect.runPromiseExit(effect);
+    return Exit.match(exit, {
+        onFailure: (cause) => {
+            fail(describeRunnerError(Cause.squash(cause)));
+            return process.exit(1);
+        },
+        onSuccess: (value) => value,
+    });
 }
 function parseArgs(args) {
     const out = { targetDir: path.resolve("."), all: false, global: false };
@@ -120,29 +65,8 @@ function parseArgs(args) {
     }
     return out;
 }
-function countIssues(loader, doctorAbs, targetDir) {
-    return new Promise(resolve => {
-        var _a;
-        const spawnOpts = { stdio: ["ignore", "pipe", "pipe"] };
-        const child = (0, child_process_1.spawn)(process.execPath, [loader, doctorAbs, targetDir], spawnOpts);
-        let stdout = "";
-        (_a = child.stdout) === null || _a === void 0 ? void 0 : _a.on("data", (chunk) => stdout += chunk);
-        child.on("error", () => resolve(0));
-        child.on("close", () => {
-            var _a, _b;
-            try {
-                const lines = stdout.split("\n");
-                const idx = lines.findLastIndex(l => l.startsWith(contract_1.RESULT_SENTINEL));
-                resolve(idx === -1 ? 0 : ((_b = (_a = JSON.parse(lines[idx].slice(contract_1.RESULT_SENTINEL.length)).findings) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0));
-            }
-            catch {
-                resolve(0);
-            }
-        });
-    });
-}
 async function pickDoctor(cwd, opts) {
-    const discovered = (0, discover_1.discoverDoctors)(cwd);
+    const discovered = await discoverDoctors(cwd);
     const valid = discovered.filter(d => d.meta !== null);
     const broken = discovered.filter(d => d.meta === null);
     if (valid.length === 0) {
@@ -156,38 +80,50 @@ async function pickDoctor(cwd, opts) {
     for (const b of broken) {
         console.log(YELLOW + "⚠ skipping broken doctor " + b.slug + RESET + dim(" — " + (b.error || "invalid meta")));
     }
-    const loader = path.join(__dirname, "doctor-loader.mjs");
-    let counted = valid.map(d => ({ d, count: -1 }));
+    // A doctor whose count fails must not masquerade as the healthiest "0
+    // issues" candidate: failures sort last and say so.
+    let counted = valid.map(d => ({ d, count: "error" }));
     if ((opts === null || opts === void 0 ? void 0 : opts.withCounts) && opts.targetDir) {
-        counted = await Promise.all(valid.map(async (d) => ({
+        const targetDir = opts.targetDir;
+        const exits = await Effect.runPromise(Effect.all(valid.map(d => Effect.exit(countIssues({ programPath: d.path, targetDir }))), { concurrency: "unbounded" }));
+        counted = valid.map((d, i) => ({
             d,
-            count: await countIssues(loader, d.path, opts.targetDir),
-        })));
-        counted.sort((a, b) => b.count - a.count);
+            count: Exit.match(exits[i], {
+                onFailure: () => "error",
+                onSuccess: (n) => n,
+            }),
+        }));
+        counted.sort((a, b) => {
+            const av = a.count === "error" ? -1 : a.count;
+            const bv = b.count === "error" ? -1 : b.count;
+            return bv - av;
+        });
     }
     if (!process.stdin.isTTY || !process.stdout.isTTY) {
         console.log("available doctors:");
         for (const { d, count } of counted) {
-            const suffix = count >= 0 ? dim(" " + count + " issue" + (count === 1 ? "" : "s")) : "";
+            const suffix = count === "error"
+                ? RED + " count failed" + RESET
+                : dim(" " + count + " issue" + (count === 1 ? "" : "s"));
             console.log("  " + d.scope.padEnd(7) + d.slug.padEnd(32) + dim(d.meta.description) + suffix);
         }
         fail("non-interactive session — specify a doctor path");
         process.exit(1);
     }
-    const chosen = await (0, picker_1.pickItem)(counted.map(({ d, count }) => ({
+    const chosen = await pickItem(counted.map(({ d, count }) => ({
         id: d.slug,
         label: d.meta.description,
-        sub: count >= 0
-            ? `${count} issue${count === 1 ? "" : "s"} · ${d.scope}`
-            : d.scope,
+        sub: count === "error"
+            ? `count failed · ${d.scope}`
+            : `${count} issue${count === 1 ? "" : "s"} · ${d.scope}`,
         severity: d.meta.severity,
     })), useColor(), "Select a doctor");
     if (chosen === null)
         process.exit(0);
     return counted.find(x => x.d.slug === chosen.id).d;
 }
-function scanOnce(doctorAbs, targetDir) {
-    const result = executeLoader(doctorAbs, null, null, targetDir);
+async function scanOnce(doctorAbs, targetDir) {
+    const result = await runOrExit(runDoctor({ programPath: doctorAbs, targetDir }));
     return {
         result,
         groups: [{ programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings }],
@@ -201,7 +137,7 @@ async function cmdRun(args) {
     const parsed = parseArgs(args);
     const started = Date.now();
     if (parsed.all) {
-        const discovered = (0, discover_1.discoverDoctors)(process.cwd()).filter(d => d.meta !== null);
+        const discovered = (await discoverDoctors(process.cwd())).filter(d => d.meta !== null);
         if (discovered.length === 0) {
             fail("no doctors discovered — run from a directory with doctors/, or specify a doctor path");
             process.exit(1);
@@ -209,16 +145,16 @@ async function cmdRun(args) {
         const groups = [];
         let fileCount = 0;
         for (const d of discovered) {
-            const scan = scanOnce(d.path, parsed.targetDir);
+            const scan = await scanOnce(d.path, parsed.targetDir);
             fileCount = Math.max(fileCount, scan.fileCount);
             groups.push(...scan.groups);
         }
-        console.log((0, report_1.renderReport)({ fileCount, durationMs: Date.now() - started, groups }, useColor()));
+        console.log(renderReport({ fileCount, durationMs: Date.now() - started, groups }, useColor()));
         return;
     }
     let doctorAbs;
     if (parsed.doctorPath) {
-        const resolved = (0, discover_1.resolveDoctorPath)(parsed.doctorPath, process.cwd());
+        const resolved = resolveDoctorPath(parsed.doctorPath, process.cwd());
         if (resolved === null) {
             fail(`no doctor program found for "${parsed.doctorPath}"`);
             fail(`searched ./doctors (walking up from ${process.cwd()}) and ~/.any-doctor/doctors`);
@@ -230,14 +166,14 @@ async function cmdRun(args) {
         const chosen = await pickDoctor(process.cwd(), { targetDir: parsed.targetDir, withCounts: true });
         doctorAbs = chosen.path;
     }
-    const scan = scanOnce(doctorAbs, parsed.targetDir);
+    const scan = await scanOnce(doctorAbs, parsed.targetDir);
     const ttyCols = (_a = process.stdout.columns) !== null && _a !== void 0 ? _a : 0;
     const interactive = process.stdin.isTTY && process.stdout.isTTY && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
     if (!interactive) {
-        console.log((0, report_1.renderReport)({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, useColor()));
+        console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, useColor()));
         return;
     }
-    await (0, dashboard_1.runDashboard)({
+    await runDashboard({
         root: parsed.targetDir,
         groups: scan.groups,
         doctorFile: doctorAbs,
@@ -268,13 +204,10 @@ function printVerifyResult(result) {
     }
     return failures;
 }
-function fixturesPathFor(doctorPath) {
-    return doctorPath.replace(/\.(m|c)?js$/, "") + ".fixtures.mjs";
-}
 async function cmdVerify(args) {
     const parsed = parseArgs(args);
     if (parsed.all) {
-        const discovered = (0, discover_1.discoverDoctors)(process.cwd()).filter(d => d.meta !== null);
+        const discovered = (await discoverDoctors(process.cwd())).filter(d => d.meta !== null);
         if (discovered.length === 0) {
             fail("no doctors discovered");
             process.exit(1);
@@ -282,7 +215,7 @@ async function cmdVerify(args) {
         let totalFailures = 0;
         for (const d of discovered) {
             console.log(BOLD + d.meta.id + RESET);
-            const r = executeLoader(d.path, "--verify", path.resolve(fixturesPathFor(d.path)));
+            const r = await runOrExit(verifyDoctor({ programPath: d.path }));
             totalFailures += printVerifyResult(r);
             console.log("");
         }
@@ -298,18 +231,13 @@ async function cmdVerify(args) {
         const chosen = await pickDoctor(process.cwd());
         doctorPath = chosen.path;
     }
-    const resolvedVerify = (0, discover_1.resolveDoctorPath)(doctorPath, process.cwd());
+    const resolvedVerify = resolveDoctorPath(doctorPath, process.cwd());
     if (resolvedVerify === null) {
         fail(`no doctor program found for "${doctorPath}"`);
         process.exit(1);
     }
     doctorPath = resolvedVerify;
-    const fixturesPath = fixturesPathFor(doctorPath);
-    if (!fs.existsSync(path.resolve(fixturesPath))) {
-        fail("no fixtures found for this doctor — expected " + fixturesPath);
-        process.exit(1);
-    }
-    const result = executeLoader(doctorPath, "--verify", path.resolve(fixturesPath));
+    const result = await runOrExit(verifyDoctor({ programPath: doctorPath }));
     const failures = printVerifyResult(result);
     console.log("");
     console.log(dim(`${result.results.length - failures}/${result.results.length} fixtures passed for ${result.meta.id}`));
@@ -336,14 +264,14 @@ async function cmdGenerate(args) {
     }
     const slug = slugify(intent);
     const scopeDir = global
-        ? (fs.mkdirSync((0, discover_1.globalDoctorsDir)(), { recursive: true }), (0, discover_1.globalDoctorsDir)())
+        ? (fs.mkdirSync(globalDoctorsDir(), { recursive: true }), globalDoctorsDir())
         : path.resolve("doctors");
     fs.mkdirSync(scopeDir, { recursive: true });
     const agentsPath = path.join(scopeDir, "AGENTS.md");
     if (!fs.existsSync(agentsPath)) {
         fs.writeFileSync(agentsPath, skill);
     }
-    const cliJs = path.join(__dirname, "cli.js");
+    const cliJs = fileURLToPath(new URL("cli.js", import.meta.url));
     const doctorAbs = path.join(scopeDir, slug + ".mjs");
     const prompt = [
         skill,
@@ -363,7 +291,7 @@ async function cmdGenerate(args) {
     ].join("\n");
     console.log(BOLD + "doctor prompt ready: " + CYAN + slug + RESET + dim(global ? " (global scope)" : ""));
     console.log("");
-    if ((0, clipboard_1.copyToClipboard)(prompt)) {
+    if (copyToClipboard(prompt)) {
         ok("prompt copied to clipboard — paste it into your own agent session");
         console.log(dim("run the agent with this as its working directory: " + scopeDir));
         console.log(dim("(the skill is planted there as AGENTS.md — most agents load it automatically)"));

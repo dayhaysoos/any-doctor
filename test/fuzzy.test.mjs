@@ -1,9 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createRequire } from "module";
 
-const require = createRequire(import.meta.url);
-const { fuzzyScore, fuzzyFilter } = require("../bin/fuzzy.js");
+const { fuzzyScore, fuzzyFilter } = (await import("../bin/fuzzy.js"));
 
 test("fuzzyScore: non-match scores zero", () => {
   assert.equal(fuzzyScore("xyz", "no-console-log"), 0);

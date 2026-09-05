@@ -1,9 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createRequire } from "module";
 
-const require = createRequire(import.meta.url);
-const { renderReport } = require("../bin/report.js");
+const { renderReport } = (await import("../bin/report.js"));
 
 const meta = {
   id: "unawaited-async-map",

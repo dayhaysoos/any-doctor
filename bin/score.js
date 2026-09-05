@@ -1,18 +1,12 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.findingSeverity = findingSeverity;
-exports.scoreFromSeverities = scoreFromSeverities;
-exports.computeScore = computeScore;
-exports.categoryRollup = categoryRollup;
 const WEIGHTS = { error: 10, warning: 4, info: 1 };
-function findingSeverity(g, f) {
+export function findingSeverity(g, f) {
     var _a, _b;
     if (f.severity)
         return f.severity;
     const check = f.rule ? (_a = g.meta.checks) === null || _a === void 0 ? void 0 : _a.find(c => c.id === f.rule) : undefined;
     return (_b = check === null || check === void 0 ? void 0 : check.severity) !== null && _b !== void 0 ? _b : g.meta.severity;
 }
-function scoreFromSeverities(sevs) {
+export function scoreFromSeverities(sevs) {
     let score = 100;
     for (const s of sevs)
         score -= WEIGHTS[s];
@@ -28,7 +22,7 @@ function scoreFromSeverities(sevs) {
         grade = "Poor";
     return { score, grade };
 }
-function computeScore(groups) {
+export function computeScore(groups) {
     let score = 100;
     for (const g of groups) {
         for (const f of g.findings) {
@@ -47,7 +41,7 @@ function computeScore(groups) {
         grade = "Poor";
     return { score, grade };
 }
-function categoryRollup(groups) {
+export function categoryRollup(groups) {
     var _a;
     const map = new Map();
     for (const g of groups) {

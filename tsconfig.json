@@ -2,8 +2,8 @@
   "compilerOptions": {
     "target": "ES2019",
     "lib": ["ES2023"],
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "outDir": "bin",
     "rootDir": "src",
     "declaration": true,

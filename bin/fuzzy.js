@@ -1,8 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.fuzzyScore = fuzzyScore;
-exports.fuzzyFilter = fuzzyFilter;
-function fuzzyScore(query, text) {
+export function fuzzyScore(query, text) {
     var _a;
     const q = query.toLowerCase();
     const t = text.toLowerCase();
@@ -24,7 +20,7 @@ function fuzzyScore(query, text) {
     }
     return qi === q.length ? score : 0;
 }
-function fuzzyFilter(items, textOf, query) {
+export function fuzzyFilter(items, textOf, query) {
     if (!query.trim())
         return items;
     return items

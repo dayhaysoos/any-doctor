@@ -1,4 +1,3 @@
-import { createRequire } from "module";
 import { pathToFileURL, fileURLToPath } from "url";
 import * as fs from "fs";
 import * as os from "os";
@@ -16,10 +15,9 @@ if (!verifyMode && !metaMode && !second) {
   process.exit(2);
 }
 
-const require = createRequire(import.meta.url);
 const here = p => fileURLToPath(new URL(p, import.meta.url));
-const { buildCtx } = require(here("./sdk.js"));
-const contract = require(here("./contract.js"));
+const { buildCtx } = await import(new URL("./sdk.js", import.meta.url).href);
+const contract = await import(new URL("./contract.js", import.meta.url).href);
 
 const SEVERITIES = new Set(["error", "warning", "info"]);
 

@@ -1,9 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
-import { copyToClipboard } from "./clipboard";
-import { Finding, ReportGroup, Severity } from "./contract";
-import { scoreFromSeverities } from "./score";
-import { createKeyFeed } from "./keys";
+import { copyToClipboard } from "./clipboard.js";
+import { Finding, ReportGroup, Severity } from "./contract.js";
+import { scoreFromSeverities } from "./score.js";
+import { createKeyFeed } from "./keys.js";
 
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
       ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
@@ -351,7 +351,11 @@ function paintFrame(stdout: DashboardStdout, frame: string, cols: number, first:
   stdout.write((first ? "\x1b[H\x1b[2J" : "\x1b[H") + lines.join("\n") + "\x1b[J");
 }
 
-export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStdout, input: DashboardInput): Promise<void> {
+export interface DashboardDeps {
+  copy?: (text: string) => boolean;
+}
+
+export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStdout, input: DashboardInput, deps: DashboardDeps = {}): Promise<void> {
   if (!stdin.isTTY || !stdout.isTTY) return;
 
   const useColor = input.useColor;
@@ -416,7 +420,7 @@ export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStd
         const it = items[selected];
         if (!it) return draw();
         const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
-        if (copyToClipboard(issuePrompt(it, verifyCommand))) {
+        if ((deps.copy ?? copyToClipboard)(issuePrompt(it, verifyCommand))) {
           notice = "copied issue context — paste into your agent";
         } else {
           notice = "clipboard unavailable";

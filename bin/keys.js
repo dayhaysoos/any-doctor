@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.createKeyFeed = createKeyFeed;
 const FLUSH_MS = 30;
-function createKeyFeed(onKey) {
+export function createKeyFeed(onKey) {
     let buf = "";
     let holdTimer = null;
     const clearHold = () => {

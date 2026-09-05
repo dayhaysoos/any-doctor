@@ -1,10 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.RESULT_SENTINEL = exports.PROTOCOL_VERSION = void 0;
-exports.compareFindings = compareFindings;
-exports.PROTOCOL_VERSION = 1;
-exports.RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
-function compareFindings(expected, actual) {
+export const PROTOCOL_VERSION = 1;
+export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
+export function compareFindings(expected, actual) {
     const key = (f) => `${f.file}:${f.line}`;
     const expectedKeys = new Set(expected.map(key));
     const actualKeys = new Set(actual.map(key));

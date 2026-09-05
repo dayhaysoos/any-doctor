@@ -1,4 +1,4 @@
-import { ReportGroup } from "./contract";
+import { ReportGroup } from "./contract.js";
 export interface ReportInput {
     fileCount: number;
     durationMs: number;

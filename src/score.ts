@@ -1,4 +1,4 @@
-import { Finding, ReportGroup, Severity } from "./contract";
+import { Finding, ReportGroup, Severity } from "./contract.js";
 
 export interface ScoreResult {
   score: number;

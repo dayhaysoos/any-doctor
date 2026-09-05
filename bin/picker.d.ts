@@ -1,4 +1,4 @@
-import { Severity } from "./contract";
+import { Severity } from "./contract.js";
 export interface PickerItem {
     id: string;
     label: string;

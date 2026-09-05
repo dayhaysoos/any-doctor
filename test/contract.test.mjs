@@ -1,9 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createRequire } from "module";
 
-const require = createRequire(import.meta.url);
-const { compareFindings, RESULT_SENTINEL, PROTOCOL_VERSION } = require("../bin/contract.js");
+const { compareFindings, RESULT_SENTINEL, PROTOCOL_VERSION } = (await import("../bin/contract.js"));
 
 test("compareFindings: exact set passes when actual equals expected", () => {
   const diff = compareFindings(

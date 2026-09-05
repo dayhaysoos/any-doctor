@@ -1,9 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createRequire } from "module";
 
-const require = createRequire(import.meta.url);
-const { createKeyFeed } = require("../bin/keys.js");
+const { createKeyFeed } = (await import("../bin/keys.js"));
 
 function collect() {
   const keys = [];

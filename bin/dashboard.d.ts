@@ -1,4 +1,4 @@
-import { Finding, ReportGroup, Severity } from "./contract";
+import { Finding, ReportGroup, Severity } from "./contract.js";
 export declare function highlightCode(line: string, useColor: boolean): string;
 export interface DashItem {
     key: string;
@@ -71,5 +71,8 @@ export interface DashboardStdout {
     write(s: string): unknown;
 }
 export declare function runDashboard(input: DashboardInput): Promise<void>;
-export declare function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStdout, input: DashboardInput): Promise<void>;
+export interface DashboardDeps {
+    copy?: (text: string) => boolean;
+}
+export declare function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStdout, input: DashboardInput, deps?: DashboardDeps): Promise<void>;
 export {};
