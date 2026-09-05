@@ -10,7 +10,7 @@
   "exports": {
     ".": {
       "types": "./bin/contract.d.ts",
-      "default": "./bin/cli.js"
+      "default": "./bin/contract.js"
     }
   },
   "scripts": {
@@ -38,5 +38,6 @@
   "type": "module",
   "dependencies": {
     "effect": "^4.0.0-beta.107"
-  }
+  },
+  "build": "tsc -p tsconfig.json && node scripts/postbuild.mjs"
 }

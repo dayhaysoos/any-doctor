@@ -15,9 +15,8 @@ if (!verifyMode && !metaMode && !second) {
   process.exit(2);
 }
 
-const here = p => fileURLToPath(new URL(p, import.meta.url));
-const { buildCtx } = await import(new URL("./sdk.js", import.meta.url).href);
-const contract = await import(new URL("./contract.js", import.meta.url).href);
+const { buildCtx } = await import("./sdk.js");
+const contract = await import("./contract.js");
 
 const SEVERITIES = new Set(["error", "warning", "info"]);
 
