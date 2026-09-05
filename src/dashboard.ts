@@ -321,12 +321,19 @@ export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStd
   const readKeys = new Set<string>();
   let notice: string | undefined;
 
+  // A review session re-reads the same files on every selection; caching
+  // keeps keypresses off the disk (the frame shows the session-start view).
+  const sourceCache = new Map<string, string[] | null>();
   const readSource: FrameSource = (file) => {
+    if (sourceCache.has(file)) return sourceCache.get(file)!;
+    let lines: string[] | null = null;
     try {
-      return fs.readFileSync(path.resolve(input.root, file), "utf8").split("\n");
+      lines = fs.readFileSync(path.resolve(input.root, file), "utf8").split("\n");
     } catch {
-      return null;
+      lines = null;
     }
+    sourceCache.set(file, lines);
+    return lines;
   };
 
   const frame = (): string => {

@@ -251,13 +251,21 @@ export async function runDashboardOn(stdin, stdout, input, deps = {}) {
     let selected = 0;
     const readKeys = new Set();
     let notice;
+    // A review session re-reads the same files on every selection; caching
+    // keeps keypresses off the disk (the frame shows the session-start view).
+    const sourceCache = new Map();
     const readSource = (file) => {
+        if (sourceCache.has(file))
+            return sourceCache.get(file);
+        let lines = null;
         try {
-            return fs.readFileSync(path.resolve(input.root, file), "utf8").split("\n");
+            lines = fs.readFileSync(path.resolve(input.root, file), "utf8").split("\n");
         }
         catch {
-            return null;
+            lines = null;
         }
+        sourceCache.set(file, lines);
+        return lines;
     };
     const frame = () => {
         try {
