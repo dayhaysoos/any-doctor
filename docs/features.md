@@ -18,7 +18,8 @@ When `run` or `verify` is invoked WITHOUT a doctor path:
 
 - **TTY session:** show a fuzzy-searchable picker. Type to filter,
   ↑↓ to move, enter to select, esc/q to cancel. Picker lists every
-  discovered doctor with its meta: id, one-line description, severity.
+  discovered doctor by its one-line description and severity glyph; the
+  id feeds fuzzy matching and appears in the report and review browser.
   On select: proceed exactly as if the path had been typed
   (`verify` → fixture gate; `run` → report + findings browser).
 - **Non-TTY (piped/CI):** never prompt. Print the discovered doctor list

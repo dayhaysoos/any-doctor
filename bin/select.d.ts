@@ -37,6 +37,7 @@ export interface SelectOptions {
     targetDir?: string;
     globalDir?: string;
     useColor: boolean;
+    allowPicker?: boolean;
     env: TtyEnv;
 }
 export declare function selectDoctor(doctorArg: string | undefined, options: SelectOptions): Promise<Selection>;

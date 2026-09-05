@@ -30,7 +30,7 @@ export async function selectDoctor(doctorArg, options) {
     }
     // The gate runs before a picker ever starts, so "cancelled" can only mean
     // the user ended the pick — never "this isn't a terminal".
-    if (!canRunTui(options.env)) {
+    if (!canRunTui(options.env) || options.allowPicker === false) {
         return {
             kind: "non-interactive",
             skipped: broken,

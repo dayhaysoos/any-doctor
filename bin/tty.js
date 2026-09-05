@@ -1,4 +1,11 @@
 import { createKeyFeed } from "./keys.js";
+// The one adapter from Node's process stdio to the tty seam.
+export function processTtyEnv() {
+    return {
+        stdin: process.stdin,
+        stdout: process.stdout,
+    };
+}
 // "Is this a real terminal" — the shared floor of every TUI decision.
 // Deliberately excludes headless env vars and width heuristics: those are
 // report-vs-dashboard policy and belong to the command layer.

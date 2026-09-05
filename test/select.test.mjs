@@ -156,3 +156,15 @@ test("selectDoctor: no valid doctors is none-discovered with the broken list", a
   assert.equal(sel.broken[0].slug, "broken");
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test("selectDoctor: allowPicker=false forces the non-interactive listing even on a terminal", async () => {
+  const sel = await selectDoctor(undefined, {
+    cwd: REPO,
+    globalDir: emptyGlobalDir(),
+    useColor: false,
+    allowPicker: false,
+    env: { stdin: new FakeStdin(true), stdout: new FakeStdout(true) },
+  });
+  assert.equal(sel.kind, "non-interactive");
+  assert.ok(sel.rows.length >= 8);
+});

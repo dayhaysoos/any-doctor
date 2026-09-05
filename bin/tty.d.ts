@@ -2,6 +2,7 @@ export interface TtyEnv {
     stdin: TtyStdin;
     stdout: TtyStdout;
 }
+export declare function processTtyEnv(): TtyEnv;
 export declare function canRunTui(env: {
     stdin: {
         readonly isTTY?: boolean;

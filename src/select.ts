@@ -36,6 +36,9 @@ export interface SelectOptions {
   targetDir?: string;
   globalDir?: string;
   useColor: boolean;
+  // false forces the non-interactive listing even on a real terminal
+  // (ANY_DOCTOR_HEADLESS).
+  allowPicker?: boolean;
   env: TtyEnv;
 }
 
@@ -70,7 +73,7 @@ export async function selectDoctor(doctorArg: string | undefined, options: Selec
 
   // The gate runs before a picker ever starts, so "cancelled" can only mean
   // the user ended the pick — never "this isn't a terminal".
-  if (!canRunTui(options.env)) {
+  if (!canRunTui(options.env) || options.allowPicker === false) {
     return {
       kind: "non-interactive",
       skipped: broken,

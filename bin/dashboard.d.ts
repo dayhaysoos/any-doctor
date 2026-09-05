@@ -5,7 +5,7 @@ export declare function highlightCode(line: string, useColor: boolean): string;
 export type DashItem = {
     key: string;
     site: Finding;
-} & JoinedFinding;
+} & Omit<JoinedFinding, "finding">;
 export interface DashboardInput {
     root: string;
     groups: ReportGroup[];

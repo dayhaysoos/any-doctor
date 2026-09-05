@@ -1,6 +1,6 @@
 import { fuzzyFilter } from "./fuzzy.js";
 import { Severity } from "./contract.js";
-import { BOLD, colorizer, DIM, GLYPH, GREEN, RESET, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, GREEN, SEVERITY_COLOR } from "./palette.js";
 import { canRunTui, runTty, TtyEnv } from "./tty.js";
 
 export interface PickerItem {

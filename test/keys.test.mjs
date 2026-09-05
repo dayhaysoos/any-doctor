@@ -40,3 +40,13 @@ test("enter passes through", () => {
   feed("\r");
   assert.deepEqual(keys, ["\r"]);
 });
+
+test("alt-chords decode as ignore, not esc + keystroke", async () => {
+  const { createKeyFeed } = await import("../bin/keys.js");
+  const seen = [];
+  const feed = createKeyFeed(k => seen.push(k));
+  feed(Buffer.from("\x1ba"));   // alt-a in one chunk
+  feed(Buffer.from("x"));
+  await new Promise(r => setTimeout(r, 60));
+  assert.deepEqual(seen, ["ignore", "x"], "the pair is consumed together");
+});

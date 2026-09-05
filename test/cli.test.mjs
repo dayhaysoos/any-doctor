@@ -97,3 +97,9 @@ test("main: run --all treats a crashed doctor as data and still exits 1", async 
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("main: --global is a generate-only flag", async (t) => {
+  silentConsole(t);
+  assert.equal(await cli.main(["run", "--global"]), 1);
+  assert.equal(await cli.main(["verify", "--global"]), 1);
+});

@@ -1,5 +1,5 @@
 import { DoctorMeta, Finding, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, RESET, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity } from "./score.js";
 
 export interface ReportInput {

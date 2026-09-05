@@ -3,6 +3,7 @@ import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { resolveFinding, runCommandFor } from "./contract.js";
 import { scoreFromSeverities } from "./score.js";
+import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
 export { truncateVisible, visibleWidth };
@@ -228,10 +229,7 @@ function codeFrameLines(source, line, width, useColor) {
     return out;
 }
 export async function runDashboard(input) {
-    await runDashboardOn({
-        stdin: process.stdin,
-        stdout: process.stdout,
-    }, input);
+    await runDashboardOn(processTtyEnv(), input);
 }
 export async function runDashboardOn(env, input, deps = {}) {
     const { stdout } = env;

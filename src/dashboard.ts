@@ -3,12 +3,13 @@ import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { Finding, JoinedFinding, ReportGroup, resolveFinding, runCommandFor, Severity } from "./contract.js";
 import { scoreFromSeverities } from "./score.js";
+import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 
 export { truncateVisible, visibleWidth };
 
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RED, RESET, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, SEVERITY_COLOR } from "./palette.js";
 
 const SPLIT_MIN_COLS = 100;
 
@@ -26,8 +27,8 @@ export function highlightCode(line: string, useColor: boolean): string {
 }
 
 // A JoinedFinding pinned to one dashboard row: the join supplies every
-// field; site aliases finding for the frame code.
-export type DashItem = { key: string; site: Finding } & JoinedFinding;
+// field; site replaces finding for the frame code.
+export type DashItem = { key: string; site: Finding } & Omit<JoinedFinding, "finding">;
 
 export interface DashboardInput {
   root: string;
@@ -281,10 +282,7 @@ export type DashboardStdin = TtyStdin;
 export type DashboardStdout = TtyStdout;
 
 export async function runDashboard(input: DashboardInput): Promise<void> {
-  await runDashboardOn({
-    stdin: process.stdin as unknown as DashboardStdin,
-    stdout: process.stdout as unknown as DashboardStdout,
-  }, input);
+  await runDashboardOn(processTtyEnv(), input);
 }
 
 export interface DashboardDeps {

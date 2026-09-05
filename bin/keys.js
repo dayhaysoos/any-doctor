@@ -53,6 +53,14 @@ export function createKeyFeed(onKey) {
                 i = j + 1;
                 continue;
             }
+            // Alt-chords (\x1b followed by a printable) arrive as one chunk:
+            // ignore the pair rather than decoding it as esc + keystroke, which
+            // would cancel the session on alt-<letter>.
+            if (i + 1 < buf.length && buf[i + 1] >= " " && buf[i + 1] !== "\x7f") {
+                onKey("ignore");
+                i += 2;
+                continue;
+            }
             onKey("esc");
             i++;
         }

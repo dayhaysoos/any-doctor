@@ -9,7 +9,7 @@ import { runDashboard } from "./dashboard.js";
 import { discoverDoctors, globalDoctorsDir } from "./discover.js";
 import { describeRunnerError, isRunnerError, runDoctor, verifyDoctor } from "./runner.js";
 import { selectDoctor, Selection } from "./select.js";
-import { canRunTui, TtyEnv } from "./tty.js";
+import { canRunTui, processTtyEnv } from "./tty.js";
 
 import { BOLD, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./palette.js";
 
@@ -36,10 +36,6 @@ function skillText(): string | null {
   } catch {
     return null;
   }
-}
-
-function ttyEnv(): TtyEnv {
-  return { stdin: process.stdin as unknown as TtyEnv["stdin"], stdout: process.stdout as unknown as TtyEnv["stdout"] };
 }
 
 function useColor(): boolean {
@@ -149,6 +145,10 @@ async function scanOnce(doctorAbs: string, targetDir: string): Promise<Scan> {
 
 async function cmdRun(args: string[]): Promise<number> {
   const parsed = parseArgs(args);
+  if (parsed.global) {
+    fail("--global is a generate-only flag");
+    return 1;
+  }
   const started = Date.now();
 
   if (parsed.all) {
@@ -178,11 +178,12 @@ async function cmdRun(args: string[]): Promise<number> {
     return 0;
   }
 
-  const env = ttyEnv();
+  const env = processTtyEnv();
   const sel = await selectDoctor(parsed.doctorPath, {
     cwd: process.cwd(),
     targetDir: parsed.targetDir,
     useColor: useColor(),
+    allowPicker: !process.env.ANY_DOCTOR_HEADLESS,
     env,
   });
   const outcome = selectionOutcome(sel);
@@ -215,6 +216,10 @@ async function cmdRun(args: string[]): Promise<number> {
 
 async function cmdVerify(args: string[]): Promise<number> {
   const parsed = parseArgs(args);
+  if (parsed.global) {
+    fail("--global is a generate-only flag");
+    return 1;
+  }
 
   if (parsed.all) {
     const discovered = (await discoverDoctors(process.cwd())).filter(d => d.meta !== null);
@@ -251,7 +256,8 @@ async function cmdVerify(args: string[]): Promise<number> {
   const sel = await selectDoctor(parsed.doctorPath, {
     cwd: process.cwd(),
     useColor: useColor(),
-    env: ttyEnv(),
+    allowPicker: !process.env.ANY_DOCTOR_HEADLESS,
+    env: processTtyEnv(),
   });
   const outcome = selectionOutcome(sel);
   if (typeof outcome === "number") return outcome;

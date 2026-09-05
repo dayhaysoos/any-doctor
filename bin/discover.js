@@ -54,15 +54,15 @@ export function resolveDoctorPath(arg, cwd, opts) {
         if (fs.existsSync(direct))
             return direct;
     }
-    const base = path.basename(arg);
-    const repoDir = findRepoDoctorsDir(cwd);
-    const scopes = [repoDir, (_a = opts === null || opts === void 0 ? void 0 : opts.globalDir) !== null && _a !== void 0 ? _a : globalDoctorsDir()].filter((d) => Boolean(d));
-    for (const dir of scopes) {
-        const candidate = path.join(dir, base);
-        if (fs.existsSync(candidate))
-            return candidate;
-    }
     if (bare) {
+        const base = path.basename(arg);
+        const repoDir = findRepoDoctorsDir(cwd);
+        const scopes = [repoDir, (_a = opts === null || opts === void 0 ? void 0 : opts.globalDir) !== null && _a !== void 0 ? _a : globalDoctorsDir()].filter((d) => Boolean(d));
+        for (const dir of scopes) {
+            const candidate = path.join(dir, base);
+            if (fs.existsSync(candidate))
+                return candidate;
+        }
         const direct = path.resolve(cwd, arg);
         if (fs.existsSync(direct))
             return direct;

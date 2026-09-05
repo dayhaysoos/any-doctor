@@ -12,6 +12,14 @@ export interface TtyEnv {
   stdout: TtyStdout;
 }
 
+// The one adapter from Node's process stdio to the tty seam.
+export function processTtyEnv(): TtyEnv {
+  return {
+    stdin: process.stdin as unknown as TtyStdin,
+    stdout: process.stdout as unknown as TtyStdout,
+  };
+}
+
 // "Is this a real terminal" — the shared floor of every TUI decision.
 // Deliberately excludes headless env vars and width heuristics: those are
 // report-vs-dashboard policy and belong to the command layer.
