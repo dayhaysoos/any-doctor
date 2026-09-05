@@ -6,9 +6,7 @@ import { scoreFromSeverities } from "./score.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
 export { truncateVisible, visibleWidth };
-const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
-const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
-const COLOR = { error: RED, warning: ORANGE, info: YELLOW };
+import { BOLD, CYAN, DIM, GLYPH, gradeColor, GREEN, ORANGE, RED, RESET, SEVERITY_COLOR } from "./palette.js";
 const SPLIT_MIN_COLS = 100;
 const TOKEN_RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|await|async|try|catch|finally|import|export|from|new|class|extends|throw|typeof|instanceof|in|of|do|switch|case|break|continue|default|yield)\b|\b(\d+(?:\.\d+)?)\b/g;
 export function highlightCode(line, useColor) {
@@ -130,7 +128,7 @@ export function buildListRows(items, useColor, selected, readKeys) {
         }
         const isSelected = index === selected;
         const isRead = readKeys.has(it.key);
-        const glyph = c(GLYPH[it.severity], COLOR[it.severity]);
+        const glyph = c(GLYPH[it.severity], SEVERITY_COLOR[it.severity]);
         const wrap = isSelected ? BOLD : isRead ? DIM : undefined;
         const row = {
             kind: "item",
@@ -149,11 +147,10 @@ export function dashboardFrame(state) {
     const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
     const layout = resolveDashboardLayout(cols, rows, items.length);
     const { score, grade } = scoreFromSeverities(items.map(it => it.severity));
-    const gradeColor = score >= 75 ? GREEN : score >= 50 ? YELLOW : RED;
     const barWidth = Math.min(46, Math.max(16, cols - 60));
     const header = [
         c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor),
-        c(scoreBar(score, barWidth), gradeColor),
+        c(scoreBar(score, barWidth), gradeColor(score)),
         c(`${items.length} finding${items.length === 1 ? "" : "s"} · ${input0(state.fileCount)}`, DIM),
         "",
     ];

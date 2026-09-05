@@ -11,8 +11,7 @@ import { describeRunnerError, isRunnerError, runDoctor, verifyDoctor } from "./r
 import { selectDoctor, Selection } from "./select.js";
 import { canRunTui, TtyStdin, TtyStdout } from "./tty.js";
 
-const GREEN = "\x1b[32m", RED = "\x1b[31m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
-      DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
+import { BOLD, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./palette.js";
 
 function fail(msg: string): void {
   console.error(RED + msg + RESET);

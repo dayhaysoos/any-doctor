@@ -1,11 +1,6 @@
 import { DoctorMeta, Finding, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
+import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, RESET, SEVERITY_COLOR } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity } from "./score.js";
-
-const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
-      ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
-
-const GLYPH: Record<Severity, string> = { error: "✖", warning: "⚠", info: "ℹ" };
-const COLOR: Record<Severity, string> = { error: RED, warning: ORANGE, info: YELLOW };
 
 export interface ReportInput {
   fileCount: number;
@@ -72,13 +67,12 @@ export function dedupeGroups(groups: ReportGroup[]): { groups: ReportGroup[]; hi
 }
 
 export function renderReport(input: ReportInput, useColor: boolean): string {
-  const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
+  const c = colorizer(useColor);
   const lines: string[] = [];
 
   const { groups, hidden } = dedupeGroups(input.groups);
   const total = groups.reduce((n, g) => n + g.findings.length, 0);
   const { score, grade } = computeScore(groups);
-  const gradeColor = score >= 75 ? GREEN : score >= 50 ? YELLOW : RED;
 
   lines.push(`✔ Scanned ${input.fileCount} files in ${input.durationMs}ms`);
   lines.push("");
@@ -103,13 +97,13 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
   }
   const rollup = SEVERITY_ORDER
     .filter(s => bySeverity[s] > 0)
-    .map(s => c(`${bySeverity[s]} ${s}`, COLOR[s]))
+    .map(s => c(`${bySeverity[s]} ${s}`, SEVERITY_COLOR[s]))
     .join(", ");
 
   lines.push("");
   lines.push(`${c(`${total} issue${total === 1 ? "" : "s"} found`, BOLD)}  ${c(`(${rollup})`, DIM)}`);
   for (const { category, counts } of categoryRollup(groups)) {
-    const catParts = SEVERITY_ORDER.filter(s => counts[s] > 0).map(s => c(`${counts[s]} ${s}`, COLOR[s]));
+    const catParts = SEVERITY_ORDER.filter(s => counts[s] > 0).map(s => c(`${counts[s]} ${s}`, SEVERITY_COLOR[s]));
     if (catParts.length > 0) {
       const cap = category.charAt(0).toUpperCase() + category.slice(1);
       lines.push(`${c(cap + ":", BOLD)} ${catParts.join(", ")}`);
@@ -123,7 +117,7 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
   for (const g of ordered) {
     for (const bucket of expandChecks(g)) {
       const n = bucket.findings.length;
-      lines.push(`${c(GLYPH[bucket.severity], COLOR[bucket.severity])} ${c(bucket.heading, n > 1 ? BOLD : "")}${n > 1 ? c(` ×${n}`, COLOR[bucket.severity]) : ""}`);
+      lines.push(`${c(GLYPH[bucket.severity], SEVERITY_COLOR[bucket.severity])} ${c(bucket.heading, n > 1 ? BOLD : "")}${n > 1 ? c(` ×${n}`, SEVERITY_COLOR[bucket.severity]) : ""}`);
       lines.push(`  ${c(bucket.ruleId ? `${g.meta.id}/${bucket.ruleId}` : g.meta.id, DIM)}`);
       for (const f of bucket.findings.slice(0, 20)) {
         lines.push(`  ${f.file}:${f.line}`);

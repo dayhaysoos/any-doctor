@@ -1,10 +1,8 @@
 import { fuzzyFilter } from "./fuzzy.js";
+import { BOLD, colorizer, DIM, GLYPH, GREEN, SEVERITY_COLOR } from "./palette.js";
 import { canRunTui, runTty } from "./tty.js";
-const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
-const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
-const COLOR = { error: GREEN, warning: YELLOW, info: CYAN };
 export function pickerFrame(title, items, selected, query, useColor, notice) {
-    const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
+    const c = colorizer(useColor);
     const lines = [];
     lines.push(c(title, BOLD) + c("  (type to filter · ↑↓ move · enter select · esc cancel)", DIM));
     lines.push("");
@@ -17,7 +15,7 @@ export function pickerFrame(title, items, selected, query, useColor, notice) {
         const cap = Math.min(items.length, 12);
         for (let i = 0; i < cap; i++) {
             const it = items[i];
-            const glyph = it.severity ? c(GLYPH[it.severity] + " ", COLOR[it.severity]) : "";
+            const glyph = it.severity ? c(GLYPH[it.severity] + " ", SEVERITY_COLOR[it.severity]) : "";
             const row = `${glyph}${it.label}${it.sub ? c("  " + it.sub, DIM) : ""}`;
             lines.push(i === selected ? c("❯ " + row, BOLD) : "  " + row);
         }

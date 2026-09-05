@@ -3,21 +3,23 @@ const WEIGHTS = { error: 10, warning: 4, info: 1 };
 export function findingSeverity(g, f) {
     return resolveFinding(g.meta, f).severity;
 }
+export function gradeFor(score) {
+    if (score >= 90)
+        return "Excellent";
+    if (score >= 75)
+        return "Good";
+    if (score >= 50)
+        return "Fair";
+    if (score >= 25)
+        return "Poor";
+    return "Critical";
+}
 export function scoreFromSeverities(sevs) {
     let score = 100;
     for (const s of sevs)
         score -= WEIGHTS[s];
     score = Math.max(0, Math.min(100, score));
-    let grade = "Critical";
-    if (score >= 90)
-        grade = "Excellent";
-    else if (score >= 75)
-        grade = "Good";
-    else if (score >= 50)
-        grade = "Fair";
-    else if (score >= 25)
-        grade = "Poor";
-    return { score, grade };
+    return { score, grade: gradeFor(score) };
 }
 export function computeScore(groups) {
     let score = 100;

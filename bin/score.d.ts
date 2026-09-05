@@ -4,6 +4,7 @@ export interface ScoreResult {
     grade: string;
 }
 export declare function findingSeverity(g: ReportGroup, f: Finding): Severity;
+export declare function gradeFor(score: number): string;
 export declare function scoreFromSeverities(sevs: Severity[]): ScoreResult;
 export declare function computeScore(groups: ReportGroup[]): ScoreResult;
 export declare function categoryRollup(groups: ReportGroup[]): {
