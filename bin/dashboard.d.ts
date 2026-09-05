@@ -33,6 +33,7 @@ export interface DashboardLayout {
     detailWidth: number;
     listHeight: number;
     detailHeight: number;
+    bodyRows: number;
 }
 export declare function resolveDashboardLayout(cols: number, rows: number, itemCount: number): DashboardLayout;
 interface ListRow {
@@ -54,5 +55,21 @@ export declare function dashboardFrame(state: {
     cols: number;
     rows: number;
 }): string;
+export interface DashboardStdin {
+    readonly isTTY?: boolean;
+    readonly isRaw?: boolean;
+    setRawMode(mode: boolean): unknown;
+    resume(): unknown;
+    pause(): unknown;
+    on(event: "data", listener: (chunk: string | Buffer) => void): unknown;
+    removeListener(event: "data", listener: (chunk: string | Buffer) => void): unknown;
+}
+export interface DashboardStdout {
+    readonly isTTY?: boolean;
+    columns?: number;
+    rows?: number;
+    write(s: string): unknown;
+}
 export declare function runDashboard(input: DashboardInput): Promise<void>;
+export declare function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStdout, input: DashboardInput): Promise<void>;
 export {};

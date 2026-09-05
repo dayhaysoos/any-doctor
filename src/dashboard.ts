@@ -138,28 +138,35 @@ function wordWrap(text: string, width: number): string[] {
   return lines;
 }
 
+// Fixed chrome around the body: 4 header lines, 2 blank spacers, 2 footer
+// lines (the notice line is always reserved), plus the bottom terminal row,
+// which is never written so no repaint can make the terminal scroll.
+const CHROME_ROWS = 9;
+
 export interface DashboardLayout {
   mode: "split" | "stacked";
   listWidth: number;
   detailWidth: number;
   listHeight: number;
   detailHeight: number;
+  bodyRows: number;
 }
 
 export function resolveDashboardLayout(cols: number, rows: number, itemCount: number): DashboardLayout {
-  const bodyRows = Math.max(6, rows - 7);
+  const bodyRows = Math.max(1, rows - CHROME_ROWS);
   if (cols >= SPLIT_MIN_COLS) {
     const listWidth = Math.min(56, Math.max(32, Math.floor(cols * 0.44)));
     const detailWidth = cols - listWidth - 2;
-    return { mode: "split", listWidth, detailWidth, listHeight: bodyRows, detailHeight: bodyRows };
+    return { mode: "split", listWidth, detailWidth, listHeight: bodyRows, detailHeight: bodyRows, bodyRows };
   }
-  const listHeight = Math.min(Math.max(4, Math.ceil(bodyRows * 0.4)), Math.max(1, itemCount));
+  const listHeight = Math.min(Math.max(2, Math.ceil(bodyRows * 0.4)), Math.max(1, itemCount));
   return {
     mode: "stacked",
     listWidth: cols,
     detailWidth: cols,
     listHeight,
-    detailHeight: Math.max(4, bodyRows - listHeight),
+    detailHeight: Math.max(1, bodyRows - listHeight - 2),
+    bodyRows,
   };
 }
 
@@ -227,7 +234,7 @@ export function dashboardFrame(state: {
   }
 
   const rowsData = buildListRows(items, useColor, selected, readKeys);
-  const viewport = Math.max(3, layout.listHeight);
+  const viewport = Math.max(1, Math.min(layout.listHeight, layout.bodyRows));
   let firstVisible = Math.max(0, Math.min(selected - viewport + 1, Math.max(0, rowsData.length - viewport)));
   const visibleRows = rowsData.slice(firstVisible, firstVisible + viewport);
   const listLines: string[] = [];
@@ -235,7 +242,6 @@ export function dashboardFrame(state: {
     listLines.push(truncateVisible(row.text, layout.listWidth));
   }
   while (listLines.length < viewport) listLines.push("");
-  listLines.push("");
 
   const sel = items[selected];
   const detail: string[] = [];
@@ -263,22 +269,29 @@ export function dashboardFrame(state: {
     }
   }
 
+  // The body always renders exactly layout.bodyRows lines so the frame
+  // height is constant (rows - 1) in every state.
   const body: string[] = [];
   if (layout.mode === "split") {
-    const bodyRows = Math.max(listLines.length, Math.min(detail.length, layout.detailHeight));
-    for (let i = 0; i < bodyRows; i++) {
+    for (let i = 0; i < layout.bodyRows; i++) {
       body.push(padVisible(truncateVisible(listLines[i] ?? "", layout.listWidth), layout.listWidth) + "  " + (detail[i] ?? ""));
     }
   } else {
-    for (const l of listLines) body.push(l);
-    body.push("");
-    body.push(c("─".repeat(Math.max(10, Math.min(cols - 2, 80))), DIM));
-    for (const l of detail.slice(0, layout.detailHeight)) body.push(l);
+    const stacked: string[] = [
+      ...listLines,
+      "",
+      c("─".repeat(Math.max(10, Math.min(cols - 2, 80))), DIM),
+      ...detail,
+    ];
+    for (let i = 0; i < layout.bodyRows; i++) body.push(stacked[i] ?? "");
   }
 
-  const footer: string[] = [];
-  if (state.notice) footer.push(c("✔ " + state.notice, GREEN));
-  footer.push(c("↑↓ move · enter copy issue context · q quit", DIM));
+  // Fixed-shape footer: the notice line is always present (blank when idle)
+  // so showing or clearing a notice never changes the frame height.
+  const footer: string[] = [
+    state.notice ? c("✔ " + state.notice, GREEN) : "",
+    c("↑↓ move · enter copy issue context · q quit", DIM),
+  ];
 
   return [...header, "", ...body, "", ...footer].join("\n");
 }
@@ -306,9 +319,39 @@ function codeFrame(root: string, file: string, line: number, width: number, useC
   return out;
 }
 
+export interface DashboardStdin {
+  readonly isTTY?: boolean;
+  readonly isRaw?: boolean;
+  setRawMode(mode: boolean): unknown;
+  resume(): unknown;
+  pause(): unknown;
+  on(event: "data", listener: (chunk: string | Buffer) => void): unknown;
+  removeListener(event: "data", listener: (chunk: string | Buffer) => void): unknown;
+}
+
+export interface DashboardStdout {
+  readonly isTTY?: boolean;
+  columns?: number;
+  rows?: number;
+  write(s: string): unknown;
+}
+
 export async function runDashboard(input: DashboardInput): Promise<void> {
-  const stdin = process.stdin;
-  const stdout = process.stdout;
+  await runDashboardOn(process.stdin as unknown as DashboardStdin, process.stdout as unknown as DashboardStdout, input);
+}
+
+// In-place repaint: home the cursor and rewrite every line with a
+// clear-to-end-of-line so shorter content cannot leave ghosts, then clear
+// below the frame. A full-screen \x1b[2J erase on every keypress leaves a
+// blank window while the frame streams back in, which reads as flicker; the
+// erase runs only on the first paint.
+function paintFrame(stdout: DashboardStdout, frame: string, cols: number, first: boolean): void {
+  const width = Math.max(10, cols - 1);
+  const lines = frame.split("\n").map(l => truncateVisible(l, width) + "\x1b[K");
+  stdout.write((first ? "\x1b[H\x1b[2J" : "\x1b[H") + lines.join("\n") + "\x1b[J");
+}
+
+export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStdout, input: DashboardInput): Promise<void> {
   if (!stdin.isTTY || !stdout.isTTY) return;
 
   const useColor = input.useColor;
@@ -316,6 +359,7 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
   let selected = 0;
   const readKeys = new Set<string>();
   let notice: string | undefined;
+  let firstPaint = true;
 
   const draw = (): void => {
     let frame: string;
@@ -340,27 +384,47 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
         + "Send a screenshot of this to the maintainer:\n\n"
         + String(err && err.stack ? err.stack : err);
     }
-    stdout.write("\x1b[H\x1b[2J" + frame);
+    paintFrame(stdout, frame, stdout.columns || 120, firstPaint);
+    firstPaint = false;
   };
 
-  function handleKey(key: string): void {
-    if (key === "q" || key === "\x03" || key === "ignore") return;
-    if (key === "up" || key === "k") { selected = Math.max(0, selected - 1); notice = undefined; return draw(); }
-    if (key === "down" || key === "j") { selected = Math.min(items.length - 1, selected + 1); notice = undefined; return draw(); }
-    if (key === "\r" || key === "\n") {
-      const it = items[selected];
-      const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
-      if (copyToClipboard(issuePrompt(it, verifyCommand))) {
-        notice = "copied issue context — paste into your agent";
-      } else {
-        notice = "clipboard unavailable";
-      }
-      return draw();
-    }
-  }
-
-  await new Promise<void>((resolve) => {
+  return new Promise<void>((resolve) => {
+    // The picker (or any earlier TUI phase) leaves stdin explicitly paused
+    // and cooked. An explicitly paused stdin never auto-flows when a "data"
+    // listener attaches, so without resume() the event loop drains and the
+    // process exits right after the first frame.
+    const wasRaw = stdin.isRaw;
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdout.write("\x1b[?25l");
     draw();
+
+    const finish = (): void => {
+      stdin.removeListener("data", feed);
+      if (wasRaw !== undefined) stdin.setRawMode(wasRaw);
+      stdin.pause();
+      stdout.write("\x1b[?25h");
+      resolve();
+    };
+
+    function handleKey(key: string): void {
+      if (key === "q" || key === "\x03" || key === "esc") return finish();
+      if (key === "ignore") return;
+      if (key === "up" || key === "k") { selected = Math.max(0, selected - 1); notice = undefined; return draw(); }
+      if (key === "down" || key === "j") { selected = Math.min(items.length - 1, selected + 1); notice = undefined; return draw(); }
+      if (key === "\r" || key === "\n") {
+        const it = items[selected];
+        if (!it) return draw();
+        const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
+        if (copyToClipboard(issuePrompt(it, verifyCommand))) {
+          notice = "copied issue context — paste into your agent";
+        } else {
+          notice = "clipboard unavailable";
+        }
+        return draw();
+      }
+    }
+
     const onKey = (key: string): void => {
       try {
         handleKey(key);
@@ -369,12 +433,6 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
       }
     };
     const feed = createKeyFeed(onKey);
-    const finish = (): void => {
-      stdin.removeListener("data", feed);
-      stdin.setRawMode(false);
-      stdin.pause();
-      resolve();
-    };
     stdin.on("data", feed);
   });
 }

@@ -1,9 +1,20 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
+
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const { buildItems, buildListRows, issuePrompt, scoreBar } = require("../bin/dashboard.js");
+
+// Stub the clipboard so enter-on-finding is deterministic and spawn-free.
+const clipboardPath = require.resolve("../bin/clipboard.js");
+require.cache[clipboardPath] = {
+  id: clipboardPath,
+  filename: clipboardPath,
+  loaded: true,
+  exports: { copyToClipboard: () => true },
+};
+const { buildItems, buildListRows, issuePrompt, scoreBar, runDashboardOn, dashboardFrame } = require("../bin/dashboard.js");
 
 const groups = [
   {
@@ -70,4 +81,127 @@ test("scoreBar: fills proportionally", () => {
   assert.equal(scoreBar(100, 10), "██████████");
   assert.equal(scoreBar(0, 10), "░░░░░░░░░░");
   assert.equal(scoreBar(50, 10), "█████░░░░░");
+});
+
+class FakeStdin extends EventEmitter {
+  isTTY = true;
+  isRaw = false;
+  rawModeHistory = [];
+  resumed = 0;
+  paused = 0;
+  listenersAttached = 0;
+  setRawMode(mode) {
+    this.isRaw = mode;
+    this.rawModeHistory.push(mode);
+  }
+  resume() { this.resumed++; }
+  pause() { this.paused++; }
+  on(event, listener) {
+    if (event === "data") this.listenersAttached++;
+    return super.on(event, listener);
+  }
+  send(s) { this.emit("data", Buffer.from(s, "utf8")); }
+}
+
+class FakeStdout {
+  isTTY = true;
+  columns = 120;
+  rows = 34;
+  frames = [];
+  write(s) { this.frames.push(s); }
+}
+
+function dashInput() {
+  return {
+    root: ".",
+    groups,
+    doctorFile: "doctors/stripe-doctor.mjs",
+    fileCount: 2,
+    durationMs: 10,
+    useColor: false,
+  };
+}
+
+function settle(promise) {
+  return Promise.race([
+    promise.then(() => "resolved", (e) => "rejected: " + e),
+    new Promise((r) => setTimeout(() => r("still pending"), 1000)),
+  ]);
+}
+
+test("runDashboard: revives a post-picker stdin (paused, cooked) and stays interactive until q", async () => {
+  const stdin = new FakeStdin(); // models stdin exactly as pickItem's cleanup leaves it
+  const stdout = new FakeStdout();
+  const done = runDashboardOn(stdin, stdout, dashInput());
+
+  assert.equal(stdin.rawModeHistory[0], true, "must enter raw mode before reading keys (cooked mode line-buffers arrows and echoes)");
+  assert.ok(stdin.resumed >= 1, "must resume stdin — the picker pauses it, and an explicitly paused stdin never auto-flows, so the loop drains and the process exits 0");
+  assert.match(stdout.frames[stdout.frames.length - 1], /enter copy issue context/);
+
+  stdin.send("\x1b[B");
+  const afterDown = stdout.frames[stdout.frames.length - 1];
+  assert.match(afterDown, /›✖ src\/a\.ts:9/, "down arrow moves selection to the second instance");
+
+  stdin.send("\r");
+  const afterEnter = stdout.frames[stdout.frames.length - 1];
+  assert.match(afterEnter, /copied issue context/, "enter copies issue context and keeps the dashboard open");
+  assert.doesNotMatch(afterEnter, /DASHBOARD RENDER ERROR/);
+
+  stdin.send("q");
+  assert.equal(await settle(done), "resolved", "q must resolve the dashboard loop (finish wiring)");
+  assert.equal(stdin.rawModeHistory[stdin.rawModeHistory.length - 1], false, "restores previous raw mode on exit");
+  assert.ok(stdin.paused >= 1, "pauses stdin on exit");
+  assert.ok(stdout.frames[stdout.frames.length - 1].includes("\x1b[?25h"), "shows the cursor again on exit");
+});
+
+test("runDashboard: ctrl-c exits the loop like q", async () => {
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = runDashboardOn(stdin, stdout, dashInput());
+  stdin.send("\x03");
+  assert.equal(await settle(done), "resolved");
+});
+
+test("runDashboard: enter on an empty findings list draws instead of crashing", async () => {
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = runDashboardOn(stdin, stdout, { ...dashInput(), groups: [{ ...groups[0], findings: [] }] });
+  stdin.send("\r");
+  assert.doesNotMatch(stdout.frames[stdout.frames.length - 1], /DASHBOARD RENDER ERROR/);
+  stdin.send("q");
+  assert.equal(await settle(done), "resolved");
+});
+
+test("dashboardFrame: frame height is exactly rows - 1 in every state (notice never resizes it)", () => {
+  const items = buildItems(groups, "doctors/stripe-doctor.mjs");
+  const height = (notice, cols, selected) =>
+    dashboardFrame({ items, selected, readKeys: new Set(), root: ".", fileCount: 2, durationMs: 10, useColor: false, notice, cols, rows: 34 })
+      .split("\n").length;
+  assert.equal(height(undefined, 120, 0), 33, "split, no notice");
+  assert.equal(height("copied issue context — paste into your agent", 120, 0), 33, "split, with notice");
+  assert.equal(height(undefined, 120, 2), 33, "split, last item selected");
+  assert.equal(height(undefined, 80, 0), 33, "stacked, no notice");
+  assert.equal(height("copied", 80, 0), 33, "stacked, with notice");
+});
+
+test("runDashboard: repaints in place — no full-screen erase after the first paint", async () => {
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = runDashboardOn(stdin, stdout, dashInput());
+
+  const paints = stdout.frames.filter(f => f.includes("\x1b[H"));
+  assert.ok(paints.length >= 1, "at least one paint happened");
+  const first = paints[0];
+  assert.ok(first.startsWith("\x1b[H\x1b[2J"), "first paint clears the screen once");
+
+  stdin.send("\x1b[B");
+  stdin.send("\r");
+  const later = stdout.frames[stdout.frames.length - 1];
+  assert.ok(later.startsWith("\x1b[H"), "later paints home the cursor");
+  assert.ok(!later.includes("\x1b[2J"), "later paints never blank the whole screen");
+  assert.ok(later.includes("\x1b[K"), "each rewritten line clears to end-of-line");
+  assert.ok(later.endsWith("\x1b[J"), "paint clears leftovers below the frame");
+
+  stdin.send("q");
+  assert.equal(await settle(done), "resolved");
 });
