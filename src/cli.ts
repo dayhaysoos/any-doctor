@@ -2,7 +2,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-import { RunResult, ReportGroup, Finding } from "./contract.js";
+import { DOCTOR_FILE_RE, RunResult, ReportGroup, Finding, runCommandFor } from "./contract.js";
 import { renderReport, renderVerifyResult } from "./report.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
@@ -113,7 +113,7 @@ function parseArgs(args: string[]): ParsedArgs {
     const a = args[i];
     if (a === "--all") out.all = true;
     else if (a === "--global") out.global = true;
-    else if (out.doctorPath === undefined && /\.(m|c)?js$/.test(a)) out.doctorPath = a;
+    else if (out.doctorPath === undefined && DOCTOR_FILE_RE.test(a)) out.doctorPath = a;
     else if (!targetDirSet) {
       out.targetDir = path.resolve(a);
       targetDirSet = true;
@@ -184,10 +184,12 @@ async function cmdRun(args: string[]): Promise<number> {
     return 0;
   }
 
+  const invoker = process.argv[1] ? `node "${fs.realpathSync(process.argv[1])}"` : "any-doctor";
   await runDashboard({
     root: parsed.targetDir,
     groups: scan.groups,
     doctorFile: doctorAbs,
+    verifyCommand: runCommandFor(doctorAbs, parsed.targetDir, invoker),
     fileCount: scan.fileCount,
     durationMs: scan.durationMs,
     useColor: useColor(),

@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { DoctorMeta } from "./contract.js";
+import { DOCTOR_FILE_RE, DoctorMeta, FIXTURES_FILE_RE } from "./contract.js";
 import { metaDoctor } from "./runner.js";
 
 export type Scope = "repo" | "global";
@@ -39,10 +39,10 @@ export async function discoverDoctors(cwd: string, opts?: { globalDir?: string }
   for (const { scope, dir } of scopes) {
     if (!fs.existsSync(dir)) continue;
     const files = fs.readdirSync(dir)
-      .filter(f => (f.endsWith(".mjs") || f.endsWith(".js")) && !/\.fixtures\.(m|c)?js$/.test(f))
+      .filter(f => (f.endsWith(".mjs") || f.endsWith(".js")) && !FIXTURES_FILE_RE.test(f))
       .sort();
     for (const f of files) {
-      const slug = f.replace(/\.(m|c)?js$/, "");
+      const slug = f.replace(DOCTOR_FILE_RE, "");
       if (bySlug.has(slug)) continue;
       const abs = path.join(dir, f);
       const { meta, error } = await metaDoctor({ programPath: abs });

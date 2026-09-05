@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { Cause, Effect, Exit, Schema } from "effect";
-import { DoctorMeta, RESULT_SENTINEL, RunResult, VerifyRunResult } from "./contract.js";
+import { DoctorMeta, fixturesPathFor, RESULT_SENTINEL, RunResult, VerifyRunResult } from "./contract.js";
 
 // The Runner: the single owner of the doctor-loader protocol. Everything
 // that executes a doctor program — run, verify, meta, count — crosses this
@@ -60,10 +60,6 @@ export interface VerifyOptions {
 export interface MetaRead {
   meta: DoctorMeta | null;
   error?: string;
-}
-
-export function fixturesPathFor(programPath: string): string {
-  return programPath.replace(/\.(m|c)?js$/, "") + ".fixtures.mjs";
 }
 
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
@@ -133,10 +129,11 @@ const execLoader = (
     return frame as Record<string, unknown>;
   });
 
+// Frames decode by their declared kind — the contract's Frame union is the
+// discriminator; the casts below are keyed to it, not blind.
 const asRunResult = (frame: Record<string, unknown>): Effect.Effect<RunResult, RunnerError> =>
   Effect.gen(function* () {
-    const ok = Array.isArray(frame.findings) && frame.meta !== null && typeof frame.meta === "object";
-    if (!ok) {
+    if (frame.kind !== "run" || !Array.isArray(frame.findings) || frame.meta === null || typeof frame.meta !== "object") {
       return yield* new NoFramedResult({ programPath: String(frame.root ?? ""), stdout: JSON.stringify(frame).slice(0, 500) });
     }
     return frame as unknown as RunResult;
@@ -144,7 +141,7 @@ const asRunResult = (frame: Record<string, unknown>): Effect.Effect<RunResult, R
 
 const asVerifyResult = (frame: Record<string, unknown>): Effect.Effect<VerifyRunResult, RunnerError> =>
   Effect.gen(function* () {
-    if (!Array.isArray(frame.results)) {
+    if (frame.kind !== "verify" || !Array.isArray(frame.results) || frame.meta === null || typeof frame.meta !== "object") {
       return yield* new NoFramedResult({ programPath: String(frame.programPath ?? ""), stdout: JSON.stringify(frame).slice(0, 500) });
     }
     return frame as unknown as VerifyRunResult;
@@ -222,7 +219,7 @@ export async function metaDoctor({ programPath }: { programPath: string }): Prom
       (exit) => Effect.succeed(Exit.match(exit, {
         onFailure: (cause) => ({ meta: null, error: describeRunnerError(squash(cause)) }),
         onSuccess: (f) => ({
-          meta: f.meta !== null && typeof f.meta === "object" ? f.meta as DoctorMeta : null,
+          meta: f.kind === "meta" && f.meta !== null && typeof f.meta === "object" ? f.meta as DoctorMeta : null,
         }),
       })),
     ),

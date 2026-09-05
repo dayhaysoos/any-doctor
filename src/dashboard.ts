@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
-import { Finding, ReportGroup, resolveFinding, Severity } from "./contract.js";
+import { Finding, ReportGroup, resolveFinding, runCommandFor, Severity } from "./contract.js";
 import { scoreFromSeverities } from "./score.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
@@ -44,6 +44,7 @@ export interface DashboardInput {
   root: string;
   groups: ReportGroup[];
   doctorFile: string;
+  verifyCommand?: string;
   fileCount: number;
   durationMs: number;
   useColor: boolean;
@@ -356,7 +357,7 @@ export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStd
       if (key === "\r" || key === "\n") {
         const it = items[selected];
         if (!it) return;
-        const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
+        const verifyCommand = input.verifyCommand ?? runCommandFor(input.doctorFile, input.root);
         notice = (deps.copy ?? copyToClipboard)(issuePrompt(it, verifyCommand))
           ? "copied issue context — paste into your agent"
           : "clipboard unavailable";

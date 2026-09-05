@@ -43,6 +43,7 @@ function runOnce(root, mod) {
   }
   return result.then(() => ({
     protocolVersion: contract.PROTOCOL_VERSION,
+    kind: "run",
     root,
     fileCount,
     durationMs: Date.now() - started,

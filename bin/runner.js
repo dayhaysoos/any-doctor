@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { Cause, Effect, Exit, Schema } from "effect";
-import { RESULT_SENTINEL } from "./contract.js";
+import { fixturesPathFor, RESULT_SENTINEL } from "./contract.js";
 // The Runner: the single owner of the doctor-loader protocol. Everything
 // that executes a doctor program — run, verify, meta, count — crosses this
 // interface. The argv shapes, the sentinel framing, the timeout policy, and
@@ -40,9 +40,6 @@ export function describeRunnerError(e) {
         case "DoctorCrashed": return "doctor crashed:\n" + e.detail;
         case "NoFramedResult": return "doctor produced no framed result — stdout was:\n" + e.stdout;
     }
-}
-export function fixturesPathFor(programPath) {
-    return programPath.replace(/\.(m|c)?js$/, "") + ".fixtures.mjs";
 }
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 const META_TIMEOUT_MS = 30 * 1000;
@@ -98,17 +95,18 @@ const execLoader = (programPath, modeArgs, timeoutMs = DEFAULT_TIMEOUT_MS) => Ef
     }
     return frame;
 });
+// Frames decode by their declared kind — the contract's Frame union is the
+// discriminator; the casts below are keyed to it, not blind.
 const asRunResult = (frame) => Effect.gen(function* () {
     var _a;
-    const ok = Array.isArray(frame.findings) && frame.meta !== null && typeof frame.meta === "object";
-    if (!ok) {
+    if (frame.kind !== "run" || !Array.isArray(frame.findings) || frame.meta === null || typeof frame.meta !== "object") {
         return yield* new NoFramedResult({ programPath: String((_a = frame.root) !== null && _a !== void 0 ? _a : ""), stdout: JSON.stringify(frame).slice(0, 500) });
     }
     return frame;
 });
 const asVerifyResult = (frame) => Effect.gen(function* () {
     var _a;
-    if (!Array.isArray(frame.results)) {
+    if (frame.kind !== "verify" || !Array.isArray(frame.results) || frame.meta === null || typeof frame.meta !== "object") {
         return yield* new NoFramedResult({ programPath: String((_a = frame.programPath) !== null && _a !== void 0 ? _a : ""), stdout: JSON.stringify(frame).slice(0, 500) });
     }
     return frame;
@@ -163,7 +161,7 @@ export async function metaDoctor({ programPath }) {
     const frame = await Effect.runPromise(Effect.flatMap(Effect.exit(execLoader(programPath, ["--meta"], META_TIMEOUT_MS)), (exit) => Effect.succeed(Exit.match(exit, {
         onFailure: (cause) => ({ meta: null, error: describeRunnerError(squash(cause)) }),
         onSuccess: (f) => ({
-            meta: f.meta !== null && typeof f.meta === "object" ? f.meta : null,
+            meta: f.kind === "meta" && f.meta !== null && typeof f.meta === "object" ? f.meta : null,
         }),
     }))));
     return frame;

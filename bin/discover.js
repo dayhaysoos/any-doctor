@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { DOCTOR_FILE_RE, FIXTURES_FILE_RE } from "./contract.js";
 import { metaDoctor } from "./runner.js";
 export function globalDoctorsDir() {
     return path.join(os.homedir(), ".any-doctor", "doctors");
@@ -29,10 +30,10 @@ export async function discoverDoctors(cwd, opts) {
         if (!fs.existsSync(dir))
             continue;
         const files = fs.readdirSync(dir)
-            .filter(f => (f.endsWith(".mjs") || f.endsWith(".js")) && !/\.fixtures\.(m|c)?js$/.test(f))
+            .filter(f => (f.endsWith(".mjs") || f.endsWith(".js")) && !FIXTURES_FILE_RE.test(f))
             .sort();
         for (const f of files) {
-            const slug = f.replace(/\.(m|c)?js$/, "");
+            const slug = f.replace(DOCTOR_FILE_RE, "");
             if (bySlug.has(slug))
                 continue;
             const abs = path.join(dir, f);

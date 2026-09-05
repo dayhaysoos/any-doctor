@@ -20,6 +20,7 @@ export interface DashboardInput {
     root: string;
     groups: ReportGroup[];
     doctorFile: string;
+    verifyCommand?: string;
     fileCount: number;
     durationMs: number;
     useColor: boolean;

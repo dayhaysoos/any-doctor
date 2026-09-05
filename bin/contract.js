@@ -1,5 +1,17 @@
 export const PROTOCOL_VERSION = 1;
 export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
+// Filename conventions of the doctor contract — the one home for what is a
+// doctor file, what is a fixture file, and where a doctor's fixtures live.
+export const DOCTOR_FILE_RE = /\.(m|c)?js$/;
+export const FIXTURES_FILE_RE = /\.fixtures\.(m|c)?js$/;
+export function fixturesPathFor(programPath) {
+    return programPath.replace(DOCTOR_FILE_RE, "") + ".fixtures.mjs";
+}
+// The re-run command embedded in copied issue context. invoker defaults to
+// the installed binary name; callers running via node or npx pass their own.
+export function runCommandFor(doctorFile, root, invoker = "any-doctor") {
+    return `${invoker} run "${doctorFile}" "${root}"`;
+}
 export function compareFindings(expected, actual) {
     const key = (f) => `${f.file}:${f.line}`;
     const expectedKeys = new Set(expected.map(key));

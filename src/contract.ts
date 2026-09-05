@@ -65,6 +65,7 @@ export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 
 export interface RunResult {
   protocolVersion: number;
+  kind: "run";
   root: string;
   fileCount: number;
   durationMs: number;
@@ -88,6 +89,30 @@ export interface VerifyRunResult {
   kind: "verify";
   meta: DoctorMeta;
   results: FixtureResult[];
+}
+
+export interface MetaResult {
+  protocolVersion: number;
+  kind: "meta";
+  meta: DoctorMeta;
+}
+
+// The wire frames the loader emits behind the sentinel, as one union.
+export type Frame = RunResult | VerifyRunResult | MetaResult;
+
+// Filename conventions of the doctor contract — the one home for what is a
+// doctor file, what is a fixture file, and where a doctor's fixtures live.
+export const DOCTOR_FILE_RE = /\.(m|c)?js$/;
+export const FIXTURES_FILE_RE = /\.fixtures\.(m|c)?js$/;
+
+export function fixturesPathFor(programPath: string): string {
+  return programPath.replace(DOCTOR_FILE_RE, "") + ".fixtures.mjs";
+}
+
+// The re-run command embedded in copied issue context. invoker defaults to
+// the installed binary name; callers running via node or npx pass their own.
+export function runCommandFor(doctorFile: string, root: string, invoker = "any-doctor"): string {
+  return `${invoker} run "${doctorFile}" "${root}"`;
 }
 
 export function compareFindings(expected: { file: string; line: number }[], actual: Finding[]): FixtureDiff {

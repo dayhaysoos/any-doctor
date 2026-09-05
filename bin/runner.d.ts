@@ -38,7 +38,6 @@ export interface MetaRead {
     meta: DoctorMeta | null;
     error?: string;
 }
-export declare function fixturesPathFor(programPath: string): string;
 export declare function runDoctor(options: RunOptions): Promise<RunResult>;
 export declare function verifyDoctor(options: VerifyOptions): Promise<VerifyRunResult>;
 export type CountResult = {

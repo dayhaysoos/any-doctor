@@ -84,3 +84,16 @@ test("resolveFinding: unpartitioned doctor keys to itself and defaults to doctor
   assert.equal(j.severity, "info");
   assert.equal(j.category, "general");
 });
+
+test("fixturesPathFor: one home for the fixtures-naming convention", async () => {
+  const { fixturesPathFor } = await import("../bin/contract.js");
+  assert.equal(fixturesPathFor("/x/doctors/d.mjs"), "/x/doctors/d.fixtures.mjs");
+  assert.equal(fixturesPathFor("d.cjs"), "d.fixtures.mjs");
+  assert.equal(fixturesPathFor("d.js"), "d.fixtures.mjs");
+});
+
+test("runCommandFor: default and invocation-aware re-run command", async () => {
+  const { runCommandFor } = await import("../bin/contract.js");
+  assert.equal(runCommandFor("doctors/d.mjs", "src"), 'any-doctor run "doctors/d.mjs" "src"');
+  assert.equal(runCommandFor("doctors/d.mjs", "src", 'node "/abs/cli.js"'), 'node "/abs/cli.js" run "doctors/d.mjs" "src"');
+});

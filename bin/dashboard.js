@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
-import { resolveFinding } from "./contract.js";
+import { resolveFinding, runCommandFor } from "./contract.js";
 import { scoreFromSeverities } from "./score.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
@@ -286,7 +286,7 @@ export async function runDashboardOn(stdin, stdout, input, deps = {}) {
         stdout,
         frame,
         onKey: (key, finish) => {
-            var _a;
+            var _a, _b;
             if (key === "q" || key === "\x03" || key === "esc")
                 return finish();
             if (key === "ignore")
@@ -305,8 +305,8 @@ export async function runDashboardOn(stdin, stdout, input, deps = {}) {
                 const it = items[selected];
                 if (!it)
                     return;
-                const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
-                notice = ((_a = deps.copy) !== null && _a !== void 0 ? _a : copyToClipboard)(issuePrompt(it, verifyCommand))
+                const verifyCommand = (_a = input.verifyCommand) !== null && _a !== void 0 ? _a : runCommandFor(input.doctorFile, input.root);
+                notice = ((_b = deps.copy) !== null && _b !== void 0 ? _b : copyToClipboard)(issuePrompt(it, verifyCommand))
                     ? "copied issue context — paste into your agent"
                     : "clipboard unavailable";
                 return;
