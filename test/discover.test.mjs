@@ -75,3 +75,29 @@ test("resolveDoctorPath: globalDir is injectable — the scope functions match",
   assert.equal(resolveDoctorPath("only-global.mjs", nested), null, "default global scope does not contain it");
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test("resolveDoctorPath: a bare slug resolves scopes-first; cwd cannot shadow", async () => {
+  const { resolveDoctorPath } = await import("../bin/discover.js");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-precedence-"));
+  const globalDir = path.join(root, "global");
+  fs.mkdirSync(globalDir, { recursive: true });
+  fs.writeFileSync(path.join(globalDir, "dual.mjs"), "export const meta = {}");
+  fs.writeFileSync(path.join(root, "dual.mjs"), "export const meta = {}"); // the stray shadow in cwd
+  assert.equal(
+    resolveDoctorPath("dual.mjs", root, { globalDir }),
+    path.join(globalDir, "dual.mjs"),
+    "the scope wins over a same-named file in the working directory",
+  );
+  fs.rmSync(path.join(globalDir, "dual.mjs"));
+  assert.equal(
+    resolveDoctorPath("dual.mjs", root, { globalDir }),
+    path.join(root, "dual.mjs"),
+    "a bare slug with no scope hit still falls back to the working directory",
+  );
+  assert.equal(
+    resolveDoctorPath(path.join(root, "dual.mjs"), root, { globalDir }),
+    path.join(root, "dual.mjs"),
+    "explicit paths keep resolving directly",
+  );
+  fs.rmSync(root, { recursive: true, force: true });
+});

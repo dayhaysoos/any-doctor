@@ -1,13 +1,19 @@
-import { TtyStdin, TtyStdout } from "./tty.js";
+import { TtyEnv } from "./tty.js";
 export interface BrokenDoctor {
     slug: string;
     error?: string;
 }
+export type IssueCount = {
+    status: "counted";
+    count: number;
+} | {
+    status: "failed";
+};
 export interface SelectionRow {
     scope: string;
     slug: string;
     description: string;
-    count?: number | "error";
+    count?: IssueCount;
 }
 export type Selection = {
     kind: "doctor";
@@ -31,7 +37,6 @@ export interface SelectOptions {
     targetDir?: string;
     globalDir?: string;
     useColor: boolean;
-    stdin: TtyStdin;
-    stdout: TtyStdout;
+    env: TtyEnv;
 }
 export declare function selectDoctor(doctorArg: string | undefined, options: SelectOptions): Promise<Selection>;

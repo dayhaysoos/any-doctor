@@ -1,6 +1,6 @@
 import { DiscoveredDoctor, discoverDoctors, resolveDoctorPath } from "./discover.js";
 import { countAll } from "./runner.js";
-import { canRunTui, TtyStdin, TtyStdout } from "./tty.js";
+import { canRunTui, TtyEnv } from "./tty.js";
 import { pickItemOn } from "./picker.js";
 
 // Doctor selection policy: how a command decides WHICH doctor program it
@@ -12,11 +12,15 @@ export interface BrokenDoctor {
   error?: string;
 }
 
+// A count is either a number or a failure - a variant, not a magic string
+// in a number field.
+export type IssueCount = { status: "counted"; count: number } | { status: "failed" };
+
 export interface SelectionRow {
   scope: string;
   slug: string;
   description: string;
-  count?: number | "error";
+  count?: IssueCount;
 }
 
 export type Selection =
@@ -32,8 +36,7 @@ export interface SelectOptions {
   targetDir?: string;
   globalDir?: string;
   useColor: boolean;
-  stdin: TtyStdin;
-  stdout: TtyStdout;
+  env: TtyEnv;
 }
 
 export async function selectDoctor(doctorArg: string | undefined, options: SelectOptions): Promise<Selection> {
@@ -52,23 +55,22 @@ export async function selectDoctor(doctorArg: string | undefined, options: Selec
 
   // A doctor whose count fails must not masquerade as the healthiest "0
   // issues" candidate: failures sort last and say so.
-  let counted: { d: DiscoveredDoctor; count?: number | "error" }[] = valid.map(d => ({ d }));
+  let counted: { d: DiscoveredDoctor; count?: IssueCount }[] = valid.map(d => ({ d }));
   if (options.targetDir) {
     const results = await countAll({ programPaths: valid.map(d => d.path), targetDir: options.targetDir });
     counted = valid.map((d, i) => {
       const r = results[i];
-      return { d, count: "count" in r ? r.count : "error" as const };
+      return { d, count: "count" in r ? { status: "counted", count: r.count } : { status: "failed" } };
     });
     counted.sort((a, b) => {
-      const av = a.count === "error" ? -1 : a.count ?? -1;
-      const bv = b.count === "error" ? -1 : b.count ?? -1;
-      return bv - av;
+      const rank = (c?: IssueCount): number => (c === undefined || c.status === "failed" ? -1 : c.count);
+      return rank(b.count) - rank(a.count);
     });
   }
 
   // The gate runs before a picker ever starts, so "cancelled" can only mean
   // the user ended the pick — never "this isn't a terminal".
-  if (!canRunTui(options.stdin, options.stdout)) {
+  if (!canRunTui(options.env)) {
     return {
       kind: "non-interactive",
       skipped: broken,
@@ -81,14 +83,14 @@ export async function selectDoctor(doctorArg: string | undefined, options: Selec
     };
   }
 
-  const chosen = await pickItemOn(options.stdin, options.stdout, counted.map(({ d, count }) => ({
+  const chosen = await pickItemOn(options.env, counted.map(({ d, count }) => ({
     id: d.slug,
     label: d.meta!.description,
     sub: count === undefined
       ? d.scope
-      : count === "error"
+      : count.status === "failed"
         ? `count failed · ${d.scope}`
-        : `${count} issue${count === 1 ? "" : "s"} · ${d.scope}`,
+        : `${count.count} issue${count.count === 1 ? "" : "s"} · ${d.scope}`,
     severity: d.meta!.severity,
   })), options.useColor, "Select a doctor");
 

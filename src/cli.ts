@@ -9,7 +9,7 @@ import { runDashboard } from "./dashboard.js";
 import { discoverDoctors, globalDoctorsDir } from "./discover.js";
 import { describeRunnerError, isRunnerError, runDoctor, verifyDoctor } from "./runner.js";
 import { selectDoctor, Selection } from "./select.js";
-import { canRunTui, TtyStdin, TtyStdout } from "./tty.js";
+import { canRunTui, TtyEnv } from "./tty.js";
 
 import { BOLD, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./palette.js";
 
@@ -38,6 +38,10 @@ function skillText(): string | null {
   }
 }
 
+function ttyEnv(): TtyEnv {
+  return { stdin: process.stdin as unknown as TtyEnv["stdin"], stdout: process.stdout as unknown as TtyEnv["stdout"] };
+}
+
 function useColor(): boolean {
   return Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
 }
@@ -63,12 +67,16 @@ async function runOrReport<T>(work: Promise<T>): Promise<T> {
   }
 }
 
+function warnBrokenDoctors(skipped: { slug: string; error?: string }[]): void {
+  for (const b of skipped) {
+    console.log(YELLOW + "⚠ skipping broken doctor " + b.slug + RESET + dim(" — " + (b.error || "invalid meta")));
+  }
+}
+
 function selectionOutcome(sel: Selection): { doctorPath: string } | number {
   switch (sel.kind) {
     case "doctor":
-      for (const b of sel.skipped) {
-        console.log(YELLOW + "⚠ skipping broken doctor " + b.slug + RESET + dim(" — " + (b.error || "invalid meta")));
-      }
+      warnBrokenDoctors(sel.skipped);
       return { doctorPath: sel.doctorPath };
     case "not-found":
       fail(`no doctor program found for "${sel.arg}"`);
@@ -80,16 +88,14 @@ function selectionOutcome(sel: Selection): { doctorPath: string } | number {
       for (const b of sel.broken) fail("broken: " + b.slug + " — " + (b.error || "invalid meta"));
       return 1;
     case "non-interactive":
-      for (const b of sel.skipped) {
-        console.log(YELLOW + "⚠ skipping broken doctor " + b.slug + RESET + dim(" — " + (b.error || "invalid meta")));
-      }
+      warnBrokenDoctors(sel.skipped);
       console.log("available doctors:");
       for (const row of sel.rows) {
         const suffix = row.count === undefined
           ? ""
-          : row.count === "error"
+          : row.count.status === "failed"
             ? RED + " count failed" + RESET
-            : dim(" " + row.count + " issue" + (row.count === 1 ? "" : "s"));
+            : dim(" " + row.count.count + " issue" + (row.count.count === 1 ? "" : "s"));
         console.log("  " + row.scope.padEnd(7) + row.slug.padEnd(32) + dim(row.description) + suffix);
       }
       fail("non-interactive session — specify a doctor path");
@@ -172,12 +178,12 @@ async function cmdRun(args: string[]): Promise<number> {
     return 0;
   }
 
+  const env = ttyEnv();
   const sel = await selectDoctor(parsed.doctorPath, {
     cwd: process.cwd(),
     targetDir: parsed.targetDir,
     useColor: useColor(),
-    stdin: process.stdin as unknown as TtyStdin,
-    stdout: process.stdout as unknown as TtyStdout,
+    env,
   });
   const outcome = selectionOutcome(sel);
   if (typeof outcome === "number") return outcome;
@@ -187,7 +193,7 @@ async function cmdRun(args: string[]): Promise<number> {
   const ttyCols = process.stdout.columns ?? 0;
   // Report-vs-dashboard policy: any real terminal can pick; the dashboard
   // additionally wants enough columns and no headless override.
-  const interactive = canRunTui(process.stdin, process.stdout) && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
+  const interactive = canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
 
   if (!interactive) {
     console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, useColor()));
@@ -245,8 +251,7 @@ async function cmdVerify(args: string[]): Promise<number> {
   const sel = await selectDoctor(parsed.doctorPath, {
     cwd: process.cwd(),
     useColor: useColor(),
-    stdin: process.stdin as unknown as TtyStdin,
-    stdout: process.stdout as unknown as TtyStdout,
+    env: ttyEnv(),
   });
   const outcome = selectionOutcome(sel);
   if (typeof outcome === "number") return outcome;

@@ -21,18 +21,16 @@ export async function selectDoctor(doctorArg, options) {
         const results = await countAll({ programPaths: valid.map(d => d.path), targetDir: options.targetDir });
         counted = valid.map((d, i) => {
             const r = results[i];
-            return { d, count: "count" in r ? r.count : "error" };
+            return { d, count: "count" in r ? { status: "counted", count: r.count } : { status: "failed" } };
         });
         counted.sort((a, b) => {
-            var _a, _b;
-            const av = a.count === "error" ? -1 : (_a = a.count) !== null && _a !== void 0 ? _a : -1;
-            const bv = b.count === "error" ? -1 : (_b = b.count) !== null && _b !== void 0 ? _b : -1;
-            return bv - av;
+            const rank = (c) => (c === undefined || c.status === "failed" ? -1 : c.count);
+            return rank(b.count) - rank(a.count);
         });
     }
     // The gate runs before a picker ever starts, so "cancelled" can only mean
     // the user ended the pick — never "this isn't a terminal".
-    if (!canRunTui(options.stdin, options.stdout)) {
+    if (!canRunTui(options.env)) {
         return {
             kind: "non-interactive",
             skipped: broken,
@@ -44,14 +42,14 @@ export async function selectDoctor(doctorArg, options) {
             })),
         };
     }
-    const chosen = await pickItemOn(options.stdin, options.stdout, counted.map(({ d, count }) => ({
+    const chosen = await pickItemOn(options.env, counted.map(({ d, count }) => ({
         id: d.slug,
         label: d.meta.description,
         sub: count === undefined
             ? d.scope
-            : count === "error"
+            : count.status === "failed"
                 ? `count failed · ${d.scope}`
-                : `${count} issue${count === 1 ? "" : "s"} · ${d.scope}`,
+                : `${count.count} issue${count.count === 1 ? "" : "s"} · ${d.scope}`,
         severity: d.meta.severity,
     })), options.useColor, "Select a doctor");
     if (chosen === null)

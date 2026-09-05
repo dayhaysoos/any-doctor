@@ -4,10 +4,10 @@ import { EventEmitter } from "node:events";
 import { canRunTui, paintFrame, runTty, truncateVisible, visibleWidth } from "../bin/tty.js";
 
 test("canRunTui: both streams must be terminals", () => {
-  assert.equal(canRunTui({ isTTY: true }, { isTTY: true }), true);
-  assert.equal(canRunTui({ isTTY: true }, { isTTY: false }), false);
-  assert.equal(canRunTui({ isTTY: false }, { isTTY: true }), false);
-  assert.equal(canRunTui({}, {}), false, "absent isTTY means not a terminal");
+  assert.equal(canRunTui({ stdin: { isTTY: true }, stdout: { isTTY: true } }), true);
+  assert.equal(canRunTui({ stdin: { isTTY: true }, stdout: { isTTY: false } }), false);
+  assert.equal(canRunTui({ stdin: { isTTY: false }, stdout: { isTTY: true } }), false);
+  assert.equal(canRunTui({ stdin: {}, stdout: {} }), false, "absent isTTY means not a terminal");
 });
 
 test("visibleWidth: ANSI escapes are not counted", () => {

@@ -1,5 +1,5 @@
 import { resolveFinding } from "./contract.js";
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, RESET, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity } from "./score.js";
 const SEVERITY_ORDER = ["error", "warning", "info"];
 function groupSeverity(g) {
@@ -118,7 +118,7 @@ export function renderReport(input, useColor) {
 // Verify-gate rendering: pure state -> string, colored on request. The
 // command layer prints it and counts failures from the data.
 export function renderVerifyResult(result, useColor) {
-    const c = (s2, wrap) => (useColor && wrap ? wrap + s2 + RESET : s2);
+    const c = colorizer(useColor);
     const lines = [];
     for (const fixture of result.results) {
         if (fixture.ok) {

@@ -140,7 +140,7 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
 // Verify-gate rendering: pure state -> string, colored on request. The
 // command layer prints it and counts failures from the data.
 export function renderVerifyResult(result: VerifyRunResult, useColor: boolean): string {
-  const c = (s2: string, wrap?: string): string => (useColor && wrap ? wrap + s2 + RESET : s2);
+  const c = colorizer(useColor);
   const lines: string[] = [];
   for (const fixture of result.results) {
     if (fixture.ok) {

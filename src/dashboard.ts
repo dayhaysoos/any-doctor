@@ -1,14 +1,14 @@
 import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
-import { Finding, ReportGroup, resolveFinding, runCommandFor, Severity } from "./contract.js";
+import { Finding, JoinedFinding, ReportGroup, resolveFinding, runCommandFor, Severity } from "./contract.js";
 import { scoreFromSeverities } from "./score.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 
 export { truncateVisible, visibleWidth };
 
-import { BOLD, DIM, GLYPH, gradeColor, GREEN, ORANGE, RED, RESET, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RED, RESET, SEVERITY_COLOR } from "./palette.js";
 
 const SPLIT_MIN_COLS = 100;
 
@@ -25,20 +25,9 @@ export function highlightCode(line: string, useColor: boolean): string {
   });
 }
 
-export interface DashItem {
-  key: string;
-  checkKey: string;
-  doctorId: string;
-  checkId: string;
-  description: string;
-  severity: Severity;
-  category: string;
-  site: Finding;
-  impact?: string;
-  why?: string;
-  fix?: string;
-  blindSpots?: string[];
-}
+// A JoinedFinding pinned to one dashboard row: the join supplies every
+// field; site aliases finding for the frame code.
+export type DashItem = { key: string; site: Finding } & JoinedFinding;
 
 export interface DashboardInput {
   root: string;
@@ -60,20 +49,7 @@ export function buildItems(groups: ReportGroup[]): DashItem[] {
   for (const g of groups) {
     for (const f of g.findings) {
       const j = resolveFinding(g.meta, f);
-      items.push({
-        key: j.checkKey + "@" + f.file + ":" + f.line,
-        checkKey: j.checkKey,
-        doctorId: j.doctorId,
-        checkId: j.checkId,
-        description: j.description,
-        severity: j.severity,
-        category: j.category,
-        site: f,
-        impact: j.impact,
-        why: j.why,
-        fix: j.fix,
-        blindSpots: j.blindSpots,
-      });
+      items.push({ ...j, key: j.checkKey + "@" + f.file + ":" + f.line, site: f });
     }
   }
   return items;
@@ -161,7 +137,7 @@ interface ListRow {
 }
 
 export function buildListRows(items: DashItem[], useColor: boolean, selected: number, readKeys: Set<string>): ListRow[] {
-  const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
+  const c = colorizer(useColor);
   const rows: ListRow[] = [];
   let currentDoctor: string | null = null;
   items.forEach((it, index) => {
@@ -201,7 +177,7 @@ export function dashboardFrame(state: {
   rows: number;
 }): string {
   const { items, selected, readKeys, useColor, cols, rows } = state;
-  const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
+  const c = colorizer(useColor);
   const layout = resolveDashboardLayout(cols, rows, items.length);
   const { score, grade } = scoreFromSeverities(items.map(it => it.severity));
   const barWidth = Math.min(46, Math.max(16, cols - 60));
@@ -209,10 +185,10 @@ export function dashboardFrame(state: {
   const header: string[] = [
     c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)),
     c(scoreBar(score, barWidth), gradeColor(score)),
-    c(`${items.length} finding${items.length === 1 ? "" : "s"} · ${input0(state.fileCount)}`, DIM),
+    c(`${items.length} finding${items.length === 1 ? "" : "s"} · ${scanSummary(state.fileCount)}`, DIM),
     "",
   ];
-  function input0(n: number): string {
+  function scanSummary(n: number): string {
     return n + " files · " + state.durationMs + "ms";
   }
 
@@ -284,7 +260,7 @@ function cap(s: string): string {
 }
 
 function codeFrameLines(source: string[] | null, line: number, width: number, useColor: boolean): string[] {
-  const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
+  const c = colorizer(useColor);
   const out: string[] = [];
   if (source === null) {
     out.push(c("  (source unavailable)", DIM));
@@ -305,15 +281,19 @@ export type DashboardStdin = TtyStdin;
 export type DashboardStdout = TtyStdout;
 
 export async function runDashboard(input: DashboardInput): Promise<void> {
-  await runDashboardOn(process.stdin as unknown as DashboardStdin, process.stdout as unknown as DashboardStdout, input);
+  await runDashboardOn({
+    stdin: process.stdin as unknown as DashboardStdin,
+    stdout: process.stdout as unknown as DashboardStdout,
+  }, input);
 }
 
 export interface DashboardDeps {
   copy?: (text: string) => boolean;
 }
 
-export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStdout, input: DashboardInput, deps: DashboardDeps = {}): Promise<void> {
-  if (!tty.canRunTui(stdin, stdout)) return;
+export async function runDashboardOn(env: { stdin: DashboardStdin; stdout: DashboardStdout }, input: DashboardInput, deps: DashboardDeps = {}): Promise<void> {
+  const { stdout } = env;
+  if (!tty.canRunTui(env)) return;
 
   const useColor = input.useColor;
   const items = buildItems(input.groups);
@@ -361,7 +341,7 @@ export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStd
   };
 
   await runTty<void>({
-    stdin,
+    stdin: env.stdin,
     stdout,
     frame,
     onKey: (key, finish) => {

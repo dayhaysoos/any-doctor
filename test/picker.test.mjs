@@ -81,7 +81,7 @@ function settle(promise) {
 test("pickItemOn: type-to-filter narrows, enter resolves the match", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const done = pickItemOn(stdin, stdout, items, false);
+  const done = pickItemOn({ stdin, stdout }, items, false);
 
   assert.equal(stdin.rawModeHistory[0], true, "enters raw mode");
   assert.ok(stdin.resumed >= 1, "resumes stdin");
@@ -101,7 +101,7 @@ test("pickItemOn: type-to-filter narrows, enter resolves the match", async () =>
 test("pickItemOn: down arrow moves the selection, enter takes it", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const done = pickItemOn(stdin, stdout, items, false);
+  const done = pickItemOn({ stdin, stdout }, items, false);
   stdin.send("\x1b[B");
   const afterDown = stdout.frames[stdout.frames.length - 1];
   assert.match(afterDown, /❯ .*console\.log left in code/, "marker moves to the second item");
@@ -113,7 +113,7 @@ test("pickItemOn: down arrow moves the selection, enter takes it", async () => {
 test("pickItemOn: esc resolves null and restores the tty", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const done = pickItemOn(stdin, stdout, items, false);
+  const done = pickItemOn({ stdin, stdout }, items, false);
   stdin.send("\x1b"); // lone escape flushes as "esc" after the key feed hold
   const out = await settle(done);
   assert.ok(out.done, "esc finishes the session");
@@ -124,7 +124,7 @@ test("pickItemOn: esc resolves null and restores the tty", async () => {
 test("pickItemOn: backspace widens the query back out", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const done = pickItemOn(stdin, stdout, items, false);
+  const done = pickItemOn({ stdin, stdout }, items, false);
   stdin.send("zzz");
   assert.match(stdout.frames[stdout.frames.length - 1], /no matching doctors/, "query filters everything out");
   stdin.send("\x7f\x7f\x7f");
@@ -137,7 +137,7 @@ test("pickItemOn: backspace widens the query back out", async () => {
 test("pickItemOn: repaints in place — no full-screen erase after the first paint", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const done = pickItemOn(stdin, stdout, items, false);
+  const done = pickItemOn({ stdin, stdout }, items, false);
   const first = stdout.frames.find(f => f.includes("\x1b[H"));
   assert.ok(first.startsWith("\x1b[?2026h\x1b[H"), "first paint is in-place, synchronized");
   stdin.send("c");
@@ -153,7 +153,7 @@ test("pickItemOn: repaints in place — no full-screen erase after the first pai
 test("pickItemOn: empty item list resolves null without touching the tty", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const out = await pickItemOn(stdin, stdout, [], false);
+  const out = await pickItemOn({ stdin, stdout }, [], false);
   assert.equal(out, null);
   assert.equal(stdin.rawModeHistory.length, 0, "never enters raw mode");
   assert.equal(stdout.frames.length, 0, "never paints");

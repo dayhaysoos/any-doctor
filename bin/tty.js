@@ -1,15 +1,9 @@
 import { createKeyFeed } from "./keys.js";
-// The tty session: the one place that owns the interactive terminal loop —
-// raw-mode lifecycle, key feed, and paint discipline. Every TUI (picker,
-// dashboard) is content over this loop: it supplies a frame builder and a
-// keymap, and never touches raw mode, the cursor, or repaint strategy
-// itself. Two adapters already prove the seam: the real tty in the CLI and
-// the fake tty in tests.
 // "Is this a real terminal" — the shared floor of every TUI decision.
 // Deliberately excludes headless env vars and width heuristics: those are
 // report-vs-dashboard policy and belong to the command layer.
-export function canRunTui(stdin, stdout) {
-    return Boolean(stdin.isTTY && stdout.isTTY);
+export function canRunTui(env) {
+    return Boolean(env.stdin.isTTY && env.stdout.isTTY);
 }
 export function visibleWidth(s) {
     return s.replace(/\x1b\[[0-9;]*m/g, "").length;

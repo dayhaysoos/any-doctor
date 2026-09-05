@@ -34,8 +34,8 @@ export function filterPickerItems(items, query) {
 export function isPrintable(s) {
     return s.length === 1 && s >= " " && s !== "\x7f";
 }
-export async function pickItemOn(stdin, stdout, items, useColor, title = "Select an option", notice) {
-    if (items.length === 0 || !canRunTui(stdin, stdout))
+export async function pickItemOn(env, items, useColor, title = "Select an option", notice) {
+    if (items.length === 0 || !canRunTui(env))
         return null;
     let query = "";
     let selected = 0;
@@ -47,8 +47,8 @@ export async function pickItemOn(stdin, stdout, items, useColor, title = "Select
         return pickerFrame(title, list, selected, query, useColor, notice);
     };
     return runTty({
-        stdin,
-        stdout,
+        stdin: env.stdin,
+        stdout: env.stdout,
         frame,
         onKey: (key, finish) => {
             if (key === "\x03" || key === "esc")
@@ -79,7 +79,4 @@ export async function pickItemOn(stdin, stdout, items, useColor, title = "Select
             }
         },
     });
-}
-export function pickItem(items, useColor, title = "Select an option", notice) {
-    return pickItemOn(process.stdin, process.stdout, items, useColor, title, notice);
 }

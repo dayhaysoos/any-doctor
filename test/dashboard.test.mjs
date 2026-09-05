@@ -123,7 +123,7 @@ function settle(promise) {
 test("runDashboard: revives a post-picker stdin (paused, cooked) and stays interactive until q", async () => {
   const stdin = new FakeStdin(); // models stdin exactly as pickItem's cleanup leaves it
   const stdout = new FakeStdout();
-  const done = runDashboardOn(stdin, stdout, dashInput(), copyAlways);
+  const done = runDashboardOn({ stdin, stdout }, dashInput(), copyAlways);
 
   assert.equal(stdin.rawModeHistory[0], true, "must enter raw mode before reading keys (cooked mode line-buffers arrows and echoes)");
   assert.ok(stdin.resumed >= 1, "must resume stdin — the picker pauses it, and an explicitly paused stdin never auto-flows, so the loop drains and the process exits 0");
@@ -148,7 +148,7 @@ test("runDashboard: revives a post-picker stdin (paused, cooked) and stays inter
 test("runDashboard: ctrl-c exits the loop like q", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const done = runDashboardOn(stdin, stdout, dashInput(), copyAlways);
+  const done = runDashboardOn({ stdin, stdout }, dashInput(), copyAlways);
   stdin.send("\x03");
   assert.equal(await settle(done), "resolved");
 });
@@ -156,7 +156,7 @@ test("runDashboard: ctrl-c exits the loop like q", async () => {
 test("runDashboard: enter on an empty findings list draws instead of crashing", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const done = runDashboardOn(stdin, stdout, { ...dashInput(), groups: [{ ...groups[0], findings: [] }] }, copyAlways);
+  const done = runDashboardOn({ stdin, stdout }, { ...dashInput(), groups: [{ ...groups[0], findings: [] }] }, copyAlways);
   stdin.send("\r");
   assert.doesNotMatch(stdout.frames[stdout.frames.length - 1], /DASHBOARD RENDER ERROR/);
   stdin.send("q");
@@ -178,7 +178,7 @@ test("dashboardFrame: frame height is exactly rows - 1 in every state (notice ne
 test("runDashboard: repaints in place — no full-screen erase after the first paint", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const done = runDashboardOn(stdin, stdout, dashInput(), copyAlways);
+  const done = runDashboardOn({ stdin, stdout }, dashInput(), copyAlways);
 
   const paints = stdout.frames.filter(f => f.includes("\x1b[H"));
   assert.ok(paints.length >= 1, "at least one paint happened");

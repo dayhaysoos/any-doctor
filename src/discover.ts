@@ -52,15 +52,25 @@ export async function discoverDoctors(cwd: string, opts?: { globalDir?: string }
   return [...bySlug.values()];
 }
 
+// Explicit paths (absolute, or containing separators) resolve directly.
+// Bare filenames are slugs: scopes win - repo-local first - so a stray
+// slug.mjs in the working directory cannot shadow an installed doctor.
 export function resolveDoctorPath(arg: string, cwd: string, opts?: { globalDir?: string }): string | null {
-  const direct = path.resolve(cwd, arg);
-  if (fs.existsSync(direct)) return direct;
+  const bare = path.basename(arg) === arg && !path.isAbsolute(arg);
+  if (!bare) {
+    const direct = path.resolve(cwd, arg);
+    if (fs.existsSync(direct)) return direct;
+  }
   const base = path.basename(arg);
   const repoDir = findRepoDoctorsDir(cwd);
   const scopes = [repoDir, opts?.globalDir ?? globalDoctorsDir()].filter((d): d is string => Boolean(d));
   for (const dir of scopes) {
     const candidate = path.join(dir, base);
     if (fs.existsSync(candidate)) return candidate;
+  }
+  if (bare) {
+    const direct = path.resolve(cwd, arg);
+    if (fs.existsSync(direct)) return direct;
   }
   return null;
 }

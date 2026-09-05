@@ -1,21 +1,11 @@
-import { Finding, ReportGroup, Severity } from "./contract.js";
+import { Finding, JoinedFinding, ReportGroup, Severity } from "./contract.js";
 import { truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 export { truncateVisible, visibleWidth };
 export declare function highlightCode(line: string, useColor: boolean): string;
-export interface DashItem {
+export type DashItem = {
     key: string;
-    checkKey: string;
-    doctorId: string;
-    checkId: string;
-    description: string;
-    severity: Severity;
-    category: string;
     site: Finding;
-    impact?: string;
-    why?: string;
-    fix?: string;
-    blindSpots?: string[];
-}
+} & JoinedFinding;
 export interface DashboardInput {
     root: string;
     groups: ReportGroup[];
@@ -65,4 +55,7 @@ export declare function runDashboard(input: DashboardInput): Promise<void>;
 export interface DashboardDeps {
     copy?: (text: string) => boolean;
 }
-export declare function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStdout, input: DashboardInput, deps?: DashboardDeps): Promise<void>;
+export declare function runDashboardOn(env: {
+    stdin: DashboardStdin;
+    stdout: DashboardStdout;
+}, input: DashboardInput, deps?: DashboardDeps): Promise<void>;

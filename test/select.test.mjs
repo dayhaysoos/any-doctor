@@ -44,8 +44,7 @@ test("selectDoctor: explicit path resolves directly, no discovery", async () => 
   const sel = await selectDoctor(DOCTOR, {
     cwd: os.tmpdir(),
     useColor: false,
-    stdin: new FakeStdin(false),
-    stdout: new FakeStdout(false),
+    env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
   });
   assert.equal(sel.kind, "doctor");
   assert.equal(sel.doctorPath, DOCTOR);
@@ -56,8 +55,7 @@ test("selectDoctor: slug.mjs argument resolves via the repo scope", async () => 
   const sel = await selectDoctor("fetch-calls-without-abortsignal.mjs", {
     cwd: REPO,
     useColor: false,
-    stdin: new FakeStdin(false),
-    stdout: new FakeStdout(false),
+    env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
   });
   assert.equal(sel.kind, "doctor");
   assert.equal(sel.doctorPath, DOCTOR);
@@ -67,8 +65,7 @@ test("selectDoctor: unresolvable argument is not-found", async () => {
   const sel = await selectDoctor("nope.mjs", {
     cwd: REPO,
     useColor: false,
-    stdin: new FakeStdin(false),
-    stdout: new FakeStdout(false),
+    env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
   });
   assert.deepEqual(sel, { kind: "not-found", arg: "nope.mjs" });
 });
@@ -78,8 +75,7 @@ test("selectDoctor: non-interactive session yields listing rows, not a picker", 
     cwd: REPO,
     globalDir: emptyGlobalDir(),
     useColor: false,
-    stdin: new FakeStdin(false),
-    stdout: new FakeStdout(false),
+    env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
   });
   assert.equal(sel.kind, "non-interactive");
   assert.ok(sel.rows.length >= 8, "repo doctors listed");
@@ -95,17 +91,14 @@ test("selectDoctor: counts attach and order worst-first when targetDir is given"
     globalDir: emptyGlobalDir(),
     targetDir: path.join(REPO, "fixtures", "sample-app"),
     useColor: false,
-    stdin: new FakeStdin(false),
-    stdout: new FakeStdout(false),
+    env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
   });
   assert.equal(sel.kind, "non-interactive");
   const withCounts = sel.rows.filter(r => r.count !== undefined);
   assert.ok(withCounts.length >= 8);
-  const first = withCounts[0];
-  for (const r of withCounts) {
-    const rv = r.count === "error" ? -1 : r.count;
-    const fv = first.count === "error" ? -1 : first.count;
-    assert.ok(fv >= rv, "sorted worst-first, errors last");
+  assert.ok(withCounts.every(r => r.count.status === "counted"), "all repo doctors count cleanly");
+  for (let i = 1; i < withCounts.length; i++) {
+    assert.ok(withCounts[i - 1].count.count >= withCounts[i].count.count, "sorted worst-first");
   }
 });
 
@@ -116,8 +109,7 @@ test("selectDoctor: enter on the picker yields the top doctor", async () => {
     cwd: REPO,
     globalDir: emptyGlobalDir(),
     useColor: false,
-    stdin,
-    stdout,
+    env: { stdin, stdout },
   });
   const deadline = Date.now() + 5000;
   while (stdout.frames.length === 0 && Date.now() < deadline) {
@@ -137,8 +129,7 @@ test("selectDoctor: esc during the pick is cancelled, distinct from non-interact
     cwd: REPO,
     globalDir: emptyGlobalDir(),
     useColor: false,
-    stdin,
-    stdout,
+    env: { stdin, stdout },
   });
   const deadline = Date.now() + 5000;
   while (stdout.frames.length === 0 && Date.now() < deadline) {
@@ -158,8 +149,7 @@ test("selectDoctor: no valid doctors is none-discovered with the broken list", a
     cwd: root,
     globalDir: emptyGlobalDir(),
     useColor: false,
-    stdin: new FakeStdin(false),
-    stdout: new FakeStdout(false),
+    env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
   });
   assert.equal(sel.kind, "none-discovered");
   assert.equal(sel.broken.length, 1);

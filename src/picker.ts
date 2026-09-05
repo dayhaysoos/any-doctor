@@ -1,7 +1,7 @@
 import { fuzzyFilter } from "./fuzzy.js";
 import { Severity } from "./contract.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RESET, SEVERITY_COLOR } from "./palette.js";
-import { canRunTui, runTty, TtyStdin, TtyStdout } from "./tty.js";
+import { canRunTui, runTty, TtyEnv } from "./tty.js";
 
 export interface PickerItem {
   id: string;
@@ -45,14 +45,13 @@ export function isPrintable(s: string): boolean {
 }
 
 export async function pickItemOn(
-  stdin: TtyStdin,
-  stdout: TtyStdout,
+  env: TtyEnv,
   items: PickerItem[],
   useColor: boolean,
   title: string = "Select an option",
   notice?: string,
 ): Promise<PickerItem | null> {
-  if (items.length === 0 || !canRunTui(stdin, stdout)) return null;
+  if (items.length === 0 || !canRunTui(env)) return null;
 
   let query = "";
   let selected = 0;
@@ -66,8 +65,8 @@ export async function pickItemOn(
   };
 
   return runTty<PickerItem | null>({
-    stdin,
-    stdout,
+    stdin: env.stdin,
+    stdout: env.stdout,
     frame,
     onKey: (key, finish) => {
       if (key === "\x03" || key === "esc") return finish(null);
@@ -96,8 +95,4 @@ export async function pickItemOn(
       }
     },
   });
-}
-
-export function pickItem(items: PickerItem[], useColor: boolean, title: string = "Select an option", notice?: string): Promise<PickerItem | null> {
-  return pickItemOn(process.stdin as unknown as TtyStdin, process.stdout as unknown as TtyStdout, items, useColor, title, notice);
 }

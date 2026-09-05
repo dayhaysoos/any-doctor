@@ -32,6 +32,9 @@ function skillText() {
         return null;
     }
 }
+function ttyEnv() {
+    return { stdin: process.stdin, stdout: process.stdout };
+}
 function useColor() {
     return Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
 }
@@ -56,12 +59,15 @@ async function runOrReport(work) {
         throw new ExitCode(1);
     }
 }
+function warnBrokenDoctors(skipped) {
+    for (const b of skipped) {
+        console.log(YELLOW + "⚠ skipping broken doctor " + b.slug + RESET + dim(" — " + (b.error || "invalid meta")));
+    }
+}
 function selectionOutcome(sel) {
     switch (sel.kind) {
         case "doctor":
-            for (const b of sel.skipped) {
-                console.log(YELLOW + "⚠ skipping broken doctor " + b.slug + RESET + dim(" — " + (b.error || "invalid meta")));
-            }
+            warnBrokenDoctors(sel.skipped);
             return { doctorPath: sel.doctorPath };
         case "not-found":
             fail(`no doctor program found for "${sel.arg}"`);
@@ -74,16 +80,14 @@ function selectionOutcome(sel) {
                 fail("broken: " + b.slug + " — " + (b.error || "invalid meta"));
             return 1;
         case "non-interactive":
-            for (const b of sel.skipped) {
-                console.log(YELLOW + "⚠ skipping broken doctor " + b.slug + RESET + dim(" — " + (b.error || "invalid meta")));
-            }
+            warnBrokenDoctors(sel.skipped);
             console.log("available doctors:");
             for (const row of sel.rows) {
                 const suffix = row.count === undefined
                     ? ""
-                    : row.count === "error"
+                    : row.count.status === "failed"
                         ? RED + " count failed" + RESET
-                        : dim(" " + row.count + " issue" + (row.count === 1 ? "" : "s"));
+                        : dim(" " + row.count.count + " issue" + (row.count.count === 1 ? "" : "s"));
                 console.log("  " + row.scope.padEnd(7) + row.slug.padEnd(32) + dim(row.description) + suffix);
             }
             fail("non-interactive session — specify a doctor path");
@@ -153,12 +157,12 @@ async function cmdRun(args) {
         }
         return 0;
     }
+    const env = ttyEnv();
     const sel = await selectDoctor(parsed.doctorPath, {
         cwd: process.cwd(),
         targetDir: parsed.targetDir,
         useColor: useColor(),
-        stdin: process.stdin,
-        stdout: process.stdout,
+        env,
     });
     const outcome = selectionOutcome(sel);
     if (typeof outcome === "number")
@@ -168,7 +172,7 @@ async function cmdRun(args) {
     const ttyCols = (_a = process.stdout.columns) !== null && _a !== void 0 ? _a : 0;
     // Report-vs-dashboard policy: any real terminal can pick; the dashboard
     // additionally wants enough columns and no headless override.
-    const interactive = canRunTui(process.stdin, process.stdout) && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
+    const interactive = canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
     if (!interactive) {
         console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, useColor()));
         return 0;
@@ -225,8 +229,7 @@ async function cmdVerify(args) {
     const sel = await selectDoctor(parsed.doctorPath, {
         cwd: process.cwd(),
         useColor: useColor(),
-        stdin: process.stdin,
-        stdout: process.stdout,
+        env: ttyEnv(),
     });
     const outcome = selectionOutcome(sel);
     if (typeof outcome === "number")

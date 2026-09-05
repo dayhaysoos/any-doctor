@@ -6,7 +6,7 @@ import { scoreFromSeverities } from "./score.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
 export { truncateVisible, visibleWidth };
-import { BOLD, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, SEVERITY_COLOR } from "./palette.js";
 const SPLIT_MIN_COLS = 100;
 const TOKEN_RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|await|async|try|catch|finally|import|export|from|new|class|extends|throw|typeof|instanceof|in|of|do|switch|case|break|continue|default|yield)\b|\b(\d+(?:\.\d+)?)\b/g;
 export function highlightCode(line, useColor) {
@@ -33,20 +33,7 @@ export function buildItems(groups) {
     for (const g of groups) {
         for (const f of g.findings) {
             const j = resolveFinding(g.meta, f);
-            items.push({
-                key: j.checkKey + "@" + f.file + ":" + f.line,
-                checkKey: j.checkKey,
-                doctorId: j.doctorId,
-                checkId: j.checkId,
-                description: j.description,
-                severity: j.severity,
-                category: j.category,
-                site: f,
-                impact: j.impact,
-                why: j.why,
-                fix: j.fix,
-                blindSpots: j.blindSpots,
-            });
+            items.push({ ...j, key: j.checkKey + "@" + f.file + ":" + f.line, site: f });
         }
     }
     return items;
@@ -116,7 +103,7 @@ export function resolveDashboardLayout(cols, rows, itemCount) {
     };
 }
 export function buildListRows(items, useColor, selected, readKeys) {
-    const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
+    const c = colorizer(useColor);
     const rows = [];
     let currentDoctor = null;
     items.forEach((it, index) => {
@@ -141,17 +128,17 @@ export function buildListRows(items, useColor, selected, readKeys) {
 export function dashboardFrame(state) {
     var _a, _b, _c, _d, _e;
     const { items, selected, readKeys, useColor, cols, rows } = state;
-    const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
+    const c = colorizer(useColor);
     const layout = resolveDashboardLayout(cols, rows, items.length);
     const { score, grade } = scoreFromSeverities(items.map(it => it.severity));
     const barWidth = Math.min(46, Math.max(16, cols - 60));
     const header = [
         c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)),
         c(scoreBar(score, barWidth), gradeColor(score)),
-        c(`${items.length} finding${items.length === 1 ? "" : "s"} · ${input0(state.fileCount)}`, DIM),
+        c(`${items.length} finding${items.length === 1 ? "" : "s"} · ${scanSummary(state.fileCount)}`, DIM),
         "",
     ];
-    function input0(n) {
+    function scanSummary(n) {
         return n + " files · " + state.durationMs + "ms";
     }
     const rowsData = buildListRows(items, useColor, selected, readKeys);
@@ -224,7 +211,7 @@ function cap(s) {
 }
 function codeFrameLines(source, line, width, useColor) {
     var _a;
-    const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
+    const c = colorizer(useColor);
     const out = [];
     if (source === null) {
         out.push(c("  (source unavailable)", DIM));
@@ -241,10 +228,14 @@ function codeFrameLines(source, line, width, useColor) {
     return out;
 }
 export async function runDashboard(input) {
-    await runDashboardOn(process.stdin, process.stdout, input);
+    await runDashboardOn({
+        stdin: process.stdin,
+        stdout: process.stdout,
+    }, input);
 }
-export async function runDashboardOn(stdin, stdout, input, deps = {}) {
-    if (!tty.canRunTui(stdin, stdout))
+export async function runDashboardOn(env, input, deps = {}) {
+    const { stdout } = env;
+    if (!tty.canRunTui(env))
         return;
     const useColor = input.useColor;
     const items = buildItems(input.groups);
@@ -293,7 +284,7 @@ export async function runDashboardOn(stdin, stdout, input, deps = {}) {
         }
     };
     await runTty({
-        stdin,
+        stdin: env.stdin,
         stdout,
         frame,
         onKey: (key, finish) => {

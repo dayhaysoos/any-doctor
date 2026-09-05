@@ -1,7 +1,14 @@
-export declare function canRunTui(stdin: {
-    readonly isTTY?: boolean;
-}, stdout: {
-    readonly isTTY?: boolean;
+export interface TtyEnv {
+    stdin: TtyStdin;
+    stdout: TtyStdout;
+}
+export declare function canRunTui(env: {
+    stdin: {
+        readonly isTTY?: boolean;
+    };
+    stdout: {
+        readonly isTTY?: boolean;
+    };
 }): boolean;
 export interface TtyStdin {
     readonly isTTY?: boolean;
