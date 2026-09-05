@@ -1,4 +1,6 @@
 import { Finding, ReportGroup, Severity } from "./contract.js";
+import { truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
+export { truncateVisible, visibleWidth };
 export declare function highlightCode(line: string, useColor: boolean): string;
 export interface DashItem {
     key: string;
@@ -25,8 +27,6 @@ export interface DashboardInput {
 export declare function scoreBar(score: number, width: number): string;
 export declare function buildItems(groups: ReportGroup[]): DashItem[];
 export declare function issuePrompt(item: DashItem, verifyCommand: string): string;
-export declare function visibleWidth(s: string): number;
-export declare function truncateVisible(s: string, width: number): string;
 export interface DashboardLayout {
     mode: "split" | "stacked";
     listWidth: number;
@@ -55,24 +55,10 @@ export declare function dashboardFrame(state: {
     cols: number;
     rows: number;
 }): string;
-export interface DashboardStdin {
-    readonly isTTY?: boolean;
-    readonly isRaw?: boolean;
-    setRawMode(mode: boolean): unknown;
-    resume(): unknown;
-    pause(): unknown;
-    on(event: "data", listener: (chunk: string | Buffer) => void): unknown;
-    removeListener(event: "data", listener: (chunk: string | Buffer) => void): unknown;
-}
-export interface DashboardStdout {
-    readonly isTTY?: boolean;
-    columns?: number;
-    rows?: number;
-    write(s: string): unknown;
-}
+export type DashboardStdin = TtyStdin;
+export type DashboardStdout = TtyStdout;
 export declare function runDashboard(input: DashboardInput): Promise<void>;
 export interface DashboardDeps {
     copy?: (text: string) => boolean;
 }
 export declare function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStdout, input: DashboardInput, deps?: DashboardDeps): Promise<void>;
-export {};

@@ -1,4 +1,5 @@
 import { Severity } from "./contract.js";
+import { TtyStdin, TtyStdout } from "./tty.js";
 export interface PickerItem {
     id: string;
     label: string;
@@ -8,4 +9,5 @@ export interface PickerItem {
 export declare function pickerFrame(title: string, items: PickerItem[], selected: number, query: string, useColor: boolean, notice?: string): string;
 export declare function filterPickerItems(items: PickerItem[], query: string): PickerItem[];
 export declare function isPrintable(s: string): boolean;
+export declare function pickItemOn(stdin: TtyStdin, stdout: TtyStdout, items: PickerItem[], useColor: boolean, title?: string, notice?: string): Promise<PickerItem | null>;
 export declare function pickItem(items: PickerItem[], useColor: boolean, title?: string, notice?: string): Promise<PickerItem | null>;

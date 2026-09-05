@@ -3,7 +3,9 @@ import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { Finding, ReportGroup, resolveFinding, Severity } from "./contract.js";
 import { scoreFromSeverities } from "./score.js";
-import { createKeyFeed } from "./keys.js";
+import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
+
+export { truncateVisible, visibleWidth };
 
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
       ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
@@ -101,22 +103,6 @@ export function issuePrompt(item: DashItem, verifyCommand: string): string {
     `Verify with \`${verifyCommand}\` and confirm the finding is gone before moving on.`,
   );
   return lines.join("\n");
-}
-
-export function visibleWidth(s: string): number {
-  return s.replace(/\x1b\[[0-9;]*m/g, "").length;
-}
-
-export function truncateVisible(s: string, width: number): string {
-  if (visibleWidth(s) <= width) return s;
-  let out = "";
-  let w = 0;
-  for (const ch of s.replace(/\x1b\[[0-9;]*m/g, "")) {
-    if (w + 1 > width - 1) break;
-    out += ch;
-    w++;
-  }
-  return out + "…";
 }
 
 function padVisible(s: string, width: number): string {
@@ -318,36 +304,11 @@ function codeFrame(root: string, file: string, line: number, width: number, useC
   return out;
 }
 
-export interface DashboardStdin {
-  readonly isTTY?: boolean;
-  readonly isRaw?: boolean;
-  setRawMode(mode: boolean): unknown;
-  resume(): unknown;
-  pause(): unknown;
-  on(event: "data", listener: (chunk: string | Buffer) => void): unknown;
-  removeListener(event: "data", listener: (chunk: string | Buffer) => void): unknown;
-}
-
-export interface DashboardStdout {
-  readonly isTTY?: boolean;
-  columns?: number;
-  rows?: number;
-  write(s: string): unknown;
-}
+export type DashboardStdin = TtyStdin;
+export type DashboardStdout = TtyStdout;
 
 export async function runDashboard(input: DashboardInput): Promise<void> {
   await runDashboardOn(process.stdin as unknown as DashboardStdin, process.stdout as unknown as DashboardStdout, input);
-}
-
-// In-place repaint: home the cursor and rewrite every line with a
-// clear-to-end-of-line so shorter content cannot leave ghosts, then clear
-// below the frame. A full-screen \x1b[2J erase on every keypress leaves a
-// blank window while the frame streams back in, which reads as flicker; the
-// erase runs only on the first paint.
-function paintFrame(stdout: DashboardStdout, frame: string, cols: number, first: boolean): void {
-  const width = Math.max(10, cols - 1);
-  const lines = frame.split("\n").map(l => truncateVisible(l, width) + "\x1b[K");
-  stdout.write((first ? "\x1b[H\x1b[2J" : "\x1b[H") + lines.join("\n") + "\x1b[J");
 }
 
 export interface DashboardDeps {
@@ -362,14 +323,12 @@ export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStd
   let selected = 0;
   const readKeys = new Set<string>();
   let notice: string | undefined;
-  let firstPaint = true;
 
-  const draw = (): void => {
-    let frame: string;
+  const frame = (): string => {
     try {
       const it = items[selected];
       if (it) readKeys.add(it.key);
-      frame = dashboardFrame({
+      return dashboardFrame({
         items,
         selected,
         readKeys,
@@ -383,60 +342,31 @@ export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStd
       });
     } catch (e) {
       const err = e as Error;
-      frame = "DASHBOARD RENDER ERROR — the view is frozen, press q to quit.\n"
+      return "DASHBOARD RENDER ERROR — the view is frozen, press q to quit.\n"
         + "Send a screenshot of this to the maintainer:\n\n"
         + String(err && err.stack ? err.stack : err);
     }
-    paintFrame(stdout, frame, stdout.columns || 120, firstPaint);
-    firstPaint = false;
   };
 
-  return new Promise<void>((resolve) => {
-    // The picker (or any earlier TUI phase) leaves stdin explicitly paused
-    // and cooked. An explicitly paused stdin never auto-flows when a "data"
-    // listener attaches, so without resume() the event loop drains and the
-    // process exits right after the first frame.
-    const wasRaw = stdin.isRaw;
-    stdin.setRawMode(true);
-    stdin.resume();
-    stdout.write("\x1b[?25l");
-    draw();
-
-    const finish = (): void => {
-      stdin.removeListener("data", feed);
-      if (wasRaw !== undefined) stdin.setRawMode(wasRaw);
-      stdin.pause();
-      stdout.write("\x1b[?25h");
-      resolve();
-    };
-
-    function handleKey(key: string): void {
+  await runTty<void>({
+    stdin,
+    stdout,
+    frame,
+    onKey: (key, finish) => {
       if (key === "q" || key === "\x03" || key === "esc") return finish();
       if (key === "ignore") return;
-      if (key === "up" || key === "k") { selected = Math.max(0, selected - 1); notice = undefined; return draw(); }
-      if (key === "down" || key === "j") { selected = Math.min(items.length - 1, selected + 1); notice = undefined; return draw(); }
+      if (key === "up" || key === "k") { selected = Math.max(0, selected - 1); notice = undefined; return; }
+      if (key === "down" || key === "j") { selected = Math.min(items.length - 1, selected + 1); notice = undefined; return; }
       if (key === "\r" || key === "\n") {
         const it = items[selected];
-        if (!it) return draw();
+        if (!it) return;
         const verifyCommand = `any-doctor run "${input.doctorFile}" "${input.root}"`;
-        if ((deps.copy ?? copyToClipboard)(issuePrompt(it, verifyCommand))) {
-          notice = "copied issue context — paste into your agent";
-        } else {
-          notice = "clipboard unavailable";
-        }
-        return draw();
+        notice = (deps.copy ?? copyToClipboard)(issuePrompt(it, verifyCommand))
+          ? "copied issue context — paste into your agent"
+          : "clipboard unavailable";
+        return;
       }
-    }
-
-    const onKey = (key: string): void => {
-      try {
-        handleKey(key);
-      } catch (e) {
-        process.stderr.write("key handling error: " + String(e));
-      }
-    };
-    const feed = createKeyFeed(onKey);
-    stdin.on("data", feed);
+    },
   });
 }
 

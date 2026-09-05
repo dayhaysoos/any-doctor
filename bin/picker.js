@@ -1,5 +1,5 @@
 import { fuzzyFilter } from "./fuzzy.js";
-import { createKeyFeed } from "./keys.js";
+import { runTty } from "./tty.js";
 const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
 const COLOR = { error: GREEN, warning: YELLOW, info: CYAN };
@@ -36,65 +36,52 @@ export function filterPickerItems(items, query) {
 export function isPrintable(s) {
     return s.length === 1 && s >= " " && s !== "\x7f";
 }
-export async function pickItem(items, useColor, title = "Select an option", notice) {
-    const stdin = process.stdin;
-    const stdout = process.stdout;
+export async function pickItemOn(stdin, stdout, items, useColor, title = "Select an option", notice) {
     if (!stdin.isTTY || !stdout.isTTY || items.length === 0)
         return null;
-    const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
     let query = "";
     let selected = 0;
     const filtered = () => filterPickerItems(items, query);
-    const draw = () => {
+    const frame = () => {
         const list = filtered();
         if (selected >= list.length)
             selected = Math.max(0, list.length - 1);
-        stdout.write("\x1b[H\x1b[2J" + pickerFrame(title, list, selected, query, useColor, notice));
+        return pickerFrame(title, list, selected, query, useColor, notice);
     };
-    return new Promise((resolve) => {
-        const wasRaw = stdin.isRaw;
-        stdin.setRawMode(true);
-        stdin.resume();
-        stdout.write("\x1b[?25l");
-        draw();
-        const cleanup = (result) => {
-            stdin.removeListener("data", feed);
-            if (wasRaw !== undefined)
-                stdin.setRawMode(wasRaw);
-            stdin.pause();
-            stdout.write("\x1b[?25h");
-            resolve(result);
-        };
-        const onKey = (key) => {
-            const s = key;
-            if (s === "\x03" || s === "esc")
-                return cleanup(null);
+    return runTty({
+        stdin,
+        stdout,
+        frame,
+        onKey: (key, finish) => {
+            if (key === "\x03" || key === "esc")
+                return finish(null);
             if (key === "\x7f" || key === "\b") {
                 query = query.slice(0, -1);
                 selected = 0;
-                return draw();
+                return;
             }
             if (key === "up" || key === "k") {
                 selected = Math.max(0, selected - 1);
-                return draw();
+                return;
             }
             if (key === "down" || key === "j") {
                 selected = Math.min(filtered().length - 1, selected + 1);
-                return draw();
+                return;
             }
             if (key === "\r" || key === "\n") {
                 const list = filtered();
-                if (list.length === 0)
-                    return;
-                return cleanup(list[Math.min(selected, list.length - 1)]);
+                if (list.length > 0)
+                    finish(list[Math.min(selected, list.length - 1)]);
+                return;
             }
             if (isPrintable(key)) {
                 query += key;
                 selected = 0;
-                return draw();
+                return;
             }
-        };
-        const feed = createKeyFeed(onKey);
-        stdin.on("data", feed);
+        },
     });
+}
+export function pickItem(items, useColor, title = "Select an option", notice) {
+    return pickItemOn(process.stdin, process.stdout, items, useColor, title, notice);
 }
