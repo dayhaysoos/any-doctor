@@ -3,6 +3,7 @@ import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { resolveFinding } from "./contract.js";
 import { scoreFromSeverities } from "./score.js";
+import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
 export { truncateVisible, visibleWidth };
 const RED = "\x1b[31m", GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", ORANGE = "\x1b[38;5;208m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
@@ -251,7 +252,7 @@ export async function runDashboard(input) {
     await runDashboardOn(process.stdin, process.stdout, input);
 }
 export async function runDashboardOn(stdin, stdout, input, deps = {}) {
-    if (!stdin.isTTY || !stdout.isTTY)
+    if (!tty.canRunTui(stdin, stdout))
         return;
     const useColor = input.useColor;
     const items = buildItems(input.groups);

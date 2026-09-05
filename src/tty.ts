@@ -7,6 +7,13 @@ import { createKeyFeed } from "./keys.js";
 // itself. Two adapters already prove the seam: the real tty in the CLI and
 // the fake tty in tests.
 
+// "Is this a real terminal" — the shared floor of every TUI decision.
+// Deliberately excludes headless env vars and width heuristics: those are
+// report-vs-dashboard policy and belong to the command layer.
+export function canRunTui(stdin: { readonly isTTY?: boolean }, stdout: { readonly isTTY?: boolean }): boolean {
+  return Boolean(stdin.isTTY && stdout.isTTY);
+}
+
 export interface TtyStdin {
   readonly isTTY?: boolean;
   readonly isRaw?: boolean;

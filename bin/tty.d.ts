@@ -1,3 +1,8 @@
+export declare function canRunTui(stdin: {
+    readonly isTTY?: boolean;
+}, stdout: {
+    readonly isTTY?: boolean;
+}): boolean;
 export interface TtyStdin {
     readonly isTTY?: boolean;
     readonly isRaw?: boolean;

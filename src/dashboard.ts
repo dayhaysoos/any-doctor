@@ -3,6 +3,7 @@ import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { Finding, ReportGroup, resolveFinding, Severity } from "./contract.js";
 import { scoreFromSeverities } from "./score.js";
+import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 
 export { truncateVisible, visibleWidth };
@@ -316,7 +317,7 @@ export interface DashboardDeps {
 }
 
 export async function runDashboardOn(stdin: DashboardStdin, stdout: DashboardStdout, input: DashboardInput, deps: DashboardDeps = {}): Promise<void> {
-  if (!stdin.isTTY || !stdout.isTTY) return;
+  if (!tty.canRunTui(stdin, stdout)) return;
 
   const useColor = input.useColor;
   const items = buildItems(input.groups);

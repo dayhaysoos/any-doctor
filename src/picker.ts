@@ -1,6 +1,6 @@
 import { fuzzyFilter } from "./fuzzy.js";
 import { Severity } from "./contract.js";
-import { runTty, TtyStdin, TtyStdout } from "./tty.js";
+import { canRunTui, runTty, TtyStdin, TtyStdout } from "./tty.js";
 
 const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m",
       DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
@@ -57,7 +57,7 @@ export async function pickItemOn(
   title: string = "Select an option",
   notice?: string,
 ): Promise<PickerItem | null> {
-  if (!stdin.isTTY || !stdout.isTTY || items.length === 0) return null;
+  if (items.length === 0 || !canRunTui(stdin, stdout)) return null;
 
   let query = "";
   let selected = 0;

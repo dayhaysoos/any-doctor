@@ -1,4 +1,4 @@
-import { ReportGroup } from "./contract.js";
+import { ReportGroup, VerifyRunResult } from "./contract.js";
 export interface ReportInput {
     fileCount: number;
     durationMs: number;
@@ -9,3 +9,4 @@ export declare function dedupeGroups(groups: ReportGroup[]): {
     hidden: number;
 };
 export declare function renderReport(input: ReportInput, useColor: boolean): string;
+export declare function renderVerifyResult(result: VerifyRunResult, useColor: boolean): string;

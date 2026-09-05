@@ -118,3 +118,24 @@ export function renderReport(input, useColor) {
     }
     return lines.join("\n").replace(/\n+$/, "");
 }
+// Verify-gate rendering: pure state -> string, colored on request. The
+// command layer prints it and counts failures from the data.
+export function renderVerifyResult(result, useColor) {
+    const c = (s2, wrap) => (useColor && wrap ? wrap + s2 + RESET : s2);
+    const lines = [];
+    for (const fixture of result.results) {
+        if (fixture.ok) {
+            lines.push(c("  ✔ " + fixture.name, GREEN));
+        }
+        else {
+            lines.push(c("  ✖ " + fixture.name, RED));
+            for (const m of fixture.missing)
+                lines.push("    " + c("missing expected finding", RED) + " " + m.file + ":" + m.line);
+            for (const u of fixture.unexpected)
+                lines.push("    " + c("unexpected finding", RED) + " " + u.file + ":" + u.line);
+            if (fixture.error)
+                lines.push("    " + c("crashed: ", RED) + fixture.error);
+        }
+    }
+    return lines.join("\n");
+}

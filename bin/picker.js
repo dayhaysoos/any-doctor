@@ -1,5 +1,5 @@
 import { fuzzyFilter } from "./fuzzy.js";
-import { runTty } from "./tty.js";
+import { canRunTui, runTty } from "./tty.js";
 const GREEN = "\x1b[32m", YELLOW = "\x1b[33m", CYAN = "\x1b[36m", DIM = "\x1b[2m", BOLD = "\x1b[1m", RESET = "\x1b[0m";
 const GLYPH = { error: "✖", warning: "⚠", info: "ℹ" };
 const COLOR = { error: GREEN, warning: YELLOW, info: CYAN };
@@ -37,7 +37,7 @@ export function isPrintable(s) {
     return s.length === 1 && s >= " " && s !== "\x7f";
 }
 export async function pickItemOn(stdin, stdout, items, useColor, title = "Select an option", notice) {
-    if (!stdin.isTTY || !stdout.isTTY || items.length === 0)
+    if (items.length === 0 || !canRunTui(stdin, stdout))
         return null;
     let query = "";
     let selected = 0;
