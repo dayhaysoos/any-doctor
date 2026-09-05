@@ -27,13 +27,31 @@ export interface DashboardLayout {
     bodyRows: number;
 }
 export declare function resolveDashboardLayout(cols: number, rows: number, itemCount: number): DashboardLayout;
+export type RowKind = "section" | "check" | "item" | "more";
+export interface CheckSummary {
+    checkKey: string;
+    checkId: string;
+    doctorId: string;
+    description: string;
+    severity: Severity;
+    impact?: string;
+    why?: string;
+    fix?: string;
+    blindSpots?: string[];
+    count: number;
+    files: number;
+}
 interface ListRow {
-    kind: "section" | "item";
+    kind: RowKind;
     text: string;
     severity: Severity;
+    selectable: boolean;
     itemIndex: number;
+    check?: CheckSummary;
 }
-export declare function buildListRows(items: DashItem[], useColor: boolean, selected: number, readKeys: Set<string>): ListRow[];
+export declare const INSTANCES_PER_CHECK = 50;
+export declare function initialExpanded(items: DashItem[]): Set<string>;
+export declare function buildListRows(items: DashItem[], useColor: boolean, selectedRow: number, readKeys: Set<string>, expanded?: ReadonlySet<string>): ListRow[];
 export interface FrameSource {
     (file: string): string[] | null;
 }
@@ -42,6 +60,7 @@ export declare function dashboardFrame(state: {
     selected: number;
     readKeys: Set<string>;
     readSource: FrameSource;
+    expanded?: ReadonlySet<string>;
     fileCount: number;
     durationMs: number;
     useColor: boolean;

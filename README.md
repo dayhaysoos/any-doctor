@@ -32,15 +32,16 @@ Node ≥ 18.
 A doctor program is `<name>.mjs` (exports `meta` + `doctor(ctx)`) next to
 its fixture module `<name>.fixtures.mjs` (seeds + expected findings).
 See [CONTEXT.md](CONTEXT.md) for the vocabulary and
-[doctors/unawaited-async-map.mjs](doctors/unawaited-async-map.mjs) for a
-working example.
+[doctors/async-doctor.mjs](doctors/async-doctor.mjs) for a working
+example: one doctor, many checks — async hygiene as a category, with
+per-check fixtures and the interactive check tree in `run`.
 
 ## Docs
 
 | Doc | What it holds |
 |---|---|
 | [CONTEXT.md](CONTEXT.md) | Domain glossary — canonical terms |
-| [docs/decisions.md](docs/decisions.md) | Decision log (D1–D14). Read first; don't relitigate |
+| [docs/decisions.md](docs/decisions.md) | Decision log (D1–D16). Read first; don't relitigate |
 | [docs/vision.md](docs/vision.md) | Product idea and the lifecycle novelty |
 | [docs/features.md](docs/features.md) | Doctor discovery & registry spec + status |
 | [docs/research.md](docs/research.md) | Landscape, React Doctor teardown |

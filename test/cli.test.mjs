@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const cli = await import("../bin/cli.js");
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DOCTOR = path.join(REPO, "doctors", "fetch-calls-without-abortsignal.mjs");
+const DOCTOR = path.join(REPO, "doctors", "async-doctor.mjs");
 const TARGET = path.join(REPO, "fixtures", "sample-app");
 
 function silentConsole(t) {

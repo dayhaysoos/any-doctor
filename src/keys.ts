@@ -52,6 +52,8 @@ export function createKeyFeed(onKey: KeyHandler): (chunk: string | Buffer) => vo
         const seq = buf.slice(i, j + 1);
         if (seq === "\x1b[A" || seq === "\x1bOA") onKey("up");
         else if (seq === "\x1b[B" || seq === "\x1bOB") onKey("down");
+        else if (seq === "\x1b[C" || seq === "\x1bOC") onKey("right");
+        else if (seq === "\x1b[D" || seq === "\x1bOD") onKey("left");
         else onKey("ignore");
         i = j + 1;
         continue;

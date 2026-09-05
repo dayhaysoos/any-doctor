@@ -311,6 +311,80 @@ user's environment by design.
 
 ---
 
+## D15 — The npx experience: findings first, creation separate
+
+**Date:** 2026-09-05
+
+**Context:** React Doctor's traction lesson: `npx react-doctor@latest` gives
+findings in under a minute — no install, no account, no key. Any Doctor's
+cold start inverted that: author doctors first, run later. Nick rethought
+the onboarding with two constraints: no intent routing and no AI-orchestrated
+creation ("weird territory"), and creation must not live inside the running
+experience.
+
+**Decision:**
+- `npx any-doctor` with no arguments **runs** instead of printing usage:
+  bundled doctors are discovered, the picker appears, findings follow.
+  (`help` still prints usage.)
+- **Bundled scope:** a small, curated first-party doctor pack ships inside
+  the package. Read-only, lowest priority — repo-local wins collisions,
+  then user-global, then bundled. No network at run time.
+- **`init` means adoption, not creation:** copies the bundled pack into
+  `./doctors/` (skipping existing files) so a team can edit, prune, and
+  commit it. Bundled is a starting point, not a dependency.
+- **`create "<intent>"`** is the creation path — today's prompt-only
+  `generate`, renamed to plainer English; `generate` remains as a hidden
+  alias. D14's posture is unchanged: no spawning, no keys, the user pastes
+  the prompt into their own agent.
+- **Explicitly rejected:** intent routing (matching free-text intents to
+  doctors) and any in-CLI agent orchestration or model integration.
+
+**Consequences:** The run experience stays pure — select a doctor, see
+findings; nothing pitches AI at a user who hasn't bought in yet. Creation is
+advertised only where curiosity peaks: one dim next-steps line after an
+interactive session, a mention in `init`'s output, and the usage text.
+`run`/`verify` never touch a model (unchanged). Build order: bundled scope →
+no-args-runs → `init` + `create` rename.
+
+---
+
+## D16 — The doctor experience: category doctors and the check tree
+
+**Date:** 2026-09-05
+
+**Context:** Nick's product direction: a doctor should own a whole
+category a team cares about ("the async doctor"), not one narrow pattern.
+Opening it shows the *types* of issues as first-class things to select;
+drilling into a type shows where it bites. The contract already allowed
+this (DoctorMeta.checks, finding.rule, the Check glossary term) — the
+pilots just never used it, and the dashboard had no check-level
+navigation.
+
+**Decision:**
+- **Flagship:** `doctors/async-doctor.mjs` consolidates fetch-without-
+  AbortSignal, unawaited async map, and uncleared setTimeout-in-effect
+  as three checks with merged fixtures (15/15 green). The three
+  single-pattern originals are deleted.
+- **Dashboard tree:** multi-check doctors render doctor → check →
+  instance. Check rows show glyph, description, and instance count;
+  enter (or →) expands, ← collapses; enter on an instance copies its
+  scoped context as before. Check rows carry a check-level detail pane
+  (why/impact/fix/blast radius). Single-check doctors render exactly as
+  before — no tree, no behavior change.
+- **Severity-first, after React Doctor's research:** checks sort errors
+  before warnings before info (count descending within a band); error
+  checks are expanded on entry ("errors always show"); warning/info
+  checks start collapsed. An expanded check shows its first 50 instances
+  plus a "… and N more — fix a few and re-scan" affordance — the re-scan
+  loop is the pagination, not in-session paging.
+- **Keys:** the feed decodes →/← as their own keys alongside ↑/↓.
+
+**Consequences:** The picker lists categories, not fragments; one spawn
+covers a whole concern. The dashboard triages: highest severity on
+screen at entry, categories summarized, instances one enter away.
+
+---
+
 ## Open questions
 
 - Name: "any-doctor" is a working title.

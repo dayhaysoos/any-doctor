@@ -48,6 +48,10 @@ export function createKeyFeed(onKey) {
                     onKey("up");
                 else if (seq === "\x1b[B" || seq === "\x1bOB")
                     onKey("down");
+                else if (seq === "\x1b[C" || seq === "\x1bOC")
+                    onKey("right");
+                else if (seq === "\x1b[D" || seq === "\x1bOD")
+                    onKey("left");
                 else
                     onKey("ignore");
                 i = j + 1;

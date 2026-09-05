@@ -50,3 +50,10 @@ test("alt-chords decode as ignore, not esc + keystroke", async () => {
   await new Promise(r => setTimeout(r, 60));
   assert.deepEqual(seen, ["ignore", "x"], "the pair is consumed together");
 });
+
+test("right and left arrows decode as their own keys", () => {
+  const seen = [];
+  const feed = createKeyFeed(k => seen.push(k));
+  feed(Buffer.from("\x1b[C\x1b[D\x1bOC"));
+  assert.deepEqual(seen, ["right", "left", "right"]);
+});

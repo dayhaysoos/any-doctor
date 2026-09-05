@@ -11,7 +11,7 @@ import { runDoctor, verifyDoctor, metaDoctor, countAll } from "../bin/runner.js"
 // public interface is plain async that throws typed failures — no Effect
 // vocabulary here.
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DOCTOR = path.join(REPO, "doctors", "fetch-calls-without-abortsignal.mjs");
+const DOCTOR = path.join(REPO, "doctors", "async-doctor.mjs");
 const TARGET = path.join(REPO, "fixtures", "sample-app");
 
 function tmpDoctor(lines) {
@@ -23,8 +23,8 @@ function tmpDoctor(lines) {
 
 test("runDoctor: executes the doctor against the sample app", async () => {
   const r = await runDoctor({ programPath: DOCTOR, targetDir: TARGET });
-  assert.equal(r.meta.id, "fetch-calls-without-abortsignal");
-  assert.equal(r.findings.length, 3);
+  assert.equal(r.meta.id, "async-doctor");
+  assert.equal(r.findings.length, 4);
   assert.ok(r.durationMs >= 0);
 });
 
@@ -73,7 +73,7 @@ test("verifyDoctor: missing fixtures throws FixturesMissing carrying the expecte
 
 test("metaDoctor: reads meta; a broken doctor is data, not a throw", async () => {
   const good = await metaDoctor({ programPath: DOCTOR });
-  assert.equal(good.meta.id, "fetch-calls-without-abortsignal");
+  assert.equal(good.meta.id, "async-doctor");
   assert.equal(good.error, undefined);
 
   const t = tmpDoctor(["export async function doctor(ctx) {}"]);
@@ -94,7 +94,7 @@ test("countAll: parallel counts preserve order; a crash is data, not an abort", 
   try {
     const results = await countAll({ programPaths: [DOCTOR, "/nope/missing.mjs", t.file], targetDir: TARGET });
     assert.equal(results.length, 3);
-    assert.deepEqual(results[0], { programPath: DOCTOR, count: 3 });
+    assert.deepEqual(results[0], { programPath: DOCTOR, count: 4 });
     assert.equal(results[1].error._tag, "ProgramMissing");
     assert.equal(results[2].error._tag, "DoctorCrashed");
   } finally {

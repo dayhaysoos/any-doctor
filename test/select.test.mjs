@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { selectDoctor } from "../bin/select.js";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DOCTOR = path.join(REPO, "doctors", "fetch-calls-without-abortsignal.mjs");
+const DOCTOR = path.join(REPO, "doctors", "async-doctor.mjs");
 
 class FakeStdin extends EventEmitter {
   isTTY;
@@ -52,7 +52,7 @@ test("selectDoctor: explicit path resolves directly, no discovery", async () => 
 });
 
 test("selectDoctor: slug.mjs argument resolves via the repo scope", async () => {
-  const sel = await selectDoctor("fetch-calls-without-abortsignal.mjs", {
+  const sel = await selectDoctor("async-doctor.mjs", {
     cwd: REPO,
     useColor: false,
     env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
@@ -78,9 +78,9 @@ test("selectDoctor: non-interactive session yields listing rows, not a picker", 
     env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
   });
   assert.equal(sel.kind, "non-interactive");
-  assert.ok(sel.rows.length >= 8, "repo doctors listed");
+  assert.ok(sel.rows.length >= 6, "repo doctors listed");
   assert.ok(sel.rows.every(r => r.count === undefined), "no counts requested");
-  const row = sel.rows.find(r => r.slug === "fetch-calls-without-abortsignal");
+  const row = sel.rows.find(r => r.slug === "async-doctor");
   assert.ok(row, "known doctor present");
   assert.equal(row.scope, "repo");
 });
@@ -95,7 +95,7 @@ test("selectDoctor: counts attach and order worst-first when targetDir is given"
   });
   assert.equal(sel.kind, "non-interactive");
   const withCounts = sel.rows.filter(r => r.count !== undefined);
-  assert.ok(withCounts.length >= 8);
+  assert.ok(withCounts.length >= 6);
   assert.ok(withCounts.every(r => r.count.status === "counted"), "all repo doctors count cleanly");
   for (let i = 1; i < withCounts.length; i++) {
     assert.ok(withCounts[i - 1].count.count >= withCounts[i].count.count, "sorted worst-first");
@@ -166,5 +166,5 @@ test("selectDoctor: allowPicker=false forces the non-interactive listing even on
     env: { stdin: new FakeStdin(true), stdout: new FakeStdout(true) },
   });
   assert.equal(sel.kind, "non-interactive");
-  assert.ok(sel.rows.length >= 8);
+  assert.ok(sel.rows.length >= 6);
 });

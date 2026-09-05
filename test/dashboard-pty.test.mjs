@@ -32,10 +32,18 @@ expect {
   timeout { puts ">FAIL dashboard-timeout"; exit 103 }
   eof { puts ">FAIL dashboard-eof"; exit 104 }
 }
-puts ">STAGE pre-arrow"
+puts ">STAGE pre-expand"
+send "\\r"
+expect {
+  "user.ts:5" {}
+  timeout { puts ">FAIL expand-timeout"; exit 108 }
+  eof { puts ">FAIL expand-eof"; exit 109 }
+}
+after 200
+puts ">STAGE expanded"
 send "\\x1b\\[B"
-after 400
-puts ">STAGE post-arrow"
+after 300
+puts ">STAGE on-instance"
 send "\\r"
 expect {
   "copied issue context" {}
@@ -92,9 +100,10 @@ test("picker -> dashboard survives enter, scrolls, copies, quits", { skip: canRu
   assert.equal(transcript.indexOf("\x1b[2J", firstDash + 1), -1,
     "no full-screen erase after the dashboard's first paint");
 
-  // Down arrow moved the selection to another instance.
-  const preArrow = text.slice(text.indexOf(">STAGE pre-arrow"), text.indexOf(">STAGE post-arrow"));
-  const postArrow = text.slice(text.indexOf(">STAGE post-arrow"));
-  assert.notEqual(selectionLines(postArrow), selectionLines(preArrow),
-    "down arrow should move the selection marker to the next instance");
+  // The tree: the first enter expanded the top check (instances visible),
+  // down moved onto an instance, and enter there copied its context.
+  assert.ok(text.includes("\u00d73"), "check rows carry instance counts");
+  const beforeExpand = text.slice(0, text.indexOf(">STAGE pre-expand"));
+  assert.ok(!beforeExpand.includes("user.ts:5"), "instances hidden until the check expands");
+  assert.ok(text.slice(text.indexOf(">STAGE expanded")).includes("user.ts:5"), "expansion reveals instances");
 });

@@ -201,7 +201,7 @@ test("dashboardFrame: pure state -> string; code frames come from the injected s
   const items = buildItems(groups);
   const source = ["one", "two", "const three = 3", "four", "five"];
   const readSource = (file) => (file === "src/a.ts" ? source : null);
-  const state = { items, selected: 0, readKeys: new Set(), readSource, fileCount: 2, durationMs: 10, useColor: false, cols: 120, rows: 34 };
+  const state = { items, selected: 1, readKeys: new Set(), readSource, fileCount: 2, durationMs: 10, useColor: false, cols: 120, rows: 34 };
 
   const once = dashboardFrame(state);
   assert.equal(dashboardFrame(state), once, "same state, same frame — no hidden I/O");
@@ -214,4 +214,108 @@ test("dashboardFrame with color: header carries no function source", () => {
   const items = buildItems(groups);
   const out = dashboardFrame({ items, selected: 0, readKeys: new Set(), readSource: () => null, fileCount: 2, durationMs: 10, useColor: true, cols: 120, rows: 34 });
   assert.ok(!out.includes("function gradeColor"), "gradeColor is called, not concatenated");
+});
+
+// ---- the check tree: multi-check doctors ----
+
+const multiGroups = [{
+  programName: "multi.mjs",
+  meta: {
+    id: "multi-doctor",
+    description: "Multi-check doctor",
+    severity: "warning",
+    checks: [
+      { id: "bad-error", description: "Error check", severity: "error", why: "because", impact: "bad", fix: "fix it" },
+      { id: "meh-warn", description: "Warning check", severity: "warning" },
+    ],
+  },
+  findings: [
+    { rule: "bad-error", file: "a.ts", line: 1 },
+    { rule: "bad-error", file: "a.ts", line: 2 },
+    { rule: "meh-warn", file: "b.ts", line: 3 },
+  ],
+}];
+
+test("tree: checks render as severity-ordered rows; errors start expanded, warnings collapsed", async () => {
+  const { buildListRows, buildItems, initialExpanded } = await import("../bin/dashboard.js");
+  const items = buildItems(multiGroups);
+  const expanded = initialExpanded(items);
+  assert.deepEqual([...expanded], ["multi-doctor/bad-error"], "only the error check opens on entry");
+  const rows = buildListRows(items, false, 0, new Set(), expanded);
+  assert.deepEqual(rows.map(r => r.kind), ["section", "check", "item", "item", "check"]);
+  assert.match(rows[1].text, /Error check/, "error check first (severity ordering)");
+  assert.match(rows[1].text, /×2/);
+  assert.ok(rows[1].text.includes("\u25be"), "error check expanded");
+  assert.match(rows[4].text, /Warning check ×1/);
+  assert.ok(rows[4].text.includes("\u25b8"), "warning check collapsed");
+  assert.ok(!rows.some(r => r.text.includes("b.ts")), "warning instances hidden until expanded");
+});
+
+test("tree: expanding a warning check reveals its instances in the frame", async () => {
+  const { buildItems, dashboardFrame, initialExpanded } = await import("../bin/dashboard.js");
+  const items = buildItems(multiGroups);
+  const base = { items, selected: 1, readKeys: new Set(), readSource: () => null, fileCount: 1, durationMs: 5, useColor: false, cols: 120, rows: 34 };
+  const closed = dashboardFrame({ ...base, expanded: initialExpanded(items) });
+  assert.ok(closed.includes("a.ts:1") && !closed.includes("b.ts:3"));
+  const open = dashboardFrame({ ...base, expanded: new Set(["multi-doctor/bad-error", "multi-doctor/meh-warn"]) });
+  assert.ok(open.includes("b.ts:3"));
+});
+
+test("tree: a check row's detail pane tells the check's story", async () => {
+  const { buildItems, dashboardFrame, initialExpanded } = await import("../bin/dashboard.js");
+  const items = buildItems(multiGroups);
+  const out = dashboardFrame({ items, selected: 1, readKeys: new Set(), readSource: () => null, expanded: initialExpanded(items), fileCount: 1, durationMs: 5, useColor: false, cols: 120, rows: 34 });
+  assert.ok(out.includes("multi-doctor/bad-error"), "checkKey in the detail pane");
+  assert.ok(out.includes("2 instances across 1 file"), "blast radius");
+  assert.ok(out.includes("because"), "why text");
+});
+
+test("tree: 60 findings in one check show 50 instances plus the re-scan affordance", async () => {
+  const { buildListRows, buildItems, initialExpanded, INSTANCES_PER_CHECK } = await import("../bin/dashboard.js");
+  assert.equal(INSTANCES_PER_CHECK, 50);
+  const findings = Array.from({ length: 60 }, (_, i) => ({ rule: "bad-error", file: "a.ts", line: i + 1 }));
+  const items = buildItems([{ ...multiGroups[0], findings: [...findings, { rule: "meh-warn", file: "b.ts", line: 3 }] }]);
+  const rows = buildListRows(items, false, 0, new Set(), initialExpanded(items));
+  const kinds = rows.map(r => r.kind);
+  assert.equal(kinds.filter(k => k === "item").length, 50, "instances capped");
+  const more = rows.find(r => r.kind === "more");
+  assert.ok(more && more.text.includes("10 more"), "the more-row counts the rest");
+  assert.ok(more.text.includes("re-scan"), "the affordance names the loop");
+});
+
+test("tree: single-check doctors stay flat — no check rows, no expansion", async () => {
+  const { buildListRows, buildItems, initialExpanded } = await import("../bin/dashboard.js");
+  const items = buildItems(groups); // the original single-check fixture
+  assert.deepEqual([...initialExpanded(items)], []);
+  const rows = buildListRows(items, false, 0, new Set(), initialExpanded(items));
+  assert.ok(!rows.some(r => r.kind === "check" || r.kind === "more"), "flat rendering untouched");
+});
+
+test("tree: enter toggles checks, arrows expand and collapse, enter on an instance copies", async () => {
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const multiInput = { ...dashInput(), groups: multiGroups };
+  const done = runDashboardOn({ stdin, stdout }, multiInput, copyAlways);
+
+  // Initial selection is the (expanded) error check row.
+  let frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(frame.includes("a.ts:1"), "error check open at entry");
+
+  stdin.send("\r"); // collapse the error check
+  frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(!frame.includes("a.ts:1"), "enter collapsed it");
+
+  stdin.send("j");   // onto the warning check row
+  stdin.send("\x1b[C"); // right expands
+  frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(frame.includes("b.ts:3"), "right arrow expanded the warning check");
+
+  stdin.send("j");   // onto the instance row
+  stdin.send("\r"); // copies
+  frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(frame.includes("copied issue context"), "enter on an instance copies its context");
+
+  stdin.send("q");
+  const out = await settle(done);
+  assert.equal(out, "resolved");
 });
