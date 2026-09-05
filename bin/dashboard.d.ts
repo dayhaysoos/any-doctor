@@ -64,6 +64,7 @@ interface ListRow {
     itemIndex: number;
     check?: CheckSummary;
     doctor?: DoctorSummary;
+    toggleKey?: string;
 }
 export declare const INSTANCES_PER_CHECK = 50;
 export declare function initialExpanded(items: DashItem[]): Set<string>;

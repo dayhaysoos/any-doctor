@@ -367,3 +367,54 @@ test("aggregate: enter on a doctor row toggles it and the doctor detail pane ren
   stdin.send("q");
   assert.equal(await settle(done), "resolved");
 });
+
+test("tree: children hang off connectors; guides hold the column under an expanded check", async () => {
+  const { buildItems, buildListRows, initialExpanded } = await import("../bin/dashboard.js");
+  const items = buildItems(aggregateGroups);
+  const expanded = new Set([...initialExpanded(items), "multi-doctor/meh-warn"]);
+  const rows = buildListRows(items, false, 0, new Set(), expanded);
+  const texts = rows.map(r => r.text);
+  // children of the doctor: first check connected with ├─, last with └─
+  assert.ok(texts.some(t => t.startsWith("  \u251c\u2500 ")), "non-last child connected with \u251c\u2500");
+  assert.ok(texts.some(t => t.startsWith("  \u2514\u2500 ")), "last child connected with \u2514\u2500");
+  // instances under a NON-last check hang under the \u2502 guide column
+  const underFirst = texts.filter(t => t.startsWith("  \u2502"));
+  assert.ok(underFirst.length >= 2, "instances of the first check sit under the guide");
+  assert.ok(underFirst.every(t => t.includes("a.ts:")), "guide rows are that check's instances");
+});
+
+test("tree: back collapses up — instance to check, check to doctor", async () => {
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = runDashboardOn({ stdin, stdout }, { ...dashInput(), groups: aggregateGroups }, copyAlways);
+
+  // Open the error check (selection starts on the doctor row): down, right.
+  stdin.send("j");            // onto check row
+  stdin.send("\x1b[C");      // expand it
+  stdin.send("j");            // onto its first instance
+  let frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(frame.includes("a.ts:1"), "inside the check");
+
+  stdin.send("\x7f");        // backspace: collapse the check, land on it
+  frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(!frame.includes("a.ts:1"), "check collapsed");
+  assert.ok(/›[▾▸] . Error check/.test(frame), "selection rests on the check row");
+
+  stdin.send("\x1b[D");      // left on the collapsed check: collapse the doctor
+  frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(/›▸ . multi-doctor/.test(frame), "doctor collapsed too — back among the doctors");
+  assert.ok(frame.includes("3 findings"), "doctor detail pane — back among the doctors");
+
+  stdin.send("q");
+  assert.equal(await settle(done), "resolved");
+});
+
+test("tree: one multi-check doctor run directly nests like the aggregate", async () => {
+  const { buildItems, buildListRows, initialExpanded } = await import("../bin/dashboard.js");
+  const items = buildItems(multiGroups); // single-DOCTOR, multi-check frame
+  const rows = buildListRows(items, false, 1, new Set(), initialExpanded(items));
+  const texts = rows.map(r => r.text);
+  assert.ok(texts.some(t => t.startsWith("  ├─ ")), "non-last check connects with a branch");
+  assert.ok(texts.some(t => t.startsWith("  └─ ")), "last check gets the corner");
+  assert.ok(texts.some(t => t.startsWith("  │")), "expanded check instances sit under the guide");
+});

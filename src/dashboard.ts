@@ -176,6 +176,7 @@ interface ListRow {
   itemIndex: number;
   check?: CheckSummary;
   doctor?: DoctorSummary;
+  toggleKey?: string;
 }
 
 // The re-scan loop is the pagination: a check shows its first N instances,
@@ -321,29 +322,43 @@ export function buildListRows(
         selectable: true,
         itemIndex: -1,
         doctor: summary,
+        toggleKey: d.doctorId,
       });
       if (!isOpen) continue;
     }
 
+    // Children of a doctor row: checks for multi-check doctors, capped
+    // flat instances for single-check ones. Tree connectors (├ └ │) make
+    // the hierarchy structural, not a two-space suggestion.
+    // Connectors follow the DOCTOR's shape, not the frame's: one
+    // multi-check doctor run directly nests exactly like the aggregate.
+    // Only a single-check doctor alone in a single-doctor frame is flat.
+    const nested = multiDoctor || d.multiCheck;
+    const childPrefix = (ci: number, last: number): string =>
+      nested ? (ci < last ? "  \u251c\u2500 " : "  \u2514\u2500 ") : multiDoctor ? "  " : "";
+    const guidePrefix = (ci: number, last: number): string =>
+      nested ? (ci < last ? "  \u2502    " : "       ") : multiDoctor ? "  " : "";
+
     if (!d.multiCheck) {
-      // Flat rendering for single-check doctors, capped like checks; the
-      // re-scan loop is the pagination.
-      const flat = d.checks[0].items.slice(0, INSTANCES_PER_CHECK);
-      for (const it of flat) {
+      // Flat instances, capped like checks; the re-scan loop is the
+      // pagination.
+      const all = d.checks[0].items;
+      const flat = all.slice(0, INSTANCES_PER_CHECK);
+      flat.forEach((it, ci) => {
         const rowIndex = rows.length;
         rows.push({
           kind: "item",
-          text: (multiDoctor ? "  " : "") + itemRowText(it, selectedRow === rowIndex, readKeys, c),
+          text: childPrefix(ci, flat.length - 1 + (all.length > flat.length ? 1 : 0)) + itemRowText(it, selectedRow === rowIndex, readKeys, c, multiDoctor),
           severity: it.severity,
           selectable: true,
           itemIndex: indexOfItem.get(it)!,
         });
-      }
-      if (d.checks[0].items.length > flat.length) {
+      });
+      if (all.length > flat.length) {
         const moreRowIndex = rows.length;
         rows.push({
           kind: "more",
-          text: (multiDoctor ? "  " : "") + `${selectedRow === moreRowIndex ? c("›", BOLD) + " " : ""}${c("… and " + (d.checks[0].items.length - flat.length) + " more — fix a few and re-scan", DIM)}`,
+          text: childPrefix(flat.length, flat.length) + `${selectedRow === moreRowIndex ? c("›", BOLD) + " " : ""}${c("… and " + (all.length - flat.length) + " more — fix a few and re-scan", DIM)}`,
           severity: d.worst,
           selectable: true,
           itemIndex: -1,
@@ -352,43 +367,46 @@ export function buildListRows(
       continue;
     }
 
-    for (const g of d.checks) {
+    d.checks.forEach((g, ci) => {
       const summary = summarize(g.checkKey, g.items);
       const checkRowIndex = rows.length;
       const isOpen = open.has(g.checkKey);
+      const arrow = isOpen ? "\u25be" : "\u25b8";
       rows.push({
         kind: "check",
-        text: checkRowText(summary, isOpen, selectedRow === checkRowIndex, c),
+        text: childPrefix(ci, d.checks.length - 1)
+          + `${selectedRow === checkRowIndex ? c("›", BOLD) : " "}${c(arrow, DIM)} ${c(GLYPH[summary.severity], SEVERITY_COLOR[summary.severity])} ${c(summary.description, selectedRow === checkRowIndex ? BOLD : undefined)} ${c("×" + summary.count, DIM)}`,
         severity: summary.severity,
         selectable: true,
         itemIndex: -1,
         check: summary,
+        toggleKey: g.checkKey,
       });
 
-      if (!isOpen) continue;
+      if (!isOpen) return;
       const shown = g.items.slice(0, INSTANCES_PER_CHECK);
-      for (const it of shown) {
+      shown.forEach(it => {
         const rowIndex = rows.length;
         rows.push({
           kind: "item",
-          text: "    " + itemRowText(it, selectedRow === rowIndex, readKeys, c, true),
+          text: guidePrefix(ci, d.checks.length - 1) + itemRowText(it, selectedRow === rowIndex, readKeys, c, true),
           severity: it.severity,
           selectable: true,
           itemIndex: indexOfItem.get(it)!,
         });
-      }
+      });
       if (g.items.length > shown.length) {
         const moreRowIndex = rows.length;
         rows.push({
           kind: "more",
-          text: `  ${selectedRow === moreRowIndex ? c("›", BOLD) + " " : ""}${c("… and " + (g.items.length - shown.length) + " more — fix a few and re-scan", DIM)}`,
+          text: guidePrefix(ci, d.checks.length - 1) + `${selectedRow === moreRowIndex ? c("›", BOLD) + " " : ""}${c("… and " + (g.items.length - shown.length) + " more — fix a few and re-scan", DIM)}`,
           severity: summary.severity,
           selectable: true,
           itemIndex: -1,
           check: summary,
         });
       }
-    }
+    });
   }
   return rows;
 }
@@ -664,12 +682,36 @@ export async function runDashboardOn(env: { stdin: DashboardStdin; stdout: Dashb
       if (key === "ignore") return;
       if (key === "up" || key === "k") return step(-1);
       if (key === "down" || key === "j") return step(1);
-      const row = currentRows()[selectedRow];
+      const rows = currentRows();
+      const row = rows[selectedRow];
       const rowKey = row?.check?.checkKey ?? row?.doctor?.doctorId;
-      if (key === "right" || key === "left") {
-        if (!rowKey) return;
-        if (key === "right") expanded.add(rowKey);
-        else expanded.delete(rowKey);
+      if (key === "right") {
+        if (rowKey) expanded.add(rowKey);
+        notice = undefined;
+        return;
+      }
+      if (key === "left" || key === "\x7f" || key === "\b") {
+        // Back climbs one level: an instance collapses to its check, a
+        // check (or anything beneath a collapsed toggle) collapses to its
+        // doctor — landing on the parent so you can select through again.
+        const collapseUp = (from: number): void => {
+          let i = from;
+          while (i >= 0 && rows[i].toggleKey === undefined) i--;
+          if (i < 0) return;
+          const toggleKey = rows[i].toggleKey!;
+          if (expanded.has(toggleKey)) {
+            expanded.delete(toggleKey);
+            selectedRow = i;
+            return;
+          }
+          // Already collapsed (we're ON it): climb to its parent toggle.
+          let j = i - 1;
+          while (j >= 0 && rows[j].toggleKey === undefined) j--;
+          if (j < 0) return;
+          expanded.delete(rows[j].toggleKey!);
+          selectedRow = j;
+        };
+        collapseUp(selectedRow);
         notice = undefined;
         return;
       }
