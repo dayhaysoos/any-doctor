@@ -119,11 +119,9 @@ export function buildListRows(items, useColor, selected, readKeys) {
     const c = (s, wrap) => (useColor && wrap ? wrap + s + RESET : s);
     const rows = [];
     let currentDoctor = null;
-    let currentCheck = null;
     items.forEach((it, index) => {
         if (it.doctorId !== currentDoctor) {
             currentDoctor = it.doctorId;
-            currentCheck = null;
             rows.push({ kind: "section", text: c(it.doctorId, BOLD), severity: it.severity, itemIndex: index });
         }
         const isSelected = index === selected;
@@ -137,7 +135,6 @@ export function buildListRows(items, useColor, selected, readKeys) {
             itemIndex: index,
         };
         rows.push(row);
-        void currentCheck;
     });
     return rows;
 }

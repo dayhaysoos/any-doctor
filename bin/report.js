@@ -90,8 +90,8 @@ export function renderReport(input, useColor) {
         }
     }
     lines.push("");
-    const ordered = [...groups].sort((a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
-    for (const g of ordered) {
+    // dedupeGroups already orders by severity; sorting again would duplicate it.
+    for (const g of groups) {
         for (const bucket of expandChecks(g)) {
             const n = bucket.findings.length;
             lines.push(`${c(GLYPH[bucket.severity], SEVERITY_COLOR[bucket.severity])} ${c(bucket.heading, n > 1 ? BOLD : "")}${n > 1 ? c(` ×${n}`, SEVERITY_COLOR[bucket.severity]) : ""}`);

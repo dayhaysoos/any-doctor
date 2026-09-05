@@ -27,19 +27,7 @@ export function scoreFromSeverities(sevs: Severity[]): ScoreResult {
 }
 
 export function computeScore(groups: ReportGroup[]): ScoreResult {
-  let score = 100;
-  for (const g of groups) {
-    for (const f of g.findings) {
-      score -= WEIGHTS[findingSeverity(g, f)];
-    }
-  }
-  score = Math.max(0, Math.min(100, score));
-  let grade = "Critical";
-  if (score >= 90) grade = "Excellent";
-  else if (score >= 75) grade = "Good";
-  else if (score >= 50) grade = "Fair";
-  else if (score >= 25) grade = "Poor";
-  return { score, grade };
+  return scoreFromSeverities(groups.flatMap(g => g.findings.map(f => findingSeverity(g, f))));
 }
 
 export function categoryRollup(groups: ReportGroup[]): { category: string; counts: Record<Severity, number> }[] {

@@ -12,4 +12,6 @@ export declare function findRepoDoctorsDir(cwd: string): string | null;
 export declare function discoverDoctors(cwd: string, opts?: {
     globalDir?: string;
 }): Promise<DiscoveredDoctor[]>;
-export declare function resolveDoctorPath(arg: string, cwd: string): string | null;
+export declare function resolveDoctorPath(arg: string, cwd: string, opts?: {
+    globalDir?: string;
+}): string | null;

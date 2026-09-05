@@ -59,3 +59,19 @@ test("discoverDoctors: broken doctor surfaces with error, fixture files ignored"
   assert.match(found[0].error, /meta/);
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test("resolveDoctorPath: globalDir is injectable — the scope functions match", async () => {
+  const { resolveDoctorPath } = await import("../bin/discover.js");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-resolve-"));
+  const globalDir = path.join(root, "global");
+  fs.mkdirSync(globalDir, { recursive: true });
+  fs.writeFileSync(path.join(globalDir, "only-global.mjs"), [
+    "export const meta = { id: 'only-global', description: 'x', severity: 'info' }",
+    "export async function doctor(ctx) {}",
+  ].join("\n"));
+  const nested = path.join(root, "nested", "deep");
+  fs.mkdirSync(nested, { recursive: true });
+  assert.equal(resolveDoctorPath("only-global.mjs", nested, { globalDir }), path.join(globalDir, "only-global.mjs"));
+  assert.equal(resolveDoctorPath("only-global.mjs", nested), null, "default global scope does not contain it");
+  fs.rmSync(root, { recursive: true, force: true });
+});

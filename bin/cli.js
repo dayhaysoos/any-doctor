@@ -131,13 +131,26 @@ async function cmdRun(args) {
             return 1;
         }
         const groups = [];
+        const crashed = [];
         let fileCount = 0;
         for (const d of discovered) {
-            const scan = await scanOnce(d.path, parsed.targetDir);
-            fileCount = Math.max(fileCount, scan.fileCount);
-            groups.push(...scan.groups);
+            try {
+                const scan = await scanOnce(d.path, parsed.targetDir);
+                fileCount = Math.max(fileCount, scan.fileCount);
+                groups.push(...scan.groups);
+            }
+            catch (e) {
+                if (!(e instanceof ExitCode))
+                    throw e;
+                crashed.push(d.meta.id);
+            }
         }
         console.log(renderReport({ fileCount, durationMs: Date.now() - started, groups }, useColor()));
+        if (crashed.length > 0) {
+            for (const id of crashed)
+                fail("doctor crashed during --all (results above are partial): " + id);
+            return 1;
+        }
         return 0;
     }
     const sel = await selectDoctor(parsed.doctorPath, {
@@ -181,15 +194,29 @@ async function cmdVerify(args) {
             return 1;
         }
         let totalFailures = 0;
+        const crashed = [];
         for (const d of discovered) {
             console.log(BOLD + d.meta.id + RESET);
-            const r = await runOrReport(verifyDoctor({ programPath: d.path }));
-            console.log(renderVerifyResult(r, useColor()));
-            totalFailures += r.results.filter(x => !x.ok).length;
+            try {
+                const r = await runOrReport(verifyDoctor({ programPath: d.path }));
+                console.log(renderVerifyResult(r, useColor()));
+                totalFailures += r.results.filter(x => !x.ok).length;
+            }
+            catch (e) {
+                if (!(e instanceof ExitCode))
+                    throw e;
+                console.log(RED + "  crashed — skipped" + RESET);
+                crashed.push(d.meta.id);
+            }
             console.log("");
         }
-        if (totalFailures > 0) {
-            fail(totalFailures + " fixture(s) failed");
+        if (totalFailures > 0 || crashed.length > 0) {
+            const parts = [];
+            if (totalFailures > 0)
+                parts.push(totalFailures + " fixture(s) failed");
+            if (crashed.length > 0)
+                parts.push(crashed.length + " doctor(s) crashed: " + crashed.join(", "));
+            fail(parts.join("; "));
             return 1;
         }
         ok("all doctors fixture-green");

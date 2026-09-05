@@ -67,3 +67,33 @@ test("main: usage exits 0; unknown command exits 1", async (t) => {
   assert.equal(await cli.main(["help"]), 0);
   assert.equal(await cli.main(["bogus"]), 1);
 });
+
+test("main: run --all treats a crashed doctor as data and still exits 1", async (t) => {
+  silentConsole(t);
+  const { globalDoctorsDir } = await import("../bin/discover.js");
+  const global = globalDoctorsDir();
+  if (fs.existsSync(global) && fs.readdirSync(global).length > 0) {
+    return t.skip("global doctors present — --all discovery would include them");
+  }
+  const cwd = process.cwd();
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-crash-"));
+  fs.mkdirSync(path.join(root, "doctors"));
+  fs.mkdirSync(path.join(root, "target"));
+  fs.writeFileSync(path.join(root, "target", "a.ts"), "const a = 1\n");
+  fs.writeFileSync(path.join(root, "doctors", "healthy.mjs"), [
+    "export const meta = { id: 'healthy', description: 'h', severity: 'info' }",
+    "export async function doctor(ctx) {}",
+  ].join("\n"));
+  fs.writeFileSync(path.join(root, "doctors", "zz-crasher.mjs"), [
+    "export const meta = { id: 'zz-crasher', description: 'c', severity: 'info' }",
+    "export async function doctor(ctx) { throw new Error('kaboom-all') }",
+  ].join("\n"));
+  process.chdir(root);
+  try {
+    const code = await cli.main(["run", "--all", "target"]);
+    assert.equal(code, 1, "partial results, but the crash fails the command");
+  } finally {
+    process.chdir(cwd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

@@ -164,11 +164,9 @@ export function buildListRows(items: DashItem[], useColor: boolean, selected: nu
   const c = (s: string, wrap?: string): string => (useColor && wrap ? wrap + s + RESET : s);
   const rows: ListRow[] = [];
   let currentDoctor: string | null = null;
-  let currentCheck: string | null = null;
   items.forEach((it, index) => {
     if (it.doctorId !== currentDoctor) {
       currentDoctor = it.doctorId;
-      currentCheck = null;
       rows.push({ kind: "section", text: c(it.doctorId, BOLD), severity: it.severity, itemIndex: index });
     }
     const isSelected = index === selected;
@@ -182,7 +180,6 @@ export function buildListRows(items: DashItem[], useColor: boolean, selected: nu
       itemIndex: index,
     };
     rows.push(row);
-    void currentCheck;
   });
   return rows;
 }

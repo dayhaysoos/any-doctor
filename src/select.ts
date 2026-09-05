@@ -38,7 +38,7 @@ export interface SelectOptions {
 
 export async function selectDoctor(doctorArg: string | undefined, options: SelectOptions): Promise<Selection> {
   if (doctorArg !== undefined) {
-    const resolved = resolveDoctorPath(doctorArg, options.cwd);
+    const resolved = resolveDoctorPath(doctorArg, options.cwd, options.globalDir !== undefined ? { globalDir: options.globalDir } : undefined);
     return resolved !== null
       ? { kind: "doctor", doctorPath: resolved, skipped: [] }
       : { kind: "not-found", arg: doctorArg };
