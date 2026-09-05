@@ -1,10 +1,11 @@
 # Planned features — doctor discovery & registry
 
 Status: F1, F2, and F3 are BUILT on the `buildout` branch — discovery
-scopes, fuzzy picker, both `--all` batch modes, and the repo-local-wins
-collision policy (with an origin suffix when one doctor shadows another).
-The index.json registration cache was dropped (D14): the directory is
-the registry.
+scopes, the fuzzy picker (now `verify`-only: bare `run` aggregates every
+doctor straight into the review tree, per D15's amendment), both `--all`
+batch modes, and the repo-local-wins collision policy (with an origin
+suffix when one doctor shadows another). The index.json registration cache
+was dropped (D14): the directory is the registry.
 
 Source: Nick's direction (2026-08-29) — "when someone types any-doctor
 verify or any-doctor run without specifying which doctor, there should be

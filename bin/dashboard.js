@@ -116,7 +116,7 @@ function groupByDoctor(items) {
         if (!checks) {
             checks = new Map();
             byDoctor.set(it.doctorId, checks);
-            doctors.push({ doctorId: it.doctorId, checks: [], multiCheck: false });
+            doctors.push({ doctorId: it.doctorId, checks: [], multiCheck: false, count: 0, worst: "info" });
         }
         const group = (_a = checks.get(it.checkKey)) !== null && _a !== void 0 ? _a : [];
         group.push(it);
@@ -135,8 +135,13 @@ function groupByDoctor(items) {
             return sa !== sb ? sa - sb : b.items.length - a.items.length || (a.checkKey < b.checkKey ? -1 : 1);
         });
         d.multiCheck = entries.length > 1;
+        d.count = entries.reduce((n, g) => n + g.items.length, 0);
+        d.worst = entries.reduce((w, g) => (SEVERITY_RANK[g.items[0].severity] < SEVERITY_RANK[w] ? g.items[0].severity : w), "info");
     }
-    return doctors;
+    // Triage order: worst severity first, then most findings, then name.
+    return doctors.sort((a, b) => SEVERITY_RANK[a.worst] - SEVERITY_RANK[b.worst]
+        || b.count - a.count
+        || (a.doctorId < b.doctorId ? -1 : 1));
 }
 function summarize(checkKey, groupItems) {
     const first = groupItems[0];
@@ -155,43 +160,102 @@ function summarize(checkKey, groupItems) {
         files: files.size,
     };
 }
-// Error-severity checks open on entry; everything else starts collapsed.
+function summarizeDoctor(d) {
+    var _a;
+    const first = (_a = d.checks[0]) === null || _a === void 0 ? void 0 : _a.items[0];
+    const files = new Set();
+    for (const g of d.checks)
+        for (const i of g.items)
+            files.add(i.site.file);
+    return {
+        doctorId: d.doctorId,
+        description: first ? first.description : d.doctorId,
+        worst: d.worst,
+        count: d.count,
+        files: files.size,
+        checks: d.checks.map(g => ({
+            description: g.items[0].description,
+            severity: g.items[0].declaredSeverity,
+            count: g.items.length,
+        })),
+        blindSpots: first === null || first === void 0 ? void 0 : first.blindSpots,
+    };
+}
+// Errors open on entry: any doctor carrying error findings, any
+// error-severity check, and the top of the list so the first screen is
+// never an empty overview. Everything else starts collapsed.
 export function initialExpanded(items) {
     const expanded = new Set();
-    for (const d of groupByDoctor(items)) {
+    const doctors = groupByDoctor(items);
+    doctors.forEach((d, i) => {
+        const multiDoctor = doctors.length > 1;
+        if (multiDoctor && (d.worst === "error" || i === 0))
+            expanded.add(d.doctorId);
         if (!d.multiCheck)
-            continue;
+            return;
         for (const g of d.checks) {
             if (g.items[0].declaredSeverity === "error")
                 expanded.add(g.checkKey);
         }
-    }
+    });
     return expanded;
 }
 export function buildListRows(items, useColor, selectedRow, readKeys, expanded) {
-    var _a, _b;
     const c = colorizer(useColor);
     const open = expanded !== null && expanded !== void 0 ? expanded : new Set();
     const indexOfItem = new Map(items.map((it, i) => [it, i]));
+    const doctors = groupByDoctor(items);
+    const multiDoctor = doctors.length > 1;
     const rows = [];
-    for (const d of groupByDoctor(items)) {
-        rows.push({
-            kind: "section",
-            text: c(d.doctorId, BOLD),
-            severity: (_b = (_a = d.checks[0]) === null || _a === void 0 ? void 0 : _a.items[0].severity) !== null && _b !== void 0 ? _b : "info",
-            selectable: false,
-            itemIndex: -1,
-        });
+    for (const d of doctors) {
+        if (!multiDoctor) {
+            rows.push({
+                kind: "section",
+                text: c(d.doctorId, BOLD),
+                severity: d.worst,
+                selectable: false,
+                itemIndex: -1,
+            });
+        }
+        else {
+            // The dashboard is the selection surface: every doctor is a
+            // collapsible row, severity-ordered, with its total count.
+            const summary = summarizeDoctor(d);
+            const rowIndex = rows.length;
+            const isOpen = open.has(d.doctorId);
+            rows.push({
+                kind: "section",
+                text: `${selectedRow === rowIndex ? c("›", BOLD) : " "}${c(isOpen ? "▾" : "▸", DIM)} ${c(GLYPH[summary.worst], SEVERITY_COLOR[summary.worst])} ${c(summary.doctorId, BOLD)} ${c("×" + summary.count, DIM)}`,
+                severity: summary.worst,
+                selectable: true,
+                itemIndex: -1,
+                doctor: summary,
+            });
+            if (!isOpen)
+                continue;
+        }
         if (!d.multiCheck) {
-            // Flat rendering, byte-identical to the single-doctor era.
-            for (const it of d.checks[0].items) {
+            // Flat rendering for single-check doctors, capped like checks; the
+            // re-scan loop is the pagination.
+            const flat = d.checks[0].items.slice(0, INSTANCES_PER_CHECK);
+            for (const it of flat) {
                 const rowIndex = rows.length;
                 rows.push({
                     kind: "item",
-                    text: itemRowText(it, selectedRow === rowIndex, readKeys, c),
+                    text: (multiDoctor ? "  " : "") + itemRowText(it, selectedRow === rowIndex, readKeys, c),
                     severity: it.severity,
                     selectable: true,
                     itemIndex: indexOfItem.get(it),
+                });
+            }
+            if (d.checks[0].items.length > flat.length) {
+                const moreRowIndex = rows.length;
+                rows.push({
+                    kind: "more",
+                    text: (multiDoctor ? "  " : "") + `${selectedRow === moreRowIndex ? c("›", BOLD) + " " : ""}${c("… and " + (d.checks[0].items.length - flat.length) + " more — fix a few and re-scan", DIM)}`,
+                    severity: d.worst,
+                    selectable: true,
+                    itemIndex: -1,
                 });
             }
             continue;
@@ -215,7 +279,7 @@ export function buildListRows(items, useColor, selectedRow, readKeys, expanded) 
                 const rowIndex = rows.length;
                 rows.push({
                     kind: "item",
-                    text: "  " + itemRowText(it, selectedRow === rowIndex, readKeys, c, true),
+                    text: "    " + itemRowText(it, selectedRow === rowIndex, readKeys, c, true),
                     severity: it.severity,
                     selectable: true,
                     itemIndex: indexOfItem.get(it),
@@ -301,6 +365,21 @@ export function dashboardFrame(state) {
         }
         if (sel.blindSpots && sel.blindSpots.length > 0) {
             for (const l of wordWrap("blind spots: " + sel.blindSpots.join("; "), layout.detailWidth - 2)) {
+                detail.push(c("  " + l, DIM));
+            }
+        }
+    }
+    else if (selRow && selRow.doctor) {
+        const d = selRow.doctor;
+        detail.push(c(d.doctorId, BOLD));
+        detail.push(c(`${d.count} finding${d.count === 1 ? "" : "s"} across ${d.files} file${d.files === 1 ? "" : "s"} · worst ${d.worst}`, DIM));
+        detail.push("");
+        for (const ck of d.checks) {
+            detail.push(`${c(GLYPH[ck.severity], SEVERITY_COLOR[ck.severity])} ${c(ck.description, d.checks.length > 1 ? BOLD : undefined)} ${c("×" + ck.count, DIM)}`);
+        }
+        if (d.blindSpots && d.blindSpots.length > 0) {
+            detail.push("");
+            for (const l of wordWrap("blind spots: " + d.blindSpots.join("; "), layout.detailWidth - 2)) {
                 detail.push(c("  " + l, DIM));
             }
         }
@@ -463,7 +542,7 @@ export async function runDashboardOn(env, input, deps = {}) {
         stdout,
         frame,
         onKey: (key, finish) => {
-            var _a, _b;
+            var _a, _b, _c, _d, _e, _f, _g;
             if (key === "q" || key === "\x03" || key === "esc")
                 return finish();
             if (key === "ignore")
@@ -473,30 +552,32 @@ export async function runDashboardOn(env, input, deps = {}) {
             if (key === "down" || key === "j")
                 return step(1);
             const row = currentRows()[selectedRow];
+            const rowKey = (_b = (_a = row === null || row === void 0 ? void 0 : row.check) === null || _a === void 0 ? void 0 : _a.checkKey) !== null && _b !== void 0 ? _b : (_c = row === null || row === void 0 ? void 0 : row.doctor) === null || _c === void 0 ? void 0 : _c.doctorId;
             if (key === "right" || key === "left") {
-                if (!(row === null || row === void 0 ? void 0 : row.check))
+                if (!rowKey)
                     return;
                 if (key === "right")
-                    expanded.add(row.check.checkKey);
+                    expanded.add(rowKey);
                 else
-                    expanded.delete(row.check.checkKey);
+                    expanded.delete(rowKey);
                 notice = undefined;
                 return;
             }
             if (key === "\r" || key === "\n") {
-                if ((row === null || row === void 0 ? void 0 : row.kind) === "check" && row.check) {
-                    if (expanded.has(row.check.checkKey))
-                        expanded.delete(row.check.checkKey);
+                if (rowKey && ((row === null || row === void 0 ? void 0 : row.kind) === "check" || (row === null || row === void 0 ? void 0 : row.kind) === "section")) {
+                    if (expanded.has(rowKey))
+                        expanded.delete(rowKey);
                     else
-                        expanded.add(row.check.checkKey);
+                        expanded.add(rowKey);
                     notice = undefined;
                     return;
                 }
                 if ((row === null || row === void 0 ? void 0 : row.kind) !== "item" || row.itemIndex < 0)
                     return;
                 const it = items[row.itemIndex];
-                const verifyCommand = (_a = input.verifyCommand) !== null && _a !== void 0 ? _a : runCommandFor(input.doctorFile, input.root);
-                notice = ((_b = deps.copy) !== null && _b !== void 0 ? _b : copyToClipboard)(issuePrompt(it, verifyCommand))
+                const doctorFile = (_e = (_d = input.doctorFileFor) === null || _d === void 0 ? void 0 : _d.call(input, it.doctorId)) !== null && _e !== void 0 ? _e : input.doctorFile;
+                const verifyCommand = (_f = input.verifyCommand) !== null && _f !== void 0 ? _f : runCommandFor(doctorFile, input.root, input.invoker);
+                notice = ((_g = deps.copy) !== null && _g !== void 0 ? _g : copyToClipboard)(issuePrompt(it, verifyCommand))
                     ? "copied issue context — paste into your agent"
                     : "clipboard unavailable";
                 return;

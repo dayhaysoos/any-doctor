@@ -10,6 +10,8 @@ export interface DashboardInput {
     root: string;
     groups: ReportGroup[];
     doctorFile: string;
+    doctorFileFor?: (doctorId: string) => string;
+    invoker?: string;
     verifyCommand?: string;
     fileCount: number;
     durationMs: number;
@@ -28,6 +30,19 @@ export interface DashboardLayout {
 }
 export declare function resolveDashboardLayout(cols: number, rows: number, itemCount: number): DashboardLayout;
 export type RowKind = "section" | "check" | "item" | "more";
+export interface DoctorSummary {
+    doctorId: string;
+    description: string;
+    worst: Severity;
+    count: number;
+    files: number;
+    checks: {
+        description: string;
+        severity: Severity;
+        count: number;
+    }[];
+    blindSpots?: string[];
+}
 export interface CheckSummary {
     checkKey: string;
     checkId: string;
@@ -48,6 +63,7 @@ interface ListRow {
     selectable: boolean;
     itemIndex: number;
     check?: CheckSummary;
+    doctor?: DoctorSummary;
 }
 export declare const INSTANCES_PER_CHECK = 50;
 export declare function initialExpanded(items: DashItem[]): Set<string>;

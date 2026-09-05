@@ -45,14 +45,20 @@ test("buildItems: one item per finding instance, not per check", () => {
   assert.equal(items[2].doctorId, "other");
 });
 
-test("buildListRows: section rows per doctor, item rows per instance", () => {
+test("buildListRows: multi-doctor frames render collapsible doctor rows", async () => {
+  const { initialExpanded } = await import("../bin/dashboard.js");
   const items = buildItems(groups);
-  const rows = buildListRows(items, false, 0, new Set());
-  assert.equal(rows.filter(r => r.kind === "section").length, 2);
-  assert.equal(rows.filter(r => r.kind === "item").length, 3);
-  assert.equal(rows[0].kind, "section");
-  assert.equal(rows[0].text, "stripe-doctor");
-  assert.equal(rows[3].text, "other");
+  const expanded = initialExpanded(items);
+  assert.ok(expanded.has("stripe-doctor"), "the error-carrying top doctor opens on entry");
+  assert.ok(!expanded.has("other"), "the info-only doctor starts collapsed");
+  const rows = buildListRows(items, false, 0, new Set(), expanded);
+  assert.deepEqual(rows.map(r => r.kind), ["section", "item", "item", "section"]);
+  assert.match(rows[0].text, /stripe-doctor ×2/);
+  assert.ok(rows[0].selectable, "doctor rows are the selection surface");
+  assert.match(rows[3].text, /other ×1/);
+  assert.ok(rows[3].text.includes("\u25b8"), "other collapsed");
+  const opened = buildListRows(items, false, 0, new Set(), new Set([...expanded, "other"]));
+  assert.ok(opened.some(r => r.text.includes("src/b.ts:7")), "expanding a doctor reveals its findings");
 });
 
 test("issuePrompt: per-instance scope with single affected site", () => {
@@ -130,8 +136,9 @@ test("runDashboard: revives a post-picker stdin (paused, cooked) and stays inter
   assert.match(stdout.frames[stdout.frames.length - 1], /enter copy issue context/);
 
   stdin.send("\x1b[B");
+  stdin.send("\x1b[B");
   const afterDown = stdout.frames[stdout.frames.length - 1];
-  assert.match(afterDown, /›✖ src\/a\.ts:9/, "down arrow moves selection to the second instance");
+  assert.match(afterDown, /›✖ src\/a\.ts:9/, "down arrows walk from the doctor row onto its second instance");
 
   stdin.send("\r");
   const afterEnter = stdout.frames[stdout.frames.length - 1];
@@ -201,7 +208,7 @@ test("dashboardFrame: pure state -> string; code frames come from the injected s
   const items = buildItems(groups);
   const source = ["one", "two", "const three = 3", "four", "five"];
   const readSource = (file) => (file === "src/a.ts" ? source : null);
-  const state = { items, selected: 1, readKeys: new Set(), readSource, fileCount: 2, durationMs: 10, useColor: false, cols: 120, rows: 34 };
+  const state = { items, selected: 1, readKeys: new Set(), readSource, expanded: new Set(["stripe-doctor"]), fileCount: 2, durationMs: 10, useColor: false, cols: 120, rows: 34 };
 
   const once = dashboardFrame(state);
   assert.equal(dashboardFrame(state), once, "same state, same frame — no hidden I/O");
@@ -283,12 +290,14 @@ test("tree: 60 findings in one check show 50 instances plus the re-scan affordan
   assert.ok(more.text.includes("re-scan"), "the affordance names the loop");
 });
 
-test("tree: single-check doctors stay flat — no check rows, no expansion", async () => {
+test("tree: single-doctor frames stay exactly flat — headers, no tree", async () => {
   const { buildListRows, buildItems, initialExpanded } = await import("../bin/dashboard.js");
-  const items = buildItems(groups); // the original single-check fixture
-  assert.deepEqual([...initialExpanded(items)], []);
+  const items = buildItems([groups[0]]); // one doctor, one check
+  assert.deepEqual([...initialExpanded(items)], [], "nothing to expand in a single-doctor frame");
   const rows = buildListRows(items, false, 0, new Set(), initialExpanded(items));
-  assert.ok(!rows.some(r => r.kind === "check" || r.kind === "more"), "flat rendering untouched");
+  assert.deepEqual(rows.map(r => r.kind), ["section", "item", "item"]);
+  assert.ok(!rows[0].selectable, "the header is not a toggle in single-doctor frames");
+  assert.ok(!rows.some(r => r.kind === "check" || r.kind === "more"), "no tree for one check");
 });
 
 test("tree: enter toggles checks, arrows expand and collapse, enter on an instance copies", async () => {
@@ -318,4 +327,43 @@ test("tree: enter toggles checks, arrows expand and collapse, enter on an instan
   stdin.send("q");
   const out = await settle(done);
   assert.equal(out, "resolved");
+});
+
+// ---- the aggregate experience: no-arg run, every doctor in one tree ----
+
+const aggregateGroups = [
+  { ...multiGroups[0] },
+  { programName: "solo.mjs", meta: { id: "solo-doctor", description: "Solo doctor", severity: "warning" }, findings: [{ file: "c.ts", line: 1 }] },
+];
+
+test("aggregate: doctors sort worst-severity-first and the top doctor opens", async () => {
+  const { buildItems, buildListRows, initialExpanded } = await import("../bin/dashboard.js");
+  const items = buildItems(aggregateGroups);
+  const expanded = initialExpanded(items);
+  assert.ok(expanded.has("multi-doctor"), "the error-carrying doctor is expanded");
+  const rows = buildListRows(items, false, 0, new Set(), expanded);
+  assert.match(rows[0].text, /multi-doctor ×3/);
+  assert.ok(rows[0].text.includes("\u25be"), "top doctor open");
+  const soloRow = rows.find(r => r.text.includes("solo-doctor"));
+  assert.ok(soloRow && soloRow.text.includes("\u25b8"), "solo doctor collapsed");
+});
+
+test("aggregate: enter on a doctor row toggles it and the doctor detail pane renders", async () => {
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = runDashboardOn({ stdin, stdout }, { ...dashInput(), groups: aggregateGroups }, copyAlways);
+  let frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(frame.includes("multi-doctor"), "aggregate frame up");
+
+  stdin.send("\r"); // initial selection is the multi-doctor row: collapse it
+  frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(!frame.includes("a.ts:1"), "doctor collapsed");
+  assert.ok(frame.includes("3 findings"), "doctor detail pane shows the rollup");
+
+  stdin.send("\r"); // expand again
+  frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(frame.includes("a.ts:1"), "doctor re-expanded");
+
+  stdin.send("q");
+  assert.equal(await settle(done), "resolved");
 });

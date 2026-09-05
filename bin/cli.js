@@ -2,7 +2,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-import { DOCTOR_FILE_RE, runCommandFor } from "./contract.js";
+import { DOCTOR_FILE_RE } from "./contract.js";
 import { renderReport, renderVerifyResult } from "./report.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
@@ -129,19 +129,43 @@ async function cmdRun(args) {
         return 1;
     }
     const started = Date.now();
-    if (parsed.all) {
+    // One aggregation for both batch modes: a doctor path targets one
+    // doctor; --all and the no-argument default run every discovered doctor
+    // (a crash is data — named, and it fails the command).
+    const groups = [];
+    const crashed = [];
+    const doctorPaths = new Map();
+    let fileCount = 0;
+    let durationMs = Date.now() - started;
+    let doctorFile = null;
+    if (parsed.doctorPath) {
+        const sel = await selectDoctor(parsed.doctorPath, {
+            cwd: process.cwd(),
+            targetDir: parsed.targetDir,
+            useColor: useColor(),
+            env: processTtyEnv(),
+        });
+        const outcome = selectionOutcome(sel);
+        if (typeof outcome === "number")
+            return outcome;
+        const scan = await scanOnce(outcome.doctorPath, parsed.targetDir);
+        doctorFile = outcome.doctorPath;
+        doctorPaths.set(scan.groups[0].meta.id, outcome.doctorPath);
+        groups.push(...scan.groups);
+        fileCount = scan.fileCount;
+        durationMs = scan.durationMs;
+    }
+    else {
         const discovered = (await discoverDoctors(process.cwd())).filter(d => d.meta !== null);
         if (discovered.length === 0) {
             fail("no doctors discovered — run from a directory with doctors/, or specify a doctor path");
             return 1;
         }
-        const groups = [];
-        const crashed = [];
-        let fileCount = 0;
         for (const d of discovered) {
             try {
                 const scan = await scanOnce(d.path, parsed.targetDir);
                 fileCount = Math.max(fileCount, scan.fileCount);
+                doctorPaths.set(d.meta.id, d.path);
                 groups.push(...scan.groups);
             }
             catch (e) {
@@ -150,43 +174,32 @@ async function cmdRun(args) {
                 crashed.push(d.meta.id);
             }
         }
-        console.log(renderReport({ fileCount, durationMs: Date.now() - started, groups }, useColor()));
-        if (crashed.length > 0) {
-            for (const id of crashed)
-                fail("doctor crashed during --all (results above are partial): " + id);
-            return 1;
-        }
-        return 0;
+        durationMs = Date.now() - started;
     }
     const env = processTtyEnv();
-    const sel = await selectDoctor(parsed.doctorPath, {
-        cwd: process.cwd(),
-        targetDir: parsed.targetDir,
-        useColor: useColor(),
-        allowPicker: !process.env.ANY_DOCTOR_HEADLESS,
-        env,
-    });
-    const outcome = selectionOutcome(sel);
-    if (typeof outcome === "number")
-        return outcome;
-    const doctorAbs = outcome.doctorPath;
-    const scan = await scanOnce(doctorAbs, parsed.targetDir);
     const ttyCols = (_a = process.stdout.columns) !== null && _a !== void 0 ? _a : 0;
-    // Report-vs-dashboard policy: any real terminal can pick; the dashboard
-    // additionally wants enough columns and no headless override.
-    const interactive = canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
+    // Report-vs-dashboard policy: --all is the batch/report mode; otherwise
+    // a real terminal with room and no headless override gets the tree.
+    const interactive = !parsed.all
+        && canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
     if (!interactive) {
-        console.log(renderReport({ fileCount: scan.fileCount, durationMs: scan.durationMs, groups: scan.groups }, useColor()));
+        console.log(renderReport({ fileCount, durationMs, groups }, useColor()));
+        if (crashed.length > 0) {
+            for (const id of crashed)
+                fail("doctor crashed (results above are partial): " + id);
+            return 1;
+        }
         return 0;
     }
     const invoker = process.argv[1] ? `node "${fs.realpathSync(process.argv[1])}"` : "any-doctor";
     await runDashboard({
         root: parsed.targetDir,
-        groups: scan.groups,
-        doctorFile: doctorAbs,
-        verifyCommand: runCommandFor(doctorAbs, parsed.targetDir, invoker),
-        fileCount: scan.fileCount,
-        durationMs: scan.durationMs,
+        groups,
+        doctorFile: doctorFile !== null && doctorFile !== void 0 ? doctorFile : "",
+        doctorFileFor: doctorPaths.size > 0 ? (id) => { var _a, _b; return (_b = (_a = doctorPaths.get(id)) !== null && _a !== void 0 ? _a : doctorFile) !== null && _b !== void 0 ? _b : ""; } : undefined,
+        invoker,
+        fileCount,
+        durationMs,
         useColor: useColor(),
     });
     return 0;
@@ -319,7 +332,7 @@ function usage() {
     console.log(BOLD + "any-doctor" + RESET + dim(" — your agent writes the analyzer, fixtures prove it, CI reruns it forever"));
     console.log("");
     console.log('  generate "<intent>" [--global]      print the exact prompt for your agent to build a doctor');
-    console.log("  run [--all] [doctor.(m)js] [dir]   scan + report + interactive review + copy findings");
+    console.log("  run [--all] [doctor.(m)js] [dir]   scan; no argument = every doctor in one review tree");
     console.log("  verify [--all] [doctor.(m)js]     fixture gate (no doctor: fuzzy picker; --all: every doctor)");
     console.log("");
     console.log(dim("doctors live in ./doctors/ (repo) and ~/.any-doctor/doctors/ (global)."));

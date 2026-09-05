@@ -8,10 +8,9 @@ import { fileURLToPath } from "node:url";
 // End-to-end regression for the interactive review browser, driven through a
 // real PTY. Node has no built-in PTY, and macOS script(1) refuses to run with
 // piped stdio, so we use expect(1) as the PTY provider — no npm dependencies.
-// Reproduces the reported flow: select a doctor from the picker, scroll
-// instances in the dashboard, copy issue context, quit with q.
-// The original bug: the process exited 0 right after the enter that selected
-// the doctor, so the dashboard rendered exactly one frame and died.
+// The product flow under test: a bare `run` shows the AGGREGATE tree first —
+// no doctor picker — with the worst doctor open; enter walks doctor ->
+// check -> instance; enter on an instance copies its context; q quits.
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const EXPECT = "/usr/bin/expect";
@@ -22,16 +21,19 @@ const EXPECT_SCRIPT = `
 set timeout 30
 spawn -noecho $env(NODE_BIN) bin/cli.js run fixtures/sample-app
 expect {
-  "Select a doctor" {}
-  timeout { puts ">FAIL picker-timeout"; exit 101 }
-  eof { puts ">FAIL picker-eof"; exit 102 }
-}
-send "\\r"
-expect {
-  "enter copy issue context" {}
+  "async-doctor" {}
   timeout { puts ">FAIL dashboard-timeout"; exit 103 }
   eof { puts ">FAIL dashboard-eof"; exit 104 }
 }
+expect {
+  "enter copy issue context" {}
+  timeout { puts ">FAIL footer-timeout"; exit 110 }
+  eof { puts ">FAIL footer-eof"; exit 111 }
+}
+# selection starts on the async-doctor row (top, expanded): down onto its
+# first check, then enter expands the check
+send "\\x1b\\[B"
+after 300
 puts ">STAGE pre-expand"
 send "\\r"
 expect {
@@ -70,7 +72,7 @@ function selectionLines(text) {
   return stripAnsi(text).split("\n").filter(l => l.includes("›")).join("\n");
 }
 
-test("picker -> dashboard survives enter, scrolls, copies, quits", { skip: canRun ? false : "requires macOS expect(1) for a PTY" }, async () => {
+test("bare run opens the aggregate tree directly; enter walks doctor-check-instance and copies", { skip: canRun ? false : "requires macOS expect(1) for a PTY" }, async () => {
   const child = spawn(EXPECT, ["-c", EXPECT_SCRIPT], {
     cwd: REPO,
     env: { ...process.env, NODE_BIN: process.execPath, TERM: "xterm-256color" },
@@ -87,10 +89,9 @@ test("picker -> dashboard survives enter, scrolls, copies, quits", { skip: canRu
 
   assert.equal(closed, 0, `expect driver should pass cleanly (exit=${closed}):\n${stripAnsi(transcript).slice(-800)}`);
 
-  // Reaching the copy notice proves the process survived the enter that
-  // selected the doctor AND the enter inside the dashboard.
   const text = stripAnsi(transcript);
-  assert.ok(text.includes("Select a doctor"), "picker frame in transcript");
+  assert.ok(!text.includes("Select a doctor"), "no doctor picker in the default flow");
+  assert.ok(text.includes("async-doctor"), "the aggregate tree is the first screen");
   assert.ok(text.includes("enter copy issue context"), "dashboard footer in transcript");
   assert.ok(text.includes("copied issue context"), "copy notice in transcript");
 
@@ -102,6 +103,7 @@ test("picker -> dashboard survives enter, scrolls, copies, quits", { skip: canRu
 
   // The tree: the first enter expanded the top check (instances visible),
   // down moved onto an instance, and enter there copied its context.
+  assert.ok(text.includes("\u00d74"), "the async doctor row carries its total count");
   assert.ok(text.includes("\u00d73"), "check rows carry instance counts");
   const beforeExpand = text.slice(0, text.indexOf(">STAGE pre-expand"));
   assert.ok(!beforeExpand.includes("user.ts:5"), "instances hidden until the check expands");

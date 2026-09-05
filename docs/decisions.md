@@ -346,6 +346,15 @@ interactive session, a mention in `init`'s output, and the usage text.
 `run`/`verify` never touch a model (unchanged). Build order: bundled scope →
 no-args-runs → `init` + `create` rename.
 
+**Amendment (2026-09-05, post-D16):** Lived experience corrected the flow:
+with the check tree, the dashboard is itself the selection surface, and a
+doctor picker in front of it is friction — the worst doctor lands one enter
+deep instead of on screen. Bare `run` (and the future no-arg npx entry) now
+aggregates every discovered doctor straight into the tree dashboard, no
+picker: doctor rows (worst-severity-first, counts, collapsible) → check
+rows → instances. The picker remains only for `verify`, where choosing one
+doctor to gate is the actual job.
+
 ---
 
 ## D16 — The doctor experience: category doctors and the check tree
