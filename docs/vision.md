@@ -73,8 +73,10 @@ The funnel is audit → save → CI, and the tolerances flip mid-funnel.
 
 ## Non-goals (v0)
 
-- Scores/dashboards until precision justifies them — file/line/evidence
-  is the product; a number bolted on top invites cargo-culting.
+- ~~Scores/dashboards until precision justifies them~~ — revisited: the
+  score header and review browser shipped, because findings carry
+  file/line evidence and fixture-proven precision, so the number
+  summarizes rather than substitutes.
 - Languages beyond the JS family.
 - Hand-rolled parser/engine internals — engines live behind `ctx` as
   replaceable primitives (ast-grep today, oxc-backed semantics later).

@@ -82,9 +82,8 @@ contract must hold for any future sandbox.
 ## Registry
 
 The record of installed doctor programs per scope. Each doctor's meta is
-its registry entry; a thin index.json cache per scope records creation
-metadata (slug, intent, date). The index is a cache — discovery works
-from the directory alone if the index is missing.
+its registry entry; the doctors/ directory itself is the registry —
+discovery reads it directly, with no separate index or cache.
 
 ## Scope
 

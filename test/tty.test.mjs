@@ -57,3 +57,26 @@ test("runTty: an identical frame produces zero new bytes", async () => {
   const out = await Promise.race([done, new Promise((r) => setTimeout(() => r("pending"), 500))]);
   assert.notEqual(out, "pending");
 });
+
+test("runTty: a throwing first paint degrades to an alive session, not a hang", async () => {
+  const writes = [];
+  const stdin = new EventEmitter();
+  stdin.isTTY = true; stdin.isRaw = false;
+  stdin.rawModeHistory = []; stdin.setRawMode = (m) => stdin.rawModeHistory.push(m);
+  stdin.resume = () => {}; stdin.pause = () => {};
+  let calls = 0;
+  const done = runTty({
+    stdin,
+    stdout: { isTTY: true, columns: 80, write: (s) => writes.push(s) },
+    frame: () => { calls++; if (calls === 1) throw new Error("boom"); return "recovered"; },
+    onKey: (key, finish) => { if (key === "q") finish(null); },
+  });
+  await new Promise((r) => setTimeout(r, 25));
+  stdin.emit("data", Buffer.from("\r")); // any key forces a repaint that succeeds
+  await new Promise((r) => setTimeout(r, 25));
+  assert.ok(writes.some((w) => w.includes("recovered")), "session recovered after the failed first paint");
+  stdin.emit("data", Buffer.from("q"));
+  const out = await Promise.race([done, new Promise((r) => setTimeout(() => r("pending"), 500))]);
+  assert.notEqual(out, "pending", "finish still resolves — raw mode is not leaked");
+  assert.equal(stdin.rawModeHistory[stdin.rawModeHistory.length - 1], false, "raw mode restored");
+});

@@ -78,6 +78,9 @@ const execLoader = (programPath, modeArgs, timeoutMs = DEFAULT_TIMEOUT_MS) => Ef
         return yield* new DoctorCrashed({ programPath: abs, detail: lastLines(out.stderr || "exit " + out.status) });
     }
     const lines = out.stdout.split("\n");
+    // The last sentinel line wins. A doctor writing directly to
+    // process.stdout can forge a frame — accepted under the bug-not-
+    // adversary trust model (doctor programs are our own agents' output).
     const idx = lines.findLastIndex(l => l.startsWith(RESULT_SENTINEL));
     const stdout = out.stdout.slice(0, 500);
     if (idx === -1) {

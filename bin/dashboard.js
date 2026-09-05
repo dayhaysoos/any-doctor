@@ -6,7 +6,7 @@ import { scoreFromSeverities } from "./score.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
 export { truncateVisible, visibleWidth };
-import { BOLD, CYAN, DIM, GLYPH, gradeColor, GREEN, ORANGE, RED, RESET, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, SEVERITY_COLOR } from "./palette.js";
 const SPLIT_MIN_COLS = 100;
 const TOKEN_RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|await|async|try|catch|finally|import|export|from|new|class|extends|throw|typeof|instanceof|in|of|do|switch|case|break|continue|default|yield)\b|\b(\d+(?:\.\d+)?)\b/g;
 export function highlightCode(line, useColor) {
@@ -146,7 +146,7 @@ export function dashboardFrame(state) {
     const { score, grade } = scoreFromSeverities(items.map(it => it.severity));
     const barWidth = Math.min(46, Math.max(16, cols - 60));
     const header = [
-        c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor),
+        c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)),
         c(scoreBar(score, barWidth), gradeColor(score)),
         c(`${items.length} finding${items.length === 1 ? "" : "s"} · ${input0(state.fileCount)}`, DIM),
         "",
@@ -172,7 +172,7 @@ export function dashboardFrame(state) {
         detail.push("");
         const impact = (_a = sel.impact) !== null && _a !== void 0 ? _a : sel.description;
         for (const l of wordWrap(impact, layout.detailWidth - 2))
-            detail.push(c(l, sel.severity === "error" ? RED : sel.severity === "warning" ? ORANGE : CYAN));
+            detail.push(c(l, SEVERITY_COLOR[sel.severity]));
         detail.push("");
         detail.push(c("Why", DIM));
         for (const l of wordWrap((_b = sel.why) !== null && _b !== void 0 ? _b : "Not documented for this check.", layout.detailWidth - 2))

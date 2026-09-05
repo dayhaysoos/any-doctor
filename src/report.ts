@@ -78,7 +78,7 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
   lines.push("");
   const doctorWord = groups.length === 1 ? "doctor" : "doctors";
   lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
-  lines.push(c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor));
+  lines.push(c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)));
 
   if (total === 0) {
     lines.push(c("No issues found", BOLD + GREEN));

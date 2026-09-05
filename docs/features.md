@@ -1,8 +1,10 @@
 # Planned features — doctor discovery & registry
 
-Status: F1 and F2 are BUILT on the `buildout` branch (discovery scopes,
-fuzzy picker, auto-registration with index.json, non-interference).
-F3 remains designed-not-built.
+Status: F1, F2, and F3 are BUILT on the `buildout` branch — discovery
+scopes, fuzzy picker, both `--all` batch modes, and the repo-local-wins
+collision policy (with an origin suffix when one doctor shadows another).
+The index.json registration cache was dropped (D14): the directory is
+the registry.
 
 Source: Nick's direction (2026-08-29) — "when someone types any-doctor
 verify or any-doctor run without specifying which doctor, there should be
@@ -35,12 +37,9 @@ so the picker in F1 can find it later. Two scopes, no mixing:
   available in every repo. `generate --global` writes here; a doctor
   here is usable from any directory.
 
-Registration data lives beside the doctor (its `meta` is the registry
-entry — id, description, severity, blindSpots), plus a thin index at
-`<scope>/index.json` (auto-maintained by generate/verify: slug, intent
-that created it, created date, protocol version). The index is a cache;
-the picker must work from scanning the directory alone if the index is
-missing or stale.
+Registration data lives beside the doctor: its `meta` is the registry
+entry (id, description, severity, blindSpots). The directory is the
+whole registry — there is no index file; discovery scans the directory.
 
 **Non-interference rule:** discovery and registry reads never write to
 the target repo being scanned. `run` reads doctors and code; it writes

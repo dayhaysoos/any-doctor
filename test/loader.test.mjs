@@ -105,3 +105,16 @@ test("seed path traversal becomes a named failing fixture, siblings still run", 
   assert.match(trav.error, /escapes the sandbox/);
   assert.equal(parsed.results.find(x => x.name === "healthy").ok, true);
 });
+
+test("ctx.files.read refuses to escape the repo root", () => {
+  const root = tmpRoot();
+  seed(root, { "src/x.ts": "export const a = 1\n" });
+  const traveller = path.join(root, "traveller.mjs");
+  fs.writeFileSync(traveller, [
+    "export const meta = { id: 'traveller', description: 't', severity: 'info' }",
+    "export async function doctor(ctx) { ctx.files.read('../outside.ts') }",
+  ].join("\n"));
+  const r = runLoader([traveller, root]);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /escapes the repo root/);
+});

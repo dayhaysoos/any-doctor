@@ -209,3 +209,9 @@ test("dashboardFrame: pure state -> string; code frames come from the injected s
   const bare = dashboardFrame({ ...state, readSource: () => null });
   assert.match(bare, /\(source unavailable\)/, "a file with no source renders the fallback");
 });
+
+test("dashboardFrame with color: header carries no function source", () => {
+  const items = buildItems(groups);
+  const out = dashboardFrame({ items, selected: 0, readKeys: new Set(), readSource: () => null, fileCount: 2, durationMs: 10, useColor: true, cols: 120, rows: 34 });
+  assert.ok(!out.includes("function gradeColor"), "gradeColor is called, not concatenated");
+});

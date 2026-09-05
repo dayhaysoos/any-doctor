@@ -104,7 +104,15 @@ export function runTty<T>(options: RunTtyOptions<T>): Promise<T> {
       }
     };
     const feed = createKeyFeed(guarded);
-    repaint();
+    // The first paint gets the same armor as every repaint: a throwing
+    // frame builder degrades to a blank-but-alive session (keys still work,
+    // finish still restores the tty) instead of a hung promise and a leaked
+    // raw mode.
+    try {
+      repaint();
+    } catch (e) {
+      process.stderr.write("initial paint failed: " + String(e) + "\n");
+    }
     stdin.on("data", feed);
   });
 }

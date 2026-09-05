@@ -8,7 +8,7 @@ import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tt
 
 export { truncateVisible, visibleWidth };
 
-import { BOLD, CYAN, DIM, GLYPH, gradeColor, GREEN, ORANGE, RED, RESET, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, DIM, GLYPH, gradeColor, GREEN, ORANGE, RED, RESET, SEVERITY_COLOR } from "./palette.js";
 
 const SPLIT_MIN_COLS = 100;
 
@@ -207,7 +207,7 @@ export function dashboardFrame(state: {
   const barWidth = Math.min(46, Math.max(16, cols - 60));
 
   const header: string[] = [
-    c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor),
+    c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)),
     c(scoreBar(score, barWidth), gradeColor(score)),
     c(`${items.length} finding${items.length === 1 ? "" : "s"} · ${input0(state.fileCount)}`, DIM),
     "",
@@ -233,7 +233,7 @@ export function dashboardFrame(state: {
     detail.push(c(`${cap(sel.category)} · ${sel.severity}`, DIM));
     detail.push("");
     const impact = sel.impact ?? sel.description;
-    for (const l of wordWrap(impact, layout.detailWidth - 2)) detail.push(c(l, sel.severity === "error" ? RED : sel.severity === "warning" ? ORANGE : CYAN));
+    for (const l of wordWrap(impact, layout.detailWidth - 2)) detail.push(c(l, SEVERITY_COLOR[sel.severity]));
     detail.push("");
     detail.push(c("Why", DIM));
     for (const l of wordWrap(sel.why ?? "Not documented for this check.", layout.detailWidth - 2)) detail.push("  " + l);

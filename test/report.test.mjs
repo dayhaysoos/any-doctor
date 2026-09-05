@@ -126,3 +126,11 @@ test("renderReport: cross-doctor duplicates at the same location are hidden once
   const occurrences = out.split("chat.ts:15").length - 1;
   assert.equal(occurrences, 1);
 });
+
+test("renderReport with color: the score header carries no function source", async () => {
+  const { renderReport } = await import("../bin/report.js");
+  const groups = [{ programName: "d.mjs", meta: { id: "d", description: "x", severity: "warning" }, findings: [{ file: "a.ts", line: 1 }] }];
+  const out = renderReport({ fileCount: 1, durationMs: 5, groups }, true);
+  assert.ok(!out.includes("function gradeColor"), "gradeColor is called, not concatenated");
+  assert.ok(out.includes("Score:"), "score header present");
+});

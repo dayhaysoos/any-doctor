@@ -26,7 +26,11 @@ export function buildCtx(root) {
                 return out.sort();
             },
             read(relativePath) {
-                return fs.readFileSync(path.join(root, relativePath), "utf8");
+                const abs = path.resolve(root, relativePath);
+                if (abs !== root && !abs.startsWith(root + path.sep)) {
+                    throw new Error(`ctx.files.read escapes the repo root: ${relativePath}`);
+                }
+                return fs.readFileSync(abs, "utf8");
             },
         },
         search: {
