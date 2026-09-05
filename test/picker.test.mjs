@@ -139,7 +139,7 @@ test("pickItemOn: repaints in place — no full-screen erase after the first pai
   const stdout = new FakeStdout();
   const done = pickItemOn(stdin, stdout, items, false);
   const first = stdout.frames.find(f => f.includes("\x1b[H"));
-  assert.ok(first.startsWith("\x1b[?2026h\x1b[H\x1b[2J"), "first paint clears once, synchronized");
+  assert.ok(first.startsWith("\x1b[?2026h\x1b[H"), "first paint is in-place, synchronized");
   stdin.send("c");
   stdin.send("\x7f");
   const later = stdout.frames[stdout.frames.length - 1];

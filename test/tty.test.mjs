@@ -22,12 +22,13 @@ test("truncateVisible: fits returns as-is; overlong truncates with ellipsis", ()
   assert.equal(visibleWidth(truncateVisible("\x1b[31mabcdefghij\x1b[0m", 6)), 6);
 });
 
-test("paintFrame: payload is wrapped in a synchronized-output window", () => {
+test("paintFrame: synchronized window, in-place, no full-screen erase", () => {
   const frames = [];
-  paintFrame({ write: (s) => frames.push(s) }, "hello", 40, false);
+  paintFrame({ write: (s) => frames.push(s) }, "hello", 40);
   assert.ok(frames[0].startsWith("\x1b[?2026h"), "opens DECSET 2026");
   assert.ok(frames[0].includes("\x1b[H"), "homes the cursor");
   assert.ok(frames[0].endsWith("\x1b[?2026l"), "closes DECSET 2026");
+  assert.ok(!frames[0].includes("\x1b[2J"), "never blanks the whole screen — not even the first paint");
 });
 
 test("runTty: an identical frame produces zero new bytes", async () => {

@@ -183,7 +183,7 @@ test("runDashboard: repaints in place — no full-screen erase after the first p
   const paints = stdout.frames.filter(f => f.includes("\x1b[H"));
   assert.ok(paints.length >= 1, "at least one paint happened");
   const first = paints[0];
-  assert.ok(first.startsWith("\x1b[?2026h\x1b[H\x1b[2J"), "first paint clears the screen once, inside a synchronized-output window");
+  assert.ok(first.startsWith("\x1b[?2026h\x1b[H"), "first paint is in-place too — the picker's leftovers are overwritten, not blanked");
 
   stdin.send("\x1b[B");
   stdin.send("\r");

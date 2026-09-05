@@ -47,18 +47,18 @@ export function truncateVisible(s: string, width: number): string {
   return out + "…";
 }
 
-// In-place repaint: home the cursor and rewrite every line with a
-// clear-to-end-of-line so shorter content cannot leave ghosts, then clear
-// below the frame. A full-screen \x1b[2J erase on every keypress leaves a
-// blank window while the frame streams back in, which reads as flicker; the
-// erase runs only on the first paint. The payload is wrapped in DECSET
-// 2026 (synchronized output): terminals that support it hold the repaint
-// until the frame is fully transmitted, so they never paint a half-frame;
-// terminals that don't simply ignore the mode.
-export function paintFrame(stdout: TtyStdout, frame: string, cols: number, first: boolean): void {
+// In-place repaint, always: home the cursor and rewrite every line with a
+// clear-to-end-of-line, then clear below the frame. Per-line \x1b[K plus
+// the trailing \x1b[J fully own the screen, so no full-screen \x1b[2J
+// erase is ever needed — including on the first paint, where the erase
+// showed as a one-time blank flash while the frame streamed in. The payload
+// is wrapped in DECSET 2026 (synchronized output): terminals that support
+// it hold the repaint until the frame is fully transmitted, so they never
+// paint a half-frame; terminals that don't simply ignore the mode.
+export function paintFrame(stdout: TtyStdout, frame: string, cols: number): void {
   const width = Math.max(10, cols - 1);
   const lines = frame.split("\n").map(l => truncateVisible(l, width) + "\x1b[K");
-  stdout.write("\x1b[?2026h" + (first ? "\x1b[H\x1b[2J" : "\x1b[H") + lines.join("\n") + "\x1b[J" + "\x1b[?2026l");
+  stdout.write("\x1b[?2026h\x1b[H" + lines.join("\n") + "\x1b[J\x1b[?2026l");
 }
 
 export interface RunTtyOptions<T> {
@@ -78,14 +78,12 @@ export function runTty<T>(options: RunTtyOptions<T>): Promise<T> {
     stdin.setRawMode(true);
     stdin.resume();
     stdout.write("\x1b[?25l");
-    let firstPaint = true;
     let lastFrame: string | undefined;
     const repaint = (): void => {
       const f = frame();
       if (f === lastFrame) return; // identical frame: not one byte of churn
       lastFrame = f;
-      paintFrame(stdout, f, stdout.columns || 120, firstPaint);
-      firstPaint = false;
+      paintFrame(stdout, f, stdout.columns || 120);
     };
     let settled = false;
     const finish = (result: T): void => {
