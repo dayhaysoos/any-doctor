@@ -172,7 +172,7 @@ they were lint config, not generated analysis programs.
   typed SDK (`ctx`: files, parse/query, symbols/imports, report builder).
   Code Mode the pattern; local execution; vendor-free.
 - The **CLI report is a first-class deliverable**, matching the React Doctor
-  experience (experienced first-hand on REPLACED-REPO-NAME: 253 files /
+  experience (experienced first-hand on a real production repo: 253 files /
   104ms, score, categories, grouped evidence).
 - BYO-agent generation (D8) unchanged. Deterministic reruns unchanged: the
   saved program re-executes with zero inference.
