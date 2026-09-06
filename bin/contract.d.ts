@@ -57,6 +57,22 @@ export interface Fixture {
 }
 export declare const PROTOCOL_VERSION = 1;
 export declare const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
+export declare const SEARCH_REQUEST = "###ANY_DOCTOR_SEARCH###";
+export declare const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
+export type Mode = {
+    kind: "run";
+    root: string;
+} | {
+    kind: "verify";
+    fixtures: string;
+} | {
+    kind: "meta";
+};
+export declare function modeArgs(mode: Mode, programPath: string): string[];
+export declare function decodeLoaderArgs(argv: string[]): {
+    program: string;
+    mode: Mode;
+} | null;
 export interface RunResult {
     protocolVersion: number;
     kind: "run";

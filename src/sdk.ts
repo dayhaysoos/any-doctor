@@ -1,13 +1,7 @@
-import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import { DoctorCtx, Finding, Match } from "./contract.js";
-
-interface RawSgMatch {
-  file?: string;
-  text?: string;
-  range?: { start?: { line?: number; column?: number } };
-}
+import { DoctorCtx, Finding, Match, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
+import { RawSgMatch } from "./engine.js";
 
 const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 
@@ -46,28 +40,7 @@ export function buildCtx(root: string): { ctx: DoctorCtx; getFindings(): Finding
 
     search: {
       pattern(pattern: string, language: "TypeScript" | "JavaScript" = "TypeScript"): Match[] {
-        const r = spawnSync("sg", ["run", "-p", pattern, "-l", language, "--json", root], {
-          encoding: "utf8",
-          timeout: 120000,
-        });
-        if (r.error && (r.error as NodeJS.ErrnoException).code === "ENOENT") {
-          throw new Error("ctx.search requires ast-grep (sg) on PATH — install: brew install ast-grep");
-        }
-        if (r.status !== 0 && !r.stdout.trim()) {
-          throw new Error("ctx.search failed: " + (r.stderr || "sg exited " + r.status));
-        }
-        let raw: RawSgMatch[] = [];
-        try {
-          raw = JSON.parse(r.stdout);
-        } catch {
-          throw new Error(`ctx.search produced unparseable output from sg — refusing to report a false green. First bytes: ${JSON.stringify(r.stdout.slice(0, 120))}`);
-        }
-        return raw.map(m => ({
-          file: (m.file || "").replace(new RegExp("^" + escapeRegExp(root) + "/"), ""),
-          line: (m.range?.start?.line ?? 0) + 1,
-          column: m.range?.start?.column ?? 1,
-          text: m.text || "",
-        }));
+        return runSearch(pattern, language, root);
       },
     },
 
@@ -83,4 +56,57 @@ export function buildCtx(root: string): { ctx: DoctorCtx; getFindings(): Finding
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// ctx.search runs the Engine — never by spawning from inside the doctor
+// process: doctors execute under Confinement, which denies subprocesses, so
+// the host owns the engine and answers over a dedicated channel (request
+// out fd 3, result back on stdin). There is exactly one path: without a
+// host channel, ctx.search fails loudly rather than silently running
+// ast-grep unconfined.
+interface SearchResponse {
+  matches?: RawSgMatch[];
+  error?: string;
+}
+
+function runSearch(pattern: string, language: "TypeScript" | "JavaScript", root: string): Match[] {
+  let response: SearchResponse;
+  try {
+    fs.writeSync(3, SEARCH_REQUEST + JSON.stringify({ pattern, language, root }) + "\n");
+    response = readSearchResponse();
+  } catch (e) {
+    throw new Error(
+      `ctx.search is unavailable — no search host on this channel (${e instanceof Error ? e.message : String(e)}). `
+      + "Doctors run through any-doctor; a bare doctor-loader.mjs invocation has no host.",
+    );
+  }
+  if (response.error !== undefined) throw new Error(response.error);
+  return toMatches(response.matches ?? [], root);
+}
+
+function readSearchResponse(): SearchResponse {
+  const chunk = Buffer.alloc(65536);
+  let buffer = "";
+  for (;;) {
+    const n = fs.readSync(0, chunk, 0, chunk.length, null);
+    if (n === 0) throw new Error("search host channel closed");
+    buffer += chunk.toString("utf8", 0, n);
+    const nl = buffer.indexOf("\n");
+    if (nl !== -1) {
+      const line = buffer.slice(0, nl);
+      if (line.startsWith(SEARCH_RESULT)) {
+        return JSON.parse(line.slice(SEARCH_RESULT.length)) as SearchResponse;
+      }
+      buffer = buffer.slice(nl + 1);
+    }
+  }
+}
+
+function toMatches(raw: RawSgMatch[], root: string): Match[] {
+  return raw.map(m => ({
+    file: (m.file || "").replace(new RegExp("^" + escapeRegExp(root) + "/"), ""),
+    line: (m.range?.start?.line ?? 0) + 1,
+    column: (m.range?.start?.column ?? 1),
+    text: m.text || "",
+  }));
 }

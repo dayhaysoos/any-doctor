@@ -22,7 +22,7 @@ export const meta = {
   ],
   checks: [                           // optional: multiple related checks in ONE doctor
     {
-      id: "<check-id>",               // short kebab verb-phrase, [a-z0-9-], unique per doctor; name the defect
+      id: "<check-id>",               // short kebab noun phrase, [a-z0-9-], unique per doctor; name the defect
       description: "<finding text>",
       severity: "warning",
       impact: "<one line: what goes wrong for the user if this ships>",
@@ -59,7 +59,8 @@ export const fixtures = [
   (ast-grep pattern syntax, e.g. `"fetch($URL)"`; requires ast-grep installed)
 - `ctx.report.finding({ file, line, column?, message?, severity? })`
 
-Zero dependencies. Node >= 18. The only imports allowed are `node:` builtins.
+Zero dependencies, zero imports — a doctor is one self-contained file;
+everything reaches it through `ctx`. Node >= 18.
 
 ## One doctor, many checks
 
@@ -127,6 +128,40 @@ consequence if it ships; `why` = the code shape that triggers the check;
   checkable, implement the closest honest version and declare the gap.
 - A clean run must mean clean. Never swallow errors into empty findings.
 
+## Capability rules (the runtime gate enforces these)
+
+A doctor's entire world is the target repo through `ctx`. Anything else is
+out of contract: the capability gate scans the program before it ever runs
+and refuses to execute it — there is no override:
+
+- **A doctor is one self-contained file.** No imports at all — not node
+  builtins, not local helpers, not npm packages. Everything reaches you
+  through `ctx`; every import is refused at runtime.
+- **No network calls. Ever.** No fetch, http/https, net, tls, dns, dgram.
+  There is no legitimate reason for a doctor to reach the network — and the
+  network globals are deleted from the process before your code runs.
+- **No file writes.** Doctors read; they never write, delete, or rename.
+- **No subprocesses.** Searching goes through `ctx.search` — never spawn
+  anything yourself.
+- Read files through `ctx.files.read` (it is repo-scoped); it is the only
+  way to read — imports are refused outright.
+- `process.env` is flagged too. If you need configuration, it does not
+  belong in a doctor — the target repo is the input.
+
+The scan is layered with runtime enforcement: on runtimes that support it,
+doctors execute under Node's permission model, so file writes and
+subprocesses are denied by the process itself — even code the scan cannot
+see. Worker threads exist only as the import guard's carrier and inherit
+every denial.
+
+One helper recurs across doctor programs by design: the comment/string
+masking function that blanks non-code before pattern matching. The
+single-file law forbids importing it, so copy it in — that duplication is
+the contract working, not a smell to fix.
+
+If you cannot implement the intent without breaking a rule, the intent is
+out of scope for a doctor: say so in your final report instead.
+
 ## Failure lessons (each of these shipped in a real doctor — do not repeat)
 
 1. `String.replace(text, x)` replaces only the FIRST occurrence. When
@@ -147,6 +182,7 @@ consequence if it ships; `why` = the code shape that triggers the check;
 ## What NOT to do
 
 - Don't touch any file other than the two contract files.
-- Don't add dependencies or imports beyond `node:` builtins.
+- Don't add dependencies — and don't import anything at all, not even
+  `node:` builtins; every import is refused at runtime.
 - Don't scan a target repository to "tune" the doctor against its code.
 - Don't mark a fixture green by weakening the expectation — strengthen the doctor.

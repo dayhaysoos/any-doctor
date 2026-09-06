@@ -12,8 +12,30 @@ encodes one convention the team cares about. Retired synonym: "lint rule."
 ## Doctor run
 
 One execution of a doctor program against one target directory.
-Deterministic for a given engine version: `ctx.search` shells out to the
-locally installed ast-grep, so results can vary across engine upgrades.
+Deterministic for a given engine version: `ctx.search` answers via the host
+(the doctor process cannot spawn — it runs under Confinement, and any-doctor
+runs ast-grep itself, returning matches over a dedicated channel), so
+results can vary across engine upgrades.
+
+## RunOutcome
+
+One scan invocation's batch of results, assembled once and rendered by the
+report and the dashboard alike: the ReportGroups that ran, the doctor ids
+that crashed (data, named), the slugs Confinement skipped, the doctor
+id → program path map for re-run commands, and the target's file count and
+the batch's wall-clock duration — one defined meaning per field.
+
+## Confinement
+
+The layered policy that makes a doctor program safe to execute. A doctor is
+a single self-contained file: it may not import anything, and everything
+else reaches it through `ctx`. The layers, in order: the static capability
+scan refuses named capabilities before execution; the run happens under
+Node's permission model (writes, subprocesses, and native addons denied;
+worker threads exist only as the import guard's carrier and inherit every
+denial); an import guard refuses every module resolution a doctor attempts;
+and the network globals are deleted from the process before doctor code
+runs. There is no override in any mode.
 
 ## Finding
 
@@ -28,8 +50,9 @@ lives in the program's meta, not in individual findings.
 One rule within a doctor program. A finding names its check via `rule`;
 the check's meta supplies description, severity, impact, why, and fix;
 the doctor's meta supplies the defaults when a finding names no check.
-A check id is a short kebab-case verb-phrase over [a-z0-9-], unique
-within its doctor, naming the defect. One doctor program, many checks.
+A check id is a short kebab-case noun phrase over [a-z0-9-], unique
+within its doctor, naming the defect (fetch-calls-without-abortsignal,
+filter-table-scan). One doctor program, many checks.
 
 ## Doctor contract
 
@@ -41,15 +64,17 @@ shape of ctx, meta, findings, and the runner protocol is defined.
 
 The capability boundary a doctor program is expected to use: read-only,
 repo-scoped file access, structural search, and a finding emitter.
-Honoring this boundary is a contract expectation enforced by review today;
-the runner seam is where a technical sandbox will enforce it.
+Confinement enforces it: outside ctx there is nothing — no imports, no
+writes, no subprocesses, no network.
 
 ## Engine
 
 The structural-search backend a DoctorCtx uses to answer ctx.search.
 ast-grep is the engine today; oxc is a candidate for TypeScript-heavy
 repos. Engine selection is invisible to doctor programs: one doctor
-program runs unchanged on any engine.
+program runs unchanged on any engine. One module owns the invocation
+(src/engine.ts); the search host sits on it, and the sdk asks the host —
+there is exactly one path, with no unconfined fallback.
 
 ## Meta
 

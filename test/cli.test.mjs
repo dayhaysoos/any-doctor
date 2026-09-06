@@ -103,3 +103,92 @@ test("main: --global is a generate-only flag", async (t) => {
   assert.equal(await cli.main(["run", "--global"]), 1);
   assert.equal(await cli.main(["verify", "--global"]), 1);
 });
+
+test("main: bare run partitions the cohort — healthy run, unsafe skipped and noted, broken named", async (t) => {
+  const logs = silentConsole(t);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cli-cohort-"));
+  fs.mkdirSync(path.join(root, "doctors"));
+  fs.mkdirSync(path.join(root, "src"));
+  fs.writeFileSync(path.join(root, "src", "a.ts"), "const a = 1;\n");
+  fs.writeFileSync(path.join(root, "doctors", "good.mjs"), [
+    "export const meta = { id: 'good', description: 'g', severity: 'info' }",
+    "export async function doctor(ctx) { ctx.report.finding({ file: 'src/a.ts', line: 1 }) }",
+  ].join("\n"));
+  fs.writeFileSync(path.join(root, "doctors", "evil.mjs"), [
+    'import fs from "node:fs";',
+    "export const meta = { id: 'evil', description: 'e', severity: 'info' }",
+    'export async function doctor(ctx) { fs.writeFileSync("/tmp/x", "1") }',
+  ].join("\n"));
+  fs.writeFileSync(path.join(root, "doctors", "broken.mjs"), "export async function doctor(ctx) {}");
+  const cwd = process.cwd();
+  process.chdir(root);
+  try {
+    const code = await cli.main(["run", "--all"]);
+    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    assert.equal(code, 1, "an unsafe skip fails the run");
+    assert.match(out, /skipping broken doctor broken —/);
+    assert.doesNotMatch(out, /skipping broken doctor (good|evil)/, "healthy and unsafe doctors are never 'broken'");
+    assert.match(out, /1 doctor could be malicious — skipped: evil/);
+    assert.match(out, /good/);
+  } finally {
+    process.chdir(cwd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("main: only-unsafe discovery names them as skipped, never as broken", async (t) => {
+  const logs = silentConsole(t);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cli-only-unsafe-"));
+  fs.mkdirSync(path.join(root, "doctors"));
+  fs.writeFileSync(path.join(root, "doctors", "evil.mjs"), [
+    'import fs from "node:fs";',
+    "export const meta = { id: 'evil', description: 'e', severity: 'info' }",
+    'export async function doctor(ctx) { fs.writeFileSync("/tmp/x", "1") }',
+  ].join("\n"));
+  const cwd = process.cwd();
+  process.chdir(root);
+  try {
+    const code = await cli.main(["verify"]);
+    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    assert.equal(code, 1);
+    assert.match(out, /1 doctor could be malicious — skipped: evil/);
+    assert.doesNotMatch(out, /broken: evil/, "unsafe is not 'broken' on any surface");
+  } finally {
+    process.chdir(cwd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("demo repo: healthy doctors verify fixture-green, gate props are skipped and named", async (t) => {
+  const logs = silentConsole(t);
+  const demo = path.join(REPO, "demo");
+  const cwd = process.cwd();
+  process.chdir(demo);
+  try {
+    const code = await cli.main(["verify", "--all"]);
+    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    assert.equal(code, 1, "the two malicious doctors fail the command");
+    assert.match(out, /2 doctors could be malicious — skipped: bad, evil/);
+    assert.match(out, /todo-doctor/);
+    assert.match(out, /console-log-doctor/);
+    assert.doesNotMatch(out, /✖/, "every healthy fixture passes");
+  } finally {
+    process.chdir(cwd);
+  }
+});
+
+test("main: failures return exit codes, never reject — one failure protocol", async (t) => {
+  silentConsole(t);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cli-exitcode-"));
+  const doctor = path.join(root, "fixtureless.mjs");
+  fs.writeFileSync(doctor, [
+    "export const meta = { id: 'fixtureless', description: 'f', severity: 'info' }",
+    "export async function doctor(ctx) {}",
+  ].join("\n"));
+  try {
+    const code = await cli.main(["verify", doctor]);
+    assert.equal(code, 1, "FixturesMissing flattens to a return, not a rejection");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

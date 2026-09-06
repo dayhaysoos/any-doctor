@@ -1,20 +1,14 @@
 import { Finding, JoinedFinding, ReportGroup, Severity } from "./contract.js";
-import { truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
-export { truncateVisible, visibleWidth };
+import { TtyStdin, TtyStdout } from "./tty.js";
+import { RunOutcome } from "./report.js";
 export declare function highlightCode(line: string, useColor: boolean): string;
 export type SiteFinding = {
     readKey: string;
     site: Finding;
 } & Omit<JoinedFinding, "finding">;
 export interface DashboardInput {
-    root: string;
-    groups: ReportGroup[];
-    doctorPath: string;
-    doctorPathFor?: (doctorId: string) => string;
+    outcome: RunOutcome;
     invoker?: string;
-    verifyCommand?: string;
-    fileCount: number;
-    durationMs: number;
     useColor: boolean;
 }
 export declare function scoreBar(score: number, width: number): string;
@@ -98,17 +92,17 @@ export interface DashboardFrameState {
     durationMs: number;
     useColor: boolean;
     notice?: string;
+    skippedUnsafe?: string[];
     cols: number;
     rows: number;
 }
 export declare function dashboardFrame(state: DashboardFrameState): string;
-export type DashboardStdin = TtyStdin;
-export type DashboardStdout = TtyStdout;
 export declare function runDashboard(input: DashboardInput): Promise<void>;
 export interface DashboardDeps {
     copy?: (text: string) => boolean;
 }
 export declare function runDashboardOn(env: {
-    stdin: DashboardStdin;
-    stdout: DashboardStdout;
+    stdin: TtyStdin;
+    stdout: TtyStdout;
 }, input: DashboardInput, deps?: DashboardDeps): Promise<void>;
+export {};

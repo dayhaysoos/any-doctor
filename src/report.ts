@@ -1,11 +1,48 @@
 import { DoctorMeta, Finding, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity } from "./score.js";
 
-export interface ReportInput {
-  fileCount: number;
-  durationMs: number;
+// One scan invocation's batch of results — assembled once, consumed by the
+// report, the dashboard, and any future surface. One defined meaning per
+// field: the two cmdRun branches cannot drift because there is one type.
+export interface RunOutcome {
+  // The ReportGroups that ran — one per doctor that produced results.
   groups: ReportGroup[];
+  // Doctor ids whose run crashed: data, named, results above are partial.
+  crashed: string[];
+  // Slugs Confinement refused to run — they ride along as the skip note.
+  skippedUnsafe: string[];
+  // Doctor id → program path, for composing re-run commands.
+  doctorPaths: ReadonlyMap<string, string>;
+  // The scanned target's file count, as reported by the doctors (the max —
+  // they all scan the same target).
+  fileCount: number;
+  // Wall-clock of the doctor batch: first spawn to last completion,
+  // discovery and selection excluded. Both branches, one meaning.
+  durationMs: number;
+  // The scanned target, for composing re-run commands.
+  targetDir: string;
+}
+
+// The one place the skip-note copy lives; report, dashboard, and the CLI
+// all render this sentence so the story is identical everywhere. The count
+// is always the true total; only the name list caps — three names, then
+// "… and N more" — so a hundred malicious doctors still cost one line.
+const SKIP_NAMES_SHOWN = 3;
+
+export function unsafeSkipLine(names: string[]): string {
+  const shown = names.slice(0, SKIP_NAMES_SHOWN).join(", ");
+  const rest = names.length - SKIP_NAMES_SHOWN;
+  const list = rest > 0 ? `${shown} \u2026 and ${rest} more` : shown;
+  return `${names.length} doctor${names.length === 1 ? "" : "s"} could be malicious — skipped: ${list}`;
+}
+
+// The refusal for a doctor you explicitly asked to run: the file, its
+// capabilities, one line. The runner's DoctorUnsafe renderer and every
+// caller share this so the refusal reads identically everywhere; detail
+// lines ride beneath it when there are any.
+export function unsafeRefusalLine(name: string, capabilities: readonly string[]): string {
+  return `${name} could be malicious (${capabilities.join(", ")}) — not running it.`;
 }
 
 const SEVERITY_ORDER: Severity[] = ["error", "warning", "info"];
@@ -66,7 +103,7 @@ export function dedupeGroups(groups: ReportGroup[]): { groups: ReportGroup[]; hi
   return { groups: out, hidden };
 }
 
-export function renderReport(input: ReportInput, useColor: boolean): string {
+export function renderReport(input: RunOutcome, useColor: boolean): string {
   const c = colorizer(useColor);
   const lines: string[] = [];
 
@@ -79,6 +116,9 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
   const doctorWord = groups.length === 1 ? "doctor" : "doctors";
   lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
   lines.push(c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)));
+  if (input.skippedUnsafe !== undefined && input.skippedUnsafe.length > 0) {
+    lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
+  }
 
   if (total === 0) {
     lines.push(c("No findings", BOLD + GREEN));

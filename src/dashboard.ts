@@ -7,9 +7,8 @@ import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 
-export { truncateVisible, visibleWidth };
-
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, SEVERITY_COLOR, YELLOW } from "./palette.js";
+import { RunOutcome, unsafeSkipLine } from "./report.js";
 
 const SPLIT_MIN_COLS = 100;
 
@@ -31,16 +30,11 @@ export function highlightCode(line: string, useColor: boolean): string {
 export type SiteFinding = { readKey: string; site: Finding } & Omit<JoinedFinding, "finding">;
 
 export interface DashboardInput {
-  root: string;
-  groups: ReportGroup[];
-  doctorPath: string;
-  // Aggregate runs span several doctors: this resolves the program file
-  // behind a copied prompt's re-run command.
-  doctorPathFor?: (doctorId: string) => string;
+  // The whole batch result; the dashboard renders the same truth as the
+  // report — groups, skips, counts, and the scanned target all come from
+  // the outcome, with no per-field re-assembly.
+  outcome: RunOutcome;
   invoker?: string;
-  verifyCommand?: string;
-  fileCount: number;
-  durationMs: number;
   useColor: boolean;
 }
 
@@ -525,6 +519,7 @@ export interface DashboardFrameState {
   durationMs: number;
   useColor: boolean;
   notice?: string;
+  skippedUnsafe?: string[];
   cols: number;
   rows: number;
 }
@@ -541,8 +536,11 @@ export function dashboardFrame(state: DashboardFrameState): string {
     c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)),
     c(scoreBar(score, barWidth), gradeColor(score)),
     c(`${findings.length} finding${findings.length === 1 ? "" : "s"} · ${state.fileCount} files · ${state.durationMs}ms`, DIM),
-    "",
   ];
+  if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
+    header.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
+  }
+  header.push("");
 
   const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded);
   const viewport = Math.max(1, Math.min(layout.listHeight, layout.bodyRows));
@@ -667,9 +665,6 @@ function codeFrameLines(source: string[] | null, line: number, width: number, us
   return out;
 }
 
-export type DashboardStdin = TtyStdin;
-export type DashboardStdout = TtyStdout;
-
 export async function runDashboard(input: DashboardInput): Promise<void> {
   await runDashboardOn(processTtyEnv(), input);
 }
@@ -678,14 +673,14 @@ export interface DashboardDeps {
   copy?: (text: string) => boolean;
 }
 
-export async function runDashboardOn(env: { stdin: DashboardStdin; stdout: DashboardStdout }, input: DashboardInput, deps: DashboardDeps = {}): Promise<void> {
+export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }, input: DashboardInput, deps: DashboardDeps = {}): Promise<void> {
   const { stdout } = env;
   if (!tty.canRunTui(env)) return;
 
   const useColor = input.useColor;
   // The tree is computed once from immutable items; everything downstream
   // — rows, prompts, expansion, detail — reads this frozen shape.
-  const tree = buildTree(buildItems(input.groups));
+  const tree = buildTree(buildItems(input.outcome.groups));
   const expanded = initialExpanded(tree);
   const readKeys = new Set<string>();
   let notice: string | undefined;
@@ -704,7 +699,7 @@ export async function runDashboardOn(env: { stdin: DashboardStdin; stdout: Dashb
     if (sourceCache.has(file)) return sourceCache.get(file)!;
     let lines: string[] | null = null;
     try {
-      lines = fs.readFileSync(path.resolve(input.root, file), "utf8").split("\n");
+      lines = fs.readFileSync(path.resolve(input.outcome.targetDir, file), "utf8").split("\n");
     } catch {
       lines = null;
     }
@@ -713,9 +708,9 @@ export async function runDashboardOn(env: { stdin: DashboardStdin; stdout: Dashb
   };
 
   const verifyCmdFor = (doctorId: string): string => {
-    if (input.verifyCommand) return input.verifyCommand;
-    const doctorPath = input.doctorPathFor?.(doctorId) ?? input.doctorPath;
-    return runCommandFor(doctorPath, input.root, input.invoker);
+    const doctorPath = input.outcome.doctorPaths.get(doctorId);
+    if (doctorPath === undefined) return "(doctor path unknown — re-run from the CLI)";
+    return runCommandFor(doctorPath, input.outcome.targetDir, input.invoker);
   };
 
   const copy = (text: string, what: string): void => {
@@ -734,10 +729,11 @@ export async function runDashboardOn(env: { stdin: DashboardStdin; stdout: Dashb
         readKeys,
         readSource,
         expanded,
-        fileCount: input.fileCount,
-        durationMs: input.durationMs,
+        fileCount: input.outcome.fileCount,
+        durationMs: input.outcome.durationMs,
         useColor,
         notice,
+        skippedUnsafe: input.outcome.skippedUnsafe,
         cols: stdout.columns || 120,
         rows: stdout.rows || 34,
       });

@@ -3,6 +3,18 @@ import * as os from "os";
 import * as path from "path";
 import { DOCTOR_FILE_RE, FIXTURES_FILE_RE } from "./contract.js";
 import { metaDoctor } from "./runner.js";
+// The gate's partition over discovery — owned by the data so every surface
+// (run cohorts, verify, the picker) splits identically. Only null-meta
+// doctors belong to either bucket; a healthy doctor is neither skipped nor
+// named.
+export function unsafeSlugs(discovered) {
+    return discovered.filter(d => { var _a; return d.meta === null && ((_a = d.cause) === null || _a === void 0 ? void 0 : _a._tag) === "DoctorUnsafe"; }).map(d => d.slug);
+}
+export function brokenDoctors(discovered) {
+    return discovered
+        .filter(d => { var _a; return d.meta === null && ((_a = d.cause) === null || _a === void 0 ? void 0 : _a._tag) !== "DoctorUnsafe"; })
+        .map(d => ({ slug: d.slug, cause: d.cause }));
+}
 export function globalDoctorsDir() {
     return path.join(os.homedir(), ".any-doctor", "doctors");
 }
@@ -32,13 +44,17 @@ export async function discoverDoctors(cwd, opts) {
         const files = fs.readdirSync(dir)
             .filter(f => (f.endsWith(".mjs") || f.endsWith(".js")) && !FIXTURES_FILE_RE.test(f))
             .sort();
-        for (const f of files) {
-            const slug = f.replace(DOCTOR_FILE_RE, "");
+        // Discovery fans out: every command pays this latency, metaDoctor never
+        // throws, and doctor counts grow once bundled doctors ship.
+        const reads = await Promise.all(files.map(async (f) => ({
+            slug: f.replace(DOCTOR_FILE_RE, ""),
+            abs: path.join(dir, f),
+            read: await metaDoctor({ programPath: path.join(dir, f) }),
+        })));
+        for (const { slug, abs, read } of reads) {
             if (bySlug.has(slug))
                 continue;
-            const abs = path.join(dir, f);
-            const { meta, error } = await metaDoctor({ programPath: abs });
-            bySlug.set(slug, { slug, scope, path: abs, meta, error });
+            bySlug.set(slug, { slug, scope, path: abs, meta: read.meta, cause: read.cause });
         }
     }
     return [...bySlug.values()];

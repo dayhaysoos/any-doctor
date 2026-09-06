@@ -1,15 +1,19 @@
 import { spawn } from "child_process";
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { Cause, Effect, Exit, Schema } from "effect";
-import { fixturesPathFor, RESULT_SENTINEL } from "./contract.js";
+import { fixturesPathFor, modeArgs, RESULT_SENTINEL, SEARCH_RESULT } from "./contract.js";
+import { scanDoctorFile } from "./capabilities.js";
+import { unsafeRefusalLine } from "./report.js";
+import { handleSearchLine } from "./search-host.js";
 // The Runner: the single owner of the doctor-loader protocol. Everything
 // that executes a doctor program — run, verify, meta, count — crosses this
-// interface. The argv shapes, the sentinel framing, the timeout policy, and
-// the typed failures live here and nowhere else. A future engine adapter
-// (e.g. oxc behind ctx.search) or sandbox runner slots in behind this
-// interface without touching the callers.
+// interface: the argv shapes (built from a Mode value), the sentinel
+// framing, the timeout policy, and the typed failures. The parent side of
+// Confinement lives here too (permission flags, the runtime-denial
+// mapping); the Engine and the search host sit behind their own modules.
 export class ProgramMissing extends Schema.TaggedError()("ProgramMissing", {
     programPath: Schema.String,
 }) {
@@ -29,9 +33,20 @@ export class NoFramedResult extends Schema.TaggedError()("NoFramedResult", {
     stdout: Schema.String,
 }) {
 }
+// The doctor references capabilities no doctor legitimately has (network,
+// file writes, subprocesses, imports). This is a hard refuse: every execution
+// path (run, verify, meta, count) passes through it, and there is no override.
+// The typed error carries the capability set, so callers render the refusal
+// from it — nobody re-scans to re-derive what this already knows.
+export class DoctorUnsafe extends Schema.TaggedError()("DoctorUnsafe", {
+    programPath: Schema.String,
+    capabilities: Schema.Array(Schema.String),
+    findings: Schema.Array(Schema.String),
+}) {
+}
 export function isRunnerError(e) {
     return e instanceof ProgramMissing || e instanceof FixturesMissing
-        || e instanceof DoctorCrashed || e instanceof NoFramedResult;
+        || e instanceof DoctorCrashed || e instanceof NoFramedResult || e instanceof DoctorUnsafe;
 }
 export function describeRunnerError(e) {
     switch (e._tag) {
@@ -39,22 +54,101 @@ export function describeRunnerError(e) {
         case "FixturesMissing": return "no fixtures found for this doctor — expected " + e.fixturesPath;
         case "DoctorCrashed": return "doctor crashed:\n" + e.detail;
         case "NoFramedResult": return "doctor produced no framed result — stdout was:\n" + e.stdout;
+        case "DoctorUnsafe": return "\ud83d\uded1 " + unsafeRefusalLine(path.basename(e.programPath), e.capabilities)
+            + "\n  " + e.findings.join("\n  ");
     }
+}
+// One line for listings — the broken-doctor warnings and failure parts —
+// where the full detail belongs to describeRunnerError's renderers. Lives
+// beside the error taxonomy so rendering rules for one type stay in one
+// place.
+export function causeSummaryLine(e) {
+    if (e === undefined)
+        return "invalid meta";
+    if (e._tag === "DoctorCrashed")
+        return e.detail.split("\n")[0];
+    return describeRunnerError(e).split("\n")[0];
 }
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 const META_TIMEOUT_MS = 30 * 1000;
-function spawnLoader(programPath, modeArgs, timeoutMs) {
+// Feature probe, run once per process: does this runtime know --permission?
+// Runtimes without it degrade to the static gate alone. Exported so tests
+// gate on the same answer the runner uses — no copied probes.
+export function supportsPermissionModel() {
+    return (probe !== null && probe !== void 0 ? probe : (probe = new Promise((resolve) => {
+        const child = spawn(process.execPath, ["--permission", "-e", "0"], { stdio: "ignore" });
+        child.on("error", () => resolve(false));
+        child.on("close", (code) => resolve(code === 0));
+    })));
+}
+let probe;
+// Node's permission model, applied to every doctor execution: filesystem
+// writes, subprocesses, and native addons are denied by the runtime itself
+// — an eval'd, obfuscated, or helper-module payload is stopped by the
+// process, whatever the static scan missed. Reads stay open (reading the
+// repo is a doctor's job); verify mode also writes to the temp dir, where
+// the loader seeds and cleans up fixture sandboxes. --allow-worker exists
+// for the import guard's hook thread only — denials propagate into worker
+// threads (verified: fs write and subprocess are denied inside them).
+// Network is not part of the permission model on current Node; the loader
+// strips the network globals instead. This never throws: an unprobeable
+// runtime just gets no flags.
+const PERMISSION_BASE = ["--permission", "--allow-fs-read=*", "--allow-worker", "--disable-warning=SecurityWarning"];
+// Exported so the loader tests can spawn children in exactly the
+// configuration production creates — no fictional flag sets.
+export async function permissionArgs(allowTmpWrites) {
+    try {
+        if (!(await supportsPermissionModel()))
+            return [];
+        return allowTmpWrites ? [...PERMISSION_BASE, `--allow-fs-write=${os.tmpdir()}`] : [...PERMISSION_BASE];
+    }
+    catch {
+        return [];
+    }
+}
+// Exported with its table: Node's denial phrasings vary across versions,
+// and what the refusal line names for an evading doctor depends on this
+// mapping — it deserves direct tests, not coverage by e2e accident.
+export function deniedByPermissionModel(stderr) {
+    return /ErrAccessDenied|not allowed by the permission model|access to this api has been restricted/i.test(stderr);
+}
+export function denialCapability(stderr) {
+    if (/--allow-fs-write/i.test(stderr))
+        return "file write";
+    if (/--allow-child-process/i.test(stderr))
+        return "subprocess";
+    if (/--allow-worker/i.test(stderr))
+        return "worker";
+    if (/--allow-addon/i.test(stderr))
+        return "native addon";
+    return "forbidden capability";
+}
+function spawnLoader(programPath, mode, timeoutMs, nodeFlags) {
     return new Promise((resolve) => {
-        var _a, _b;
+        var _a, _b, _c;
         const loader = fileURLToPath(new URL("doctor-loader.mjs", import.meta.url));
-        const child = spawn(process.execPath, [loader, programPath, ...modeArgs], {
-            stdio: ["ignore", "pipe", "pipe"],
+        const child = spawn(process.execPath, [...nodeFlags, loader, ...modeArgs(mode, programPath)], {
+            stdio: ["pipe", "pipe", "pipe", "pipe"],
             timeout: timeoutMs,
         });
         let stdout = "";
         let stderr = "";
         (_a = child.stdout) === null || _a === void 0 ? void 0 : _a.on("data", (c) => { stdout += c.toString("utf8"); });
         (_b = child.stderr) === null || _b === void 0 ? void 0 : _b.on("data", (c) => { stderr += c.toString("utf8"); });
+        // fd 3 carries ctx.search requests; the search host answers on stdin.
+        let pending = "";
+        (_c = child.stdio[3]) === null || _c === void 0 ? void 0 : _c.on("data", (c) => {
+            var _a;
+            pending += c.toString("utf8");
+            let nl;
+            while ((nl = pending.indexOf("\n")) !== -1) {
+                const line = pending.slice(0, nl);
+                pending = pending.slice(nl + 1);
+                const response = handleSearchLine(line, mode);
+                if (response !== null)
+                    (_a = child.stdin) === null || _a === void 0 ? void 0 : _a.write(SEARCH_RESULT + response + "\n");
+            }
+        });
         child.on("error", () => resolve({ status: null, stdout, stderr: stderr + "(loader failed to start)" }));
         child.on("close", (status) => resolve({ status, stdout, stderr }));
     });
@@ -65,16 +159,32 @@ function lastLines(s, n = 8) {
 // Loader frames are authored by our own doctor-loader — trusted construction.
 // The guards below separate "a usable frame" from "not a frame"; they are not
 // schema validation of the doctor contract.
-const execLoader = (programPath, modeArgs, timeoutMs = DEFAULT_TIMEOUT_MS) => Effect.gen(function* () {
+const execLoader = (programPath, mode, timeoutMs = DEFAULT_TIMEOUT_MS) => Effect.gen(function* () {
     const abs = path.resolve(programPath);
     if (!fs.existsSync(abs)) {
         return yield* new ProgramMissing({ programPath: abs });
     }
+    const gate = scanDoctorFile(abs);
+    if (gate.red.length > 0) {
+        return yield* new DoctorUnsafe({
+            programPath: abs,
+            capabilities: [...new Set(gate.red.map(f => f.capability))],
+            findings: gate.red.map(f => `${f.capability}: ${f.detail}`),
+        });
+    }
+    const nodeFlags = yield* Effect.promise(() => permissionArgs(mode.kind === "verify"));
     const out = yield* Effect.tryPromise({
-        try: () => spawnLoader(abs, modeArgs, timeoutMs),
+        try: () => spawnLoader(abs, mode, timeoutMs, nodeFlags),
         catch: (e) => new DoctorCrashed({ programPath: abs, detail: String(e) }),
     });
     if (out.status !== 0) {
+        if (deniedByPermissionModel(out.stderr)) {
+            return yield* new DoctorUnsafe({
+                programPath: abs,
+                capabilities: [denialCapability(out.stderr)],
+                findings: ["the runtime refused a forbidden capability:", ...lastLines(out.stderr, 2).split("\n")],
+            });
+        }
         return yield* new DoctorCrashed({ programPath: abs, detail: lastLines(out.stderr || "exit " + out.status) });
     }
     const lines = out.stdout.split("\n");
@@ -132,37 +242,27 @@ async function drain(effect) {
         onSuccess: (value) => value,
     });
 }
-const runDoctorE = ({ programPath, targetDir }) => Effect.flatMap(execLoader(programPath, [path.resolve(targetDir)]), asRunResult);
+const runDoctorE = ({ programPath, targetDir }) => Effect.flatMap(execLoader(programPath, { kind: "run", root: path.resolve(targetDir) }, DEFAULT_TIMEOUT_MS), asRunResult);
 const verifyDoctorE = ({ programPath, fixturesPath }) => Effect.gen(function* () {
     const abs = path.resolve(programPath);
     const fixtures = path.resolve(fixturesPath !== null && fixturesPath !== void 0 ? fixturesPath : fixturesPathFor(abs));
     if (!fs.existsSync(fixtures)) {
         return yield* new FixturesMissing({ programPath: abs, fixturesPath: fixtures });
     }
-    const frame = yield* execLoader(abs, ["--verify", fixtures]);
+    const frame = yield* execLoader(abs, { kind: "verify", fixtures }, DEFAULT_TIMEOUT_MS);
     return yield* asVerifyResult(frame);
 });
-const countFindingsE = (options) => Effect.map(runDoctorE(options), (r) => r.findings.length);
 export async function runDoctor(options) {
     return drain(runDoctorE(options));
 }
 export async function verifyDoctor(options) {
     return drain(verifyDoctorE(options));
 }
-// Parallel counting for the picker: one capability, order preserved, a
-// crashed doctor reported as data instead of aborting the fan-out.
-export async function countAll({ programPaths, targetDir }) {
-    const exits = await Effect.runPromise(Effect.all(programPaths.map(p => Effect.exit(countFindingsE({ programPath: p, targetDir }))), { concurrency: "unbounded" }));
-    return programPaths.map((programPath, i) => Exit.match(exits[i], {
-        onFailure: (cause) => ({ programPath, error: squash(cause) }),
-        onSuccess: (count) => ({ programPath, count }),
-    }));
-}
 // A doctor whose meta cannot be read is data (a broken doctor), not a
 // failure: metaDoctor never throws, it returns { meta: null, error }.
 export async function metaDoctor({ programPath }) {
-    const frame = await Effect.runPromise(Effect.flatMap(Effect.exit(execLoader(programPath, ["--meta"], META_TIMEOUT_MS)), (exit) => Effect.succeed(Exit.match(exit, {
-        onFailure: (cause) => ({ meta: null, error: describeRunnerError(squash(cause)) }),
+    const frame = await Effect.runPromise(Effect.flatMap(Effect.exit(execLoader(programPath, { kind: "meta" }, META_TIMEOUT_MS)), (exit) => Effect.succeed(Exit.match(exit, {
+        onFailure: (cause) => ({ meta: null, cause: squash(cause) }),
         onSuccess: (f) => ({
             meta: f.kind === "meta" && f.meta !== null && typeof f.meta === "object" ? f.meta : null,
         }),

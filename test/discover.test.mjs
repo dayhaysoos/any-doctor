@@ -47,7 +47,7 @@ test("discoverDoctors: global scope found, repo wins slug collisions", async () 
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test("discoverDoctors: broken doctor surfaces with error, fixture files ignored", async () => {
+test("discoverDoctors: broken doctor surfaces with its typed cause, fixture files ignored", async () => {
   const root = tmp();
   fs.mkdirSync(path.join(root, "doctors"));
   fs.writeFileSync(path.join(root, "doctors", "broken.mjs"), "export async function doctor(ctx) {}");
@@ -56,7 +56,7 @@ test("discoverDoctors: broken doctor surfaces with error, fixture files ignored"
   assert.equal(found.length, 1);
   assert.equal(found[0].slug, "broken");
   assert.equal(found[0].meta, null);
-  assert.match(found[0].error, /meta/);
+  assert.equal(found[0].cause?._tag, "DoctorCrashed", "the typed cause crosses intact");
   fs.rmSync(root, { recursive: true, force: true });
 });
 

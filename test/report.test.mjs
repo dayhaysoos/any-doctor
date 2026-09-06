@@ -43,6 +43,28 @@ test("renderReport: single finding matches golden exactly (plain)", () => {
   assert.equal(renderReport(input, false), golden);
 });
 
+test("renderReport: unsafe skips render as one quiet note under the score", () => {
+  const out = renderReport({ ...input, skippedUnsafe: ["evil"] }, false);
+  assert.match(out, /⚠ 1 doctor could be malicious — skipped: evil/);
+  const plural = renderReport({
+    fileCount: 6,
+    durationMs: 111,
+    groups: [],
+    skippedUnsafe: ["evil", "worse"],
+  }, false);
+  assert.match(plural, /2 doctors could be malicious — skipped: evil, worse/);
+});
+
+test("renderReport: a flood of unsafe doctors still costs one line", () => {
+  const flood = renderReport({
+    fileCount: 6,
+    durationMs: 111,
+    groups: [],
+    skippedUnsafe: Array.from({ length: 100 }, (_, i) => "evil-" + i),
+  }, false);
+  assert.match(flood, /⚠ 100 doctors could be malicious — skipped: evil-0, evil-1, evil-2 … and 97 more/);
+});
+
 test("renderReport: multiple findings show ×N, rollup, and lower the score", () => {
   const out = renderReport({
     fileCount: 6,
