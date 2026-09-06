@@ -2,7 +2,7 @@
 
 Setup: 5 rules generated from intent-only one-liners ([intents.md](intents.md)),
 fixtures via `sg test`, evaluated on (a) a seeded sample app with known ground
-truth and (b) a real production repo (~234 TS files, REPLACED-REPO-NAME),
+truth and (b) a real production repo (~234 TS files),
 with every finding hand-classified. ast-grep 0.45.2.
 
 ## Sample app (seeded ground truth)

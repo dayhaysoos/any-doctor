@@ -1,4 +1,3 @@
-import { createRequire } from "module";
 import { pathToFileURL, fileURLToPath } from "url";
 import * as fs from "fs";
 import * as os from "os";
@@ -6,19 +5,18 @@ import * as path from "path";
 
 const [prog, second, third] = process.argv.slice(2);
 if (!prog) {
-  console.error("usage: doctor-loader.mjs <program.(m)js> <root> | <program.(m)js> --verify <fixtures.(m)js>");
+  console.error("usage: doctor-loader.mjs <program.(m)js> <root> | <program.(m)js> --verify <fixtures.(m)js> | <program.(m)js> --meta");
   process.exit(2);
 }
 const verifyMode = second === "--verify";
-if (!verifyMode && !second) {
+const metaMode = second === "--meta";
+if (!verifyMode && !metaMode && !second) {
   console.error("usage: doctor-loader.mjs <program.(m)js> <root>");
   process.exit(2);
 }
 
-const require = createRequire(import.meta.url);
-const here = p => fileURLToPath(new URL(p, import.meta.url));
-const { buildCtx } = require(here("./sdk.js"));
-const contract = require(here("./contract.js"));
+const { buildCtx } = await import("./sdk.js");
+const contract = await import("./contract.js");
 
 const SEVERITIES = new Set(["error", "warning", "info"]);
 
@@ -45,6 +43,7 @@ function runOnce(root, mod) {
   }
   return result.then(() => ({
     protocolVersion: contract.PROTOCOL_VERSION,
+    kind: "run",
     root,
     fileCount,
     durationMs: Date.now() - started,
@@ -74,7 +73,13 @@ try {
   console.log = (...args) => process.stderr.write(args.map(a => String(a)).join(" ") + "\n");
 
   try {
-    if (!verifyMode) {
+    if (metaMode) {
+      process.stdout.write("\n" + contract.RESULT_SENTINEL + JSON.stringify({
+        protocolVersion: contract.PROTOCOL_VERSION,
+        kind: "meta",
+        meta: mod.meta,
+      }) + "\n");
+    } else if (!verifyMode) {
       const result = await runOnce(second, mod);
       process.stdout.write("\n" + contract.RESULT_SENTINEL + JSON.stringify(result) + "\n");
     } else {

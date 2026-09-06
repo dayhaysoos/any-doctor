@@ -172,7 +172,7 @@ they were lint config, not generated analysis programs.
   typed SDK (`ctx`: files, parse/query, symbols/imports, report builder).
   Code Mode the pattern; local execution; vendor-free.
 - The **CLI report is a first-class deliverable**, matching the React Doctor
-  experience (experienced first-hand on REPLACED-REPO-NAME: 253 files /
+  experience (experienced first-hand on a real production repo: 253 files /
   104ms, score, categories, grouped evidence).
 - BYO-agent generation (D8) unchanged. Deterministic reruns unchanged: the
   saved program re-executes with zero inference.
@@ -278,6 +278,119 @@ spec lives in `docs/features.md` (F1 no-arg fuzzy selection, F2
 repo-local + user-global registry with auto-save and a non-interference
 rule, F3 related batch commands). Implementation follows that file;
 deviations update it in the same commit.
+
+---
+
+## D14 — Any Doctor equips agents; it never deploys them
+
+**Date:** 2026-08-29 (amended 2026-09-03)
+
+**Context:** The run menu shipped a "Hand off to an agent" item that spawned
+the user's agent, and `generate` spawned the agent headlessly. Nick
+corrected the model: React Doctor's actual pattern is copy-the-findings;
+Any Doctor's only relationship to agents is *equipping* them — the skill
+and the contract — so they can create doctors that fit the interface.
+
+**Decision:** No Any Doctor product command ever launches an agent process.
+- The run menu's handoff is now **"Copy findings for your agent"** — a
+  ready-to-paste fix prompt on the clipboard (pbcopy/wl-copy/clip).
+- `generate` is **prompt-only**: it plants the skill as `AGENTS.md` in the
+  scope dir (agents load it natively), copies the exact generation prompt
+  (skill + intent + verify command), and tells the user to run `verify`
+  afterward. No spawning, no API keys, no adapter — works with any agent,
+  including GUI agents that have no CLI.
+- `dev/first-shot.mjs` remains the sole spawner: it is a measurement tool,
+  not product.
+- Deleted: `src/agents.ts`, the agent adapter, and registration-on-generate
+  (discovery scans directories; the index is an optional cache).
+
+**Consequences:** `generate` is instant and free. Generation quality now
+depends on the skill + the user's agent in the user's own session, which is
+exactly the surface we maintain. The first-shot measurement runs in the
+user's environment by design.
+
+---
+
+## D15 — The npx experience: findings first, creation separate
+
+**Date:** 2026-09-05
+
+**Context:** React Doctor's traction lesson: `npx react-doctor@latest` gives
+findings in under a minute — no install, no account, no key. Any Doctor's
+cold start inverted that: author doctors first, run later. Nick rethought
+the onboarding with two constraints: no intent routing and no AI-orchestrated
+creation ("weird territory"), and creation must not live inside the running
+experience.
+
+**Decision:**
+- `npx any-doctor` with no arguments **runs** instead of printing usage:
+  bundled doctors are discovered, the picker appears, findings follow.
+  (`help` still prints usage.)
+- **Bundled scope:** a small, curated first-party doctor pack ships inside
+  the package. Read-only, lowest priority — repo-local wins collisions,
+  then user-global, then bundled. No network at run time.
+- **`init` means adoption, not creation:** copies the bundled pack into
+  `./doctors/` (skipping existing files) so a team can edit, prune, and
+  commit it. Bundled is a starting point, not a dependency.
+- **`create "<intent>"`** is the creation path — today's prompt-only
+  `generate`, renamed to plainer English; `generate` remains as a hidden
+  alias. D14's posture is unchanged: no spawning, no keys, the user pastes
+  the prompt into their own agent.
+- **Explicitly rejected:** intent routing (matching free-text intents to
+  doctors) and any in-CLI agent orchestration or model integration.
+
+**Consequences:** The run experience stays pure — select a doctor, see
+findings; nothing pitches AI at a user who hasn't bought in yet. Creation is
+advertised only where curiosity peaks: one dim next-steps line after an
+interactive session, a mention in `init`'s output, and the usage text.
+`run`/`verify` never touch a model (unchanged). Build order: bundled scope →
+no-args-runs → `init` + `create` rename.
+
+**Amendment (2026-09-05, post-D16):** Lived experience corrected the flow:
+with the check tree, the dashboard is itself the selection surface, and a
+doctor picker in front of it is friction — the worst doctor lands one enter
+deep instead of on screen. Bare `run` (and the future no-arg npx entry) now
+aggregates every discovered doctor straight into the tree dashboard, no
+picker: doctor rows (worst-severity-first, counts, collapsible) → check
+rows → instances. The picker remains only for `verify`, where choosing one
+doctor to gate is the actual job.
+
+---
+
+## D16 — The doctor experience: category doctors and the check tree
+
+**Date:** 2026-09-05
+
+**Context:** Nick's product direction: a doctor should own a whole
+category a team cares about ("the async doctor"), not one narrow pattern.
+Opening it shows the *types* of issues as first-class things to select;
+drilling into a type shows where it bites. The contract already allowed
+this (DoctorMeta.checks, finding.rule, the Check glossary term) — the
+pilots just never used it, and the dashboard had no check-level
+navigation.
+
+**Decision:**
+- **Flagship:** `doctors/async-doctor.mjs` consolidates fetch-without-
+  AbortSignal, unawaited async map, and uncleared setTimeout-in-effect
+  as three checks with merged fixtures (15/15 green). The three
+  single-pattern originals are deleted.
+- **Dashboard tree:** multi-check doctors render doctor → check →
+  instance. Check rows show glyph, description, and instance count;
+  enter (or →) expands, ← collapses; enter on an instance copies its
+  scoped context as before. Check rows carry a check-level detail pane
+  (why/impact/fix/blast radius). Single-check doctors render exactly as
+  before — no tree, no behavior change.
+- **Severity-first, after React Doctor's research:** checks sort errors
+  before warnings before info (count descending within a band); error
+  checks are expanded on entry ("errors always show"); warning/info
+  checks start collapsed. An expanded check shows its first 50 instances
+  plus a "… and N more — fix a few and re-scan" affordance — the re-scan
+  loop is the pagination, not in-session paging.
+- **Keys:** the feed decodes →/← as their own keys alongside ↑/↓.
+
+**Consequences:** The picker lists categories, not fragments; one spawn
+covers a whole concern. The dashboard triages: highest severity on
+screen at entry, categories summarized, instances one enter away.
 
 ---
 

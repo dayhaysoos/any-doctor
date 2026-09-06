@@ -4,12 +4,10 @@ import { execFileSync } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { createRequire } from "module";
 
 import { fileURLToPath } from "url";
 
-const require = createRequire(import.meta.url);
-const { RESULT_SENTINEL } = require("../bin/contract.js");
+const { RESULT_SENTINEL } = (await import("../bin/contract.js"));
 const loader = fileURLToPath(new URL("../bin/doctor-loader.mjs", import.meta.url));
 const node = process.execPath;
 
@@ -106,4 +104,17 @@ test("seed path traversal becomes a named failing fixture, siblings still run", 
   assert.equal(trav.ok, false);
   assert.match(trav.error, /escapes the sandbox/);
   assert.equal(parsed.results.find(x => x.name === "healthy").ok, true);
+});
+
+test("ctx.files.read refuses to escape the repo root", () => {
+  const root = tmpRoot();
+  seed(root, { "src/x.ts": "export const a = 1\n" });
+  const traveller = path.join(root, "traveller.mjs");
+  fs.writeFileSync(traveller, [
+    "export const meta = { id: 'traveller', description: 't', severity: 'info' }",
+    "export async function doctor(ctx) { ctx.files.read('../outside.ts') }",
+  ].join("\n"));
+  const r = runLoader([traveller, root]);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /escapes the repo root/);
 });

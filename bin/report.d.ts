@@ -1,11 +1,12 @@
-import { Finding, Severity } from "./contract";
+import { ReportGroup, VerifyRunResult } from "./contract.js";
 export interface ReportInput {
-    programName: string;
-    description: string;
-    severity: Severity;
-    blindSpots?: string[];
     fileCount: number;
     durationMs: number;
-    findings: Finding[];
+    groups: ReportGroup[];
 }
+export declare function dedupeGroups(groups: ReportGroup[]): {
+    groups: ReportGroup[];
+    hidden: number;
+};
 export declare function renderReport(input: ReportInput, useColor: boolean): string;
+export declare function renderVerifyResult(result: VerifyRunResult, useColor: boolean): string;

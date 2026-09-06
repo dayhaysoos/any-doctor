@@ -1,0 +1,12 @@
+# One intent per line. Lines starting with # are skipped.
+# These feed dev/first-shot.mjs — the first-shot yield measurement.
+Find fetch calls without an AbortSignal
+Find .map(async ...) results that are never wrapped in Promise.all
+Find empty catch blocks that swallow errors
+Find direct imports of the openai or anthropic SDK outside lib/ai
+Find Date.now used inside Effect.gen blocks
+Find z.record called with a single argument
+Find route handlers that touch the database before calling requireUser
+Find setTimeout calls inside useEffect without a matching clearTimeout
+Find JSON.parse calls on LLM API responses without schema validation
+Find API route files that do not import the auth middleware

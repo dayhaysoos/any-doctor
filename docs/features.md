@@ -1,8 +1,11 @@
 # Planned features — doctor discovery & registry
 
-Status: DESIGNED, NOT BUILT. This file is the build spec. Any session
-implementing these features should follow it and, where reality forces
-deviations, update this file in the same commit.
+Status: F1, F2, and F3 are BUILT on the `buildout` branch — discovery
+scopes, the fuzzy picker (now `verify`-only: bare `run` aggregates every
+doctor straight into the review tree, per D15's amendment), both `--all`
+batch modes, and the repo-local-wins collision policy (with an origin
+suffix when one doctor shadows another). The index.json registration cache
+was dropped (D14): the directory is the registry.
 
 Source: Nick's direction (2026-08-29) — "when someone types any-doctor
 verify or any-doctor run without specifying which doctor, there should be
@@ -16,7 +19,8 @@ When `run` or `verify` is invoked WITHOUT a doctor path:
 
 - **TTY session:** show a fuzzy-searchable picker. Type to filter,
   ↑↓ to move, enter to select, esc/q to cancel. Picker lists every
-  discovered doctor with its meta: id, one-line description, severity.
+  discovered doctor by its one-line description and severity glyph; the
+  id feeds fuzzy matching and appears in the report and review browser.
   On select: proceed exactly as if the path had been typed
   (`verify` → fixture gate; `run` → report + findings browser).
 - **Non-TTY (piped/CI):** never prompt. Print the discovered doctor list
@@ -35,12 +39,9 @@ so the picker in F1 can find it later. Two scopes, no mixing:
   available in every repo. `generate --global` writes here; a doctor
   here is usable from any directory.
 
-Registration data lives beside the doctor (its `meta` is the registry
-entry — id, description, severity, blindSpots), plus a thin index at
-`<scope>/index.json` (auto-maintained by generate/verify: slug, intent
-that created it, created date, protocol version). The index is a cache;
-the picker must work from scanning the directory alone if the index is
-missing or stale.
+Registration data lives beside the doctor: its `meta` is the registry
+entry (id, description, severity, blindSpots). The directory is the
+whole registry — there is no index file; discovery scans the directory.
 
 **Non-interference rule:** discovery and registry reads never write to
 the target repo being scanned. `run` reads doctors and code; it writes

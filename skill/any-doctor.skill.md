@@ -15,14 +15,26 @@ Two files, exactly:
 export const meta = {
   id: "<slug>",                       // kebab-case, matches the filename
   description: "<one-line finding text, shown in reports>",
-  severity: "warning",                // "error" | "warning" | "info"
+  severity: "warning",                // default: "error" | "warning" | "info"
+  category: "<bugs | performance | security | style | ...>",
   blindSpots: [                       // what this approach CANNOT see — required
     "<honest limitation>",
+  ],
+  checks: [                           // optional: multiple related checks in ONE doctor
+    {
+      id: "<check-id>",               // short kebab verb-phrase, [a-z0-9-], unique per doctor; name the defect
+      description: "<finding text>",
+      severity: "warning",
+      impact: "<one line: what goes wrong for the user if this ships>",
+      why: "<one line: what in the code triggers this>",
+      fix: "<one line: the corrective action>",
+    },
   ],
 };
 
 export async function doctor(ctx) {
   // inspect the codebase, emit findings
+  // ctx.report.finding({ rule: "<check-id>", file, line, column?, message?, severity? })
 }
 ```
 
@@ -49,6 +61,34 @@ export const fixtures = [
 
 Zero dependencies. Node >= 18. The only imports allowed are `node:` builtins.
 
+## One doctor, many checks
+
+If the intent covers several related patterns (an SDK migration with
+multiple outdated calls, a family of anti-patterns, "all the stripe
+practices we deprecated"), build ONE doctor with multiple checks — not one
+doctor per pattern:
+
+- Declare each check in `meta.checks` (`{ id, description, severity? }`).
+- Emit each finding with `rule: "<check-id>"` matching a declared check.
+- The report groups findings under each check's description, under the
+  doctor's umbrella.
+
+Bundle when the checks share a theme or a codebase area. Stay separate
+when the checks are unrelated concerns that would be deleted or shared
+independently.
+
+## Severity judgment
+
+If the intent dictates criticality ("make the findings critical"), follow
+it. Otherwise judge by consequence:
+
+- `error` — will break, lose, or expose data at runtime
+- `warning` — wrong or risky but non-fatal
+- `info` — stylistic or informational
+
+Per-check severity lives in `meta.checks`; a finding may override with its
+own `severity` only for exceptions.
+
 ## Hard workflow
 
 1. Write both files.
@@ -69,6 +109,15 @@ Zero dependencies. Node >= 18. The only imports allowed are `node:` builtins.
   syntax allows.
 - Findings are locations. Wording lives in `meta.description`; use
   per-finding `message` only when one violation needs its own explanation.
+
+## Authoring for the report
+
+The report's detail pane shows, per check: category · severity · location,
+then **Impact**, the code frame, and **Fix**. Write `impact`, `why`, and
+`fix` on every check — one line each, plain language, no code in them.
+They are what the user reads while deciding whether to care. `impact` =
+consequence if it ships; `why` = the code shape that triggers the check;
+`fix` = the corrective action in one sentence.
 
 ## Honesty rules
 

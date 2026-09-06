@@ -1,11 +1,27 @@
 export type Severity = "error" | "warning" | "info";
+export interface CheckMeta {
+    id: string;
+    description: string;
+    severity?: Severity;
+    impact?: string;
+    why?: string;
+    fix?: string;
+}
 export interface DoctorMeta {
     id: string;
     description: string;
     severity: Severity;
+    category?: string;
     blindSpots?: string[];
+    checks?: CheckMeta[];
+}
+export interface ReportGroup {
+    programName: string;
+    meta: DoctorMeta;
+    findings: Finding[];
 }
 export interface Finding {
+    rule?: string;
     file: string;
     line: number;
     column?: number;
@@ -43,6 +59,7 @@ export declare const PROTOCOL_VERSION = 1;
 export declare const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 export interface RunResult {
     protocolVersion: number;
+    kind: "run";
     root: string;
     fileCount: number;
     durationMs: number;
@@ -70,7 +87,32 @@ export interface VerifyRunResult {
     meta: DoctorMeta;
     results: FixtureResult[];
 }
+export interface MetaResult {
+    protocolVersion: number;
+    kind: "meta";
+    meta: DoctorMeta;
+}
+export type Frame = RunResult | VerifyRunResult | MetaResult;
+export declare const DOCTOR_FILE_RE: RegExp;
+export declare const FIXTURES_FILE_RE: RegExp;
+export declare function fixturesPathFor(programPath: string): string;
+export declare function runCommandFor(doctorPath: string, root: string, invoker?: string): string;
 export declare function compareFindings(expected: {
     file: string;
     line: number;
 }[], actual: Finding[]): FixtureDiff;
+export interface JoinedFinding {
+    doctorId: string;
+    checkId: string;
+    checkKey: string;
+    description: string;
+    severity: Severity;
+    declaredSeverity: Severity;
+    category: string;
+    impact?: string;
+    why?: string;
+    fix?: string;
+    blindSpots?: string[];
+    finding: Finding;
+}
+export declare function resolveFinding(meta: DoctorMeta, finding: Finding): JoinedFinding;

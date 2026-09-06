@@ -1,7 +1,7 @@
 import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import { DoctorCtx, Finding, Match } from "./contract";
+import { DoctorCtx, Finding, Match } from "./contract.js";
 
 interface RawSgMatch {
   file?: string;
@@ -36,7 +36,11 @@ export function buildCtx(root: string): { ctx: DoctorCtx; getFindings(): Finding
       },
 
       read(relativePath: string): string {
-        return fs.readFileSync(path.join(root, relativePath), "utf8");
+        const abs = path.resolve(root, relativePath);
+        if (abs !== root && !abs.startsWith(root + path.sep)) {
+          throw new Error(`ctx.files.read escapes the repo root: ${relativePath}`);
+        }
+        return fs.readFileSync(abs, "utf8");
       },
     },
 
