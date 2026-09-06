@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { DOCTOR_FILE_RE, DoctorMeta, FIXTURES_FILE_RE } from "./contract.js";
-import { metaDoctor } from "./runner.js";
+import { metaDoctor, RunnerError } from "./runner.js";
 
 export type Scope = "repo" | "global";
 
@@ -11,7 +11,27 @@ export interface DiscoveredDoctor {
   scope: Scope;
   path: string;
   meta: DoctorMeta | null;
-  error?: string;
+  // Typed cause of a null meta — render through describeRunnerError.
+  cause?: RunnerError;
+}
+
+export interface BrokenDoctor {
+  slug: string;
+  cause?: RunnerError;
+}
+
+// The gate's partition over discovery — owned by the data so every surface
+// (run cohorts, verify, the picker) splits identically. Only null-meta
+// doctors belong to either bucket; a healthy doctor is neither skipped nor
+// named.
+export function unsafeSlugs(discovered: DiscoveredDoctor[]): string[] {
+  return discovered.filter(d => d.meta === null && d.cause?._tag === "DoctorUnsafe").map(d => d.slug);
+}
+
+export function brokenDoctors(discovered: DiscoveredDoctor[]): BrokenDoctor[] {
+  return discovered
+    .filter(d => d.meta === null && d.cause?._tag !== "DoctorUnsafe")
+    .map(d => ({ slug: d.slug, cause: d.cause }));
 }
 
 export function globalDoctorsDir(): string {
@@ -41,12 +61,16 @@ export async function discoverDoctors(cwd: string, opts?: { globalDir?: string }
     const files = fs.readdirSync(dir)
       .filter(f => (f.endsWith(".mjs") || f.endsWith(".js")) && !FIXTURES_FILE_RE.test(f))
       .sort();
-    for (const f of files) {
-      const slug = f.replace(DOCTOR_FILE_RE, "");
+    // Discovery fans out: every command pays this latency, metaDoctor never
+    // throws, and doctor counts grow once bundled doctors ship.
+    const reads = await Promise.all(files.map(async f => ({
+      slug: f.replace(DOCTOR_FILE_RE, ""),
+      abs: path.join(dir, f),
+      read: await metaDoctor({ programPath: path.join(dir, f) }),
+    })));
+    for (const { slug, abs, read } of reads) {
       if (bySlug.has(slug)) continue;
-      const abs = path.join(dir, f);
-      const { meta, error } = await metaDoctor({ programPath: abs });
-      bySlug.set(slug, { slug, scope, path: abs, meta, error });
+      bySlug.set(slug, { slug, scope, path: abs, meta: read.meta, cause: read.cause });
     }
   }
   return [...bySlug.values()];

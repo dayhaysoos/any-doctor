@@ -6,8 +6,8 @@ import { scoreFromSeverities } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
-export { truncateVisible, visibleWidth };
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, SEVERITY_COLOR, YELLOW } from "./palette.js";
+import { unsafeSkipLine } from "./report.js";
 const SPLIT_MIN_COLS = 100;
 const TOKEN_RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^'\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|await|async|try|catch|finally|import|export|from|new|class|extends|throw|typeof|instanceof|in|of|do|switch|case|break|continue|default|yield)\b|\b(\d+(?:\.\d+)?)\b/g;
 export function highlightCode(line, useColor) {
@@ -413,8 +413,11 @@ export function dashboardFrame(state) {
         c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)),
         c(scoreBar(score, barWidth), gradeColor(score)),
         c(`${findings.length} finding${findings.length === 1 ? "" : "s"} · ${state.fileCount} files · ${state.durationMs}ms`, DIM),
-        "",
     ];
+    if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
+        header.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
+    }
+    header.push("");
     const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded);
     const viewport = Math.max(1, Math.min(layout.listHeight, layout.bodyRows));
     let firstVisible = Math.max(0, Math.min(selectedRow - viewport + 1, Math.max(0, rowsData.length - viewport)));
@@ -552,7 +555,7 @@ export async function runDashboardOn(env, input, deps = {}) {
     const useColor = input.useColor;
     // The tree is computed once from immutable items; everything downstream
     // — rows, prompts, expansion, detail — reads this frozen shape.
-    const tree = buildTree(buildItems(input.groups));
+    const tree = buildTree(buildItems(input.outcome.groups));
     const expanded = initialExpanded(tree);
     const readKeys = new Set();
     let notice;
@@ -570,7 +573,7 @@ export async function runDashboardOn(env, input, deps = {}) {
             return sourceCache.get(file);
         let lines = null;
         try {
-            lines = fs.readFileSync(path.resolve(input.root, file), "utf8").split("\n");
+            lines = fs.readFileSync(path.resolve(input.outcome.targetDir, file), "utf8").split("\n");
         }
         catch {
             lines = null;
@@ -579,11 +582,10 @@ export async function runDashboardOn(env, input, deps = {}) {
         return lines;
     };
     const verifyCmdFor = (doctorId) => {
-        var _a, _b;
-        if (input.verifyCommand)
-            return input.verifyCommand;
-        const doctorPath = (_b = (_a = input.doctorPathFor) === null || _a === void 0 ? void 0 : _a.call(input, doctorId)) !== null && _b !== void 0 ? _b : input.doctorPath;
-        return runCommandFor(doctorPath, input.root, input.invoker);
+        const doctorPath = input.outcome.doctorPaths.get(doctorId);
+        if (doctorPath === undefined)
+            return "(doctor path unknown — re-run from the CLI)";
+        return runCommandFor(doctorPath, input.outcome.targetDir, input.invoker);
     };
     const copy = (text, what) => {
         var _a;
@@ -602,10 +604,11 @@ export async function runDashboardOn(env, input, deps = {}) {
                 readKeys,
                 readSource,
                 expanded,
-                fileCount: input.fileCount,
-                durationMs: input.durationMs,
+                fileCount: input.outcome.fileCount,
+                durationMs: input.outcome.durationMs,
                 useColor,
                 notice,
+                skippedUnsafe: input.outcome.skippedUnsafe,
                 cols: stdout.columns || 120,
                 rows: stdout.rows || 34,
             });

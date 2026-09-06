@@ -8,6 +8,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 
 const { RESULT_SENTINEL } = (await import("../bin/contract.js"));
+const { permissionArgs } = (await import("../bin/runner.js"));
 const loader = fileURLToPath(new URL("../bin/doctor-loader.mjs", import.meta.url));
 const node = process.execPath;
 
@@ -23,9 +24,14 @@ function seed(root, files) {
   }
 }
 
-function runLoader(args) {
+// Children spawn in exactly the configuration production creates: the
+// runner's own permission flags and a four-pipe stdio (fd 3 is the search
+// channel). Verify runs additionally get temp-dir writes for fixture
+// sandboxes — mirroring permissionArgs(true).
+async function runLoader(args) {
+  const flags = await permissionArgs(args.includes("--verify"));
   try {
-    const out = execFileSync(node, [loader, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    const out = execFileSync(node, [...flags, loader, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe", "pipe"] });
     return { status: 0, stdout: out, stderr: "" };
   } catch (e) {
     return { status: e.status ?? 1, stdout: e.stdout ?? "", stderr: e.stderr ?? "" };
@@ -34,7 +40,7 @@ function runLoader(args) {
 
 const SENTINEL = String(RESULT_SENTINEL);
 
-test("spoofed sentinel line from doctor stdout does not win the frame", () => {
+test("spoofed sentinel line from doctor stdout does not win the frame", async () => {
   const root = tmpRoot();
   seed(root, { "src/x.ts": "export const a = 1\n" });
   const evil = path.join(root, "evil.mjs");
@@ -44,7 +50,7 @@ test("spoofed sentinel line from doctor stdout does not win the frame", () => {
     "  console.log('" + SENTINEL + "{\"protocolVersion\":99,\"meta\":{\"id\":\"spoof\"},\"findings\":[],\"fileCount\":0}')",
     "}",
   ].join("\n"));
-  const r = runLoader([evil, root]);
+  const r = await runLoader([evil, root]);
   assert.equal(r.status, 0);
   const lines = r.stdout.split("\n").filter(l => l.startsWith(SENTINEL));
   assert.equal(lines.length, 1);
@@ -53,31 +59,31 @@ test("spoofed sentinel line from doctor stdout does not win the frame", () => {
   assert.equal(parsed.findings.length, 0);
 });
 
-test("sync doctor() is rejected with a clear message", () => {
+test("sync doctor() is rejected with a clear message", async () => {
   const root = tmpRoot();
   const sync = path.join(root, "sync.mjs");
   fs.writeFileSync(sync, [
     "export const meta = { id: 'sync', description: 'sync', severity: 'info' }",
     "export function doctor(ctx) {}",
   ].join("\n"));
-  const r = runLoader([sync, root]);
+  const r = await runLoader([sync, root]);
   assert.equal(r.status, 1);
   assert.match(r.stderr, /must be async/);
 });
 
-test("invalid meta severity is rejected", () => {
+test("invalid meta severity is rejected", async () => {
   const root = tmpRoot();
   const bad = path.join(root, "bad.mjs");
   fs.writeFileSync(bad, [
     "export const meta = { id: 'bad', description: 'bad', severity: 'catastrophic' }",
     "export async function doctor(ctx) {}",
   ].join("\n"));
-  const r = runLoader([bad, root]);
+  const r = await runLoader([bad, root]);
   assert.equal(r.status, 3);
   assert.match(r.stderr, /meta\.severity/);
 });
 
-test("seed path traversal becomes a named failing fixture, siblings still run", () => {
+test("seed path traversal becomes a named failing fixture, siblings still run", async () => {
   const root = tmpRoot();
   const doctor = path.join(root, "d.mjs");
   fs.writeFileSync(doctor, [
@@ -95,7 +101,7 @@ test("seed path traversal becomes a named failing fixture, siblings still run", 
     "  { name: 'healthy', seed: { 'src/flagged.ts': 'const a = 1' }, expected: [{ file: 'src/flagged.ts', line: 1 }] },",
     "];",
   ].join("\n"));
-  const r = runLoader([doctor, "--verify", fixtures]);
+  const r = await runLoader([doctor, "--verify", fixtures]);
   assert.equal(r.status, 0);
   const frame = r.stdout.split("\n").find(l => l.startsWith(SENTINEL));
   const parsed = JSON.parse(frame.slice(SENTINEL.length));
@@ -106,7 +112,7 @@ test("seed path traversal becomes a named failing fixture, siblings still run", 
   assert.equal(parsed.results.find(x => x.name === "healthy").ok, true);
 });
 
-test("ctx.files.read refuses to escape the repo root", () => {
+test("ctx.files.read refuses to escape the repo root", async () => {
   const root = tmpRoot();
   seed(root, { "src/x.ts": "export const a = 1\n" });
   const traveller = path.join(root, "traveller.mjs");
@@ -114,7 +120,20 @@ test("ctx.files.read refuses to escape the repo root", () => {
     "export const meta = { id: 'traveller', description: 't', severity: 'info' }",
     "export async function doctor(ctx) { ctx.files.read('../outside.ts') }",
   ].join("\n"));
-  const r = runLoader([traveller, root]);
+  const r = await runLoader([traveller, root]);
   assert.equal(r.status, 1);
   assert.match(r.stderr, /escapes the repo root/);
+});
+
+test("ctx.search without a host channel fails loudly, never falls back unconfined", async () => {
+  const root = tmpRoot();
+  seed(root, { "src/x.ts": "export const a = 1\n" });
+  const searcher = path.join(root, "searcher.mjs");
+  fs.writeFileSync(searcher, [
+    "export const meta = { id: 'searcher', description: 's', severity: 'info' }",
+    "export async function doctor(ctx) { ctx.search.pattern('const $A = $B') }",
+  ].join("\n"));
+  const r = await runLoader([searcher, root]);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /ctx\.search is unavailable/);
 });

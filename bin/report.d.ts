@@ -1,12 +1,18 @@
 import { ReportGroup, VerifyRunResult } from "./contract.js";
-export interface ReportInput {
+export interface RunOutcome {
+    groups: ReportGroup[];
+    crashed: string[];
+    skippedUnsafe: string[];
+    doctorPaths: ReadonlyMap<string, string>;
     fileCount: number;
     durationMs: number;
-    groups: ReportGroup[];
+    targetDir: string;
 }
+export declare function unsafeSkipLine(names: string[]): string;
+export declare function unsafeRefusalLine(name: string, capabilities: readonly string[]): string;
 export declare function dedupeGroups(groups: ReportGroup[]): {
     groups: ReportGroup[];
     hidden: number;
 };
-export declare function renderReport(input: ReportInput, useColor: boolean): string;
+export declare function renderReport(input: RunOutcome, useColor: boolean): string;
 export declare function renderVerifyResult(result: VerifyRunResult, useColor: boolean): string;

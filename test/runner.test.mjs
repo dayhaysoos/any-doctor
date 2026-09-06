@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runDoctor, verifyDoctor, metaDoctor, countAll } from "../bin/runner.js";
+import { runDoctor, verifyDoctor, metaDoctor, describeRunnerError } from "../bin/runner.js";
 
 // The interface is the test surface: every test crosses the Runner seam with
 // real child processes, real repo doctors, and the real sample app. The
@@ -56,6 +56,12 @@ test("verifyDoctor: fixture gate green on the repo doctor", async () => {
   assert.ok(r.results.every(x => x.ok));
 });
 
+test("verifyDoctor: fixture gate green on the repo convex doctor", async () => {
+  const r = await verifyDoctor({ programPath: path.join(REPO, "doctors", "convex-doctor.mjs") });
+  assert.ok(r.results.length >= 14);
+  assert.ok(r.results.every(x => x.ok));
+});
+
 test("verifyDoctor: missing fixtures throws FixturesMissing carrying the expected path", async () => {
   const t = tmpDoctor([
     "export const meta = { id: 'bare', description: 'x', severity: 'info' }",
@@ -74,29 +80,14 @@ test("verifyDoctor: missing fixtures throws FixturesMissing carrying the expecte
 test("metaDoctor: reads meta; a broken doctor is data, not a throw", async () => {
   const good = await metaDoctor({ programPath: DOCTOR });
   assert.equal(good.meta.id, "async-doctor");
-  assert.equal(good.error, undefined);
+  assert.equal(good.cause, undefined);
 
   const t = tmpDoctor(["export async function doctor(ctx) {}"]);
   try {
     const bad = await metaDoctor({ programPath: t.file });
     assert.equal(bad.meta, null);
-    assert.match(bad.error, /meta/i);
-  } finally {
-    t.cleanup();
-  }
-});
-
-test("countAll: parallel counts preserve order; a crash is data, not an abort", async () => {
-  const t = tmpDoctor([
-    "export const meta = { id: 'crasher', description: 'x', severity: 'info' }",
-    "export async function doctor(ctx) { throw new Error('kaboom') }",
-  ]);
-  try {
-    const results = await countAll({ programPaths: [DOCTOR, "/nope/missing.mjs", t.file], targetDir: TARGET });
-    assert.equal(results.length, 3);
-    assert.deepEqual(results[0], { programPath: DOCTOR, count: 4 });
-    assert.equal(results[1].error._tag, "ProgramMissing");
-    assert.equal(results[2].error._tag, "DoctorCrashed");
+    assert.equal(bad.cause?._tag, "DoctorCrashed");
+    assert.match(describeRunnerError(bad.cause), /invalid doctor meta/i);
   } finally {
     t.cleanup();
   }

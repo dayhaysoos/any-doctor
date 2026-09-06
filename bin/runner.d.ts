@@ -23,9 +23,17 @@ declare const NoFramedResult_base: Schema.Class<NoFramedResult, Schema.TaggedStr
 }>, Cause.YieldableError>;
 export declare class NoFramedResult extends NoFramedResult_base {
 }
-export type RunnerError = ProgramMissing | FixturesMissing | DoctorCrashed | NoFramedResult;
+declare const DoctorUnsafe_base: Schema.Class<DoctorUnsafe, Schema.TaggedStruct<"DoctorUnsafe", {
+    readonly programPath: Schema.String;
+    readonly capabilities: Schema.$Array<Schema.String>;
+    readonly findings: Schema.$Array<Schema.String>;
+}>, Cause.YieldableError>;
+export declare class DoctorUnsafe extends DoctorUnsafe_base {
+}
+export type RunnerError = ProgramMissing | FixturesMissing | DoctorCrashed | NoFramedResult | DoctorUnsafe;
 export declare function isRunnerError(e: unknown): e is RunnerError;
 export declare function describeRunnerError(e: RunnerError): string;
+export declare function causeSummaryLine(e: RunnerError | undefined): string;
 export interface RunOptions {
     programPath: string;
     targetDir: string;
@@ -36,21 +44,14 @@ export interface VerifyOptions {
 }
 export interface MetaRead {
     meta: DoctorMeta | null;
-    error?: string;
+    cause?: RunnerError;
 }
+export declare function supportsPermissionModel(): Promise<boolean>;
+export declare function permissionArgs(allowTmpWrites: boolean): Promise<string[]>;
+export declare function deniedByPermissionModel(stderr: string): boolean;
+export declare function denialCapability(stderr: string): string;
 export declare function runDoctor(options: RunOptions): Promise<RunResult>;
 export declare function verifyDoctor(options: VerifyOptions): Promise<VerifyRunResult>;
-export type CountResult = {
-    programPath: string;
-    count: number;
-} | {
-    programPath: string;
-    error: RunnerError;
-};
-export declare function countAll({ programPaths, targetDir }: {
-    programPaths: string[];
-    targetDir: string;
-}): Promise<CountResult[]>;
 export declare function metaDoctor({ programPath }: {
     programPath: string;
 }): Promise<MetaRead>;

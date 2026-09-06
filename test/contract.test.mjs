@@ -1,7 +1,27 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-const { compareFindings, RESULT_SENTINEL, PROTOCOL_VERSION, resolveFinding } = (await import("../bin/contract.js"));
+const { compareFindings, RESULT_SENTINEL, PROTOCOL_VERSION, resolveFinding, modeArgs, decodeLoaderArgs } = (await import("../bin/contract.js"));
+
+test("Mode round-trip: encoded once, decoded once, identical on both sides", () => {
+  const program = "/repo/doctors/x.mjs";
+  const cases = [
+    { kind: "run", root: "/repo" },
+    { kind: "verify", fixtures: "/repo/doctors/x.fixtures.mjs" },
+    { kind: "meta" },
+  ];
+  for (const mode of cases) {
+    assert.deepEqual(decodeLoaderArgs(modeArgs(mode, program)), { program, mode });
+  }
+});
+
+test("decodeLoaderArgs: rejects argv that is no mode at all", () => {
+  assert.equal(decodeLoaderArgs([]), null);
+  assert.equal(decodeLoaderArgs(["--verify"]), null, "a flag where the program belongs");
+  assert.equal(decodeLoaderArgs(["p.mjs"]), null, "run mode needs a root");
+  assert.equal(decodeLoaderArgs(["p.mjs", "--meta", "extra"]), null);
+  assert.equal(decodeLoaderArgs(["p.mjs", "--verify"]), null, "verify needs fixtures");
+});
 
 const META = {
   id: "stripe-doctor",

@@ -1,6 +1,24 @@
 import { resolveFinding } from "./contract.js";
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity } from "./score.js";
+// The one place the skip-note copy lives; report, dashboard, and the CLI
+// all render this sentence so the story is identical everywhere. The count
+// is always the true total; only the name list caps — three names, then
+// "… and N more" — so a hundred malicious doctors still cost one line.
+const SKIP_NAMES_SHOWN = 3;
+export function unsafeSkipLine(names) {
+    const shown = names.slice(0, SKIP_NAMES_SHOWN).join(", ");
+    const rest = names.length - SKIP_NAMES_SHOWN;
+    const list = rest > 0 ? `${shown} \u2026 and ${rest} more` : shown;
+    return `${names.length} doctor${names.length === 1 ? "" : "s"} could be malicious — skipped: ${list}`;
+}
+// The refusal for a doctor you explicitly asked to run: the file, its
+// capabilities, one line. The runner's DoctorUnsafe renderer and every
+// caller share this so the refusal reads identically everywhere; detail
+// lines ride beneath it when there are any.
+export function unsafeRefusalLine(name, capabilities) {
+    return `${name} could be malicious (${capabilities.join(", ")}) — not running it.`;
+}
 const SEVERITY_ORDER = ["error", "warning", "info"];
 function groupSeverity(g) {
     var _a;
@@ -61,6 +79,9 @@ export function renderReport(input, useColor) {
     const doctorWord = groups.length === 1 ? "doctor" : "doctors";
     lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
     lines.push(c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)));
+    if (input.skippedUnsafe !== undefined && input.skippedUnsafe.length > 0) {
+        lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
+    }
     if (total === 0) {
         lines.push(c("No findings", BOLD + GREEN));
         if (groups.length > 1) {

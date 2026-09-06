@@ -79,27 +79,9 @@ test("selectDoctor: non-interactive session yields listing rows, not a picker", 
   });
   assert.equal(sel.kind, "non-interactive");
   assert.ok(sel.rows.length >= 6, "repo doctors listed");
-  assert.ok(sel.rows.every(r => r.count === undefined), "no counts requested");
   const row = sel.rows.find(r => r.slug === "async-doctor");
   assert.ok(row, "known doctor present");
   assert.equal(row.scope, "repo");
-});
-
-test("selectDoctor: counts attach and order worst-first when targetDir is given", async () => {
-  const sel = await selectDoctor(undefined, {
-    cwd: REPO,
-    globalDir: emptyGlobalDir(),
-    targetDir: path.join(REPO, "fixtures", "sample-app"),
-    useColor: false,
-    env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
-  });
-  assert.equal(sel.kind, "non-interactive");
-  const withCounts = sel.rows.filter(r => r.count !== undefined);
-  assert.ok(withCounts.length >= 6);
-  assert.ok(withCounts.every(r => r.count.status === "counted"), "all repo doctors count cleanly");
-  for (let i = 1; i < withCounts.length; i++) {
-    assert.ok(withCounts[i - 1].count.count >= withCounts[i].count.count, "sorted worst-first");
-  }
 });
 
 test("selectDoctor: enter on the picker yields the top doctor", async () => {

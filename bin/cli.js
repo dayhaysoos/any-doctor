@@ -3,11 +3,12 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { DOCTOR_FILE_RE } from "./contract.js";
-import { renderReport, renderVerifyResult } from "./report.js";
+import { renderReport, renderVerifyResult, unsafeSkipLine } from "./report.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
-import { discoverDoctors, globalDoctorsDir } from "./discover.js";
-import { describeRunnerError, isRunnerError, runDoctor, verifyDoctor } from "./runner.js";
+import { brokenDoctors, discoverDoctors, globalDoctorsDir, unsafeSlugs } from "./discover.js";
+import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, verifyDoctor } from "./runner.js";
+import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor } from "./select.js";
 import { canRunTui, processTtyEnv } from "./tty.js";
 import { BOLD, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./palette.js";
@@ -37,7 +38,8 @@ function useColor() {
 }
 // Commands compute exit codes; process.exit happens exactly once, in the
 // direct-invocation guard at the bottom of this file. An ExitCode thrown
-// mid-command aborts it with a code, which main flattens.
+// mid-command aborts it with a code — main flattens it into its return
+// value, so callers and tests always get a number, never a rejection.
 class ExitCode extends Error {
     constructor(code) {
         super("exit " + code);
@@ -58,13 +60,15 @@ async function runOrReport(work) {
 }
 function warnBrokenDoctors(skipped) {
     for (const b of skipped) {
-        console.log(YELLOW + "⚠ skipping broken doctor " + b.slug + RESET + dim(" — " + (b.error || "invalid meta")));
+        console.log(YELLOW + "\u26a0 skipping broken doctor " + b.slug + RESET + dim(" — " + causeSummaryLine(b.cause)));
     }
 }
 function selectionOutcome(sel) {
     switch (sel.kind) {
         case "doctor":
             warnBrokenDoctors(sel.skipped);
+            if (sel.unsafe.length > 0)
+                warn("\u26a0 " + unsafeSkipLine(sel.unsafe));
             return { doctorPath: sel.doctorPath };
         case "not-found":
             fail(`no doctor program found for "${sel.arg}"`);
@@ -73,19 +77,18 @@ function selectionOutcome(sel) {
         case "none-discovered":
             fail(`no doctors discovered in ${process.cwd()}/doctors or ~/.any-doctor/doctors`);
             fail('create one with: any-doctor generate "<intent>"');
+            if (sel.unsafe.length > 0)
+                warn("\u26a0 " + unsafeSkipLine(sel.unsafe));
             for (const b of sel.broken)
-                fail("broken: " + b.slug + " — " + (b.error || "invalid meta"));
+                fail("broken: " + b.slug + " — " + causeSummaryLine(b.cause));
             return { exit: 1 };
         case "non-interactive":
             warnBrokenDoctors(sel.skipped);
+            if (sel.unsafe.length > 0)
+                warn("\u26a0 " + unsafeSkipLine(sel.unsafe));
             console.log("available doctors:");
             for (const row of sel.rows) {
-                const suffix = row.count === undefined
-                    ? ""
-                    : row.count.status === "failed"
-                        ? RED + " count failed" + RESET
-                        : dim(" " + row.count.count + " finding" + (row.count.count === 1 ? "" : "s"));
-                console.log("  " + row.scope.padEnd(7) + row.slug.padEnd(32) + dim(row.description) + suffix);
+                console.log("  " + row.scope.padEnd(7) + row.slug.padEnd(32) + dim(row.description));
             }
             fail("non-interactive session — specify a doctor path");
             return { exit: 1 };
@@ -111,13 +114,37 @@ function parseArgs(args) {
     }
     return out;
 }
+// Discovery and the gate's partition, computed once per command — pure
+// compute; rendering (broken warnings, skip notes) belongs to the callers,
+// matching select.ts's compute/render split.
+async function gatherDoctors() {
+    const all = await discoverDoctors(process.cwd());
+    return {
+        valid: all.filter(d => d.meta !== null),
+        skippedUnsafe: unsafeSlugs(all),
+        broken: brokenDoctors(all),
+    };
+}
 async function scanOnce(doctorAbs, targetDir) {
     const result = await runOrReport(runDoctor({ programPath: doctorAbs, targetDir }));
     return {
         group: { programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings },
         fileCount: result.fileCount,
-        durationMs: result.durationMs,
     };
+}
+// The batch commands' empty-cohort policy: no doctors at all is a setup
+// error; only-skipped doctors are named and fail quietly. True means the
+// caller returns 1.
+function cohortUnusable(cohort) {
+    if (cohort.valid.length > 0)
+        return false;
+    if (cohort.skippedUnsafe.length === 0) {
+        fail("no doctors discovered — run from a directory with doctors/, or specify a doctor path");
+    }
+    else {
+        warn("\u26a0 " + unsafeSkipLine(cohort.skippedUnsafe));
+    }
+    return true;
 }
 async function cmdRun(args) {
     var _a;
@@ -126,39 +153,43 @@ async function cmdRun(args) {
         fail("--global is a generate-only flag");
         return 1;
     }
-    const started = Date.now();
-    // One aggregation for both batch modes: a doctor path targets one
-    // doctor; --all and the no-argument default run every discovered doctor
-    // (a crash is data — named, and it fails the command).
-    const groups = [];
-    const crashed = [];
-    const doctorPaths = new Map();
-    let fileCount = 0;
-    let durationMs = 0;
-    let doctorPath = null;
+    // One RunOutcome for both modes — a doctor path targets one doctor;
+    // --all and the no-argument default run every discovered doctor (a crash
+    // is data — named, and it fails the command).
+    let outcome;
     if (parsed.doctorPath) {
         const sel = await selectDoctor(parsed.doctorPath, {
             cwd: process.cwd(),
-            targetDir: parsed.targetDir,
             useColor: useColor(),
             env: processTtyEnv(),
         });
-        const outcome = selectionOutcome(sel);
-        if ("exit" in outcome)
-            return outcome.exit;
-        const scan = await scanOnce(outcome.doctorPath, parsed.targetDir);
-        doctorPath = outcome.doctorPath;
-        doctorPaths.set(scan.group.meta.id, outcome.doctorPath);
-        groups.push(scan.group);
-        fileCount = scan.fileCount;
-        durationMs = scan.durationMs;
+        const selection = selectionOutcome(sel);
+        if ("exit" in selection)
+            return selection.exit;
+        const runStarted = Date.now();
+        const scan = await scanOnce(selection.doctorPath, parsed.targetDir);
+        outcome = {
+            groups: [scan.group],
+            crashed: [],
+            skippedUnsafe: [],
+            doctorPaths: new Map([[scan.group.meta.id, selection.doctorPath]]),
+            fileCount: scan.fileCount,
+            durationMs: Date.now() - runStarted,
+            targetDir: parsed.targetDir,
+        };
     }
     else {
-        const discovered = (await discoverDoctors(process.cwd())).filter(d => d.meta !== null);
-        if (discovered.length === 0) {
-            fail("no doctors discovered — run from a directory with doctors/, or specify a doctor path");
+        const cohort = await gatherDoctors();
+        warnBrokenDoctors(cohort.broken);
+        if (cohortUnusable(cohort))
             return 1;
-        }
+        const discovered = cohort.valid;
+        const skippedUnsafe = cohort.skippedUnsafe;
+        const runStarted = Date.now();
+        const groups = [];
+        const crashed = [];
+        const doctorPaths = new Map();
+        let fileCount = 0;
         for (const d of discovered) {
             try {
                 const scan = await scanOnce(d.path, parsed.targetDir);
@@ -172,7 +203,15 @@ async function cmdRun(args) {
                 crashed.push(d.meta.id);
             }
         }
-        durationMs = Date.now() - started;
+        outcome = {
+            groups,
+            crashed,
+            skippedUnsafe,
+            doctorPaths,
+            fileCount,
+            durationMs: Date.now() - runStarted,
+            targetDir: parsed.targetDir,
+        };
     }
     const env = processTtyEnv();
     const ttyCols = (_a = process.stdout.columns) !== null && _a !== void 0 ? _a : 0;
@@ -181,26 +220,22 @@ async function cmdRun(args) {
     const interactive = !parsed.all
         && canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
     if (!interactive) {
-        console.log(renderReport({ fileCount, durationMs, groups }, useColor()));
-        if (crashed.length > 0) {
-            for (const id of crashed)
+        console.log(renderReport(outcome, useColor()));
+        if (outcome.crashed.length > 0) {
+            for (const id of outcome.crashed)
                 fail("doctor crashed (results above are partial): " + id);
             return 1;
         }
-        return 0;
+        return outcome.skippedUnsafe.length > 0 ? 1 : 0;
     }
     const invoker = process.argv[1] ? `node "${fs.realpathSync(process.argv[1])}"` : "any-doctor";
-    await runDashboard({
-        root: parsed.targetDir,
-        groups,
-        doctorPath: doctorPath !== null && doctorPath !== void 0 ? doctorPath : "",
-        doctorPathFor: doctorPaths.size > 0 ? (id) => { var _a, _b; return (_b = (_a = doctorPaths.get(id)) !== null && _a !== void 0 ? _a : doctorPath) !== null && _b !== void 0 ? _b : ""; } : undefined,
-        invoker,
-        fileCount,
-        durationMs,
-        useColor: useColor(),
-    });
-    return 0;
+    // Interactive runs always show what did run: skips and crashes cost the
+    // exit code, never the results. Crashes are named before the dashboard
+    // paints — the dashboard itself renders findings and skips, not crashes.
+    for (const id of outcome.crashed)
+        fail("doctor crashed (results above are partial): " + id);
+    await runDashboard({ outcome, invoker, useColor: useColor() });
+    return outcome.crashed.length > 0 || outcome.skippedUnsafe.length > 0 ? 1 : 0;
 }
 async function cmdVerify(args) {
     const parsed = parseArgs(args);
@@ -209,15 +244,19 @@ async function cmdVerify(args) {
         return 1;
     }
     if (parsed.all) {
-        const discovered = (await discoverDoctors(process.cwd())).filter(d => d.meta !== null);
-        if (discovered.length === 0) {
-            fail("no doctors discovered");
+        const cohort = await gatherDoctors();
+        warnBrokenDoctors(cohort.broken);
+        if (cohort.skippedUnsafe.length > 0)
+            warn("\u26a0 " + unsafeSkipLine(cohort.skippedUnsafe));
+        if (cohortUnusable(cohort))
             return 1;
-        }
+        const discovered = cohort.valid;
+        const skippedUnsafe = cohort.skippedUnsafe;
         let totalFailures = 0;
         const crashed = [];
         for (const d of discovered) {
             console.log(BOLD + d.meta.id + RESET);
+            console.log(DIM + "  capabilities: " + capabilitySummary(scanDoctorFile(d.path)) + RESET);
             try {
                 const r = await runOrReport(verifyDoctor({ programPath: d.path }));
                 console.log(renderVerifyResult(r, useColor()));
@@ -231,12 +270,14 @@ async function cmdVerify(args) {
             }
             console.log("");
         }
-        if (totalFailures > 0 || crashed.length > 0) {
+        if (totalFailures > 0 || crashed.length > 0 || skippedUnsafe.length > 0) {
             const parts = [];
             if (totalFailures > 0)
                 parts.push(totalFailures + " fixture(s) failed");
             if (crashed.length > 0)
                 parts.push(crashed.length + " doctor(s) crashed: " + crashed.join(", "));
+            if (skippedUnsafe.length > 0)
+                parts.push(unsafeSkipLine(skippedUnsafe));
             fail(parts.join("; "));
             return 1;
         }
@@ -252,6 +293,7 @@ async function cmdVerify(args) {
     const outcome = selectionOutcome(sel);
     if ("exit" in outcome)
         return outcome.exit;
+    console.log(DIM + "capabilities: " + capabilitySummary(scanDoctorFile(outcome.doctorPath)) + RESET);
     const result = await runOrReport(verifyDoctor({ programPath: outcome.doctorPath }));
     console.log(renderVerifyResult(result, useColor()));
     const failures = result.results.filter(x => !x.ok).length;
@@ -348,12 +390,19 @@ export async function main(argv = process.argv.slice(2)) {
         usage();
         return 0;
     }
-    if (cmd === "generate")
-        return cmdGenerate(rest);
-    if (cmd === "run")
-        return cmdRun(rest);
-    if (cmd === "verify")
-        return cmdVerify(rest);
+    try {
+        if (cmd === "generate")
+            return await cmdGenerate(rest);
+        if (cmd === "run")
+            return await cmdRun(rest);
+        if (cmd === "verify")
+            return await cmdVerify(rest);
+    }
+    catch (e) {
+        if (e instanceof ExitCode)
+            return e.code;
+        throw e;
+    }
     fail("unknown command: " + cmd);
     usage();
     return 1;
@@ -371,8 +420,6 @@ const invokedDirectly = (() => {
 })();
 if (invokedDirectly) {
     main().then((code) => process.exit(code), (e) => {
-        if (e instanceof ExitCode)
-            process.exit(e.code);
         console.error(RED + (e && e.stack ? e.stack : String(e)) + RESET);
         process.exit(1);
     });

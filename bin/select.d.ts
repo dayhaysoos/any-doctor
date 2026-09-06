@@ -1,40 +1,32 @@
+import { BrokenDoctor } from "./discover.js";
 import { TtyEnv } from "./tty.js";
-export interface BrokenDoctor {
-    slug: string;
-    error?: string;
-}
-export type FindingCount = {
-    status: "counted";
-    count: number;
-} | {
-    status: "failed";
-};
 export interface SelectionRow {
     scope: string;
     slug: string;
     description: string;
-    count?: FindingCount;
 }
 export type Selection = {
     kind: "doctor";
     doctorPath: string;
     skipped: BrokenDoctor[];
+    unsafe: string[];
 } | {
     kind: "not-found";
     arg: string;
 } | {
     kind: "none-discovered";
     broken: BrokenDoctor[];
+    unsafe: string[];
 } | {
     kind: "non-interactive";
     rows: SelectionRow[];
     skipped: BrokenDoctor[];
+    unsafe: string[];
 } | {
     kind: "cancelled";
 };
 export interface SelectOptions {
     cwd: string;
-    targetDir?: string;
     globalDir?: string;
     useColor: boolean;
     allowPicker?: boolean;

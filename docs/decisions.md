@@ -394,6 +394,53 @@ screen at entry, categories summarized, instances one enter away.
 
 ---
 
+## D17 — Confinement: layered runtime enforcement, not a sandbox claim
+
+**Date:** 2026-09-05
+
+**Context:** Doctors are agent-authored programs executed against a repo.
+The realistic threat is sloppy or prompt-injected code, not a targeted
+attacker; the proportionate answer had to add no OS-level machinery
+(containers, seatbelt profiles — explicitly rejected as over-engineering).
+
+**Decision:** Four probe-gated layers, no override in any mode. (1) A
+static capability scan refuses named capabilities before execution —
+tripwire for slop, honest label: it sees the doctor file only. (2) The
+doctor process runs under Node's permission model (writes, subprocesses,
+and native addons denied — worker threads exist only as the import guard's
+carrier and inherit every denial; reads open; verify writes to the temp
+dir only). `--allow-worker` exists solely for the import guard's hook
+thread — denials verified to propagate into worker threads (fs write and
+subprocess are denied inside them). Node prints a SecurityWarning for the
+flag on
+every run; it is suppressed (`--disable-warning=SecurityWarning`) because
+the verified behavior is recorded here instead — the banner would alarm
+every run while changing nothing. (3) An import guard
+(module resolve hook) refuses every module a doctor tries to reach:
+builtins, helper files, npm packages, static, dynamic, or computed — a
+doctor is a single self-contained file (the guard itself stays a
+standalone hand-maintained file in bin/, the one exception to the tsc
+build: a resolve hook may not import anything). (4) The network globals (fetch,
+WebSocket) are deleted from the process; with imports vetoed there is no
+socket API left. `ctx.search` answers over a dedicated channel: the host
+runs ast-grep, the doctor asks. Amends D4: the Engine seam earned a
+module when it had two call sites; the sdk's legacy direct fallback was
+later deleted (a channel-less ctx.search fails loudly instead of running
+ast-grep unconfined), leaving the host as Engine's one caller — the module
+stays for locality: it is where a future backend slots in alone.
+
+**Consequences:** Old runtimes degrade to fewer layers (probe-gated, never
+to zero — the static scan is unconditional). Network on future runtimes
+gains a real deny flag eventually; the global strip covers today's.
+Residual honesty: process.env is readable (no outbound channel exists),
+DoS is bounded by the loader timeout, the search root check is lexical (a
+symlink inside the target pointing out is followed — accepted under the
+slop-not-adversary model), and no layered scheme rules out
+engine-internals exotica — the issue #3 tripwire (escalate if third-party
+doctor distribution ships) stays armed.
+
+---
+
 ## Open questions
 
 - Name: "any-doctor" is a working title.

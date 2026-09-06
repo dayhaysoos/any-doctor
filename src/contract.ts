@@ -63,6 +63,39 @@ export interface Fixture {
 export const PROTOCOL_VERSION = 1;
 export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 
+// ctx.search host protocol: doctor children cannot spawn (permission
+// model), so they ask the host to run ast-grep — request out fd 3, result
+// back on stdin.
+export const SEARCH_REQUEST = "###ANY_DOCTOR_SEARCH###";
+export const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
+
+// One execution mode, constructed once and decoded once — never re-parsed
+// from argv substrings. The runner builds it, serializes it at the spawn
+// seam, and the loader decodes it on the other side.
+export type Mode =
+  | { kind: "run"; root: string }
+  | { kind: "verify"; fixtures: string }
+  | { kind: "meta" };
+
+export function modeArgs(mode: Mode, programPath: string): string[] {
+  switch (mode.kind) {
+    case "run": return [programPath, mode.root];
+    case "verify": return [programPath, "--verify", mode.fixtures];
+    case "meta": return [programPath, "--meta"];
+  }
+}
+
+export function decodeLoaderArgs(argv: string[]): { program: string; mode: Mode } | null {
+  const [program, second, third] = argv;
+  if (!program || program.startsWith("-")) return null;
+  if (second === "--verify" && third !== undefined) return { program, mode: { kind: "verify", fixtures: third } };
+  if (second === "--meta" && third === undefined) return { program, mode: { kind: "meta" } };
+  if (second !== undefined && !second.startsWith("-") && third === undefined) {
+    return { program, mode: { kind: "run", root: second } };
+  }
+  return null;
+}
+
 export interface RunResult {
   protocolVersion: number;
   kind: "run";
@@ -105,7 +138,7 @@ export type Frame = RunResult | VerifyRunResult | MetaResult;
 export const DOCTOR_FILE_RE = /\.(m|c)?js$/;
 export const FIXTURES_FILE_RE = /\.fixtures\.(m|c)?js$/;
 
-// A check id is a short kebab-case verb-phrase, unique within its doctor,
+// A check id is a short kebab-case noun phrase naming the defect, unique within its doctor,
 // over the charset [a-z0-9-] (never "/" — checkKey joins ids with it).
 // Prefer naming the defect ("uncleared-settimeout-in-effect") over the
 // pattern it searches for.

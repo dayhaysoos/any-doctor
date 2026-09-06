@@ -114,13 +114,17 @@ class FakeStdout {
   write(s) { this.frames.push(s); }
 }
 
-function dashInput() {
+function dashInput(groupsOverride = groups) {
   return {
-    root: ".",
-    groups,
-    doctorPath: "doctors/stripe-doctor.mjs",
-    fileCount: 2,
-    durationMs: 10,
+    outcome: {
+      groups: groupsOverride,
+      crashed: [],
+      skippedUnsafe: [],
+      doctorPaths: new Map(),
+      fileCount: 2,
+      durationMs: 10,
+      targetDir: ".",
+    },
     useColor: false,
   };
 }
@@ -174,6 +178,23 @@ test("runDashboard: enter on an empty findings list draws instead of crashing", 
   assert.doesNotMatch(stdout.frames[stdout.frames.length - 1], /DASHBOARD RENDER ERROR/);
   stdin.send("q");
   assert.equal(await settle(done), "resolved");
+});
+
+test("dashboardFrame: unsafe skips appear as one header note line", () => {
+  const items = buildItems(groups);
+  const frame = dashboardFrame({
+    tree: buildTree(items),
+    selectedRow: 0,
+    readKeys: new Set(),
+    readSource: () => null,
+    fileCount: 2,
+    durationMs: 10,
+    useColor: false,
+    skippedUnsafe: ["evil"],
+    cols: 120,
+    rows: 34,
+  });
+  assert.match(frame, /⚠ 1 doctor could be malicious — skipped: evil/);
 });
 
 test("dashboardFrame: frame height is exactly rows - 1 in every state (notice never resizes it)", () => {
@@ -309,7 +330,7 @@ test("tree: single-doctor frames stay exactly flat — headers, no tree", async 
 test("tree: enter toggles checks, arrows expand and collapse, enter on an instance copies", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const multiInput = { ...dashInput(), groups: multiGroups };
+  const multiInput = { ...dashInput(multiGroups) };
   const done = runDashboardOn({ stdin, stdout }, multiInput, copyAlways);
 
   // Initial selection is the (expanded) error check row.
@@ -357,7 +378,7 @@ test("aggregate: doctors sort worst-severity-first and the top doctor opens", as
 test("aggregate: enter on a doctor row toggles it and the doctor detail pane renders", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const done = runDashboardOn({ stdin, stdout }, { ...dashInput(), groups: aggregateGroups }, copyAlways);
+  const done = runDashboardOn({ stdin, stdout }, { ...dashInput(aggregateGroups) }, copyAlways);
   let frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
   assert.ok(frame.includes("multi-doctor"), "aggregate frame up");
 
@@ -392,7 +413,7 @@ test("tree: children hang off connectors; guides hold the column under an expand
 test("tree: back collapses up — instance to check, check to doctor", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const done = runDashboardOn({ stdin, stdout }, { ...dashInput(), groups: aggregateGroups }, copyAlways);
+  const done = runDashboardOn({ stdin, stdout }, { ...dashInput(aggregateGroups) }, copyAlways);
 
   // Open the error check (selection starts on the doctor row): down, right.
   stdin.send("j");            // onto check row
@@ -459,7 +480,7 @@ test("runDashboard: `c` copies at the level you are on", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
   const deps = { copy: (text) => { copied.push(text); return true; } };
-  const done = runDashboardOn({ stdin, stdout }, { ...dashInput(), groups: aggregateGroups }, deps);
+  const done = runDashboardOn({ stdin, stdout }, { ...dashInput(aggregateGroups) }, deps);
 
   // On a check row: c copies the whole check with all its sites.
   stdin.send("j");              // doctor row -> check row (error check)
@@ -543,8 +564,10 @@ test("runDashboard: copied prompts resolve the re-run command per doctor", async
   const deps = { copy: (text) => { copied.push(text); return true; } };
   const input = {
     ...dashInput(),
-    doctorPath: "doctors/default.mjs",
-    doctorPathFor: (id) => (id === "stripe-doctor" ? "doctors/stripe.mjs" : undefined),
+    outcome: {
+      ...dashInput().outcome,
+      doctorPaths: new Map([["stripe-doctor", "doctors/stripe.mjs"]]),
+    },
   };
   const done = runDashboardOn({ stdin, stdout }, input, deps);
   // selection starts on the doctor row; expand and copy the check group
@@ -555,5 +578,5 @@ test("runDashboard: copied prompts resolve the re-run command per doctor", async
   const prompt = copied.at(-1);
   assert.ok(prompt, "check group copied");
   assert.match(prompt, /Verify with `any-doctor run \"doctors\/stripe\.mjs\" \"\.\"`/,
-    "doctorPathFor resolved the doctor that owns the check");
+    "the outcome's doctorPaths resolved the doctor that owns the check");
 });
