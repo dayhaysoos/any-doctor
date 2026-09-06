@@ -69,13 +69,13 @@ function selectionOutcome(sel) {
         case "not-found":
             fail(`no doctor program found for "${sel.arg}"`);
             fail(`searched ./doctors (walking up from ${process.cwd()}) and ~/.any-doctor/doctors`);
-            return 1;
+            return { exit: 1 };
         case "none-discovered":
             fail(`no doctors discovered in ${process.cwd()}/doctors or ~/.any-doctor/doctors`);
             fail('create one with: any-doctor generate "<intent>"');
             for (const b of sel.broken)
                 fail("broken: " + b.slug + " — " + (b.error || "invalid meta"));
-            return 1;
+            return { exit: 1 };
         case "non-interactive":
             warnBrokenDoctors(sel.skipped);
             console.log("available doctors:");
@@ -84,13 +84,13 @@ function selectionOutcome(sel) {
                     ? ""
                     : row.count.status === "failed"
                         ? RED + " count failed" + RESET
-                        : dim(" " + row.count.count + " issue" + (row.count.count === 1 ? "" : "s"));
+                        : dim(" " + row.count.count + " finding" + (row.count.count === 1 ? "" : "s"));
                 console.log("  " + row.scope.padEnd(7) + row.slug.padEnd(32) + dim(row.description) + suffix);
             }
             fail("non-interactive session — specify a doctor path");
-            return 1;
+            return { exit: 1 };
         case "cancelled":
-            return 0;
+            return { exit: 0 };
     }
 }
 function parseArgs(args) {
@@ -114,9 +114,7 @@ function parseArgs(args) {
 async function scanOnce(doctorAbs, targetDir) {
     const result = await runOrReport(runDoctor({ programPath: doctorAbs, targetDir }));
     return {
-        result,
-        groups: [{ programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings }],
-        findings: result.findings,
+        group: { programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings },
         fileCount: result.fileCount,
         durationMs: result.durationMs,
     };
@@ -136,8 +134,8 @@ async function cmdRun(args) {
     const crashed = [];
     const doctorPaths = new Map();
     let fileCount = 0;
-    let durationMs = Date.now() - started;
-    let doctorFile = null;
+    let durationMs = 0;
+    let doctorPath = null;
     if (parsed.doctorPath) {
         const sel = await selectDoctor(parsed.doctorPath, {
             cwd: process.cwd(),
@@ -146,12 +144,12 @@ async function cmdRun(args) {
             env: processTtyEnv(),
         });
         const outcome = selectionOutcome(sel);
-        if (typeof outcome === "number")
-            return outcome;
+        if ("exit" in outcome)
+            return outcome.exit;
         const scan = await scanOnce(outcome.doctorPath, parsed.targetDir);
-        doctorFile = outcome.doctorPath;
-        doctorPaths.set(scan.groups[0].meta.id, outcome.doctorPath);
-        groups.push(...scan.groups);
+        doctorPath = outcome.doctorPath;
+        doctorPaths.set(scan.group.meta.id, outcome.doctorPath);
+        groups.push(scan.group);
         fileCount = scan.fileCount;
         durationMs = scan.durationMs;
     }
@@ -166,7 +164,7 @@ async function cmdRun(args) {
                 const scan = await scanOnce(d.path, parsed.targetDir);
                 fileCount = Math.max(fileCount, scan.fileCount);
                 doctorPaths.set(d.meta.id, d.path);
-                groups.push(...scan.groups);
+                groups.push(scan.group);
             }
             catch (e) {
                 if (!(e instanceof ExitCode))
@@ -195,8 +193,8 @@ async function cmdRun(args) {
     await runDashboard({
         root: parsed.targetDir,
         groups,
-        doctorFile: doctorFile !== null && doctorFile !== void 0 ? doctorFile : "",
-        doctorFileFor: doctorPaths.size > 0 ? (id) => { var _a, _b; return (_b = (_a = doctorPaths.get(id)) !== null && _a !== void 0 ? _a : doctorFile) !== null && _b !== void 0 ? _b : ""; } : undefined,
+        doctorPath: doctorPath !== null && doctorPath !== void 0 ? doctorPath : "",
+        doctorPathFor: doctorPaths.size > 0 ? (id) => { var _a, _b; return (_b = (_a = doctorPaths.get(id)) !== null && _a !== void 0 ? _a : doctorPath) !== null && _b !== void 0 ? _b : ""; } : undefined,
         invoker,
         fileCount,
         durationMs,
@@ -252,8 +250,8 @@ async function cmdVerify(args) {
         env: processTtyEnv(),
     });
     const outcome = selectionOutcome(sel);
-    if (typeof outcome === "number")
-        return outcome;
+    if ("exit" in outcome)
+        return outcome.exit;
     const result = await runOrReport(verifyDoctor({ programPath: outcome.doctorPath }));
     console.log(renderVerifyResult(result, useColor()));
     const failures = result.results.filter(x => !x.ok).length;

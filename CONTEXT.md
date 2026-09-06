@@ -17,17 +17,19 @@ locally installed ast-grep, so results can vary across engine upgrades.
 
 ## Finding
 
-One emitted issue: a location (file, line) plus optional per-finding
-message or severity override. The doctor-level truth (id, description,
-default severity, blind spots) lives in the program's meta, not in
-individual findings.
+One emitted finding: a location (file, line) plus optional per-finding
+message or severity override. "Issue" and "instance" are retired
+synonyms — Finding is the term in code, copy, and prompts. The
+doctor-level truth (id, description, default severity, blind spots)
+lives in the program's meta, not in individual findings.
 
 ## Check
 
 One rule within a doctor program. A finding names its check via `rule`;
 the check's meta supplies description, severity, impact, why, and fix;
 the doctor's meta supplies the defaults when a finding names no check.
-One doctor program, many checks.
+A check id is a short kebab-case verb-phrase over [a-z0-9-], unique
+within its doctor, naming the defect. One doctor program, many checks.
 
 ## Doctor contract
 
@@ -52,8 +54,9 @@ program runs unchanged on any engine.
 ## Meta
 
 A doctor program's declared data: id, description, default severity,
-blind spots. Authored as data, never as comments; read by the report and
-the generator prompt.
+optional category, optional checks (one CheckMeta per check), blind
+spots. Authored as data, never as comments; read by the report, the
+review tree, and the generator prompt.
 
 ## Seed
 

@@ -22,7 +22,7 @@ export const meta = {
   ],
   checks: [                           // optional: multiple related checks in ONE doctor
     {
-      id: "<check-id>",
+      id: "<check-id>",               // short kebab verb-phrase, [a-z0-9-], unique per doctor; name the defect
       description: "<finding text>",
       severity: "warning",
       impact: "<one line: what goes wrong for the user if this ships>",

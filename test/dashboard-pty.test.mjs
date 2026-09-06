@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 // piped stdio, so we use expect(1) as the PTY provider — no npm dependencies.
 // The product flow under test: a bare `run` shows the AGGREGATE tree first —
 // no doctor picker — with the worst doctor open; enter walks doctor ->
-// check -> instance; enter on an instance copies its context; q quits.
+// check -> finding; enter on an finding copies its context; q quits.
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const EXPECT = "/usr/bin/expect";
@@ -26,7 +26,7 @@ expect {
   eof { puts ">FAIL dashboard-eof"; exit 104 }
 }
 expect {
-  "enter copy issue context" {}
+  "enter copy finding" {}
   timeout { puts ">FAIL footer-timeout"; exit 110 }
   eof { puts ">FAIL footer-eof"; exit 111 }
 }
@@ -45,10 +45,10 @@ after 200
 puts ">STAGE expanded"
 send "\\x1b\\[B"
 after 300
-puts ">STAGE on-instance"
+puts ">STAGE on-finding"
 send "\\r"
 expect {
-  "copied issue context" {}
+  "copied finding" {}
   timeout { puts ">FAIL copy-timeout"; exit 105 }
   eof { puts ">FAIL copy-eof"; exit 106 }
 }
@@ -72,7 +72,7 @@ function selectionLines(text) {
   return stripAnsi(text).split("\n").filter(l => l.includes("›")).join("\n");
 }
 
-test("bare run opens the aggregate tree directly; enter walks doctor-check-instance and copies", { skip: canRun ? false : "requires macOS expect(1) for a PTY" }, async () => {
+test("bare run opens the aggregate tree directly; enter walks doctor-check-finding and copies", { skip: canRun ? false : "requires macOS expect(1) for a PTY" }, async () => {
   const child = spawn(EXPECT, ["-c", EXPECT_SCRIPT], {
     cwd: REPO,
     env: { ...process.env, NODE_BIN: process.execPath, TERM: "xterm-256color" },
@@ -92,20 +92,20 @@ test("bare run opens the aggregate tree directly; enter walks doctor-check-insta
   const text = stripAnsi(transcript);
   assert.ok(!text.includes("Select a doctor"), "no doctor picker in the default flow");
   assert.ok(text.includes("async-doctor"), "the aggregate tree is the first screen");
-  assert.ok(text.includes("enter copy issue context"), "dashboard footer in transcript");
-  assert.ok(text.includes("copied issue context"), "copy notice in transcript");
+  assert.ok(text.includes("enter copy finding"), "dashboard footer in transcript");
+  assert.ok(text.includes("copied finding"), "copy notice in transcript");
 
   // Anti-jitter: after the dashboard's first paint (the one containing the
   // footer marker), repaints are in-place — no further full-screen erases.
-  const firstDash = transcript.indexOf("enter copy issue context");
+  const firstDash = transcript.indexOf("enter copy finding");
   assert.equal(transcript.indexOf("\x1b[2J", firstDash + 1), -1,
     "no full-screen erase after the dashboard's first paint");
 
-  // The tree: the first enter expanded the top check (instances visible),
-  // down moved onto an instance, and enter there copied its context.
+  // The tree: the first enter expanded the top check (findings visible),
+  // down moved onto an finding, and enter there copied its context.
   assert.ok(text.includes("\u00d74"), "the async doctor row carries its total count");
-  assert.ok(text.includes("\u00d73"), "check rows carry instance counts");
+  assert.ok(text.includes("\u00d73"), "check rows carry finding counts");
   const beforeExpand = text.slice(0, text.indexOf(">STAGE pre-expand"));
-  assert.ok(!beforeExpand.includes("user.ts:5"), "instances hidden until the check expands");
-  assert.ok(text.slice(text.indexOf(">STAGE expanded")).includes("user.ts:5"), "expansion reveals instances");
+  assert.ok(!beforeExpand.includes("user.ts:5"), "findings hidden until the check expands");
+  assert.ok(text.slice(text.indexOf(">STAGE expanded")).includes("user.ts:5"), "expansion reveals findings");
 });

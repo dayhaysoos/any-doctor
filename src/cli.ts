@@ -69,7 +69,7 @@ function warnBrokenDoctors(skipped: { slug: string; error?: string }[]): void {
   }
 }
 
-function selectionOutcome(sel: Selection): { doctorPath: string } | number {
+function selectionOutcome(sel: Selection): { doctorPath: string } | { exit: number } {
   switch (sel.kind) {
     case "doctor":
       warnBrokenDoctors(sel.skipped);
@@ -77,12 +77,12 @@ function selectionOutcome(sel: Selection): { doctorPath: string } | number {
     case "not-found":
       fail(`no doctor program found for "${sel.arg}"`);
       fail(`searched ./doctors (walking up from ${process.cwd()}) and ~/.any-doctor/doctors`);
-      return 1;
+      return { exit: 1 };
     case "none-discovered":
       fail(`no doctors discovered in ${process.cwd()}/doctors or ~/.any-doctor/doctors`);
       fail('create one with: any-doctor generate "<intent>"');
       for (const b of sel.broken) fail("broken: " + b.slug + " — " + (b.error || "invalid meta"));
-      return 1;
+      return { exit: 1 };
     case "non-interactive":
       warnBrokenDoctors(sel.skipped);
       console.log("available doctors:");
@@ -91,13 +91,13 @@ function selectionOutcome(sel: Selection): { doctorPath: string } | number {
           ? ""
           : row.count.status === "failed"
             ? RED + " count failed" + RESET
-            : dim(" " + row.count.count + " issue" + (row.count.count === 1 ? "" : "s"));
+            : dim(" " + row.count.count + " finding" + (row.count.count === 1 ? "" : "s"));
         console.log("  " + row.scope.padEnd(7) + row.slug.padEnd(32) + dim(row.description) + suffix);
       }
       fail("non-interactive session — specify a doctor path");
-      return 1;
+      return { exit: 1 };
     case "cancelled":
-      return 0;
+      return { exit: 0 };
   }
 }
 
@@ -125,9 +125,7 @@ function parseArgs(args: string[]): ParsedArgs {
 }
 
 interface Scan {
-  result: RunResult;
-  groups: ReportGroup[];
-  findings: Finding[];
+  group: ReportGroup;
   fileCount: number;
   durationMs: number;
 }
@@ -135,9 +133,7 @@ interface Scan {
 async function scanOnce(doctorAbs: string, targetDir: string): Promise<Scan> {
   const result = await runOrReport(runDoctor({ programPath: doctorAbs, targetDir }));
   return {
-    result,
-    groups: [{ programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings }],
-    findings: result.findings,
+    group: { programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings },
     fileCount: result.fileCount,
     durationMs: result.durationMs,
   };
@@ -158,8 +154,8 @@ async function cmdRun(args: string[]): Promise<number> {
   const crashed: string[] = [];
   const doctorPaths = new Map<string, string>();
   let fileCount = 0;
-  let durationMs = Date.now() - started;
-  let doctorFile: string | null = null;
+  let durationMs = 0;
+  let doctorPath: string | null = null;
 
   if (parsed.doctorPath) {
     const sel = await selectDoctor(parsed.doctorPath, {
@@ -169,11 +165,11 @@ async function cmdRun(args: string[]): Promise<number> {
       env: processTtyEnv(),
     });
     const outcome = selectionOutcome(sel);
-    if (typeof outcome === "number") return outcome;
+    if ("exit" in outcome) return outcome.exit;
     const scan = await scanOnce(outcome.doctorPath, parsed.targetDir);
-    doctorFile = outcome.doctorPath;
-    doctorPaths.set(scan.groups[0].meta.id, outcome.doctorPath);
-    groups.push(...scan.groups);
+    doctorPath = outcome.doctorPath;
+    doctorPaths.set(scan.group.meta.id, outcome.doctorPath);
+    groups.push(scan.group);
     fileCount = scan.fileCount;
     durationMs = scan.durationMs;
   } else {
@@ -187,7 +183,7 @@ async function cmdRun(args: string[]): Promise<number> {
         const scan = await scanOnce(d.path, parsed.targetDir);
         fileCount = Math.max(fileCount, scan.fileCount);
         doctorPaths.set(d.meta!.id, d.path);
-        groups.push(...scan.groups);
+        groups.push(scan.group);
       } catch (e) {
         if (!(e instanceof ExitCode)) throw e;
         crashed.push(d.meta!.id);
@@ -216,8 +212,8 @@ async function cmdRun(args: string[]): Promise<number> {
   await runDashboard({
     root: parsed.targetDir,
     groups,
-    doctorFile: doctorFile ?? "",
-    doctorFileFor: doctorPaths.size > 0 ? (id) => doctorPaths.get(id) ?? doctorFile ?? "" : undefined,
+    doctorPath: doctorPath ?? "",
+    doctorPathFor: doctorPaths.size > 0 ? (id) => doctorPaths.get(id) ?? doctorPath ?? "" : undefined,
     invoker,
     fileCount,
     durationMs,
@@ -272,7 +268,7 @@ async function cmdVerify(args: string[]): Promise<number> {
     env: processTtyEnv(),
   });
   const outcome = selectionOutcome(sel);
-  if (typeof outcome === "number") return outcome;
+  if ("exit" in outcome) return outcome.exit;
 
   const result = await runOrReport(verifyDoctor({ programPath: outcome.doctorPath }));
   console.log(renderVerifyResult(result, useColor()));

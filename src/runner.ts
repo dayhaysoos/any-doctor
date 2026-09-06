@@ -188,7 +188,7 @@ const verifyDoctorE = ({ programPath, fixturesPath }: VerifyOptions): Effect.Eff
     return yield* asVerifyResult(frame);
   });
 
-const countIssuesE = (options: RunOptions): Effect.Effect<number, RunnerError> =>
+const countFindingsE = (options: RunOptions): Effect.Effect<number, RunnerError> =>
   Effect.map(runDoctorE(options), (r) => r.findings.length);
 
 export async function runDoctor(options: RunOptions): Promise<RunResult> {
@@ -205,7 +205,7 @@ export type CountResult = { programPath: string; count: number } | { programPath
 // crashed doctor reported as data instead of aborting the fan-out.
 export async function countAll({ programPaths, targetDir }: { programPaths: string[]; targetDir: string }): Promise<CountResult[]> {
   const exits = await Effect.runPromise(
-    Effect.all(programPaths.map(p => Effect.exit(countIssuesE({ programPath: p, targetDir }))), { concurrency: "unbounded" }),
+    Effect.all(programPaths.map(p => Effect.exit(countFindingsE({ programPath: p, targetDir }))), { concurrency: "unbounded" }),
   );
   return programPaths.map((programPath, i) => Exit.match(exits[i], {
     onFailure: (cause) => ({ programPath, error: squash(cause) }),

@@ -4,13 +4,17 @@ export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 // doctor file, what is a fixture file, and where a doctor's fixtures live.
 export const DOCTOR_FILE_RE = /\.(m|c)?js$/;
 export const FIXTURES_FILE_RE = /\.fixtures\.(m|c)?js$/;
+// A check id is a short kebab-case verb-phrase, unique within its doctor,
+// over the charset [a-z0-9-] (never "/" — checkKey joins ids with it).
+// Prefer naming the defect ("uncleared-settimeout-in-effect") over the
+// pattern it searches for.
 export function fixturesPathFor(programPath) {
     return programPath.replace(DOCTOR_FILE_RE, "") + ".fixtures.mjs";
 }
-// The re-run command embedded in copied issue context. invoker defaults to
+// The re-run command embedded in copied prompts. invoker defaults to
 // the installed binary name; callers running via node or npx pass their own.
-export function runCommandFor(doctorFile, root, invoker = "any-doctor") {
-    return `${invoker} run "${doctorFile}" "${root}"`;
+export function runCommandFor(doctorPath, root, invoker = "any-doctor") {
+    return `${invoker} run "${doctorPath}" "${root}"`;
 }
 export function compareFindings(expected, actual) {
     const key = (f) => `${f.file}:${f.line}`;

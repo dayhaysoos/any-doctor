@@ -29,7 +29,7 @@ const golden = [
   "Any Doctor — 1 doctor",
   "Score: 96 / 100 — Excellent",
   "",
-  "1 issue found  (1 warning)",
+  "1 finding  (1 warning)",
   "Bugs: 1 warning",
   "",
   "⚠ .map(async ...) result is never awaited — the promises are dropped",
@@ -50,7 +50,7 @@ test("renderReport: multiple findings show ×N, rollup, and lower the score", ()
     groups: [{ ...input.groups[0], findings: input.groups[0].findings.concat([{ file: "b.ts", line: 3 }]) }],
   }, false);
   assert.match(out, /Score: 92 \/ 100 — Excellent/);
-  assert.match(out, /2 issues found/);
+  assert.match(out, /2 findings/);
   assert.match(out, /×2/);
   assert.match(out, /b\.ts:3/);
   assert.match(out, /Bugs: 2 warning/);
@@ -59,7 +59,7 @@ test("renderReport: multiple findings show ×N, rollup, and lower the score", ()
 test("renderReport: clean single group scores 100", () => {
   const out = renderReport({ ...input, groups: [{ ...input.groups[0], findings: [] }] }, false);
   assert.match(out, /Score: 100 \/ 100 — Excellent/);
-  assert.match(out, /No issues found/);
+  assert.match(out, /No findings/);
 });
 
 test("renderReport: multiple clean groups list each as clean", () => {
@@ -120,7 +120,7 @@ test("renderReport: cross-doctor duplicates at the same location are hidden once
       { programName: "map-async-variant.mjs", meta: { ...meta, id: "map-async-variant", description: "Async .map results must be wrapped in Promise.all." }, findings: [{ file: "src/services/chat.ts", line: 15 }] },
     ],
   }, false);
-  assert.match(out, /1 issue found/);
+  assert.match(out, /1 finding/);
   assert.match(out, /1 duplicate finding hidden/);
   assert.match(out, /Score: 96/);
   const occurrences = out.split("chat.ts:15").length - 1;

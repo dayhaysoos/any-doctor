@@ -49,7 +49,7 @@ export async function selectDoctor(doctorArg, options) {
             ? d.scope
             : count.status === "failed"
                 ? `count failed · ${d.scope}`
-                : `${count.count} issue${count.count === 1 ? "" : "s"} · ${d.scope}`,
+                : `${count.count} finding${count.count === 1 ? "" : "s"} · ${d.scope}`,
         severity: d.meta.severity,
     })), options.useColor, "Select a doctor");
     if (chosen === null)

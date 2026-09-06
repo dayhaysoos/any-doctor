@@ -12,15 +12,15 @@ export interface BrokenDoctor {
   error?: string;
 }
 
-// A count is either a number or a failure - a variant, not a magic string
-// in a number field.
-export type IssueCount = { status: "counted"; count: number } | { status: "failed" };
+// A count of findings is either a number or a failure - a variant, not
+// a magic string in a number field.
+export type FindingCount = { status: "counted"; count: number } | { status: "failed" };
 
 export interface SelectionRow {
   scope: string;
   slug: string;
   description: string;
-  count?: IssueCount;
+  count?: FindingCount;
 }
 
 export type Selection =
@@ -58,7 +58,7 @@ export async function selectDoctor(doctorArg: string | undefined, options: Selec
 
   // A doctor whose count fails must not masquerade as the healthiest "0
   // issues" candidate: failures sort last and say so.
-  let counted: { d: DiscoveredDoctor; count?: IssueCount }[] = valid.map(d => ({ d }));
+  let counted: { d: DiscoveredDoctor; count?: FindingCount }[] = valid.map(d => ({ d }));
   if (options.targetDir) {
     const results = await countAll({ programPaths: valid.map(d => d.path), targetDir: options.targetDir });
     counted = valid.map((d, i) => {
@@ -66,7 +66,7 @@ export async function selectDoctor(doctorArg: string | undefined, options: Selec
       return { d, count: "count" in r ? { status: "counted", count: r.count } : { status: "failed" } };
     });
     counted.sort((a, b) => {
-      const rank = (c?: IssueCount): number => (c === undefined || c.status === "failed" ? -1 : c.count);
+      const rank = (c?: FindingCount): number => (c === undefined || c.status === "failed" ? -1 : c.count);
       return rank(b.count) - rank(a.count);
     });
   }
@@ -93,7 +93,7 @@ export async function selectDoctor(doctorArg: string | undefined, options: Selec
       ? d.scope
       : count.status === "failed"
         ? `count failed · ${d.scope}`
-        : `${count.count} issue${count.count === 1 ? "" : "s"} · ${d.scope}`,
+        : `${count.count} finding${count.count === 1 ? "" : "s"} · ${d.scope}`,
     severity: d.meta!.severity,
   })), options.useColor, "Select a doctor");
 

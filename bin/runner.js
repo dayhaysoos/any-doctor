@@ -142,7 +142,7 @@ const verifyDoctorE = ({ programPath, fixturesPath }) => Effect.gen(function* ()
     const frame = yield* execLoader(abs, ["--verify", fixtures]);
     return yield* asVerifyResult(frame);
 });
-const countIssuesE = (options) => Effect.map(runDoctorE(options), (r) => r.findings.length);
+const countFindingsE = (options) => Effect.map(runDoctorE(options), (r) => r.findings.length);
 export async function runDoctor(options) {
     return drain(runDoctorE(options));
 }
@@ -152,7 +152,7 @@ export async function verifyDoctor(options) {
 // Parallel counting for the picker: one capability, order preserved, a
 // crashed doctor reported as data instead of aborting the fan-out.
 export async function countAll({ programPaths, targetDir }) {
-    const exits = await Effect.runPromise(Effect.all(programPaths.map(p => Effect.exit(countIssuesE({ programPath: p, targetDir }))), { concurrency: "unbounded" }));
+    const exits = await Effect.runPromise(Effect.all(programPaths.map(p => Effect.exit(countFindingsE({ programPath: p, targetDir }))), { concurrency: "unbounded" }));
     return programPaths.map((programPath, i) => Exit.match(exits[i], {
         onFailure: (cause) => ({ programPath, error: squash(cause) }),
         onSuccess: (count) => ({ programPath, count }),

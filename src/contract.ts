@@ -105,14 +105,19 @@ export type Frame = RunResult | VerifyRunResult | MetaResult;
 export const DOCTOR_FILE_RE = /\.(m|c)?js$/;
 export const FIXTURES_FILE_RE = /\.fixtures\.(m|c)?js$/;
 
+// A check id is a short kebab-case verb-phrase, unique within its doctor,
+// over the charset [a-z0-9-] (never "/" — checkKey joins ids with it).
+// Prefer naming the defect ("uncleared-settimeout-in-effect") over the
+// pattern it searches for.
+
 export function fixturesPathFor(programPath: string): string {
   return programPath.replace(DOCTOR_FILE_RE, "") + ".fixtures.mjs";
 }
 
-// The re-run command embedded in copied issue context. invoker defaults to
+// The re-run command embedded in copied prompts. invoker defaults to
 // the installed binary name; callers running via node or npx pass their own.
-export function runCommandFor(doctorFile: string, root: string, invoker = "any-doctor"): string {
-  return `${invoker} run "${doctorFile}" "${root}"`;
+export function runCommandFor(doctorPath: string, root: string, invoker = "any-doctor"): string {
+  return `${invoker} run "${doctorPath}" "${root}"`;
 }
 
 export function compareFindings(expected: { file: string; line: number }[], actual: Finding[]): FixtureDiff {

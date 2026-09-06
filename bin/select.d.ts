@@ -3,7 +3,7 @@ export interface BrokenDoctor {
     slug: string;
     error?: string;
 }
-export type IssueCount = {
+export type FindingCount = {
     status: "counted";
     count: number;
 } | {
@@ -13,7 +13,7 @@ export interface SelectionRow {
     scope: string;
     slug: string;
     description: string;
-    count?: IssueCount;
+    count?: FindingCount;
 }
 export type Selection = {
     kind: "doctor";

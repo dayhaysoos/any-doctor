@@ -81,7 +81,7 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
   lines.push(c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)));
 
   if (total === 0) {
-    lines.push(c("No issues found", BOLD + GREEN));
+    lines.push(c("No findings", BOLD + GREEN));
     if (groups.length > 1) {
       lines.push("");
       for (const g of groups) {
@@ -101,7 +101,7 @@ export function renderReport(input: ReportInput, useColor: boolean): string {
     .join(", ");
 
   lines.push("");
-  lines.push(`${c(`${total} issue${total === 1 ? "" : "s"} found`, BOLD)}  ${c(`(${rollup})`, DIM)}`);
+  lines.push(`${c(`${total} finding${total === 1 ? "" : "s"}`, BOLD)}  ${c(`(${rollup})`, DIM)}`);
   for (const { category, counts } of categoryRollup(groups)) {
     const catParts = SEVERITY_ORDER.filter(s => counts[s] > 0).map(s => c(`${counts[s]} ${s}`, SEVERITY_COLOR[s]));
     if (catParts.length > 0) {

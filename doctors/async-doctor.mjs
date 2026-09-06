@@ -26,7 +26,7 @@ export const meta = {
       fix: "Wrap the mapped array in Promise.all and await it — or drop the async if the work should actually be sequential.",
     },
     {
-      id: "settimeout-calls-inside-useeffect-without",
+      id: "uncleared-settimeout-in-effect",
       description: "setTimeout inside useEffect is not cleared with clearTimeout.",
       severity: "warning",
       impact: "The callback fires after the component is gone: state updates on unmounted components, work the user cancelled, and hard-to-trace bugs.",
@@ -148,7 +148,7 @@ function escapeRe(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// --- settimeout-calls-inside-useeffect-without ---------------------------
+// --- uncleared-settimeout-in-effect ---------------------------
 
 async function checkSetTimeout(ctx) {
   const files = await ctx.files.list();
@@ -186,7 +186,7 @@ async function checkSetTimeout(ctx) {
         const before = masked.slice(effect.start, index);
         const assignment = /(?:(?:\bconst|\blet|\bvar)\s+)?([A-Za-z_$][\w$]*)\s*=\s*$/.exec(before);
         if (!assignment || !cleared.has(assignment[1])) {
-          ctx.report.finding({ rule: "settimeout-calls-inside-useeffect-without", file, line: lineAt(source, index) });
+          ctx.report.finding({ rule: "uncleared-settimeout-in-effect", file, line: lineAt(source, index) });
         }
       }
     }
