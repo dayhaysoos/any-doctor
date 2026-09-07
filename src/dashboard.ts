@@ -8,7 +8,7 @@ import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 
 import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, SEVERITY_COLOR, YELLOW } from "./palette.js";
-import { RunOutcome, unsafeSkipLine } from "./report.js";
+import { dedupeGroups, RunOutcome, unsafeSkipLine } from "./report.js";
 
 const SPLIT_MIN_COLS = 100;
 
@@ -537,7 +537,7 @@ export function dashboardFrame(state: DashboardFrameState): string {
   const headerLines: string[] = [
     c(header.scoreLine, BOLD + gradeColor(state.score.score)),
     c(scoreBar(state.score.score, barWidth), gradeColor(state.score.score)),
-    c(`${findings.length} finding${findings.length === 1 ? "" : "s"}${header.cleanLine ? " · " + header.cleanLine : ""} · ${state.durationMs}ms`, DIM),
+    c(`${findings.length} finding${findings.length === 1 ? "" : "s"} · ${header.cleanLine ?? state.score.filesTotal + " files"} · ${state.durationMs}ms`, DIM),
   ];
   if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
     headerLines.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
@@ -682,9 +682,11 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
   const useColor = input.useColor;
   // The tree is computed once from immutable items; everything downstream
   // — rows, prompts, expansion, detail — reads this frozen shape. The
-  // score is the same kind of constant: computed once per run.
+  // score is the same kind of constant: computed once per run, over the
+  // same deduplicated groups the report scores — one RunOutcome, one
+  // number on every surface.
   const tree = buildTree(buildItems(input.outcome.groups));
-  const score = computeScore(input.outcome.groups, input.outcome.fileCount);
+  const score = computeScore(dedupeGroups(input.outcome.groups).groups, input.outcome.fileCount);
   const expanded = initialExpanded(tree);
   const readKeys = new Set<string>();
   let notice: string | undefined;

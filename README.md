@@ -48,7 +48,7 @@ per-check fixtures and the interactive check tree in `run`.
 | Doc | What it holds |
 |---|---|
 | [CONTEXT.md](CONTEXT.md) | Domain glossary — canonical terms |
-| [docs/decisions.md](docs/decisions.md) | Decision log (D1–D16). Read first; don't relitigate |
+| [docs/decisions.md](docs/decisions.md) | Decision log (D1–D19). Read first; don't relitigate |
 | [docs/vision.md](docs/vision.md) | Product idea and the lifecycle novelty |
 | [docs/features.md](docs/features.md) | Doctor discovery & registry spec + status |
 | [docs/research.md](docs/research.md) | Landscape, React Doctor teardown |

@@ -6,7 +6,7 @@ export const meta = {
   blindSpots: [
     "Queries: the schema is never cross-referenced - a .filter() on a table the doctor cannot see indexed is still flagged only at the query site; withIndex is trusted to name a real index.",
     "Subscriptions: useQuery is flagged at the call site without resolving the referenced function, so a paginated cursor returned from a helper is not recognized.",
-    "Clock: only direct Date.now()/Math.random() calls participating in arithmetic or a comparison are findings - stored values are safe and unflagged; calls behind wrappers are not seen, and measuring split across statements via a stored variable (const t = Date.now(); ... Date.now() - t) is invisible.",
+    "Clock: only direct Date.now()/Math.random() calls participating in arithmetic or a comparison are findings - stored values are safe and unflagged; calls behind wrappers are not seen, and elapsed time measured entirely through stored values (const t2 = Date.now(); ... t2 - t1) is invisible.",
     "Chains split across multiple statements (const q = ctx.db.query(t); q.filter(...)) are not tracked - only single-statement chains.",
     "index-without-range exempts chains ending in .take()/.first()/.unique() (the terminator bounds the read); an unnarrowed index consumed by .collect() on a split statement is not seen.",
     "unbounded-collect cannot tell a provably small table from a growing one: collect on a known-small table without an index is still flagged.",
@@ -276,7 +276,8 @@ function checkSpreadPatch(ctx, file, lineIndex, stmt) {
 
 // --- subscription check ----------------------------------------------------
 
-function checkSubscriptions(ctx, file, masked) {  const lines = masked.split("\n");
+function checkSubscriptions(ctx, file, masked) {
+  const lines = masked.split("\n");
   for (let i = 0; i < lines.length; i++) {
     if (!/useQuery\s*\(/.test(lines[i])) continue;
     // A paginated sibling anywhere in the statement opts out.

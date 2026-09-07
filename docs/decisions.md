@@ -493,7 +493,8 @@ scan .md).
 (78%) had zero findings. Linear severity subtraction (100 − 10·errors −
 4·warnings − 1·info) floors on any large codebase and conflates "much
 bad code" with "mostly good code with concentrated problems." React
-Doctor's score survives issues-found (98/100 with findings) because it
+Doctor's score stays high with findings present (98/100 in their docs
+example) because it
 is density-normalized — though theirs is computed by a closed server
 API, which contradicts any-doctor's no-cloud posture and would make the
 number unexplainable.

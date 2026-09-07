@@ -5,9 +5,10 @@ export const meta = {
   category: "openrouter",
   blindSpots: [
     "OpenRouter context is detected by the file mentioning it anywhere (URL, import, baseURL); files that route through an unmarked wrapper are not covered.",
-    "Stream-error and keep-alive checks reason per file: an error check that lives in a different file from the consumption loop is not seen.",
-    "Abort and retry checks look at the statement and file around each openrouter call; framework-level interceptors and SDK-managed backoff are not recognized.",
+    "Stream-error and keep-alive checks reason per file: an error check that lives in a different file from the consumption loop is not seen, and midstream-error-ignored reports the first consumption loop per file (later loops in the same file are not separately counted).",
+    "Abort and retry checks pair the OpenRouter marker with the call on the same line: a multi-line fetch whose URL lands on the following line is not recognized; framework-level interceptors and SDK-managed backoff are not recognized.",
     "Cost/token accounting (usage.cost) is deliberately not checked: file-level absence reasoning false-positives on apps whose wrapper logs usage elsewhere.",
+    "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source.",
   ],
   checks: [
     {

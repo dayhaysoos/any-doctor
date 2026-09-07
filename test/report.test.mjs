@@ -27,7 +27,7 @@ const golden = [
   "✔ Scanned 6 files in 111ms",
   "",
   "Any Doctor — 1 doctor",
-  "Score: 92 / 100 — Excellent",
+  "Score: 91 / 100 — Excellent",
   "5/6 files clean",
   "",
   "1 finding  (1 warning)",
@@ -145,7 +145,7 @@ test("renderReport: cross-doctor duplicates at the same location are hidden once
   }, false);
   assert.match(out, /1 finding/);
   assert.match(out, /1 duplicate finding hidden/);
-  assert.match(out, /Score: 92/);
+  assert.match(out, /Score: 91/);
   const occurrences = out.split("chat.ts:15").length - 1;
   assert.equal(occurrences, 1);
 });

@@ -19,7 +19,7 @@ export function gradeFor(score) {
         return "Poor";
     return "Critical";
 }
-export function scoreFromFileHealth(perFile, filesTotal) {
+function scoreFromFileHealth(perFile, filesTotal) {
     const worst = new Map();
     for (const { file, severity } of perFile) {
         const cur = worst.get(file);
@@ -29,9 +29,14 @@ export function scoreFromFileHealth(perFile, filesTotal) {
     let burden = 0;
     for (const s of worst.values())
         burden += FILE_BURDEN[s];
+    // Floor, never round: any finding must cost at least a point, or a
+    // 1-error-in-200-files scan would render a perfect 100 above its own
+    // finding list — the anchor (zero findings = 100) stays true. Clamped
+    // at 0 because findings may name files outside the scanned count (a
+    // doctor can read and report a non-default extension).
     const score = filesTotal <= 0
         ? 100
-        : Math.max(0, Math.min(100, Math.round(100 * (1 - burden / filesTotal))));
+        : Math.max(0, Math.min(100, Math.floor(100 * (1 - burden / filesTotal))));
     return { score, grade: gradeFor(score), filesClean: Math.max(0, filesTotal - worst.size), filesTotal };
 }
 export function computeScore(groups, filesTotal) {

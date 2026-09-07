@@ -92,8 +92,12 @@ there is exactly one path, with no unconfined fallback.
 The share of scanned files with no findings, weighted by each affected
 file's worst severity (error 1, warning 0.5, info 0.1). One sentence,
 locally computed: "491/628 files clean" is a 78. Zero findings is 100 by
-anchor; an empty scan is also 100. The score summarizes health — the
-findings are the work; the two are reported together, never conflated.
+anchor; an empty scan is also 100. The denominator is the target's file
+count as the doctors scanned it (default extensions); findings naming
+files outside that count can push the raw value negative, so the result
+is floored into 0–100 — and floored, never rounded, so any finding costs
+at least one point. The score summarizes health — the findings are the
+work; the two are reported together, never conflated.
 
 ## Meta
 

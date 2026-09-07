@@ -260,6 +260,9 @@ async function cmdVerify(args: string[]): Promise<number> {
     fail("--global is a generate-only flag");
     return 1;
   }
+  if (parsed.includeTests) {
+    warn("--include-tests applies to run only — verify always scans everything its fixtures seed");
+  }
 
   if (parsed.all) {
     const cohort = await gatherDoctors();

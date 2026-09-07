@@ -6,6 +6,7 @@ export const meta = {
   blindSpots: [
     "Scope: only files that import the effect package (from \"effect\" or \"effect/...\") are scanned; Effect idioms routed through re-exporting wrappers or untyped .js are not covered.",
     "Generated .d.ts files are skipped entirely: tsc renders tagged-error base classes as Schema.Class<...> in declarations even when source uses the sanctioned APIs, so declaration scanning would re-report every synthesized class.",
+    "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source.",
     "process.env: boundary and startup code (CLI switches, bootstrap scripts) legitimately reads the environment directly - the check cannot tell application logic from boundaries.",
     "Cause-level recovery is flagged wholesale at info severity: deliberately inspecting defects via the cause channel is legitimate; the check records the default, not a proof of misuse.",
     "Non-null assertions are pattern-matched textually (ident! followed by ., ( or [); formatting that separates the assertion from its target is not seen.",
@@ -116,7 +117,7 @@ export async function doctor(ctx) {
 // match - the from-clause must name effect itself.
 const EFFECT_IMPORT = /\bfrom\s+["']effect(?:\/[^"']*)?["']|\b(?:require|import)\s*\(\s*["']effect(?:\/[^"']*)?["']/;
 
-const IS_TEST_FILE = /(?:\.test\.|\.spec\.)[tj]sx?$|(^|\/)tests?\//;
+const IS_TEST_FILE = /(?:\.test|\.spec)\.[cm]?[jt]sx?$|(?:^|\/)(?:test|tests|__tests__)\//;
 
 // --- type-silencing casts -----------------------------------------------------
 
@@ -187,6 +188,9 @@ function classSpans(lines) {
       cur = null;
     }
   }
+  // A class that never closes still owns everything after it — flush the
+  // open span so an unclosed body is scanned, not silently dropped.
+  if (cur) spans.push(cur);
   return spans;
 }
 
