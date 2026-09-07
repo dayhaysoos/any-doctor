@@ -74,6 +74,34 @@ test("handleSearchLine: malformed request bodies and engine failures become erro
   );
 });
 
+const D18_MATCHES = (root) => ([
+  { file: root + "/src/app.ts", text: "a" },
+  { file: "src/plain.ts", text: "bare-relative form" },
+  { file: root + "/src/app.test.ts", text: "b" },
+  { file: root + "/src/ui.spec.tsx", text: "c" },
+  { file: root + "/tests/helper.ts", text: "d" },
+]);
+
+test("handleSearchLine: D18 — test paths are filtered from results on a default run", () => {
+  const engine = fakeEngine((p, l, root) => ({ ok: true, matches: D18_MATCHES(root) }));
+  const out = parse(handleSearchLine(request({ pattern: "x", root: TARGET }), RUN, engine));
+  assert.deepEqual(out.matches.map((m) => m.file), [TARGET + "/src/app.ts", "src/plain.ts"]);
+});
+
+test("handleSearchLine: --include-tests keeps test paths in results", () => {
+  const engine = fakeEngine((p, l, root) => ({ ok: true, matches: D18_MATCHES(root) }));
+  const out = parse(handleSearchLine(request({ pattern: "x", root: TARGET }), { kind: "run", root: TARGET, includeTests: true }, engine));
+  assert.equal(out.matches.length, 5);
+});
+
+test("handleSearchLine: verify keeps test paths — the sandbox is the doctor's own world", () => {
+  const sandbox = path.join(os.tmpdir(), "any-doctor-verify-t1");
+  const verify = { kind: "verify", fixtures: "/x.fixtures.mjs" };
+  const engine = fakeEngine((p, l, root) => ({ ok: true, matches: [{ file: root + "/src/user.test.ts", text: "x" }] }));
+  const out = parse(handleSearchLine(request({ pattern: "x", root: sandbox }), verify, engine));
+  assert.equal(out.matches.length, 1);
+});
+
 test("engine: a real ast-grep round trip through the one invocation module", { skip: spawnSync("sg", ["--version"]).status === 0 ? false : "ast-grep (sg) not on PATH" }, async () => {
   const { runEngineSearch } = await import("../bin/engine.js");
   const repo = path.resolve(import.meta.dirname, "..");

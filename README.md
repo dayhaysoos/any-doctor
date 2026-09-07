@@ -22,12 +22,19 @@ any-doctor run doctors/fetch-without-abort-signal.mjs path/to/repo   # scan + sc
 ```
 
 `generate` plants the skill as `AGENTS.md` in the scope dir (agents load it
-natively) and copies the generation prompt — paste it into your own agent
+natively — a planted copy refreshes on the next generate; a copy with your
+own edits is never touched) and copies the generation prompt — paste it into your own agent
 session, any agent, GUI or CLI. When it has written the doctor + fixtures,
 `verify` gates it: missing expected findings fail recall, unexpected ones
 fail precision. `run` and `verify` never touch a model or an agent — pipe
 the output (or set `ANY_DOCTOR_HEADLESS=1`) for stable CI output. Requires
 Node ≥ 18.
+
+`run` excludes test files from scanning by default (test-named code files
+and `test/`, `tests/`, `__tests__/` directories — for `ctx.files.list` and
+`ctx.search` alike) — mocks and fixture data mimic production shapes
+without being production reads. Pass `--include-tests` to scan them;
+`verify` always scans everything its fixtures seed.
 
 A doctor program is `<name>.mjs` (exports `meta` + `doctor(ctx)`) next to
 its fixture module `<name>.fixtures.mjs` (seeds + expected findings).
@@ -41,7 +48,7 @@ per-check fixtures and the interactive check tree in `run`.
 | Doc | What it holds |
 |---|---|
 | [CONTEXT.md](CONTEXT.md) | Domain glossary — canonical terms |
-| [docs/decisions.md](docs/decisions.md) | Decision log (D1–D16). Read first; don't relitigate |
+| [docs/decisions.md](docs/decisions.md) | Decision log (D1–D19). Read first; don't relitigate |
 | [docs/vision.md](docs/vision.md) | Product idea and the lifecycle novelty |
 | [docs/features.md](docs/features.md) | Doctor discovery & registry spec + status |
 | [docs/research.md](docs/research.md) | Landscape, React Doctor teardown |

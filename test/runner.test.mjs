@@ -58,7 +58,19 @@ test("verifyDoctor: fixture gate green on the repo doctor", async () => {
 
 test("verifyDoctor: fixture gate green on the repo convex doctor", async () => {
   const r = await verifyDoctor({ programPath: path.join(REPO, "doctors", "convex-doctor.mjs") });
-  assert.ok(r.results.length >= 14);
+  assert.ok(r.results.length >= 42);
+  assert.ok(r.results.every(x => x.ok));
+});
+
+test("verifyDoctor: fixture gate green on the repo openrouter doctor", async () => {
+  const r = await verifyDoctor({ programPath: path.join(REPO, "doctors", "openrouter-doctor.mjs") });
+  assert.ok(r.results.length >= 11);
+  assert.ok(r.results.every(x => x.ok));
+});
+
+test("verifyDoctor: fixture gate green on the repo effect doctor", async () => {
+  const r = await verifyDoctor({ programPath: path.join(REPO, "doctors", "effect-doctor.mjs") });
+  assert.ok(r.results.length >= 21);
   assert.ok(r.results.every(x => x.ok));
 });
 

@@ -192,3 +192,24 @@ test("main: failures return exit codes, never reject — one failure protocol", 
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("plantSkill: plants with the provenance marker, refreshes planted copies, never touches user copies", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-plant-"));
+  try {
+    assert.equal(cli.plantSkill(dir, "SKILL-V1"), "planted");
+    const first = fs.readFileSync(path.join(dir, "AGENTS.md"), "utf8");
+    assert.ok(first.startsWith("<!-- any-doctor skill plant -->\n"));
+    assert.ok(first.endsWith("SKILL-V1"));
+
+    // The skill evolved (a new decision landed) — a planted copy refreshes.
+    assert.equal(cli.plantSkill(dir, "SKILL-V2"), "refreshed");
+    assert.ok(fs.readFileSync(path.join(dir, "AGENTS.md"), "utf8").endsWith("SKILL-V2"));
+
+    // A copy without the marker is the user's: never overwritten.
+    fs.writeFileSync(path.join(dir, "AGENTS.md"), "our team conventions\n");
+    assert.equal(cli.plantSkill(dir, "SKILL-V3"), "left-user-copy");
+    assert.equal(fs.readFileSync(path.join(dir, "AGENTS.md"), "utf8"), "our team conventions\n");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

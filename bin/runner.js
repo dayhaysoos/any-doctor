@@ -242,7 +242,7 @@ async function drain(effect) {
         onSuccess: (value) => value,
     });
 }
-const runDoctorE = ({ programPath, targetDir }) => Effect.flatMap(execLoader(programPath, { kind: "run", root: path.resolve(targetDir) }, DEFAULT_TIMEOUT_MS), asRunResult);
+const runDoctorE = ({ programPath, targetDir, includeTests }) => Effect.flatMap(execLoader(programPath, { kind: "run", root: path.resolve(targetDir), includeTests }, DEFAULT_TIMEOUT_MS), asRunResult);
 const verifyDoctorE = ({ programPath, fixturesPath }) => Effect.gen(function* () {
     const abs = path.resolve(programPath);
     const fixtures = path.resolve(fixturesPath !== null && fixturesPath !== void 0 ? fixturesPath : fixturesPathFor(abs));

@@ -441,8 +441,95 @@ doctor distribution ships) stays armed.
 
 ---
 
+## D18 — Tests are not production reads: run excludes them by default
+
+**Date:** 2026-09-07
+
+**Context:** The first real-world scan (a production Convex app, ~970
+files) returned 1008 findings, the majority from test files — mocked
+`ctx.db` calls in fixture arrays, `Date.now()` in seeded documents,
+`.collect()` in test helpers. Tests mimic production shapes without being
+production reads; scanning them floods findings and buries real signal
+(a first-run wall of a thousand findings is an uninstall). One doctor's
+fixtures cannot see this class: it is a property of what a run means.
+
+**Decision:** The exclusion lives in the platform, not in doctors:
+`ctx.files.list()` drops `*.test.*`, `*.spec.*`, and `test/`, `tests/`,
+`__tests__/` directories by default (sdk walk, one law, every doctor).
+A run opts back in with `--include-tests` (Mode carries it; argv
+`<root> --include-tests`). `ctx.files.read()` is never filtered — an
+explicit path is a doctor's deliberate choice. Verify always lists
+everything its fixtures seed: the sandbox is the doctor's own world, and
+a seed named `*.test.ts` is deliberate test data (effect-doctor's
+sleep-in-test check depends on it). Fixture-named test files therefore
+remain testable, and test-focused checks run under `--include-tests`.
+
+**Consequences:** Doctors get quieter and more honest on real repos
+without changing a single check; findings counts drop to production
+reads only. A doctor that wants to inspect tests must ask the user to
+pass `--include-tests` (documented in blindSpots where relevant —
+effect-doctor's sleep-in-test says so). Files under directories merely
+named like tests (`spec/`, `__mocks__/`) are not excluded; the pattern
+is deliberately conservative. Story files (`*.stories.tsx`) are not
+tests and stay included.
+
+**Amended 2026-09-07:** the law now reaches every read capability. The
+convention lives in contract.ts as one predicate (`isTestPath`) with one
+derivation (`includeTestsFor`: run → flag, verify → everything), and the
+search host filters matches under the same law — as first shipped, only
+ctx.files.list excluded, leaving ctx.search flooding test-file findings
+on a default run. Prose narrowed to "test-named code files" to match the
+enforced pattern exactly (a `notes.test.md` still lists for doctors that
+scan .md).
+
+---
+
+## D19 — The score is the share of clean files, not a subtraction
+
+**Date:** 2026-09-07
+
+**Context:** The first real-world scan surfaced it: 664 warnings on a
+628-file repo scored 0/100 — "Critical" — while 491 of those 628 files
+(78%) had zero findings. Linear severity subtraction (100 − 10·errors −
+4·warnings − 1·info) floors on any large codebase and conflates "much
+bad code" with "mostly good code with concentrated problems." React
+Doctor's score stays high with findings present (98/100 in their docs
+example) because it
+is density-normalized — though theirs is computed by a closed server
+API, which contradicts any-doctor's no-cloud posture and would make the
+number unexplainable.
+
+**Decision:** score = 100 × (1 − burden/filesScanned), where each file's
+burden is set by its worst finding: error 1, warning 0.5, info 0.1.
+Locally computed, deterministic, explainable in one sentence a user can
+verify by counting files. Zero findings anchor at 100; an empty scan is
+also 100. Renderers pair the score with the raw counts ("491/628 files
+clean") so health and work are never conflated. The same change
+recalibrated convex-doctor against real-codebase feedback: the clock
+check now flags only measuring/branching uses (stored timestamps are
+safe per Convex semantics and were 259 of the 664 findings), unbounded
+subscriptions demoted to info (the call site cannot see the query's
+bounds), and take/first/unique-terminated index chains are exempt
+(the terminator bounds the read).
+
+**Consequences:** A single noisy check can no longer zero a score — it
+costs only the files it touches, which points pressure at doctor
+calibration instead of punishing the repo. Small repos are twitchier
+(one warning in two files costs 25 points) — honest density semantics.
+Severity weighting is a named constant (FILE_BURDEN), tunable when
+field data argues. A remote metrics/score API (doctors run, findings
+resolved over time, opt-in telemetry) stays parked — see Open
+questions.
+
+---
+
 ## Open questions
 
+- Opt-in metrics/score API (parked, D19): count doctors run and findings
+  resolved over time the way React Doctor's score API does — valuable for
+  the registry era, wrong before `npx any-doctor run` finds bundled
+  doctors out of the box. Must stay opt-in; the local score stays the
+  source of truth either way.
 - Name: "any-doctor" is a working title.
 - v1 surface: pure skill + harness, or skill + CLI from day one?
 - Timing of the time-aware primitive (git blame / diff-scoped reporting — the

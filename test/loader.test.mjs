@@ -137,3 +137,57 @@ test("ctx.search without a host channel fails loudly, never falls back unconfine
   assert.equal(r.status, 1);
   assert.match(r.stderr, /ctx\.search is unavailable/);
 });
+
+test("run mode excludes test files from ctx.files.list by default", async () => {
+  const root = tmpRoot();
+  seed(root, {
+    "src/app.ts": "export const a = 1\n",
+    "src/app.test.ts": "export const b = 1\n",
+    "src/ui.spec.tsx": "export const c = 1\n",
+    "tests/helper.ts": "export const d = 1\n",
+    "src/__tests__/nested.ts": "export const e = 1\n",
+    "src/keep.ts": "export const f = 1\n",
+  });
+  const doctorDir = tmpRoot();
+  const lister = path.join(doctorDir, "lister.mjs");
+  fs.writeFileSync(lister, [
+    "export const meta = { id: 'lister', description: 'lists files', severity: 'info' }",
+    "export async function doctor(ctx) {",
+    "  for (const f of ctx.files.list()) {",
+    "    ctx.report.finding({ rule: 'listed', file: f, line: 1 });",
+    "  }",
+    "}",
+  ].join("\n"));
+  const r = await runLoader([lister, root]);
+  assert.equal(r.status, 0);
+  const line = r.stdout.split("\n").find(l => l.startsWith(SENTINEL));
+  const parsed = JSON.parse(line.slice(SENTINEL.length));
+  const files = parsed.findings.map(f => f.file).sort();
+  assert.deepEqual(files, ["src/app.ts", "src/keep.ts"]);
+  assert.equal(parsed.fileCount, 2);
+});
+
+test("run mode --include-tests lists test files", async () => {
+  const root = tmpRoot();
+  seed(root, {
+    "src/app.ts": "export const a = 1\n",
+    "src/app.test.ts": "export const b = 1\n",
+    "tests/helper.ts": "export const d = 1\n",
+  });
+  const doctorDir = tmpRoot();
+  const lister = path.join(doctorDir, "lister.mjs");
+  fs.writeFileSync(lister, [
+    "export const meta = { id: 'lister', description: 'lists files', severity: 'info' }",
+    "export async function doctor(ctx) {",
+    "  for (const f of ctx.files.list()) {",
+    "    ctx.report.finding({ rule: 'listed', file: f, line: 1 });",
+    "  }",
+    "}",
+  ].join("\n"));
+  const r = await runLoader([lister, root, "--include-tests"]);
+  assert.equal(r.status, 0);
+  const line = r.stdout.split("\n").find(l => l.startsWith(SENTINEL));
+  const parsed = JSON.parse(line.slice(SENTINEL.length));
+  const files = parsed.findings.map(f => f.file).sort();
+  assert.deepEqual(files, ["src/app.test.ts", "src/app.ts", "tests/helper.ts"]);
+});

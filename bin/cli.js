@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { DOCTOR_FILE_RE } from "./contract.js";
-import { renderReport, renderVerifyResult, unsafeSkipLine } from "./report.js";
+import { cohortFileCount, renderReport, renderVerifyResult, unsafeSkipLine } from "./report.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
 import { brokenDoctors, discoverDoctors, globalDoctorsDir, unsafeSlugs } from "./discover.js";
@@ -97,7 +97,7 @@ function selectionOutcome(sel) {
     }
 }
 function parseArgs(args) {
-    const out = { targetDir: path.resolve("."), all: false, global: false };
+    const out = { targetDir: path.resolve("."), all: false, global: false, includeTests: false };
     let targetDirSet = false;
     for (let i = 0; i < args.length; i++) {
         const a = args[i];
@@ -105,6 +105,8 @@ function parseArgs(args) {
             out.all = true;
         else if (a === "--global")
             out.global = true;
+        else if (a === "--include-tests")
+            out.includeTests = true;
         else if (out.doctorPath === undefined && DOCTOR_FILE_RE.test(a))
             out.doctorPath = a;
         else if (!targetDirSet) {
@@ -125,10 +127,10 @@ async function gatherDoctors() {
         broken: brokenDoctors(all),
     };
 }
-async function scanOnce(doctorAbs, targetDir) {
-    const result = await runOrReport(runDoctor({ programPath: doctorAbs, targetDir }));
+async function scanOnce(options) {
+    const result = await runOrReport(runDoctor(options));
     return {
-        group: { programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings },
+        group: { programName: path.basename(options.programPath), meta: result.meta, findings: result.findings },
         fileCount: result.fileCount,
     };
 }
@@ -167,7 +169,7 @@ async function cmdRun(args) {
         if ("exit" in selection)
             return selection.exit;
         const runStarted = Date.now();
-        const scan = await scanOnce(selection.doctorPath, parsed.targetDir);
+        const scan = await scanOnce({ programPath: selection.doctorPath, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
         outcome = {
             groups: [scan.group],
             crashed: [],
@@ -189,11 +191,11 @@ async function cmdRun(args) {
         const groups = [];
         const crashed = [];
         const doctorPaths = new Map();
-        let fileCount = 0;
+        const fileCounts = [];
         for (const d of discovered) {
             try {
-                const scan = await scanOnce(d.path, parsed.targetDir);
-                fileCount = Math.max(fileCount, scan.fileCount);
+                const scan = await scanOnce({ programPath: d.path, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
+                fileCounts.push(scan.fileCount);
                 doctorPaths.set(d.meta.id, d.path);
                 groups.push(scan.group);
             }
@@ -208,7 +210,7 @@ async function cmdRun(args) {
             crashed,
             skippedUnsafe,
             doctorPaths,
-            fileCount,
+            fileCount: cohortFileCount(fileCounts),
             durationMs: Date.now() - runStarted,
             targetDir: parsed.targetDir,
         };
@@ -242,6 +244,9 @@ async function cmdVerify(args) {
     if (parsed.global) {
         fail("--global is a generate-only flag");
         return 1;
+    }
+    if (parsed.includeTests) {
+        warn("--include-tests applies to run only — verify always scans everything its fixtures seed");
     }
     if (parsed.all) {
         const cohort = await gatherDoctors();
@@ -301,6 +306,21 @@ async function cmdVerify(args) {
     console.log(dim(`${result.results.length - failures}/${result.results.length} fixtures passed for ${result.meta.id}`));
     return failures > 0 ? 1 : 0;
 }
+// The planted copy of the skill once went three decisions stale
+// (doctors/AGENTS.md still taught "builtins allowed" after Confinement
+// refused every import), so planting refreshes: a copy any-doctor planted
+// carries the provenance marker and is overwritten on generate; a copy
+// without it is the user's and is never touched.
+const PLANT_MARKER = "<!-- any-doctor skill plant -->\n";
+export function plantSkill(scopeDir, skill) {
+    const agentsPath = path.join(scopeDir, "AGENTS.md");
+    const existing = fs.existsSync(agentsPath) ? fs.readFileSync(agentsPath, "utf8") : null;
+    if (existing === null || existing.startsWith(PLANT_MARKER)) {
+        fs.writeFileSync(agentsPath, PLANT_MARKER + skill);
+        return existing === null ? "planted" : "refreshed";
+    }
+    return "left-user-copy";
+}
 async function cmdGenerate(args) {
     let intent;
     let global = false;
@@ -324,9 +344,9 @@ async function cmdGenerate(args) {
         ? (fs.mkdirSync(globalDoctorsDir(), { recursive: true }), globalDoctorsDir())
         : path.resolve("doctors");
     fs.mkdirSync(scopeDir, { recursive: true });
-    const agentsPath = path.join(scopeDir, "AGENTS.md");
-    if (!fs.existsSync(agentsPath)) {
-        fs.writeFileSync(agentsPath, skill);
+    const planted = plantSkill(scopeDir, skill);
+    if (planted === "left-user-copy") {
+        warn("AGENTS.md exists with edits of your own — left untouched (delete it to re-plant)");
     }
     const cliJs = fileURLToPath(new URL("cli.js", import.meta.url));
     const doctorAbs = path.join(scopeDir, slug + ".mjs");
@@ -372,7 +392,7 @@ function usage() {
     console.log(BOLD + "any-doctor" + RESET + dim(" — your agent writes the analyzer, fixtures prove it, CI reruns it forever"));
     console.log("");
     console.log('  generate "<intent>" [--global]      print the exact prompt for your agent to build a doctor');
-    console.log("  run [--all] [doctor.(m)js] [dir]   scan; no argument = every doctor in one review tree");
+    console.log("  run [--all] [--include-tests] [doctor.(m)js] [dir]   scan; no argument = every doctor in one review tree");
     console.log("  verify [--all] [doctor.(m)js]     fixture gate (no doctor: fuzzy picker; --all: every doctor)");
     console.log("");
     console.log(dim("doctors live in ./doctors/ (repo) and ~/.any-doctor/doctors/ (global)."));

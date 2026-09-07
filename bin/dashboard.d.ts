@@ -1,4 +1,5 @@
 import { Finding, JoinedFinding, ReportGroup, Severity } from "./contract.js";
+import { ScoreResult } from "./score.js";
 import { TtyStdin, TtyStdout } from "./tty.js";
 import { RunOutcome } from "./report.js";
 export declare function highlightCode(line: string, useColor: boolean): string;
@@ -88,7 +89,7 @@ export interface DashboardFrameState {
     readKeys: Set<string>;
     readSource: FrameSource;
     expanded?: ReadonlySet<string>;
-    fileCount: number;
+    score: ScoreResult;
     durationMs: number;
     useColor: boolean;
     notice?: string;

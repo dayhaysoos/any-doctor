@@ -1,5 +1,10 @@
 import { resolveFinding } from "./contract.js";
-const WEIGHTS = { error: 10, warning: 4, info: 1 };
+// A file's burden by its worst finding: an error makes the file fully
+// sick, a warning half, info barely. The score is the share of the scan
+// that carries no findings at all — one sentence a user can verify by
+// counting files: "491/628 files clean" is a 78.
+const FILE_BURDEN = { error: 1, warning: 0.5, info: 0.1 };
+const SEVERITY_ORDER = { info: 0, warning: 1, error: 2 };
 export function findingSeverity(g, f) {
     return resolveFinding(g.meta, f).severity;
 }
@@ -14,15 +19,37 @@ export function gradeFor(score) {
         return "Poor";
     return "Critical";
 }
-export function scoreFromSeverities(sevs) {
-    let score = 100;
-    for (const s of sevs)
-        score -= WEIGHTS[s];
-    score = Math.max(0, Math.min(100, score));
-    return { score, grade: gradeFor(score) };
+function scoreFromFileHealth(perFile, filesTotal) {
+    const worst = new Map();
+    for (const { file, severity } of perFile) {
+        const cur = worst.get(file);
+        if (cur === undefined || SEVERITY_ORDER[severity] > SEVERITY_ORDER[cur])
+            worst.set(file, severity);
+    }
+    let burden = 0;
+    for (const s of worst.values())
+        burden += FILE_BURDEN[s];
+    // Floor, never round: any finding must cost at least a point, or a
+    // 1-error-in-200-files scan would render a perfect 100 above its own
+    // finding list — the anchor (zero findings = 100) stays true. Clamped
+    // at 0 because findings may name files outside the scanned count (a
+    // doctor can read and report a non-default extension).
+    const score = filesTotal <= 0
+        ? 100
+        : Math.max(0, Math.min(100, Math.floor(100 * (1 - burden / filesTotal))));
+    return { score, grade: gradeFor(score), filesClean: Math.max(0, filesTotal - worst.size), filesTotal };
 }
-export function computeScore(groups) {
-    return scoreFromSeverities(groups.flatMap(g => g.findings.map(f => findingSeverity(g, f))));
+export function computeScore(groups, filesTotal) {
+    return scoreFromFileHealth(groups.flatMap(g => g.findings.map(f => ({ file: f.file, severity: findingSeverity(g, f) }))), filesTotal);
+}
+// The one composer for the score's header lines (D19): report and
+// dashboard render these strings, never re-compose them. The clean line
+// is null for an empty scan — there is nothing to be clean against.
+export function scoreHeaderLines(s) {
+    return {
+        scoreLine: `Score: ${s.score} / 100 — ${s.grade}`,
+        cleanLine: s.filesTotal > 0 ? `${s.filesClean}/${s.filesTotal} files clean` : null,
+    };
 }
 export function categoryRollup(groups) {
     var _a;

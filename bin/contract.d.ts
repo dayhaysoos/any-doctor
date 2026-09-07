@@ -62,6 +62,7 @@ export declare const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
 export type Mode = {
     kind: "run";
     root: string;
+    includeTests?: boolean;
 } | {
     kind: "verify";
     fixtures: string;
@@ -112,6 +113,8 @@ export type Frame = RunResult | VerifyRunResult | MetaResult;
 export declare const DOCTOR_FILE_RE: RegExp;
 export declare const FIXTURES_FILE_RE: RegExp;
 export declare function fixturesPathFor(programPath: string): string;
+export declare function isTestPath(relativePath: string): boolean;
+export declare function includeTestsFor(mode: Mode): boolean;
 export declare function runCommandFor(doctorPath: string, root: string, invoker?: string): string;
 export declare function compareFindings(expected: {
     file: string;

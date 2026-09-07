@@ -37,6 +37,8 @@ export declare function causeSummaryLine(e: RunnerError | undefined): string;
 export interface RunOptions {
     programPath: string;
     targetDir: string;
+    /** List test files too; the default excludes them (tests are not production reads). */
+    includeTests?: boolean;
 }
 export interface VerifyOptions {
     programPath: string;

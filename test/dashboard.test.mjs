@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
+const { computeScore } = await import("../bin/score.js");
 
 // The clipboard is injected via deps in runDashboardOn tests, keeping them
 // deterministic and spawn-free.
@@ -187,7 +188,7 @@ test("dashboardFrame: unsafe skips appear as one header note line", () => {
     selectedRow: 0,
     readKeys: new Set(),
     readSource: () => null,
-    fileCount: 2,
+    score: computeScore(groups, 2),
     durationMs: 10,
     useColor: false,
     skippedUnsafe: ["evil"],
@@ -200,7 +201,7 @@ test("dashboardFrame: unsafe skips appear as one header note line", () => {
 test("dashboardFrame: frame height is exactly rows - 1 in every state (notice never resizes it)", () => {
   const items = buildItems(groups);
   const height = (notice, cols, selected) =>
-    dashboardFrame({ tree: buildTree(items), selectedRow: selected, readKeys: new Set(), readSource: () => null, fileCount: 2, durationMs: 10, useColor: false, notice, cols, rows: 34 })
+    dashboardFrame({ tree: buildTree(items), selectedRow: selected, readKeys: new Set(), readSource: () => null, score: computeScore(groups, 2), durationMs: 10, useColor: false, notice, cols, rows: 34 })
       .split("\n").length;
   assert.equal(height(undefined, 120, 0), 33, "split, no notice");
   assert.equal(height("copied finding — paste into your agent", 120, 0), 33, "split, with notice");
@@ -235,7 +236,7 @@ test("dashboardFrame: pure state -> string; code frames come from the injected s
   const items = buildItems(groups);
   const source = ["one", "two", "const three = 3", "four", "five"];
   const readSource = (file) => (file === "src/a.ts" ? source : null);
-  const state = { tree: buildTree(items), selectedRow: 1, readKeys: new Set(), readSource, expanded: new Set(["stripe-doctor"]), fileCount: 2, durationMs: 10, useColor: false, cols: 120, rows: 34 };
+  const state = { tree: buildTree(items), selectedRow: 1, readKeys: new Set(), readSource, expanded: new Set(["stripe-doctor"]), score: computeScore(groups, 2), durationMs: 10, useColor: false, cols: 120, rows: 34 };
 
   const once = dashboardFrame(state);
   assert.equal(dashboardFrame(state), once, "same state, same frame — no hidden I/O");
@@ -246,7 +247,7 @@ test("dashboardFrame: pure state -> string; code frames come from the injected s
 
 test("dashboardFrame with color: header carries no function source", () => {
   const items = buildItems(groups);
-  const out = dashboardFrame({ tree: buildTree(items), selectedRow: 0, readKeys: new Set(), readSource: () => null, fileCount: 2, durationMs: 10, useColor: true, cols: 120, rows: 34 });
+  const out = dashboardFrame({ tree: buildTree(items), selectedRow: 0, readKeys: new Set(), readSource: () => null, score: computeScore(groups, 2), durationMs: 10, useColor: true, cols: 120, rows: 34 });
   assert.ok(!out.includes("function gradeColor"), "gradeColor is called, not concatenated");
 });
 
@@ -288,7 +289,7 @@ test("tree: checks render as severity-ordered rows; errors start expanded, warni
 test("tree: expanding a warning check reveals its instances in the frame", async () => {
   const { buildItems, dashboardFrame, initialExpanded } = await import("../bin/dashboard.js");
   const items = buildItems(multiGroups);
-  const base = { tree: buildTree(items), selectedRow: 1, readKeys: new Set(), readSource: () => null, fileCount: 1, durationMs: 5, useColor: false, cols: 120, rows: 34 };
+  const base = { tree: buildTree(items), selectedRow: 1, readKeys: new Set(), readSource: () => null, score: computeScore(multiGroups, 1), durationMs: 5, useColor: false, cols: 120, rows: 34 };
   const closed = dashboardFrame({ ...base, expanded: initialExpanded(buildTree(items)) });
   assert.ok(closed.includes("a.ts:1") && !closed.includes("b.ts:3"));
   const open = dashboardFrame({ ...base, expanded: new Set(["multi-doctor/bad-error", "multi-doctor/meh-warn"]) });
@@ -298,7 +299,7 @@ test("tree: expanding a warning check reveals its instances in the frame", async
 test("tree: a check row's detail pane tells the check's story", async () => {
   const { buildItems, dashboardFrame, initialExpanded } = await import("../bin/dashboard.js");
   const items = buildItems(multiGroups);
-  const out = dashboardFrame({ tree: buildTree(items), selectedRow: 1, readKeys: new Set(), readSource: () => null, expanded: initialExpanded(buildTree(items)), fileCount: 1, durationMs: 5, useColor: false, cols: 120, rows: 34 });
+  const out = dashboardFrame({ tree: buildTree(items), selectedRow: 1, readKeys: new Set(), readSource: () => null, expanded: initialExpanded(buildTree(items)), score: computeScore(multiGroups, 1), durationMs: 5, useColor: false, cols: 120, rows: 34 });
   assert.ok(out.includes("multi-doctor/bad-error"), "checkKey in the detail pane");
   assert.ok(out.includes("2 findings across 1 file"), "blast radius");
   assert.ok(out.includes("because"), "why text");
@@ -579,4 +580,60 @@ test("runDashboard: copied prompts resolve the re-run command per doctor", async
   assert.ok(prompt, "check group copied");
   assert.match(prompt, /Verify with `any-doctor run \"doctors\/stripe\.mjs\" \"\.\"`/,
     "the outcome's doctorPaths resolved the doctor that owns the check");
+});
+
+test("dashboard and report render the same finding count for one duplicate-laden outcome", async () => {
+  const { renderReport } = await import("../bin/report.js");
+  const dupGroups = [
+    { programName: "a.mjs", meta: { id: "a", description: "x", severity: "warning" }, findings: [{ file: "src/a.ts", line: 1 }] },
+    { programName: "b.mjs", meta: { id: "b", description: "x", severity: "warning" }, findings: [{ file: "src/a.ts", line: 1 }] },
+  ];
+  const outcome = {
+    groups: dupGroups, crashed: [], skippedUnsafe: [], doctorPaths: new Map(),
+    fileCount: 4, durationMs: 5, targetDir: ".",
+  };
+  const report = renderReport({ ...outcome }, false);
+  assert.match(report, /1 finding/);
+  assert.match(report, /1 duplicate finding hidden/);
+
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = runDashboardOn({ stdin, stdout }, { outcome, useColor: false }, { copy: () => true });
+  await new Promise((r) => setTimeout(r, 10));
+  const frame = stdout.frames.find((f) => f.includes("finding")) ?? "";
+  assert.match(frame, /1 finding/, "dashboard count matches the report");
+  assert.ok(!frame.includes("2 finding"), "the duplicate is hidden on both surfaces");
+  stdin.send("q");
+  await settle(done);
+});
+
+test("dashboard tree keeps a same-doctor second check at one site (both diagnoses visible)", async () => {
+  const twoChecks = [{
+    programName: "convex-doctor.mjs",
+    meta: {
+      id: "convex-doctor", description: "x", severity: "warning",
+      checks: [
+        { id: "filter-table-scan", description: "Filter scans the table", severity: "warning" },
+        { id: "unbounded-collect", description: "Collect is unbounded", severity: "warning" },
+      ],
+    },
+    findings: [
+      { rule: "filter-table-scan", file: "src/list.ts", line: 5 },
+      { rule: "unbounded-collect", file: "src/list.ts", line: 5 },
+    ],
+  }];
+  const outcome = {
+    groups: twoChecks, crashed: [], skippedUnsafe: [], doctorPaths: new Map(),
+    fileCount: 4, durationMs: 5, targetDir: ".",
+  };
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = runDashboardOn({ stdin, stdout }, { outcome, useColor: false }, { copy: () => true });
+  await new Promise((r) => setTimeout(r, 10));
+  const frame = stdout.frames.find((f) => f.includes("finding")) ?? "";
+  assert.match(frame, /2 findings/, "both checks count on the dashboard as in the report");
+  assert.ok(frame.includes("Filter scans the table"), "the first check row is in the tree");
+  assert.ok(frame.includes("Collect is unbounded"), "the second check survives dedupe in the tree");
+  stdin.send("q");
+  await settle(done);
 });

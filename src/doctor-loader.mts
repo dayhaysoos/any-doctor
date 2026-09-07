@@ -30,7 +30,7 @@ export function confineProcess(): void {
   }
 }
 
-const USAGE = "usage: doctor-loader.mjs <program.(m)js> <root> | <program.(m)js> --verify <fixtures.(m)js> | <program.(m)js> --meta";
+const USAGE = "usage: doctor-loader.mjs <program.(m)js> <root> [--include-tests] | <program.(m)js> --verify <fixtures.(m)js> | <program.(m)js> --meta";
 
 interface DoctorModule {
   meta?: unknown;
@@ -52,9 +52,9 @@ function validateMeta(mod: DoctorModule): void {
   }
 }
 
-function runOnce(root: string, mod: DoctorModule): Promise<Record<string, unknown>> {
+function runOnce(root: string, mod: DoctorModule, opts: { includeTests: boolean }): Promise<Record<string, unknown>> {
   const started = Date.now();
-  const { ctx, getFindings } = buildCtx(root);
+  const { ctx, getFindings } = buildCtx(root, opts);
   const fileCount = ctx.files.list().length;
   const result = mod.doctor!(ctx);
   if (!result || typeof (result as Promise<unknown>).then !== "function") {
@@ -110,7 +110,7 @@ async function main(): Promise<void> {
         meta: mod.meta,
       }) + "\n");
     } else if (mode.kind === "run") {
-      const result = await runOnce(mode.root, mod);
+      const result = await runOnce(mode.root, mod, { includeTests: contract.includeTestsFor(mode) });
       process.stdout.write("\n" + contract.RESULT_SENTINEL + JSON.stringify(result) + "\n");
     } else {
       const fixturesMod = (await import(pathToFileURL(mode.fixtures).href)) as { fixtures?: unknown };
@@ -126,7 +126,10 @@ async function main(): Promise<void> {
           for (const [rel, content] of Object.entries(fixture.seed)) {
             materializeSeed(tmp, rel, content);
           }
-          const result = await runOnce(tmp, mod);
+          // Verify always lists everything (includeTestsFor): the sandbox is
+          // the doctor's own world — a seed named *.test.ts is deliberate
+          // test data (effect-doctor's sleep-in-test depends on it).
+          const result = await runOnce(tmp, mod, { includeTests: contract.includeTestsFor(mode) });
           const diff = contract.compareFindings(fixture.expected, (result as { findings: Finding[] }).findings);
           results.push({ name: fixture.name, ok: diff.missing.length === 0 && diff.unexpected.length === 0, ...diff });
         } catch (e) {

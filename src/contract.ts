@@ -73,13 +73,15 @@ export const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
 // from argv substrings. The runner builds it, serializes it at the spawn
 // seam, and the loader decodes it on the other side.
 export type Mode =
-  | { kind: "run"; root: string }
+  | { kind: "run"; root: string; includeTests?: boolean }
   | { kind: "verify"; fixtures: string }
   | { kind: "meta" };
 
 export function modeArgs(mode: Mode, programPath: string): string[] {
   switch (mode.kind) {
-    case "run": return [programPath, mode.root];
+    case "run": return mode.includeTests === true
+      ? [programPath, mode.root, "--include-tests"]
+      : [programPath, mode.root];
     case "verify": return [programPath, "--verify", mode.fixtures];
     case "meta": return [programPath, "--meta"];
   }
@@ -90,8 +92,8 @@ export function decodeLoaderArgs(argv: string[]): { program: string; mode: Mode 
   if (!program || program.startsWith("-")) return null;
   if (second === "--verify" && third !== undefined) return { program, mode: { kind: "verify", fixtures: third } };
   if (second === "--meta" && third === undefined) return { program, mode: { kind: "meta" } };
-  if (second !== undefined && !second.startsWith("-") && third === undefined) {
-    return { program, mode: { kind: "run", root: second } };
+  if (second !== undefined && !second.startsWith("-") && (third === undefined || third === "--include-tests")) {
+    return { program, mode: { kind: "run", root: second, ...(third === "--include-tests" ? { includeTests: true } : {}) } };
   }
   return null;
 }
@@ -145,6 +147,27 @@ export const FIXTURES_FILE_RE = /\.fixtures\.(m|c)?js$/;
 
 export function fixturesPathFor(programPath: string): string {
   return programPath.replace(DOCTOR_FILE_RE, "") + ".fixtures.mjs";
+}
+
+// D18's one law, in the conventions' home: test files and test directories
+// are not production reads. Every read capability applies this predicate —
+// the sdk walk prunes by it, the search host filters matches by it. Test
+// FILES are test-named code files (.test./.spec. with a code extension);
+// test DIRECTORIES are test/tests/__tests__ anywhere in the path.
+const TEST_FILE_RE = /(?:\.test|\.spec)\.[cm]?[jt]sx?$/i;
+const TEST_DIR_NAMES = new Set(["test", "tests", "__tests__"]);
+
+export function isTestPath(relativePath: string): boolean {
+  if (TEST_FILE_RE.test(relativePath)) return true;
+  return relativePath.split(/[\\/]+/).some((seg) => TEST_DIR_NAMES.has(seg));
+}
+
+// One derivation, one home: a run scans test files only when --include-tests
+// asks; a verify always sees everything its fixtures seed (D18) — the
+// sandbox is the doctor's own world.
+export function includeTestsFor(mode: Mode): boolean {
+  if (mode.kind === "verify") return true;
+  return mode.kind === "run" && mode.includeTests === true;
 }
 
 // The re-run command embedded in copied prompts. invoker defaults to

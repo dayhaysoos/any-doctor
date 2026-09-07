@@ -2,13 +2,13 @@ import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { Finding, JoinedFinding, ReportGroup, resolveFinding, runCommandFor, Severity } from "./contract.js";
-import { scoreFromSeverities } from "./score.js";
+import { computeScore, ScoreResult, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 
 import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, SEVERITY_COLOR, YELLOW } from "./palette.js";
-import { RunOutcome, unsafeSkipLine } from "./report.js";
+import { dedupeGroups, RunOutcome, unsafeSkipLine } from "./report.js";
 
 const SPLIT_MIN_COLS = 100;
 
@@ -515,7 +515,9 @@ export interface DashboardFrameState {
   readKeys: Set<string>;
   readSource: FrameSource;
   expanded?: ReadonlySet<string>;
-  fileCount: number;
+  // Computed once per run (it never changes during interaction) by the
+  // score module's single entry point — the frame only renders it.
+  score: ScoreResult;
   durationMs: number;
   useColor: boolean;
   notice?: string;
@@ -529,18 +531,18 @@ export function dashboardFrame(state: DashboardFrameState): string {
   const c = colorizer(useColor);
   const findings = tree.flatMap(d => d.checks.flatMap(g => g.items));
   const layout = resolveDashboardLayout(cols, rows, findings.length);
-  const { score, grade } = scoreFromSeverities(findings.map(it => it.severity));
+  const header = scoreHeaderLines(state.score);
   const barWidth = Math.min(46, Math.max(16, cols - 60));
 
-  const header: string[] = [
-    c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)),
-    c(scoreBar(score, barWidth), gradeColor(score)),
-    c(`${findings.length} finding${findings.length === 1 ? "" : "s"} · ${state.fileCount} files · ${state.durationMs}ms`, DIM),
+  const headerLines: string[] = [
+    c(header.scoreLine, BOLD + gradeColor(state.score.score)),
+    c(scoreBar(state.score.score, barWidth), gradeColor(state.score.score)),
+    c(`${findings.length} finding${findings.length === 1 ? "" : "s"} · ${header.cleanLine ?? state.score.filesTotal + " files"} · ${state.durationMs}ms`, DIM),
   ];
   if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
-    header.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
+    headerLines.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
   }
-  header.push("");
+  headerLines.push("");
 
   const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded);
   const viewport = Math.max(1, Math.min(layout.listHeight, layout.bodyRows));
@@ -627,7 +629,7 @@ export function dashboardFrame(state: DashboardFrameState): string {
     c("↑↓ move · →← expand · enter copy finding · c copy group · q quit", DIM),
   ];
 
-  return [...header, "", ...body, "", ...footer].join("\n");
+  return [...headerLines, "", ...body, "", ...footer].join("\n");
 }
 
 function cap(s: string): string {
@@ -678,9 +680,12 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
   if (!tty.canRunTui(env)) return;
 
   const useColor = input.useColor;
-  // The tree is computed once from immutable items; everything downstream
-  // — rows, prompts, expansion, detail — reads this frozen shape.
-  const tree = buildTree(buildItems(input.outcome.groups));
+  // One RunOutcome, one story on every surface: the tree AND the score
+  // consume the same deduplicated groups the report renders — counts and
+  // score can never disagree between surfaces.
+  const { groups: deduped } = dedupeGroups(input.outcome.groups);
+  const tree = buildTree(buildItems(deduped));
+  const score = computeScore(deduped, input.outcome.fileCount);
   const expanded = initialExpanded(tree);
   const readKeys = new Set<string>();
   let notice: string | undefined;
@@ -729,7 +734,7 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
         readKeys,
         readSource,
         expanded,
-        fileCount: input.outcome.fileCount,
+        score,
         durationMs: input.outcome.durationMs,
         useColor,
         notice,

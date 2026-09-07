@@ -1,6 +1,13 @@
 import { resolveFinding } from "./contract.js";
 import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR, YELLOW } from "./palette.js";
-import { categoryRollup, computeScore, findingSeverity } from "./score.js";
+import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
+// All doctors scan the same target, so the cohort's file count is any
+// doctor's count; the max is the honest pick when one crashed early. The
+// policy lives here, beside the RunOutcome field it fills and the Score
+// that divides by it.
+export function cohortFileCount(counts) {
+    return counts.reduce((m, n) => Math.max(m, n), 0);
+}
 // The one place the skip-note copy lives; report, dashboard, and the CLI
 // all render this sentence so the story is identical everywhere. The count
 // is always the true total; only the name list caps — three names, then
@@ -43,7 +50,12 @@ function expandChecks(g) {
     return [...buckets.values()];
 }
 export function dedupeGroups(groups) {
-    const seen = new Set();
+    // A site claimed by one doctor is hidden when ANOTHER doctor claims it
+    // too (same location, different doctor — one display copy). A second
+    // check from the SAME doctor at the same site is a different diagnosis
+    // of one line (filter-table-scan and unbounded-collect on one chain)
+    // and survives — the check tree exists to show each check's own story.
+    const owner = new Map();
     const key = (f) => `${f.file}:${f.line}`;
     const ordered = [...groups].sort((a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
     const out = [];
@@ -56,12 +68,17 @@ export function dedupeGroups(groups) {
         const kept = [];
         for (const f of g.findings) {
             const k = key(f);
-            if (seen.has(k)) {
-                hidden++;
-                continue;
+            const heldBy = owner.get(k);
+            if (heldBy === undefined) {
+                owner.set(k, g.meta.id);
+                kept.push(f);
             }
-            seen.add(k);
-            kept.push(f);
+            else if (heldBy !== g.meta.id) {
+                hidden++;
+            }
+            else {
+                kept.push(f);
+            }
         }
         if (kept.length > 0)
             out.push({ ...g, findings: kept });
@@ -73,12 +90,16 @@ export function renderReport(input, useColor) {
     const lines = [];
     const { groups, hidden } = dedupeGroups(input.groups);
     const total = groups.reduce((n, g) => n + g.findings.length, 0);
-    const { score, grade } = computeScore(groups);
+    const sr = computeScore(groups, input.fileCount);
+    const header = scoreHeaderLines(sr);
     lines.push(`✔ Scanned ${input.fileCount} files in ${input.durationMs}ms`);
     lines.push("");
     const doctorWord = groups.length === 1 ? "doctor" : "doctors";
     lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
-    lines.push(c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)));
+    lines.push(c(header.scoreLine, BOLD + gradeColor(sr.score)));
+    if (header.cleanLine) {
+        lines.push(c(header.cleanLine, DIM));
+    }
     if (input.skippedUnsafe !== undefined && input.skippedUnsafe.length > 0) {
         lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
     }

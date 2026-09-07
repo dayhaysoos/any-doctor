@@ -67,6 +67,17 @@ repo-scoped file access, structural search, and a finding emitter.
 Confinement enforces it: outside ctx there is nothing — no imports, no
 writes, no subprocesses, no network.
 
+`ctx.files.list()` and `ctx.search` exclude test paths by default
+(test-named code files — `*.test.*`/`*.spec.*` with a code extension —
+and `test/`, `tests/`, `__tests__/` directories): tests mimic production
+shapes without being production reads. The one law (`isTestPath`) and
+the one derivation (`includeTestsFor`) live in contract.ts; every read
+capability applies them. A Doctor run opts back in with
+`--include-tests`; `ctx.files.read()` is never filtered — an explicit
+path is a deliberate choice. Verify always sees everything its fixtures
+seed: the sandbox is the doctor's own world, and a seed named
+`*.test.ts` is deliberate test data.
+
 ## Engine
 
 The structural-search backend a DoctorCtx uses to answer ctx.search.
@@ -75,6 +86,23 @@ repos. Engine selection is invisible to doctor programs: one doctor
 program runs unchanged on any engine. One module owns the invocation
 (src/engine.ts); the search host sits on it, and the sdk asks the host —
 there is exactly one path, with no unconfined fallback.
+
+## Score
+
+The share of scanned files with no findings, weighted by each affected
+file's worst severity (error 1, warning 0.5, info 0.1). One sentence,
+locally computed: "491/628 files clean" is a 78. Zero findings is 100 by
+anchor; an empty scan is also 100. The denominator is the target's file
+count as the doctors scanned it (default extensions); findings naming
+files outside that count can push the raw value negative, so the result
+is floored into 0–100 — and floored, never rounded, so any finding costs
+at least one point. Findings duplicated across doctors at the same
+file:line are deduplicated before scoring — the first-sorted copy wins
+(groups sort by the first finding carrying an explicit severity
+override, else the doctor's declared default; equal-severity groups
+fall back to input order) and a hidden duplicate's severity does not
+contribute. The score summarizes health — the findings are the work;
+the two are reported together, never conflated.
 
 ## Meta
 
@@ -123,6 +151,8 @@ never writes to any scope.
 ## Skill
 
 The instructions any-doctor provides so an agent can create a doctor that
-fits the contract. Planted as `AGENTS.md` in a scope directory and also
-served verbatim by `generate`. Any Doctor equips agents with the skill;
+fits the contract. Planted as `AGENTS.md` behind a one-line provenance
+marker; `generate` refreshes a copy it planted (the marker is the
+boundary) and never touches a copy without one. The generation prompt
+embeds the skill verbatim. Any Doctor equips agents with the skill;
 it never launches, deploys, or speaks for an agent.
