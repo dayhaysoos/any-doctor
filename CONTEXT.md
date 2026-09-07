@@ -97,10 +97,11 @@ count as the doctors scanned it (default extensions); findings naming
 files outside that count can push the raw value negative, so the result
 is floored into 0–100 — and floored, never rounded, so any finding costs
 at least one point. Findings duplicated across doctors at the same
-file:line are deduplicated before scoring (the first-sorted copy wins;
-a hidden duplicate's severity does not contribute). The score
-summarizes health — the findings are the work; the two are reported
-together, never conflated.
+file:line are deduplicated before scoring — the first-sorted copy wins
+(sorting follows per-finding severity; equal-severity groups fall back
+to input order) and a hidden duplicate's severity does not contribute.
+The score summarizes health — the findings are the work; the two are
+reported together, never conflated.
 
 ## Meta
 

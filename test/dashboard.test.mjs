@@ -606,3 +606,34 @@ test("dashboard and report render the same finding count for one duplicate-laden
   stdin.send("q");
   await settle(done);
 });
+
+test("dashboard tree keeps a same-doctor second check at one site (both diagnoses visible)", async () => {
+  const twoChecks = [{
+    programName: "convex-doctor.mjs",
+    meta: {
+      id: "convex-doctor", description: "x", severity: "warning",
+      checks: [
+        { id: "filter-table-scan", description: "Filter scans the table", severity: "warning" },
+        { id: "unbounded-collect", description: "Collect is unbounded", severity: "warning" },
+      ],
+    },
+    findings: [
+      { rule: "filter-table-scan", file: "src/list.ts", line: 5 },
+      { rule: "unbounded-collect", file: "src/list.ts", line: 5 },
+    ],
+  }];
+  const outcome = {
+    groups: twoChecks, crashed: [], skippedUnsafe: [], doctorPaths: new Map(),
+    fileCount: 4, durationMs: 5, targetDir: ".",
+  };
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = runDashboardOn({ stdin, stdout }, { outcome, useColor: false }, { copy: () => true });
+  await new Promise((r) => setTimeout(r, 10));
+  const frame = stdout.frames.find((f) => f.includes("finding")) ?? "";
+  assert.match(frame, /2 findings/, "both checks count on the dashboard as in the report");
+  assert.ok(frame.includes("Filter scans the table"), "the first check row is in the tree");
+  assert.ok(frame.includes("Collect is unbounded"), "the second check survives dedupe in the tree");
+  stdin.send("q");
+  await settle(done);
+});
