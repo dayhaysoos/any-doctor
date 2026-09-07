@@ -5,12 +5,24 @@ import { RawSgMatch } from "./engine.js";
 
 const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 
-export function buildCtx(root: string): { ctx: DoctorCtx; getFindings(): Finding[] } {
+// Production posture: test files are excluded from ctx.files.list() by
+// default. Tests mimic production shapes (mocked ctx objects, Date.now()
+// fixture data) without being production reads — listing them floods
+// findings. A run opts back in with --include-tests; ctx.files.read() is
+// never filtered, because an explicit path is a doctor's deliberate choice.
+const TEST_DIR_NAMES = new Set(["test", "tests", "__tests__"]);
+const TEST_FILE_RE = /(?:\.test|\.spec)\.[cm]?[jt]sx?$/i;
+
+export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): { ctx: DoctorCtx; getFindings(): Finding[] } {
   const findings: Finding[] = [];
 
   function walk(dir: string, exts: Set<string>, out: string[]): void {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+      if (!opts.includeTests) {
+        if (entry.isDirectory() && TEST_DIR_NAMES.has(entry.name)) continue;
+        if (!entry.isDirectory() && TEST_FILE_RE.test(entry.name)) continue;
+      }
       const abs = path.join(dir, entry.name);
       if (entry.isDirectory()) walk(abs, exts, out);
       else if (exts.has(path.extname(entry.name))) out.push(path.relative(root, abs));

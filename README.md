@@ -29,6 +29,11 @@ fail precision. `run` and `verify` never touch a model or an agent — pipe
 the output (or set `ANY_DOCTOR_HEADLESS=1`) for stable CI output. Requires
 Node ≥ 18.
 
+`run` excludes test files from scanning by default (`*.test.*`, `*.spec.*`,
+`test/`, `tests/`, `__tests__/`) — mocks and fixture data mimic production
+shapes without being production reads. Pass `--include-tests` to scan them;
+`verify` always scans everything its fixtures seed.
+
 A doctor program is `<name>.mjs` (exports `meta` + `doctor(ctx)`) next to
 its fixture module `<name>.fixtures.mjs` (seeds + expected findings).
 See [CONTEXT.md](CONTEXT.md) for the vocabulary and

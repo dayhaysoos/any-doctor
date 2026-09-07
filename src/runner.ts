@@ -77,6 +77,8 @@ export function causeSummaryLine(e: RunnerError | undefined): string {
 export interface RunOptions {
   programPath: string;
   targetDir: string;
+  /** List test files too; the default excludes them (tests are not production reads). */
+  includeTests?: boolean;
 }
 
 export interface VerifyOptions {
@@ -279,9 +281,9 @@ async function drain<T>(effect: Effect.Effect<T, RunnerError>): Promise<T> {
   });
 }
 
-const runDoctorE = ({ programPath, targetDir }: RunOptions): Effect.Effect<RunResult, RunnerError> =>
+const runDoctorE = ({ programPath, targetDir, includeTests }: RunOptions): Effect.Effect<RunResult, RunnerError> =>
   Effect.flatMap(
-    execLoader(programPath, { kind: "run", root: path.resolve(targetDir) }, DEFAULT_TIMEOUT_MS),
+    execLoader(programPath, { kind: "run", root: path.resolve(targetDir), includeTests }, DEFAULT_TIMEOUT_MS),
     asRunResult,
   );
 

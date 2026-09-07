@@ -62,6 +62,7 @@ export declare const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
 export type Mode = {
     kind: "run";
     root: string;
+    includeTests?: boolean;
 } | {
     kind: "verify";
     fixtures: string;

@@ -106,15 +106,17 @@ interface ParsedArgs {
   targetDir: string;
   all: boolean;
   global: boolean;
+  includeTests: boolean;
 }
 
 function parseArgs(args: string[]): ParsedArgs {
-  const out: ParsedArgs = { targetDir: path.resolve("."), all: false, global: false };
+  const out: ParsedArgs = { targetDir: path.resolve("."), all: false, global: false, includeTests: false };
   let targetDirSet = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === "--all") out.all = true;
     else if (a === "--global") out.global = true;
+    else if (a === "--include-tests") out.includeTests = true;
     else if (out.doctorPath === undefined && DOCTOR_FILE_RE.test(a)) out.doctorPath = a;
     else if (!targetDirSet) {
       out.targetDir = path.resolve(a);
@@ -141,8 +143,8 @@ async function gatherDoctors(): Promise<{ valid: DiscoveredDoctor[]; skippedUnsa
   };
 }
 
-async function scanOnce(doctorAbs: string, targetDir: string): Promise<Scan> {
-  const result = await runOrReport(runDoctor({ programPath: doctorAbs, targetDir }));
+async function scanOnce(doctorAbs: string, targetDir: string, includeTests: boolean): Promise<Scan> {
+  const result = await runOrReport(runDoctor({ programPath: doctorAbs, targetDir, includeTests }));
   return {
     group: { programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings },
     fileCount: result.fileCount,
@@ -183,7 +185,7 @@ async function cmdRun(args: string[]): Promise<number> {
     const selection = selectionOutcome(sel);
     if ("exit" in selection) return selection.exit;
     const runStarted = Date.now();
-    const scan = await scanOnce(selection.doctorPath, parsed.targetDir);
+    const scan = await scanOnce(selection.doctorPath, parsed.targetDir, parsed.includeTests);
     outcome = {
       groups: [scan.group],
       crashed: [],
@@ -206,7 +208,7 @@ async function cmdRun(args: string[]): Promise<number> {
     let fileCount = 0;
     for (const d of discovered) {
       try {
-        const scan = await scanOnce(d.path, parsed.targetDir);
+        const scan = await scanOnce(d.path, parsed.targetDir, parsed.includeTests);
         fileCount = Math.max(fileCount, scan.fileCount);
         doctorPaths.set(d.meta!.id, d.path);
         groups.push(scan.group);
@@ -387,7 +389,7 @@ function usage(): void {
   console.log(BOLD + "any-doctor" + RESET + dim(" — your agent writes the analyzer, fixtures prove it, CI reruns it forever"));
   console.log("");
   console.log('  generate "<intent>" [--global]      print the exact prompt for your agent to build a doctor');
-  console.log("  run [--all] [doctor.(m)js] [dir]   scan; no argument = every doctor in one review tree");
+  console.log("  run [--all] [--include-tests] [doctor.(m)js] [dir]   scan; no argument = every doctor in one review tree");
   console.log("  verify [--all] [doctor.(m)js]     fixture gate (no doctor: fuzzy picker; --all: every doctor)");
   console.log("");
   console.log(dim("doctors live in ./doctors/ (repo) and ~/.any-doctor/doctors/ (global)."));

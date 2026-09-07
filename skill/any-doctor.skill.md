@@ -53,7 +53,7 @@ export const fixtures = [
 
 `ctx` is the only capability a doctor has:
 
-- `ctx.files.list(exts?)` → relative paths (default .ts/.tsx/.js/.jsx/.mjs)
+- `ctx.files.list(exts?)` → relative paths (default .ts/.tsx/.js/.jsx/.mjs; test files — `*.test.*`, `*.spec.*`, `test|tests|__tests__/` — are excluded by default; a run needs `--include-tests` to scan them)
 - `ctx.files.read(rel)` → file contents
 - `ctx.search.pattern(pattern, language?)` → `[{ file, line, column, text }]`
   (ast-grep pattern syntax, e.g. `"fetch($URL)"`; requires ast-grep installed)

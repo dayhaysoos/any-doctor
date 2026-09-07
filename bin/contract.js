@@ -7,7 +7,9 @@ export const SEARCH_REQUEST = "###ANY_DOCTOR_SEARCH###";
 export const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
 export function modeArgs(mode, programPath) {
     switch (mode.kind) {
-        case "run": return [programPath, mode.root];
+        case "run": return mode.includeTests === true
+            ? [programPath, mode.root, "--include-tests"]
+            : [programPath, mode.root];
         case "verify": return [programPath, "--verify", mode.fixtures];
         case "meta": return [programPath, "--meta"];
     }
@@ -20,8 +22,8 @@ export function decodeLoaderArgs(argv) {
         return { program, mode: { kind: "verify", fixtures: third } };
     if (second === "--meta" && third === undefined)
         return { program, mode: { kind: "meta" } };
-    if (second !== undefined && !second.startsWith("-") && third === undefined) {
-        return { program, mode: { kind: "run", root: second } };
+    if (second !== undefined && !second.startsWith("-") && (third === undefined || third === "--include-tests")) {
+        return { program, mode: { kind: "run", root: second, ...(third === "--include-tests" ? { includeTests: true } : {}) } };
     }
     return null;
 }
