@@ -149,6 +149,27 @@ export function fixturesPathFor(programPath: string): string {
   return programPath.replace(DOCTOR_FILE_RE, "") + ".fixtures.mjs";
 }
 
+// D18's one law, in the conventions' home: test files and test directories
+// are not production reads. Every read capability applies this predicate —
+// the sdk walk prunes by it, the search host filters matches by it. Test
+// FILES are test-named code files (.test./.spec. with a code extension);
+// test DIRECTORIES are test/tests/__tests__ anywhere in the path.
+const TEST_FILE_RE = /(?:\.test|\.spec)\.[cm]?[jt]sx?$/i;
+const TEST_DIR_NAMES = new Set(["test", "tests", "__tests__"]);
+
+export function isTestPath(relativePath: string): boolean {
+  if (TEST_FILE_RE.test(relativePath)) return true;
+  return relativePath.split(/[\\/]+/).some((seg) => TEST_DIR_NAMES.has(seg));
+}
+
+// One derivation, one home: a run scans test files only when --include-tests
+// asks; a verify always sees everything its fixtures seed (D18) — the
+// sandbox is the doctor's own world.
+export function includeTestsFor(mode: Mode): boolean {
+  if (mode.kind === "verify") return true;
+  return mode.kind === "run" && mode.includeTests === true;
+}
+
 // The re-run command embedded in copied prompts. invoker defaults to
 // the installed binary name; callers running via node or npx pass their own.
 export function runCommandFor(doctorPath: string, root: string, invoker = "any-doctor"): string {

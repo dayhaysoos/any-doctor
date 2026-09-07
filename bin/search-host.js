@@ -1,6 +1,6 @@
 import * as os from "os";
 import * as path from "path";
-import { SEARCH_REQUEST } from "./contract.js";
+import { includeTestsFor, isTestPath, SEARCH_REQUEST } from "./contract.js";
 import { runEngineSearch } from "./engine.js";
 // The search host: the doctor child cannot spawn (Confinement), so it asks
 // any-doctor to run the Engine over a dedicated channel. This module is
@@ -9,7 +9,9 @@ import { runEngineSearch } from "./engine.js";
 //
 // The root check is a security decision: a run may search its target, a
 // verify may search its fixture sandboxes under the temp dir, and meta may
-// not search at all.
+// not search at all. The test-path filter is D18's law applied to this
+// seam: the same isTestPath predicate the sdk walk uses, the same
+// includeTestsFor derivation (run → flag, verify → everything).
 export function searchBase(mode) {
     switch (mode.kind) {
         // Verify sandboxes are seeded under the temp dir with this prefix —
@@ -52,5 +54,16 @@ export function handleSearchLine(line, mode, engine = runEngineSearch) {
         return JSON.stringify({ error: "ctx.search failed: search root is outside the allowed target" });
     }
     const r = engine(String((_a = req.pattern) !== null && _a !== void 0 ? _a : ""), typeof req.language === "string" ? req.language : "TypeScript", root);
-    return r.ok ? JSON.stringify({ matches: r.matches }) : JSON.stringify({ error: r.error });
+    if (!r.ok)
+        return JSON.stringify({ error: r.error });
+    const matches = includeTestsFor(mode) ? r.matches : r.matches.filter((m) => !isTestPath(matchRel(root, m)));
+    return JSON.stringify({ matches });
+}
+// Engine paths arrive root-prefixed or already root-relative; either way
+// the predicate answers on the path relative to the search root. A match
+// with no file is unclassifiable and stays.
+function matchRel(root, m) {
+    var _a;
+    const f = (_a = m.file) !== null && _a !== void 0 ? _a : "";
+    return f.startsWith(root + path.sep) ? f.slice(root.length + 1) : f;
 }

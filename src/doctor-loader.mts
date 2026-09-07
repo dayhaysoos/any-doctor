@@ -110,7 +110,7 @@ async function main(): Promise<void> {
         meta: mod.meta,
       }) + "\n");
     } else if (mode.kind === "run") {
-      const result = await runOnce(mode.root, mod, { includeTests: mode.includeTests === true });
+      const result = await runOnce(mode.root, mod, { includeTests: contract.includeTestsFor(mode) });
       process.stdout.write("\n" + contract.RESULT_SENTINEL + JSON.stringify(result) + "\n");
     } else {
       const fixturesMod = (await import(pathToFileURL(mode.fixtures).href)) as { fixtures?: unknown };
@@ -126,10 +126,10 @@ async function main(): Promise<void> {
           for (const [rel, content] of Object.entries(fixture.seed)) {
             materializeSeed(tmp, rel, content);
           }
-          // The fixture sandbox is the doctor's own world: a seed named
-          // *.test.ts is deliberate test data (effect-doctor's sleep-in-test
-          // depends on it), so verify always lists everything.
-          const result = await runOnce(tmp, mod, { includeTests: true });
+          // Verify always lists everything (includeTestsFor): the sandbox is
+          // the doctor's own world — a seed named *.test.ts is deliberate
+          // test data (effect-doctor's sleep-in-test depends on it).
+          const result = await runOnce(tmp, mod, { includeTests: contract.includeTestsFor(mode) });
           const diff = contract.compareFindings(fixture.expected, (result as { findings: Finding[] }).findings);
           results.push({ name: fixture.name, ok: diff.missing.length === 0 && diff.unexpected.length === 0, ...diff });
         } catch (e) {

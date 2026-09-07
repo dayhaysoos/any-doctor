@@ -473,6 +473,15 @@ named like tests (`spec/`, `__mocks__/`) are not excluded; the pattern
 is deliberately conservative. Story files (`*.stories.tsx`) are not
 tests and stay included.
 
+**Amended 2026-09-07:** the law now reaches every read capability. The
+convention lives in contract.ts as one predicate (`isTestPath`) with one
+derivation (`includeTestsFor`: run → flag, verify → everything), and the
+search host filters matches under the same law — as first shipped, only
+ctx.files.list excluded, leaving ctx.search flooding test-file findings
+on a default run. Prose narrowed to "test-named code files" to match the
+enforced pattern exactly (a `notes.test.md` still lists for doctors that
+scan .md).
+
 ---
 
 ## D19 — The score is the share of clean files, not a subtraction

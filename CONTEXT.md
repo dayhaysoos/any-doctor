@@ -67,13 +67,16 @@ repo-scoped file access, structural search, and a finding emitter.
 Confinement enforces it: outside ctx there is nothing — no imports, no
 writes, no subprocesses, no network.
 
-`ctx.files.list()` excludes test files by default (`*.test.*`, `*.spec.*`,
-`test/`, `tests/`, `__tests__/`): tests mimic production shapes without
-being production reads. A Doctor run opts back in with `--include-tests`;
-`ctx.files.read()` is never filtered — an explicit path is a deliberate
-choice. Verify always lists everything its fixtures seed: the sandbox is
-the doctor's own world, and a seed named `*.test.ts` is deliberate test
-data.
+`ctx.files.list()` and `ctx.search` exclude test paths by default
+(test-named code files — `*.test.*`/`*.spec.*` with a code extension —
+and `test/`, `tests/`, `__tests__/` directories): tests mimic production
+shapes without being production reads. The one law (`isTestPath`) and
+the one derivation (`includeTestsFor`) live in contract.ts; every read
+capability applies them. A Doctor run opts back in with
+`--include-tests`; `ctx.files.read()` is never filtered — an explicit
+path is a deliberate choice. Verify always sees everything its fixtures
+seed: the sandbox is the doctor's own world, and a seed named
+`*.test.ts` is deliberate test data.
 
 ## Engine
 
