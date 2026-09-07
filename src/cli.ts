@@ -3,11 +3,11 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { DOCTOR_FILE_RE, RunResult, ReportGroup, Finding } from "./contract.js";
-import { renderReport, renderVerifyResult, RunOutcome, unsafeSkipLine } from "./report.js";
+import { cohortFileCount, renderReport, renderVerifyResult, RunOutcome, unsafeSkipLine } from "./report.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
 import { brokenDoctors, BrokenDoctor, discoverDoctors, DiscoveredDoctor, globalDoctorsDir, unsafeSlugs } from "./discover.js";
-import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, RunnerError, verifyDoctor } from "./runner.js";
+import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, RunnerError, RunOptions, verifyDoctor } from "./runner.js";
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor, Selection } from "./select.js";
 import { canRunTui, processTtyEnv } from "./tty.js";
@@ -143,10 +143,10 @@ async function gatherDoctors(): Promise<{ valid: DiscoveredDoctor[]; skippedUnsa
   };
 }
 
-async function scanOnce(doctorAbs: string, targetDir: string, includeTests: boolean): Promise<Scan> {
-  const result = await runOrReport(runDoctor({ programPath: doctorAbs, targetDir, includeTests }));
+async function scanOnce(options: RunOptions): Promise<Scan> {
+  const result = await runOrReport(runDoctor(options));
   return {
-    group: { programName: path.basename(doctorAbs), meta: result.meta, findings: result.findings },
+    group: { programName: path.basename(options.programPath), meta: result.meta, findings: result.findings },
     fileCount: result.fileCount,
   };
 }
@@ -185,7 +185,7 @@ async function cmdRun(args: string[]): Promise<number> {
     const selection = selectionOutcome(sel);
     if ("exit" in selection) return selection.exit;
     const runStarted = Date.now();
-    const scan = await scanOnce(selection.doctorPath, parsed.targetDir, parsed.includeTests);
+    const scan = await scanOnce({ programPath: selection.doctorPath, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
     outcome = {
       groups: [scan.group],
       crashed: [],
@@ -205,11 +205,11 @@ async function cmdRun(args: string[]): Promise<number> {
     const groups: ReportGroup[] = [];
     const crashed: string[] = [];
     const doctorPaths = new Map<string, string>();
-    let fileCount = 0;
+    const fileCounts: number[] = [];
     for (const d of discovered) {
       try {
-        const scan = await scanOnce(d.path, parsed.targetDir, parsed.includeTests);
-        fileCount = Math.max(fileCount, scan.fileCount);
+        const scan = await scanOnce({ programPath: d.path, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
+        fileCounts.push(scan.fileCount);
         doctorPaths.set(d.meta!.id, d.path);
         groups.push(scan.group);
       } catch (e) {
@@ -222,7 +222,7 @@ async function cmdRun(args: string[]): Promise<number> {
       crashed,
       skippedUnsafe,
       doctorPaths,
-      fileCount,
+      fileCount: cohortFileCount(fileCounts),
       durationMs: Date.now() - runStarted,
       targetDir: parsed.targetDir,
     };
@@ -314,6 +314,23 @@ async function cmdVerify(args: string[]): Promise<number> {
   return failures > 0 ? 1 : 0;
 }
 
+// The planted copy of the skill once went three decisions stale
+// (doctors/AGENTS.md still taught "builtins allowed" after Confinement
+// refused every import), so planting refreshes: a copy any-doctor planted
+// carries the provenance marker and is overwritten on generate; a copy
+// without it is the user's and is never touched.
+const PLANT_MARKER = "<!-- any-doctor skill plant -->\n";
+
+export function plantSkill(scopeDir: string, skill: string): "planted" | "refreshed" | "left-user-copy" {
+  const agentsPath = path.join(scopeDir, "AGENTS.md");
+  const existing = fs.existsSync(agentsPath) ? fs.readFileSync(agentsPath, "utf8") : null;
+  if (existing === null || existing.startsWith(PLANT_MARKER)) {
+    fs.writeFileSync(agentsPath, PLANT_MARKER + skill);
+    return existing === null ? "planted" : "refreshed";
+  }
+  return "left-user-copy";
+}
+
 async function cmdGenerate(args: string[]): Promise<number> {
   let intent: string | undefined;
   let global = false;
@@ -337,9 +354,9 @@ async function cmdGenerate(args: string[]): Promise<number> {
     : path.resolve("doctors");
   fs.mkdirSync(scopeDir, { recursive: true });
 
-  const agentsPath = path.join(scopeDir, "AGENTS.md");
-  if (!fs.existsSync(agentsPath)) {
-    fs.writeFileSync(agentsPath, skill);
+  const planted = plantSkill(scopeDir, skill);
+  if (planted === "left-user-copy") {
+    warn("AGENTS.md exists with edits of your own — left untouched (delete it to re-plant)");
   }
 
   const cliJs = fileURLToPath(new URL("cli.js", import.meta.url));

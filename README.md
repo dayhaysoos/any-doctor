@@ -22,7 +22,8 @@ any-doctor run doctors/fetch-without-abort-signal.mjs path/to/repo   # scan + sc
 ```
 
 `generate` plants the skill as `AGENTS.md` in the scope dir (agents load it
-natively) and copies the generation prompt — paste it into your own agent
+natively — a planted copy refreshes on the next generate; a copy with your
+own edits is never touched) and copies the generation prompt — paste it into your own agent
 session, any agent, GUI or CLI. When it has written the doctor + fixtures,
 `verify` gates it: missing expected findings fail recall, unexpected ones
 fail precision. `run` and `verify` never touch a model or an agent — pipe

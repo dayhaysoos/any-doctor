@@ -47,6 +47,16 @@ export function computeScore(groups: ReportGroup[], filesTotal: number): ScoreRe
   );
 }
 
+// The one composer for the score's header lines (D19): report and
+// dashboard render these strings, never re-compose them. The clean line
+// is null for an empty scan — there is nothing to be clean against.
+export function scoreHeaderLines(s: ScoreResult): { scoreLine: string; cleanLine: string | null } {
+  return {
+    scoreLine: `Score: ${s.score} / 100 — ${s.grade}`,
+    cleanLine: s.filesTotal > 0 ? `${s.filesClean}/${s.filesTotal} files clean` : null,
+  };
+}
+
 export function categoryRollup(groups: ReportGroup[]): { category: string; counts: Record<Severity, number> }[] {
   const map = new Map<string, Record<Severity, number>>();
   for (const g of groups) {

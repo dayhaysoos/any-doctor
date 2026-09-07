@@ -142,6 +142,8 @@ never writes to any scope.
 ## Skill
 
 The instructions any-doctor provides so an agent can create a doctor that
-fits the contract. Planted as `AGENTS.md` in a scope directory and also
-served verbatim by `generate`. Any Doctor equips agents with the skill;
+fits the contract. Planted as `AGENTS.md` behind a one-line provenance
+marker; `generate` refreshes a copy it planted (the marker is the
+boundary) and never touches a copy without one. The generation prompt
+embeds the skill verbatim. Any Doctor equips agents with the skill;
 it never launches, deploys, or speaks for an agent.

@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { resolveFinding, runCommandFor } from "./contract.js";
-import { scoreFromFileHealth } from "./score.js";
+import { computeScore, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
@@ -407,17 +407,17 @@ export function dashboardFrame(state) {
     const c = colorizer(useColor);
     const findings = tree.flatMap(d => d.checks.flatMap(g => g.items));
     const layout = resolveDashboardLayout(cols, rows, findings.length);
-    const { score, grade, filesClean } = scoreFromFileHealth(findings.map(it => ({ file: it.site.file, severity: it.severity })), state.fileCount);
+    const header = scoreHeaderLines(state.score);
     const barWidth = Math.min(46, Math.max(16, cols - 60));
-    const header = [
-        c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)),
-        c(scoreBar(score, barWidth), gradeColor(score)),
-        c(`${findings.length} finding${findings.length === 1 ? "" : "s"} · ${filesClean}/${state.fileCount} files clean · ${state.durationMs}ms`, DIM),
+    const headerLines = [
+        c(header.scoreLine, BOLD + gradeColor(state.score.score)),
+        c(scoreBar(state.score.score, barWidth), gradeColor(state.score.score)),
+        c(`${findings.length} finding${findings.length === 1 ? "" : "s"}${header.cleanLine ? " · " + header.cleanLine : ""} · ${state.durationMs}ms`, DIM),
     ];
     if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
-        header.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
+        headerLines.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
     }
-    header.push("");
+    headerLines.push("");
     const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded);
     const viewport = Math.max(1, Math.min(layout.listHeight, layout.bodyRows));
     let firstVisible = Math.max(0, Math.min(selectedRow - viewport + 1, Math.max(0, rowsData.length - viewport)));
@@ -509,7 +509,7 @@ export function dashboardFrame(state) {
         state.notice ? c("✔ " + state.notice, GREEN) : "",
         c("↑↓ move · →← expand · enter copy finding · c copy group · q quit", DIM),
     ];
-    return [...header, "", ...body, "", ...footer].join("\n");
+    return [...headerLines, "", ...body, "", ...footer].join("\n");
 }
 function cap(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);
@@ -554,8 +554,10 @@ export async function runDashboardOn(env, input, deps = {}) {
         return;
     const useColor = input.useColor;
     // The tree is computed once from immutable items; everything downstream
-    // — rows, prompts, expansion, detail — reads this frozen shape.
+    // — rows, prompts, expansion, detail — reads this frozen shape. The
+    // score is the same kind of constant: computed once per run.
     const tree = buildTree(buildItems(input.outcome.groups));
+    const score = computeScore(input.outcome.groups, input.outcome.fileCount);
     const expanded = initialExpanded(tree);
     const readKeys = new Set();
     let notice;
@@ -604,7 +606,7 @@ export async function runDashboardOn(env, input, deps = {}) {
                 readKeys,
                 readSource,
                 expanded,
-                fileCount: input.outcome.fileCount,
+                score,
                 durationMs: input.outcome.durationMs,
                 useColor,
                 notice,

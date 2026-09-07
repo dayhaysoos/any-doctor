@@ -12,6 +12,10 @@ export declare function scoreFromFileHealth(perFile: {
     severity: Severity;
 }[], filesTotal: number): ScoreResult;
 export declare function computeScore(groups: ReportGroup[], filesTotal: number): ScoreResult;
+export declare function scoreHeaderLines(s: ScoreResult): {
+    scoreLine: string;
+    cleanLine: string | null;
+};
 export declare function categoryRollup(groups: ReportGroup[]): {
     category: string;
     counts: Record<Severity, number>;

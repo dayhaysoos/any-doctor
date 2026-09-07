@@ -1,6 +1,6 @@
 import { DoctorMeta, Finding, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
 import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR, YELLOW } from "./palette.js";
-import { categoryRollup, computeScore, findingSeverity } from "./score.js";
+import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
 
 // One scan invocation's batch of results — assembled once, consumed by the
 // report, the dashboard, and any future surface. One defined meaning per
@@ -14,14 +14,22 @@ export interface RunOutcome {
   skippedUnsafe: string[];
   // Doctor id → program path, for composing re-run commands.
   doctorPaths: ReadonlyMap<string, string>;
-  // The scanned target's file count, as reported by the doctors (the max —
-  // they all scan the same target).
+  // The scanned target's file count (cohortFileCount of the doctors'
+  // counts) — the Score's denominator (D19).
   fileCount: number;
   // Wall-clock of the doctor batch: first spawn to last completion,
   // discovery and selection excluded. Both branches, one meaning.
   durationMs: number;
   // The scanned target, for composing re-run commands.
   targetDir: string;
+}
+
+// All doctors scan the same target, so the cohort's file count is any
+// doctor's count; the max is the honest pick when one crashed early. The
+// policy lives here, beside the RunOutcome field it fills and the Score
+// that divides by it.
+export function cohortFileCount(counts: number[]): number {
+  return counts.reduce((m, n) => Math.max(m, n), 0);
 }
 
 // The one place the skip-note copy lives; report, dashboard, and the CLI
@@ -109,15 +117,16 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
 
   const { groups, hidden } = dedupeGroups(input.groups);
   const total = groups.reduce((n, g) => n + g.findings.length, 0);
-  const { score, grade, filesClean, filesTotal } = computeScore(groups, input.fileCount);
+  const sr = computeScore(groups, input.fileCount);
+  const header = scoreHeaderLines(sr);
 
   lines.push(`✔ Scanned ${input.fileCount} files in ${input.durationMs}ms`);
   lines.push("");
   const doctorWord = groups.length === 1 ? "doctor" : "doctors";
   lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
-  lines.push(c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)));
-  if (total > 0) {
-    lines.push(c(`${filesClean}/${filesTotal} files clean`, DIM));
+  lines.push(c(header.scoreLine, BOLD + gradeColor(sr.score)));
+  if (header.cleanLine) {
+    lines.push(c(header.cleanLine, DIM));
   }
   if (input.skippedUnsafe !== undefined && input.skippedUnsafe.length > 0) {
     lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
