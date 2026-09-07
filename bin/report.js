@@ -73,12 +73,15 @@ export function renderReport(input, useColor) {
     const lines = [];
     const { groups, hidden } = dedupeGroups(input.groups);
     const total = groups.reduce((n, g) => n + g.findings.length, 0);
-    const { score, grade } = computeScore(groups);
+    const { score, grade, filesClean, filesTotal } = computeScore(groups, input.fileCount);
     lines.push(`✔ Scanned ${input.fileCount} files in ${input.durationMs}ms`);
     lines.push("");
     const doctorWord = groups.length === 1 ? "doctor" : "doctors";
     lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
     lines.push(c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)));
+    if (total > 0) {
+        lines.push(c(`${filesClean}/${filesTotal} files clean`, DIM));
+    }
     if (input.skippedUnsafe !== undefined && input.skippedUnsafe.length > 0) {
         lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
     }

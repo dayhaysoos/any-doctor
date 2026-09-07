@@ -27,7 +27,8 @@ const golden = [
   "✔ Scanned 6 files in 111ms",
   "",
   "Any Doctor — 1 doctor",
-  "Score: 96 / 100 — Excellent",
+  "Score: 92 / 100 — Excellent",
+  "5/6 files clean",
   "",
   "1 finding  (1 warning)",
   "Bugs: 1 warning",
@@ -71,7 +72,7 @@ test("renderReport: multiple findings show ×N, rollup, and lower the score", ()
     durationMs: 111,
     groups: [{ ...input.groups[0], findings: input.groups[0].findings.concat([{ file: "b.ts", line: 3 }]) }],
   }, false);
-  assert.match(out, /Score: 92 \/ 100 — Excellent/);
+  assert.match(out, /Score: 83 \/ 100 — Good/);
   assert.match(out, /2 findings/);
   assert.match(out, /×2/);
   assert.match(out, /b\.ts:3/);
@@ -123,7 +124,7 @@ test("renderReport: multiple checks group under one doctor with their own headin
       },
     ],
   }, false);
-  assert.match(out, /Score: 76 \/ 100 — Good/);
+  assert.match(out, /Score: 83 \/ 100 — Good/);
   assert.match(out, /✖ Direct legacy charge creation ×2/);
   assert.match(out, /stripe-doctor\/charges-create/);
   assert.match(out, /⚠ Legacy refund path/);
@@ -144,7 +145,7 @@ test("renderReport: cross-doctor duplicates at the same location are hidden once
   }, false);
   assert.match(out, /1 finding/);
   assert.match(out, /1 duplicate finding hidden/);
-  assert.match(out, /Score: 96/);
+  assert.match(out, /Score: 92/);
   const occurrences = out.split("chat.ts:15").length - 1;
   assert.equal(occurrences, 1);
 });

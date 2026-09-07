@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { Finding, JoinedFinding, ReportGroup, resolveFinding, runCommandFor, Severity } from "./contract.js";
-import { scoreFromSeverities } from "./score.js";
+import { scoreFromFileHealth } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
@@ -529,13 +529,16 @@ export function dashboardFrame(state: DashboardFrameState): string {
   const c = colorizer(useColor);
   const findings = tree.flatMap(d => d.checks.flatMap(g => g.items));
   const layout = resolveDashboardLayout(cols, rows, findings.length);
-  const { score, grade } = scoreFromSeverities(findings.map(it => it.severity));
+  const { score, grade, filesClean } = scoreFromFileHealth(
+    findings.map(it => ({ file: it.site.file, severity: it.severity })),
+    state.fileCount,
+  );
   const barWidth = Math.min(46, Math.max(16, cols - 60));
 
   const header: string[] = [
     c(`Score: ${score} / 100 — ${grade}`, BOLD + gradeColor(score)),
     c(scoreBar(score, barWidth), gradeColor(score)),
-    c(`${findings.length} finding${findings.length === 1 ? "" : "s"} · ${state.fileCount} files · ${state.durationMs}ms`, DIM),
+    c(`${findings.length} finding${findings.length === 1 ? "" : "s"} · ${filesClean}/${state.fileCount} files clean · ${state.durationMs}ms`, DIM),
   ];
   if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
     header.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));

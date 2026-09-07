@@ -67,6 +67,14 @@ repo-scoped file access, structural search, and a finding emitter.
 Confinement enforces it: outside ctx there is nothing — no imports, no
 writes, no subprocesses, no network.
 
+`ctx.files.list()` excludes test files by default (`*.test.*`, `*.spec.*`,
+`test/`, `tests/`, `__tests__/`): tests mimic production shapes without
+being production reads. A Doctor run opts back in with `--include-tests`;
+`ctx.files.read()` is never filtered — an explicit path is a deliberate
+choice. Verify always lists everything its fixtures seed: the sandbox is
+the doctor's own world, and a seed named `*.test.ts` is deliberate test
+data.
+
 ## Engine
 
 The structural-search backend a DoctorCtx uses to answer ctx.search.
@@ -75,6 +83,14 @@ repos. Engine selection is invisible to doctor programs: one doctor
 program runs unchanged on any engine. One module owns the invocation
 (src/engine.ts); the search host sits on it, and the sdk asks the host —
 there is exactly one path, with no unconfined fallback.
+
+## Score
+
+The share of scanned files with no findings, weighted by each affected
+file's worst severity (error 1, warning 0.5, info 0.1). One sentence,
+locally computed: "491/628 files clean" is a 78. Zero findings is 100 by
+anchor; an empty scan is also 100. The score summarizes health — the
+findings are the work; the two are reported together, never conflated.
 
 ## Meta
 
