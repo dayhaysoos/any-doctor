@@ -105,7 +105,7 @@ export async function doctor(ctx) {
     checkCauseRecovery(ctx, file, lines);
     checkProcessEnv(ctx, file, lines);
     checkEffectFn(ctx, file, rawLines);
-    if (IS_TEST_FILE.test(file)) checkSleepInTest(ctx, file, lines);
+    if (isTestFile(file)) checkSleepInTest(ctx, file, lines);
     checkLayerMerge(ctx, file, lines);
   }
 }
@@ -117,7 +117,16 @@ export async function doctor(ctx) {
 // match - the from-clause must name effect itself.
 const EFFECT_IMPORT = /\bfrom\s+["']effect(?:\/[^"']*)?["']|\b(?:require|import)\s*\(\s*["']effect(?:\/[^"']*)?["']/;
 
-const IS_TEST_FILE = /(?:\.test|\.spec)\.[cm]?[jt]sx?$|(?:^|\/)(?:test|tests|__tests__)\//;
+// Two faces of the platform's test-file law, kept shape-for-shape with
+// contract.ts's isTestPath: file names match case-insensitively
+// (Spec.Test.ts), directory segments match exactly (src/Test/ is not a
+// test directory), and separators may be either slash in either position.
+const TEST_FILE_NAME = /(?:\.test|\.spec)\.[cm]?[jt]sx?$/i;
+const TEST_DIR_SEGMENT = /(?:^|[\/\\])(?:test|tests|__tests__)[\/\\]/;
+
+function isTestFile(file) {
+  return TEST_FILE_NAME.test(file) || TEST_DIR_SEGMENT.test(file);
+}
 
 // --- type-silencing casts -----------------------------------------------------
 

@@ -157,3 +157,28 @@ test("renderReport with color: the score header carries no function source", asy
   assert.ok(!out.includes("function gradeColor"), "gradeColor is called, not concatenated");
   assert.ok(out.includes("Score:"), "score header present");
 });
+
+test("renderReport: a second check from the SAME doctor at one site survives dedupe (different diagnosis, different story)", () => {
+  const out = renderReport({
+    fileCount: 6,
+    durationMs: 111,
+    groups: [{
+      programName: "convex-doctor.mjs",
+      meta: {
+        id: "convex-doctor",
+        description: "x",
+        severity: "warning",
+        checks: [
+          { id: "filter-table-scan", description: "Filter scans the table", severity: "warning" },
+          { id: "unbounded-collect", description: "Collect is unbounded", severity: "warning" },
+        ],
+      },
+      findings: [
+        { rule: "filter-table-scan", file: "src/list.ts", line: 5 },
+        { rule: "unbounded-collect", file: "src/list.ts", line: 5 },
+      ],
+    }],
+  }, false);
+  assert.match(out, /2 findings/);
+  assert.ok(!out.includes("duplicate finding hidden"), "same-doctor same-site is not a duplicate");
+});

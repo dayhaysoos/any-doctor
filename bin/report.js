@@ -50,7 +50,12 @@ function expandChecks(g) {
     return [...buckets.values()];
 }
 export function dedupeGroups(groups) {
-    const seen = new Set();
+    // A site claimed by one doctor is hidden when ANOTHER doctor claims it
+    // too (same location, different doctor — one display copy). A second
+    // check from the SAME doctor at the same site is a different diagnosis
+    // of one line (filter-table-scan and unbounded-collect on one chain)
+    // and survives — the check tree exists to show each check's own story.
+    const owner = new Map();
     const key = (f) => `${f.file}:${f.line}`;
     const ordered = [...groups].sort((a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
     const out = [];
@@ -63,12 +68,17 @@ export function dedupeGroups(groups) {
         const kept = [];
         for (const f of g.findings) {
             const k = key(f);
-            if (seen.has(k)) {
-                hidden++;
-                continue;
+            const heldBy = owner.get(k);
+            if (heldBy === undefined) {
+                owner.set(k, g.meta.id);
+                kept.push(f);
             }
-            seen.add(k);
-            kept.push(f);
+            else if (heldBy !== g.meta.id) {
+                hidden++;
+            }
+            else {
+                kept.push(f);
+            }
         }
         if (kept.length > 0)
             out.push({ ...g, findings: kept });

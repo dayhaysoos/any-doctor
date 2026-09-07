@@ -18,6 +18,7 @@ export const meta = {
     'Node runtime: "use node" is recognized only as the file\'s first statement.',
     "Loops: only for/while bodies are scanned; recursion and per-item callbacks (.map(async ...)) hide the same one-transaction-per-item pattern.",
     "Spread patches: every spread inside .patch()/.replace() is flagged, including deliberate {...allowed} whitelists.",
+    "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source.",
   ],
   checks: [
     {
@@ -146,6 +147,8 @@ export const meta = {
 export async function doctor(ctx) {
   const files = await ctx.files.list([".ts", ".tsx", ".js", ".jsx", ".mjs"]);
   for (const file of files) {
+    // Fixture sandboxes are doctor test data, not target source.
+    if (/\.fixtures\.mjs$/.test(file)) continue;
     const source = await ctx.files.read(file);
     const masked = maskNonCode(source);
     const lines = masked.split("\n");

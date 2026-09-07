@@ -581,3 +581,28 @@ test("runDashboard: copied prompts resolve the re-run command per doctor", async
   assert.match(prompt, /Verify with `any-doctor run \"doctors\/stripe\.mjs\" \"\.\"`/,
     "the outcome's doctorPaths resolved the doctor that owns the check");
 });
+
+test("dashboard and report render the same finding count for one duplicate-laden outcome", async () => {
+  const { renderReport } = await import("../bin/report.js");
+  const dupGroups = [
+    { programName: "a.mjs", meta: { id: "a", description: "x", severity: "warning" }, findings: [{ file: "src/a.ts", line: 1 }] },
+    { programName: "b.mjs", meta: { id: "b", description: "x", severity: "warning" }, findings: [{ file: "src/a.ts", line: 1 }] },
+  ];
+  const outcome = {
+    groups: dupGroups, crashed: [], skippedUnsafe: [], doctorPaths: new Map(),
+    fileCount: 4, durationMs: 5, targetDir: ".",
+  };
+  const report = renderReport({ ...outcome }, false);
+  assert.match(report, /1 finding/);
+  assert.match(report, /1 duplicate finding hidden/);
+
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = runDashboardOn({ stdin, stdout }, { outcome, useColor: false }, { copy: () => true });
+  await new Promise((r) => setTimeout(r, 10));
+  const frame = stdout.frames.find((f) => f.includes("finding")) ?? "";
+  assert.match(frame, /1 finding/, "dashboard count matches the report");
+  assert.ok(!frame.includes("2 finding"), "the duplicate is hidden on both surfaces");
+  stdin.send("q");
+  await settle(done);
+});

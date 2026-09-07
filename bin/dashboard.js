@@ -553,13 +553,12 @@ export async function runDashboardOn(env, input, deps = {}) {
     if (!tty.canRunTui(env))
         return;
     const useColor = input.useColor;
-    // The tree is computed once from immutable items; everything downstream
-    // — rows, prompts, expansion, detail — reads this frozen shape. The
-    // score is the same kind of constant: computed once per run, over the
-    // same deduplicated groups the report scores — one RunOutcome, one
-    // number on every surface.
-    const tree = buildTree(buildItems(input.outcome.groups));
-    const score = computeScore(dedupeGroups(input.outcome.groups).groups, input.outcome.fileCount);
+    // One RunOutcome, one story on every surface: the tree AND the score
+    // consume the same deduplicated groups the report renders — counts and
+    // score can never disagree between surfaces.
+    const { groups: deduped } = dedupeGroups(input.outcome.groups);
+    const tree = buildTree(buildItems(deduped));
+    const score = computeScore(deduped, input.outcome.fileCount);
     const expanded = initialExpanded(tree);
     const readKeys = new Set();
     let notice;

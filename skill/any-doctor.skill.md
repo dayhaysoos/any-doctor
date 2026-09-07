@@ -53,7 +53,7 @@ export const fixtures = [
 
 `ctx` is the only capability a doctor has:
 
-- `ctx.files.list(exts?)` → relative paths (default .ts/.tsx/.js/.jsx/.mjs; test-named code files and `test|tests|__tests__/` directories are excluded by default — `--include-tests` scans them)
+- `ctx.files.list(exts?)` → relative paths (default .ts/.tsx/.js/.jsx/.mjs; test-named code files and `test|tests|__tests__/` directories are excluded by default — `--include-tests` scans them; in verify sandboxes test-named seeds are always visible: fixtures are the doctor's own world)
 - `ctx.files.read(rel)` → file contents
 - `ctx.search.pattern(pattern, language?)` → `[{ file, line, column, text }]`
   (ast-grep pattern syntax, e.g. `"fetch($URL)"`; requires ast-grep installed;

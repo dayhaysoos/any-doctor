@@ -228,6 +228,32 @@ export const fixtures = [
     expected: [{ file: "src/user.test.ts", line: 4 }],
   },
   {
+    name: "sleep-in-test: flags case-variant test file names (Spec.Test.ts)",
+    seed: {
+      "src/Spec.Test.ts": [
+        'import { Effect } from "effect";',
+        "",
+        "export const waitForIdle = async () => {",
+        "  await Effect.runPromise(Effect.sleep(1000));",
+        "};",
+      ].join("\n"),
+    },
+    expected: [{ file: "src/Spec.Test.ts", line: 4 }],
+  },
+  {
+    name: "sleep-in-test: exact-case-only directory (src/Test/) is not a test file",
+    seed: {
+      "src/Test/harness.ts": [
+        'import { Effect } from "effect";',
+        "",
+        "export const waitForIdle = async () => {",
+        "  await Effect.runPromise(Effect.sleep(1000));",
+        "};",
+      ].join("\n"),
+    },
+    expected: [],
+  },
+  {
     name: "sleep-in-test: accepts deterministic synchronization",
     seed: {
       "src/wait.test.ts": [
