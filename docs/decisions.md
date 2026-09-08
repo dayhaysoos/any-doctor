@@ -521,6 +521,14 @@ subscriptions demoted to info (the call site cannot see the query's
 bounds), and take/first/unique-terminated index chains are exempt
 (the terminator bounds the read).
 
+**Amendment (2026-09-07, dashboard):** The dashboard header no longer
+shows the cohort score — with several doctors on screen it read as
+belonging to whichever row was selected. The header now carries the
+selected doctor's own score (bar and clean-files line scoped to it);
+every doctor row keeps its compact score, and the detail pane dropped
+its copy. The repo-wide score remains the report/CI surface, where one
+number for a run is the job.
+
 **Consequences:** A single noisy check can no longer zero a score — it
 costs only the files it touches, which points pressure at doctor
 calibration instead of punishing the repo. Small repos are twitchier

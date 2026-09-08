@@ -91,7 +91,7 @@ export interface DashboardFrameState {
     readKeys: Set<string>;
     readSource: FrameSource;
     expanded?: ReadonlySet<string>;
-    score: ScoreResult;
+    filesTotal: number;
     durationMs: number;
     useColor: boolean;
     notice?: string;
