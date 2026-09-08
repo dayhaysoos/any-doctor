@@ -113,6 +113,19 @@ export const fixtures = [
     ]
   },
   {
+    "name": "per-element for-of awaits are not recognized — flagged (declared blind spot)",
+    "seed": {
+      "src/for-of.ts": "export async function work(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  for (const job of jobs) {\n    await job\n  }\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/for-of.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
     "name": "allSettled-consumed result in a later batch loop is not flagged",
     "seed": {
       "src/d.ts": "export async function work(items: string[]) {\n  const allPromises = items.map(async item => load(item))\n  const allResults = await Promise.allSettled(allPromises)\n  return allResults\n}"

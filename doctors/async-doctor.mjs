@@ -5,7 +5,7 @@ export const meta = {
   category: "async",
   blindSpots: [
     "Fetch: cannot determine whether an options variable, spread, or helper supplies a signal at runtime; aliased or member-expression fetch functions are not recognized.",
-    "Promises: consumption inside template strings or dynamic property access is not tracked; mapped results that are returned, passed into a call, assigned to rebindable targets (let/var/reassignment), or chained after another call (xs.filter(f).map(async ...)) are not tracked — a bare map(async) is judged only in statement or await position.",
+    "Promises: consumption inside template strings or dynamic property access is not tracked; per-element consumption (a for-of loop awaiting each promise) is not recognized — only combiner calls are; mapped results that are returned, passed into a call, assigned to rebindable targets (let/var/reassignment), or chained after another call (xs.filter(f).map(async ...)) are not tracked — a bare map(async) is judged only in statement or await position.",
     "Timers: only directly named useEffect/setTimeout/clearTimeout are recognized; handles must be a simple local identifier cleared in the same effect.",
     "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source.",
   ],
@@ -154,12 +154,7 @@ async function checkUnawaitedMap(ctx, readFile) {
     while ((match = decl.exec(masked))) {
       const consumer = new RegExp(CONSUMERS.source.replace(/NAME/g, escapeRe(match[1])));
       if (consumer.test(masked.slice(match.index + match[0].length))) continue;
-      ctx.report.finding({
-        rule: "unawaited-async-map",
-        file: file,
-        line: lineAt(masked, match.index),
-        column: columnAt(masked, match.index),
-      });
+      reportDropped(ctx, masked, file, match.index);
     }
 
     // Discarded arrays: a bare `xs.map(async ...)` statement with no binding
@@ -173,14 +168,18 @@ async function checkUnawaitedMap(ctx, readFile) {
     while ((match = bare.exec(masked))) {
       const position = statementPosition(masked, match.index);
       if (position !== "statement" && position !== "awaited") continue;
-      ctx.report.finding({
-        rule: "unawaited-async-map",
-        file: file,
-        line: lineAt(masked, match.index),
-        column: columnAt(masked, match.index),
-      });
+      reportDropped(ctx, masked, file, match.index);
     }
   }
+}
+
+function reportDropped(ctx, masked, file, index) {
+  ctx.report.finding({
+    rule: "unawaited-async-map",
+    file: file,
+    line: lineAt(masked, index),
+    column: columnAt(masked, index),
+  });
 }
 
 // What precedes the receiver at `index`: "statement" (nothing, `;`, `{`,
