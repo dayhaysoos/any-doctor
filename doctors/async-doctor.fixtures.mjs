@@ -173,6 +173,32 @@ export const fixtures = [
     ]
   },
   {
+    "name": "an optional-chained bare map(async) is flagged",
+    "seed": {
+      "src/opt-bare.ts": "export function warm(ids?: string[]) {\n  ids?.map(async id => prime(id));\n  return 0;\n}\n"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/opt-bare.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "an optional-chained bound map(async) with no consumer is flagged",
+    "seed": {
+      "src/opt-bound.ts": "export function work(ids?: string[]) {\n  const jobs = ids?.map(async id => load(id))\n  return jobs?.length ?? 0\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/opt-bound.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
     "name": "await directly on the mapped array does not settle it — flagged",
     "seed": {
       "src/await-array.ts": "export async function warm(ids: string[]) {\n  await ids.map(async id => prime(id));\n  return ids.length;\n}\n"

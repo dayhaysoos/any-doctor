@@ -6,7 +6,7 @@ export const meta = {
   blindSpots: [
     "Fetch: cannot determine whether an options variable, spread, or helper supplies a signal at runtime; aliased or member-expression fetch functions are not recognized.",
     "Promises: only combiner calls (Promise.all/allSettled/race/any over the bound name) are recognized consumption — per-element awaits (a for-of loop awaiting each promise), template-string consumption, and dynamic property access are not tracked.",
-    "Promises: mapped results that are returned, passed into a call, wrapped in parens or comma expressions, assigned to rebindable targets (let/var/reassignment), or chained after another call (xs.filter(f).map(async ...)) are not tracked — a bare map(async) is judged only in statement or await position.",
+    "Promises: mapped results that are returned, passed into a call, wrapped in parens or comma expressions, assigned to rebindable targets (let/var/reassignment), chained after another call (xs.filter(f).map(async ...)), or behind a mid-chain optional link (a?.b.map(async ...)) are not tracked — a bare map(async) is judged only in statement or await position.",
     "Timers: only directly named useEffect/setTimeout/clearTimeout are recognized; handles must be a simple local identifier cleared in the same effect.",
     "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source.",
   ],
@@ -146,11 +146,13 @@ async function checkUnawaitedMap(ctx, readFile) {
     // is not code — raw scanning false-positives on documentation and seeds.
     const masked = readFile(file).masked;
 
-    // Bound arrays: `const jobs = xs.map(async ...)`. The consumer scan is
-    // anchored at the declaration POINT, not the line after it —
-    // consumption on the same line (`...; return Promise.all(jobs);` in
-    // one statement block) is real consumption (D20: wrong region anchor).
-    const decl = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*[\w.$\]]+\s*\.\s*map\(\s*async\b/g;
+    // Bound arrays: `const jobs = xs.map(async ...)` (optional chaining
+    // included — `xs?.map` produces the same array of promises). The
+    // consumer scan is anchored at the declaration POINT, not the line
+    // after it — consumption on the same line (`...; return
+    // Promise.all(jobs);` in one statement block) is real consumption
+    // (D20: wrong region anchor).
+    const decl = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*[\w.$\]]+\s*\??\.\s*map\(\s*async\b/g;
     let match;
     while ((match = decl.exec(masked))) {
       const consumer = new RegExp(CONSUMERS.source.replace(/NAME/g, escapeRe(match[1])));
@@ -165,7 +167,7 @@ async function checkUnawaitedMap(ctx, readFile) {
     // operator, the result flows somewhere else and is not this check's to
     // judge (blind spots). `await xs.map(async ...)` is the exception —
     // awaiting the array leaves the promises unsettled, the same defect.
-    const bare = /[\w.$\]]+\s*\.\s*map\(\s*async\b/g;
+    const bare = /[\w.$\]]+\s*\??\.\s*map\(\s*async\b/g;
     while ((match = bare.exec(masked))) {
       const position = statementPosition(masked, match.index);
       if (position !== "statement" && position !== "awaited") continue;
