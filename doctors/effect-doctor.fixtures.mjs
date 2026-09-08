@@ -300,4 +300,81 @@ export const fixtures = [
     },
     expected: [],
   },
+
+  // --- date-now-in-gen ---
+  {
+    name: "date-now-in-gen: Date.now directly in an Effect.gen body is flagged",
+    seed: {
+      "src/direct.ts": [
+        'import { Effect } from "effect";',
+        "export const work = Effect.gen(function* () {",
+        "  return Date.now();",
+        "});",
+      ].join("\n"),
+    },
+    expected: [{ file: "src/direct.ts", line: 3 }],
+  },
+  {
+    name: "date-now-in-gen: Date.now in a nested callback inside the generator is flagged",
+    seed: {
+      "src/nested.ts": [
+        'import { Effect } from "effect";',
+        "export const work = Effect.gen(function* () {",
+        "  return items.map(() => Date.now());",
+        "});",
+      ].join("\n"),
+    },
+    expected: [{ file: "src/nested.ts", line: 3 }],
+  },
+  {
+    name: "date-now-in-gen: a string lookalike and bare Date.now outside generators stay silent",
+    seed: {
+      "src/outside.ts": [
+        'import { Effect } from "effect";',
+        "const label = \"Effect.gen(function* () { Date.now() })\";",
+        "export const timestamp = Date.now();",
+      ].join("\n"),
+    },
+    expected: [],
+  },
+  {
+    name: "date-now-in-gen: a non-generator Effect.gen callback is not a span",
+    seed: {
+      "src/callback.ts": [
+        'import { Effect } from "effect";',
+        "export const work = Effect.gen(() => Date.now());",
+      ].join("\n"),
+    },
+    expected: [],
+  },
+
+  // --- zod-single-record ---
+  {
+    name: "zod-single-record: a single value schema is flagged",
+    seed: {
+      "src/schema.ts": 'import { z } from "zod";\nconst labels = z.record(z.string());\n',
+    },
+    expected: [{ file: "src/schema.ts", line: 2 }],
+  },
+  {
+    name: "zod-single-record: a generic record with a multiline single argument is flagged",
+    seed: {
+      "src/schema.ts": 'import { z } from "zod";\nconst labels = z.record<string>(\n  z.number(),\n);\n',
+    },
+    expected: [{ file: "src/schema.ts", line: 2 }],
+  },
+  {
+    name: "zod-single-record: explicit key and value schemas are accepted",
+    seed: {
+      "src/schema.ts": 'import { z } from "zod";\nconst labels = z.record(z.string(), z.number());\n',
+    },
+    expected: [],
+  },
+  {
+    name: "zod-single-record: bracket access and lookalike names stay silent",
+    seed: {
+      "src/schema.ts": 'import { z } from "zod";\nconst text = z.string();\nconst labels = z["record"](z.string());\n',
+    },
+    expected: [],
+  },
 ];

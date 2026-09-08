@@ -70,7 +70,7 @@ test("verifyDoctor: fixture gate green on the repo openrouter doctor", async () 
 
 test("verifyDoctor: fixture gate green on the repo effect doctor", async () => {
   const r = await verifyDoctor({ programPath: path.join(REPO, "doctors", "effect-doctor.mjs") });
-  assert.ok(r.results.length >= 21);
+  assert.ok(r.results.length >= 29);
   assert.ok(r.results.every(x => x.ok));
 });
 
