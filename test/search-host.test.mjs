@@ -54,8 +54,8 @@ test("handleSearchLine: the root must be inside the run's target — escape atte
 
 test("handleSearchLine: the run's target and paths inside it are allowed through to the engine", () => {
   const seen = [];
-  const engine = fakeEngine((pattern, language, root) => {
-    seen.push({ pattern, language, root });
+  const engine = fakeEngine((query, language, root) => {
+    seen.push({ query, language, root });
     return { ok: true, matches: [{ file: root + "/a.ts", range: { start: { line: 1, column: 0 } }, text: "a" }] };
   });
   for (const root of [TARGET, TARGET + "/nested/deep.ts".replace("/deep.ts", "")]) {
@@ -63,7 +63,25 @@ test("handleSearchLine: the run's target and paths inside it are allowed through
     assert.deepEqual(out.matches, [{ file: root + "/a.ts", range: { start: { line: 1, column: 0 } }, text: "a" }]);
   }
   assert.equal(seen.length, 2);
-  assert.deepEqual(seen[0], { pattern: "fetch($$$A)", language: "TypeScript", root: TARGET });
+  assert.deepEqual(seen[0], { query: { op: "pattern", pattern: "fetch($$$A)" }, language: "TypeScript", root: TARGET });
+});
+
+test("handleSearchLine: an op:rule body reaches the engine as a rule query; matches pass through", () => {
+  const seen = [];
+  const engine = fakeEngine((query, language, root) => {
+    seen.push({ query, language, root });
+    return { ok: true, matches: [{ file: root + "/a.ts", text: "t", metaVariables: { multi: { ARGS: [{ text: "x" }] } } }] };
+  });
+  const rule = { pattern: "fetch($$$ARGS)", inside: { pattern: "useEffect($$$B)" } };
+  const out = parse(handleSearchLine(request({ op: "rule", rule, language: "JavaScript", root: TARGET }), RUN, engine));
+  assert.deepEqual(seen[0], { query: { op: "rule", rule }, language: "JavaScript", root: TARGET });
+  assert.deepEqual(out.matches, [{ file: TARGET + "/a.ts", text: "t", metaVariables: { multi: { ARGS: [{ text: "x" }] } } }]);
+});
+
+test("handleSearchLine: engine rule failures come back as error responses verbatim", () => {
+  const engine = fakeEngine(() => ({ ok: false, error: "ast-grep rejected the rule: pattern is ambiguous" }));
+  const out = parse(handleSearchLine(request({ op: "rule", rule: { pattern: "x" }, root: TARGET }), RUN, engine));
+  assert.match(out.error, /pattern is ambiguous/);
 });
 
 test("handleSearchLine: malformed request bodies and engine failures become error responses", () => {
@@ -102,10 +120,33 @@ test("handleSearchLine: verify keeps test paths — the sandbox is the doctor's 
   assert.equal(out.matches.length, 1);
 });
 
-test("engine: a real ast-grep round trip through the one invocation module", { skip: spawnSync("sg", ["--version"]).status === 0 ? false : "ast-grep (sg) not on PATH" }, async () => {
-  const { runEngineSearch } = await import("../bin/engine.js");
+// The engine tries ast-grep first and falls back to sg — either binary
+// on PATH means the round trip can run.
+const hasEngine = ["ast-grep", "sg"].some((name) => spawnSync(name, ["--version"]).status === 0);
+const engineSkip = hasEngine ? false : "ast-grep not on PATH";
+
+test("engine: a real ast-grep round trip through the one invocation module", { skip: engineSkip }, async () => {
+  const { runEngine } = await import("../bin/engine.js");
   const repo = path.resolve(import.meta.dirname, "..");
-  const r = runEngineSearch("const $A = $B", "TypeScript", path.join(repo, "fixtures", "sample-app"));
+  const r = runEngine({ op: "pattern", pattern: "const $A = $B" }, "TypeScript", path.join(repo, "fixtures", "sample-app"));
   assert.ok(r.ok, "engine succeeds: " + (r.ok ? "" : r.error));
   assert.ok(Array.isArray(r.matches) && r.matches.length > 0, "matches the sample app");
+});
+
+test("engine: a rule query round trip returns end ranges and metavariable captures", { skip: engineSkip }, async () => {
+  const { runEngine } = await import("../bin/engine.js");
+  const repo = path.resolve(import.meta.dirname, "..");
+  const r = runEngine({ op: "rule", rule: { pattern: "fetch($$$ARGS)" } }, "TypeScript", path.join(repo, "fixtures", "sample-app"));
+  assert.ok(r.ok, "rule query succeeds: " + (r.ok ? "" : r.error));
+  const withArgs = r.ok ? r.matches.filter((m) => m.metaVariables?.multi?.ARGS) : [];
+  assert.ok(withArgs.length > 0, "captures ARGS");
+  const first = withArgs[0];
+  assert.ok(first.range?.end?.line !== undefined, "end range survives the seam");
+  // The raw engine output DOES include separator commas as captures — the
+  // sdk's Match mapping filters them; this asserts the raw shape so the
+  // normalization below has a pinned reason to exist.
+  assert.ok(
+    withArgs.some((m) => m.metaVariables.multi.ARGS.some((a) => a.text === ",")),
+    "raw multi-captures include commas (sdk filters them for doctors)",
+  );
 });

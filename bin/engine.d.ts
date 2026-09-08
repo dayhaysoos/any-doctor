@@ -1,12 +1,33 @@
+import { RuleQuery } from "./contract.js";
+export type EngineQuery = {
+    op: "pattern";
+    pattern: string;
+} | {
+    op: "rule";
+    rule: RuleQuery;
+};
+interface RawSgPos {
+    line?: number;
+    column?: number;
+}
+interface RawSgRange {
+    start?: RawSgPos;
+    end?: RawSgPos;
+}
 export interface RawSgMatch {
     file?: string;
     text?: string;
-    range?: {
-        start?: {
-            line?: number;
-            column?: number;
-        };
+    lines?: string;
+    language?: string;
+    range?: RawSgRange;
+    metaVariables?: {
+        single?: Record<string, RawSgCapture>;
+        multi?: Record<string, RawSgCapture[]>;
     };
+}
+export interface RawSgCapture {
+    text?: string;
+    range?: RawSgRange;
 }
 export type EngineResult = {
     ok: true;
@@ -15,4 +36,5 @@ export type EngineResult = {
     ok: false;
     error: string;
 };
-export declare function runEngineSearch(pattern: string, language: string, root: string): EngineResult;
+export declare function runEngine(query: EngineQuery, language: string, root: string): EngineResult;
+export {};

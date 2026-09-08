@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { isTestPath, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
+import { maskNonCode } from "./mask.js";
 const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 // Production posture (D18): ctx.files.list() excludes test paths — tests
 // mimic production shapes without being production reads. The law itself
@@ -36,16 +37,18 @@ export function buildCtx(root, opts = {}) {
                 return out.sort();
             },
             read(relativePath) {
-                const abs = path.resolve(root, relativePath);
-                if (abs !== root && !abs.startsWith(root + path.sep)) {
-                    throw new Error(`ctx.files.read escapes the repo root: ${relativePath}`);
-                }
-                return fs.readFileSync(abs, "utf8");
+                return readFileWithin(root, relativePath);
+            },
+            readMasked(relativePath) {
+                return maskNonCode(readFileWithin(root, relativePath));
             },
         },
         search: {
             pattern(pattern, language = "TypeScript") {
-                return runSearch(pattern, language, root);
+                return runSearch({ op: "pattern", pattern }, language, root);
+            },
+            rule(query, language = "TypeScript") {
+                return runSearch({ op: "rule", rule: validateRuleQuery(query) }, language, root);
             },
         },
         report: {
@@ -59,19 +62,96 @@ export function buildCtx(root, opts = {}) {
 function escapeRegExp(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-function runSearch(pattern, language, root) {
+// The one read with one guard: an explicit path is a doctor's deliberate
+// choice (never test-path filtered), but it must stay inside the repo —
+// both read and readMasked pass through here.
+function readFileWithin(root, relativePath) {
+    const abs = path.resolve(root, relativePath);
+    if (abs !== root && !abs.startsWith(root + path.sep)) {
+        throw new Error(`ctx.files read escapes the repo root: ${relativePath}`);
+    }
+    return fs.readFileSync(abs, "utf8");
+}
+// Rule queries are curated (D20 Stage 1): pattern + inside, nothing else.
+// Validation runs BEFORE the host is asked, and errors teach — an agent
+// that misspells a key gets the allowed list and the nearest match, not
+// a rule that silently matches nothing (the repair log's silent-schema
+// lesson, refused at the seam this time).
+const RULE_KEYS = ["pattern", "inside"];
+const INSIDE_KEYS = ["pattern", "stopBy"];
+function validateRuleQuery(query) {
+    if (typeof query !== "object" || query === null || Array.isArray(query)) {
+        throw new Error('ctx.search.rule needs a query object: { pattern, inside? }');
+    }
+    const record = query;
+    for (const key of Object.keys(record)) {
+        if (!RULE_KEYS.includes(key)) {
+            throw new Error(`ctx.search.rule: unknown key "${key}"${didYouMean(key, RULE_KEYS)} — allowed: ${RULE_KEYS.join(", ")}`);
+        }
+    }
+    const pattern = record.pattern;
+    if (typeof pattern !== "string" || pattern === "") {
+        throw new Error('ctx.search.rule needs a "pattern" string (the structural pattern to match)');
+    }
+    const out = { pattern };
+    const inside = record.inside;
+    if (inside !== undefined) {
+        if (typeof inside !== "object" || inside === null || Array.isArray(inside)) {
+            throw new Error('ctx.search.rule: "inside" must be an object: { pattern, stopBy? }');
+        }
+        for (const key of Object.keys(inside)) {
+            if (!INSIDE_KEYS.includes(key)) {
+                throw new Error(`ctx.search.rule: unknown key "${key}" inside "inside"${didYouMean(key, INSIDE_KEYS)} — allowed: ${INSIDE_KEYS.join(", ")}`);
+            }
+        }
+        const inner = inside;
+        if (typeof inner.pattern !== "string" || inner.pattern === "") {
+            throw new Error('ctx.search.rule: "inside" needs a "pattern" string (the enclosing construct)');
+        }
+        if (inner.stopBy !== undefined && inner.stopBy !== "end" && inner.stopBy !== "neighbor") {
+            throw new Error(`ctx.search.rule: "inside.stopBy" must be "end" or "neighbor" — got ${JSON.stringify(inner.stopBy)} (default is "end")`);
+        }
+        out.inside = { pattern: inner.pattern, ...(inner.stopBy !== undefined ? { stopBy: inner.stopBy } : {}) };
+    }
+    return out;
+}
+function didYouMean(got, allowed) {
+    const near = allowed.find((a) => a.includes(got) || got.includes(a) || levenshtein(got, a) <= 2);
+    return near && near !== got ? ` — did you mean "${near}"?` : "";
+}
+function levenshtein(a, b) {
+    const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i += 1) {
+        let prev = row[0];
+        row[0] = i;
+        for (let j = 1; j <= b.length; j += 1) {
+            const tmp = row[j];
+            row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+            prev = tmp;
+        }
+    }
+    return row[b.length];
+}
+function runSearch(query, language, root) {
     var _a;
     let response;
     try {
-        fs.writeSync(3, SEARCH_REQUEST + JSON.stringify({ pattern, language, root }) + "\n");
+        const body = query.op === "rule"
+            ? { op: query.op, rule: query.rule, language, root }
+            : { op: query.op, pattern: query.pattern, language, root };
+        fs.writeSync(3, SEARCH_REQUEST + JSON.stringify(body) + "\n");
         response = readSearchResponse();
     }
     catch (e) {
         throw new Error(`ctx.search is unavailable — no search host on this channel (${e instanceof Error ? e.message : String(e)}). `
             + "Doctors run through any-doctor; a bare doctor-loader.mjs invocation has no host.");
     }
-    if (response.error !== undefined)
-        throw new Error(response.error);
+    if (response.error !== undefined) {
+        const detail = query.op === "rule"
+            ? `${response.error}\nquery: ${JSON.stringify(query.rule)}`
+            : response.error;
+        throw new Error(detail);
+    }
     return toMatches((_a = response.matches) !== null && _a !== void 0 ? _a : [], root);
 }
 function readSearchResponse() {
@@ -92,14 +172,51 @@ function readSearchResponse() {
         }
     }
 }
+// The engine's raw match becomes the doctor's Match: extent and captures
+// kept, sigils stripped ($$$ARGS arrives as captures.ARGS — an array for
+// multi-metavariables, a single Capture otherwise). Lines are 1-based;
+// columns pass through as the engine reports them, as they always have.
 function toMatches(raw, root) {
     return raw.map(m => {
-        var _a, _b, _c, _d, _e, _f;
-        return ({
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        const captures = capturesOf(m);
+        return {
             file: (m.file || "").replace(new RegExp("^" + escapeRegExp(root) + "/"), ""),
             line: ((_c = (_b = (_a = m.range) === null || _a === void 0 ? void 0 : _a.start) === null || _b === void 0 ? void 0 : _b.line) !== null && _c !== void 0 ? _c : 0) + 1,
             column: ((_f = (_e = (_d = m.range) === null || _d === void 0 ? void 0 : _d.start) === null || _e === void 0 ? void 0 : _e.column) !== null && _f !== void 0 ? _f : 1),
             text: m.text || "",
-        });
+            ...(((_g = m.range) === null || _g === void 0 ? void 0 : _g.end) !== undefined ? { endLine: ((_h = m.range.end.line) !== null && _h !== void 0 ? _h : 0) + 1, endColumn: (_j = m.range.end.column) !== null && _j !== void 0 ? _j : 0 } : {}),
+            ...(captures !== undefined ? { captures } : {}),
+        };
     });
+}
+function capturesOf(m) {
+    var _a, _b;
+    const single = (_a = m.metaVariables) === null || _a === void 0 ? void 0 : _a.single;
+    const multi = (_b = m.metaVariables) === null || _b === void 0 ? void 0 : _b.multi;
+    if (single === undefined && multi === undefined)
+        return undefined;
+    const out = {};
+    for (const [key, capture] of Object.entries(single !== null && single !== void 0 ? single : {})) {
+        out[key.replace(/^\$+/, "")] = toCapture(capture);
+    }
+    for (const [key, captures] of Object.entries(multi !== null && multi !== void 0 ? multi : {})) {
+        // ast-grep's multi-captures include separator tokens (`","` between
+        // arguments) as their own captures — dialect noise the seam absorbs:
+        // a multi-capture array is the captured NODES, never the commas.
+        out[key.replace(/^\$+/, "")] = (captures !== null && captures !== void 0 ? captures : [])
+            .filter((c) => { var _a; return ((_a = c.text) !== null && _a !== void 0 ? _a : "").trim() !== ","; })
+            .map(toCapture);
+    }
+    return out;
+}
+function toCapture(c) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+    return {
+        text: (_a = c.text) !== null && _a !== void 0 ? _a : "",
+        line: ((_d = (_c = (_b = c.range) === null || _b === void 0 ? void 0 : _b.start) === null || _c === void 0 ? void 0 : _c.line) !== null && _d !== void 0 ? _d : 0) + 1,
+        column: (_g = (_f = (_e = c.range) === null || _e === void 0 ? void 0 : _e.start) === null || _f === void 0 ? void 0 : _f.column) !== null && _g !== void 0 ? _g : 0,
+        endLine: ((_k = (_j = (_h = c.range) === null || _h === void 0 ? void 0 : _h.end) === null || _j === void 0 ? void 0 : _j.line) !== null && _k !== void 0 ? _k : 0) + 1,
+        endColumn: (_o = (_m = (_l = c.range) === null || _l === void 0 ? void 0 : _l.end) === null || _m === void 0 ? void 0 : _m.column) !== null && _o !== void 0 ? _o : 0,
+    };
 }

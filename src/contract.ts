@@ -38,6 +38,39 @@ export interface Match {
   line: number;
   column: number;
   text: string;
+  // D20 Stage 1: a match carries its extent and its metavariable
+  // captures — the engine already parsed them; the seam no longer
+  // subtracts them. Lines are 1-based; columns pass through as the
+  // engine reports them (0-based), as they always have.
+  endLine?: number;
+  endColumn?: number;
+  captures?: Record<string, Capture | Capture[]>;
+}
+
+// One metavariable capture: the matched sub-node's text and extent.
+// Multi-metavariables ($$$NAME) capture an array of these under the bare
+// NAME; single metavariables ($NAME) capture one.
+export interface Capture {
+  text: string;
+  line: number;
+  column: number;
+  endLine: number;
+  endColumn: number;
+}
+
+// A Rule query (CONTEXT.md): a composite structural question. `pattern`
+// is what to match; `inside` constrains it to occur within another
+// pattern, scanned to that enclosing node's end by default (stopBy) —
+// deliberately not ast-grep's own neighbor default, which the repair log
+// shows is almost never what a check means.
+export interface RuleQuery {
+  pattern: string;
+  inside?: RuleInside;
+}
+
+export interface RuleInside {
+  pattern: string;
+  stopBy?: "end" | "neighbor";
 }
 
 export interface DoctorCtx {
@@ -45,9 +78,15 @@ export interface DoctorCtx {
   files: {
     list(exts?: string[]): string[];
     read(relativePath: string): string;
+    // The one masking implementation (D20 Stage 1): comments and strings
+    // blanked, offsets and length preserved — a doctor indexes into it
+    // with positions that line up with the raw source. Doctors stopped
+    // carrying private copies the single-file law forced on them.
+    readMasked(relativePath: string): string;
   };
   search: {
     pattern(pattern: string, language?: "TypeScript" | "JavaScript"): Match[];
+    rule(query: RuleQuery, language?: "TypeScript" | "JavaScript"): Match[];
   };
   report: {
     finding(f: Finding): void;

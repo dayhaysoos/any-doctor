@@ -74,9 +74,25 @@ shapes without being production reads. The one law (`isTestPath`) and
 the one derivation (`includeTestsFor`) live in contract.ts; every read
 capability applies them. A Doctor run opts back in with
 `--include-tests`; `ctx.files.read()` is never filtered — an explicit
-path is a deliberate choice. Verify always sees everything its fixtures
-seed: the sandbox is the doctor's own world, and a seed named
-`*.test.ts` is deliberate test data.
+path is a deliberate choice. `ctx.files.readMasked()` is the one
+masking implementation (comments and strings blanked, offsets and
+length preserved — a masked position addresses the same char in the
+source); doctors carry no private copies — the bundled pack's remaining
+copies migrate on the recorded triggers. Verify always sees everything
+its fixtures seed: the sandbox is the doctor's own world, and a seed
+named `*.test.ts` is deliberate test data.
+
+## Rule query
+
+A composite structural question asked through `ctx.search.rule`: a
+pattern to match, optionally constrained by `inside` (the enclosing
+construct, scanned to that node's end by default — `stopBy`,
+deliberately not ast-grep's own neighbor default). Answers arrive as
+Matches carrying end positions and metavariable captures;
+multi-metavariables (`$$$NAME`) arrive as arrays of nodes under the bare
+NAME, separator commas filtered at the seam. The surface is curated —
+pattern + inside — and validated: unknown keys fail loudly with the
+allowed list.
 
 ## Engine
 

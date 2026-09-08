@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import { maskNonCode } from "./mask.js";
 
 // The capability gate: a static scan of a doctor program's source before it
 // is ever executed. A doctor's entire legitimate world is the repo on disk
@@ -69,43 +70,6 @@ const RULES: Rule[] = [
   { capability: "direct fs read", level: "yellow", on: "masked", kind: "fs read call (bypasses ctx.files)", pattern: /\bfs\s*\.\s*(?:promises\s*\.\s*)?(?:readFile|readdir|stat|existsSync|createReadStream)\w*\s*\(/ },
   { capability: "environment", level: "yellow", on: "masked", kind: "process.env", pattern: /\bprocess\s*\.\s*env\b/ },
 ];
-
-function maskNonCode(source: string): string {
-  const chars = source.split("");
-  let index = 0;
-  while (index < source.length) {
-    const char = source[index];
-    const next = source[index + 1];
-    if (char === "/" && next === "/") {
-      const end = source.indexOf("\n", index + 2);
-      const stop = end === -1 ? source.length : end;
-      for (let cursor = index; cursor < stop; cursor += 1) chars[cursor] = " ";
-      index = stop;
-    } else if (char === "/" && next === "*") {
-      const end = source.indexOf("*/", index + 2);
-      const stop = end === -1 ? source.length : end + 2;
-      for (let cursor = index; cursor < stop; cursor += 1) {
-        if (chars[cursor] !== "\n") chars[cursor] = " ";
-      }
-      index = stop;
-    } else if (char === "'" || char === '"' || char === "`") {
-      const quote = char;
-      let cursor = index + 1;
-      while (cursor < source.length) {
-        if (source[cursor] === "\\") cursor += 2;
-        else if (source[cursor] === quote) { cursor += 1; break; }
-        else cursor += 1;
-      }
-      for (let position = index; position < cursor; position += 1) {
-        if (chars[position] !== "\n") chars[position] = " ";
-      }
-      index = cursor;
-    } else {
-      index += 1;
-    }
-  }
-  return chars.join("");
-}
 
 // One finding per rule per line; the first matching rule wins a line so the
 // report stays a signal, not a wall.
