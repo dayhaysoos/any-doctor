@@ -73,11 +73,12 @@ function escapeRegExp(s: string): string {
 }
 
 // The one read with one guard: an explicit path is a doctor's deliberate
-// choice (never test-path filtered), but it must stay inside the repo.
+// choice (never test-path filtered), but it must stay inside the repo —
+// both read and readMasked pass through here.
 function readFileWithin(root: string, relativePath: string): string {
   const abs = path.resolve(root, relativePath);
   if (abs !== root && !abs.startsWith(root + path.sep)) {
-    throw new Error(`ctx.files.read escapes the repo root: ${relativePath}`);
+    throw new Error(`ctx.files read escapes the repo root: ${relativePath}`);
   }
   return fs.readFileSync(abs, "utf8");
 }
@@ -205,14 +206,17 @@ function readSearchResponse(): SearchResponse {
 // multi-metavariables, a single Capture otherwise). Lines are 1-based;
 // columns pass through as the engine reports them, as they always have.
 function toMatches(raw: RawSgMatch[], root: string): Match[] {
-  return raw.map(m => ({
-    file: (m.file || "").replace(new RegExp("^" + escapeRegExp(root) + "/"), ""),
-    line: (m.range?.start?.line ?? 0) + 1,
-    column: (m.range?.start?.column ?? 1),
-    text: m.text || "",
-    ...(m.range?.end !== undefined ? { endLine: (m.range.end.line ?? 0) + 1, endColumn: m.range.end.column ?? 0 } : {}),
-    ...(capturesOf(m) !== undefined ? { captures: capturesOf(m) } : {}),
-  }));
+  return raw.map(m => {
+    const captures = capturesOf(m);
+    return {
+      file: (m.file || "").replace(new RegExp("^" + escapeRegExp(root) + "/"), ""),
+      line: (m.range?.start?.line ?? 0) + 1,
+      column: (m.range?.start?.column ?? 1),
+      text: m.text || "",
+      ...(m.range?.end !== undefined ? { endLine: (m.range.end.line ?? 0) + 1, endColumn: m.range.end.column ?? 0 } : {}),
+      ...(captures !== undefined ? { captures } : {}),
+    };
+  });
 }
 
 function capturesOf(m: RawSgMatch): Record<string, Capture | Capture[]> | undefined {

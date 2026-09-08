@@ -77,7 +77,8 @@ capability applies them. A Doctor run opts back in with
 path is a deliberate choice. `ctx.files.readMasked()` is the one
 masking implementation (comments and strings blanked, offsets and
 length preserved — a masked position addresses the same char in the
-source); doctors carry no private copies. Verify always sees everything
+source); doctors carry no private copies — the bundled pack's remaining
+copies migrate on the recorded triggers. Verify always sees everything
 its fixtures seed: the sandbox is the doctor's own world, and a seed
 named `*.test.ts` is deliberate test data.
 

@@ -63,11 +63,12 @@ function escapeRegExp(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 // The one read with one guard: an explicit path is a doctor's deliberate
-// choice (never test-path filtered), but it must stay inside the repo.
+// choice (never test-path filtered), but it must stay inside the repo —
+// both read and readMasked pass through here.
 function readFileWithin(root, relativePath) {
     const abs = path.resolve(root, relativePath);
     if (abs !== root && !abs.startsWith(root + path.sep)) {
-        throw new Error(`ctx.files.read escapes the repo root: ${relativePath}`);
+        throw new Error(`ctx.files read escapes the repo root: ${relativePath}`);
     }
     return fs.readFileSync(abs, "utf8");
 }
@@ -178,14 +179,15 @@ function readSearchResponse() {
 function toMatches(raw, root) {
     return raw.map(m => {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
-        return ({
+        const captures = capturesOf(m);
+        return {
             file: (m.file || "").replace(new RegExp("^" + escapeRegExp(root) + "/"), ""),
             line: ((_c = (_b = (_a = m.range) === null || _a === void 0 ? void 0 : _a.start) === null || _b === void 0 ? void 0 : _b.line) !== null && _c !== void 0 ? _c : 0) + 1,
             column: ((_f = (_e = (_d = m.range) === null || _d === void 0 ? void 0 : _d.start) === null || _e === void 0 ? void 0 : _e.column) !== null && _f !== void 0 ? _f : 1),
             text: m.text || "",
             ...(((_g = m.range) === null || _g === void 0 ? void 0 : _g.end) !== undefined ? { endLine: ((_h = m.range.end.line) !== null && _h !== void 0 ? _h : 0) + 1, endColumn: (_j = m.range.end.column) !== null && _j !== void 0 ? _j : 0 } : {}),
-            ...(capturesOf(m) !== undefined ? { captures: capturesOf(m) } : {}),
-        });
+            ...(captures !== undefined ? { captures } : {}),
+        };
     });
 }
 function capturesOf(m) {
