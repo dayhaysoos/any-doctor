@@ -255,6 +255,24 @@ const verifyDoctorE = ({ programPath, fixturesPath }) => Effect.gen(function* ()
 export async function runDoctor(options) {
     return drain(runDoctorE(options));
 }
+// The cohort primitive: every doctor runs as its own confined child
+// through a bounded pool — doctors are CPU-bound parsers, and an
+// unbounded fan-out contends with the machine's real work (4 measured
+// faster than 9-wide on a busy 10-core laptop). Results keep input
+// order; a crash is typed data (RunnerError) and never interrupts its
+// siblings. Concurrency policy is execution policy — it lives here,
+// beside the Doctor-run protocol, and the command layer consumes the
+// facade.
+export const DOCTOR_POOL_SIZE = 4;
+export async function runDoctorCohort(options) {
+    const exits = await Effect.runPromise(Effect.forEach(options, (o) => Effect.exit(runDoctorE(o)), {
+        concurrency: Math.max(1, Math.min(DOCTOR_POOL_SIZE, options.length)),
+    }));
+    return exits.map((exit, i) => Exit.match(exit, {
+        onSuccess: (result) => ({ ok: true, options: options[i], result }),
+        onFailure: (cause) => ({ ok: false, options: options[i], cause: squash(cause) }),
+    }));
+}
 export async function verifyDoctor(options) {
     return drain(verifyDoctorE(options));
 }

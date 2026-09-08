@@ -104,3 +104,25 @@ test("metaDoctor: reads meta; a broken doctor is data, not a throw", async () =>
     t.cleanup();
   }
 });
+
+test("runDoctorCohort: bounded pool, input order preserved, a crash is typed data", async () => {
+  const { runDoctorCohort } = await import("../bin/runner.js");
+  const crasher = tmpDoctor([
+    "export const meta = { id: 'cohort-crasher', description: 'x', severity: 'info' }",
+    "export async function doctor(ctx) { throw new Error('kaboom-cohort') }",
+  ]);
+  try {
+    const runs = await runDoctorCohort([
+      { programPath: DOCTOR, targetDir: TARGET },
+      { programPath: crasher.file, targetDir: TARGET },
+      { programPath: DOCTOR, targetDir: TARGET },
+    ]);
+    assert.equal(runs.length, 3, "one run per option, in input order");
+    assert.ok(runs[0].ok && runs[0].result.meta.id === "async-doctor");
+    assert.ok(!runs[1].ok && runs[1].cause._tag === "DoctorCrashed", "the crash arrives as typed data");
+    assert.ok(runs[2].ok, "a sibling's crash never interrupts the cohort");
+    assert.equal(runs[2].result.meta.id, "async-doctor");
+  } finally {
+    crasher.cleanup();
+  }
+});
