@@ -1,6 +1,6 @@
 export const meta = {
   id: "effect-doctor",
-  description: "Effect v4 discipline: typed errors over hand-rolled tags, Config over direct env reads, named Effect.fn, no casts that silence the type system.",
+  description: "Effect v4 discipline: typed errors over hand-rolled tags, Config over direct env reads, named Effect.fn, deterministic generators, validated boundaries, no casts that silence the type system.",
   severity: "warning",
   category: "effect",
   blindSpots: [
@@ -14,6 +14,8 @@ export const meta = {
     "Effect.fn naming is read from the raw line: a name string placed on the following line is not recognized, and the check cannot see names computed at runtime.",
     "Layer.mergeAll/provideMerge have legitimate composition uses; like all merge-tools findings this is the skill's default recorded, not a defect proven.",
     "sleep-in-test only fires when test files are scanned: any-doctor's default run excludes them — pass --include-tests to check test discipline.",
+    "zod checks apply to files importing zod - a superset of the effect-importing files; z.record discipline is ecosystem-wide, not effect-gated.",
+    "gen-span tracking counts braces from Effect.gen(function* - non-generator callbacks are deliberately not spans (only generator bodies are the deterministic runtime), and a gen body that never closes owns everything after it.",
     "Judgment rules from the same skill (thin handlers, idempotent-only retry, business rules out of transports) are semantic and stay with review - this doctor enforces only the mechanical subset.",
   ],
   checks: [
@@ -66,6 +68,22 @@ export const meta = {
       fix: "Pass the dotted name first: Effect.fn(\"User.load\")((userId) => ...) - or use Effect.fnUntraced deliberately when span metadata is intentionally unnecessary.",
     },
     {
+      id: "date-now-in-gen",
+      description: "Date.now() called inside an Effect.gen body.",
+      severity: "warning",
+      impact: "The generator reads wall-clock time directly, so the workflow is untestable with TestClock and non-reproducible across runs - time-sensitive branches flip depending on when the code executes.",
+      why: "Effect generators run against the runtime's Clock service precisely so time can be controlled (TestClock in tests); Date.now() steps around that contract. The ecosystem's rule: read time through Clock, or pass it in.",
+      fix: "yield* Clock.currentTimeMillisNow() (TestClock controls it in tests), or accept the timestamp as a parameter from the caller.",
+    },
+    {
+      id: "zod-single-record",
+      description: "z.record called with a single argument.",
+      severity: "warning",
+      impact: "The single-argument form leaves the record's keys unconstrained - a schema that validates values but accepts any key shape, which is exactly the drift the boundary was meant to stop.",
+      why: "z.record's single-argument call is the legacy loose form; the explicit form names both halves of the contract (z.record(keySchema, valueSchema)) and keeps key validation honest. In Effect apps, boundary validation is the discipline - Schema or zod, either way both halves are named.",
+      fix: "Name both halves: z.record(z.string(), valueType) - or migrate the boundary to Effect Schema (Schema.Struct plus decoding at the edge).",
+    },
+    {
       id: "sleep-in-test",
       description: "Effect.sleep used inside a test file.",
       severity: "warning",
@@ -94,12 +112,19 @@ export async function doctor(ctx) {
     // APIs - scanning build artifacts would re-report synthesized classes.
     if (/\.d\.[cm]?ts$/.test(file)) continue;
     const raw = await ctx.files.read(file);
-    if (!EFFECT_IMPORT.test(raw)) continue;
+    const isEffect = EFFECT_IMPORT.test(raw);
+    const isZod = ZOD_IMPORT.test(raw);
+    if (!isEffect && !isZod) continue;
     const masked = maskNonCode(raw);
     const lines = masked.split("\n");
     const rawLines = raw.split("\n");
 
+    if (!isEffect) {
+      checkZodRecord(ctx, file, lines);
+      continue;
+    }
     checkCasts(ctx, file, lines);
+    checkGenClock(ctx, file, lines);
     checkSchemaClass(ctx, file, lines);
     checkTaggedError(ctx, file, lines);
     checkCauseRecovery(ctx, file, lines);
@@ -107,7 +132,101 @@ export async function doctor(ctx) {
     checkEffectFn(ctx, file, rawLines);
     if (isTestFile(file)) checkSleepInTest(ctx, file, lines);
     checkLayerMerge(ctx, file, lines);
+    if (isZod) checkZodRecord(ctx, file, lines);
   }
+}
+
+// --- deterministic generators -----------------------------------------------------
+
+// Only generator bodies are the deterministic runtime: Effect.gen(function*
+// opens a span (brace-tracked), and wall-clock reads inside it step around
+// the Clock contract.
+const GEN_OPEN = /\bEffect\.gen\s*\(\s*function\s*\*\s*\(/;
+const DATE_NOW = /\bDate\s*\.\s*now\s*\(/;
+
+function genSpans(lines) {
+  const spans = [];
+  let cur = null;
+  let depth = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!cur) {
+      if (!GEN_OPEN.test(line)) continue;
+      cur = { start: i, end: i };
+      depth = countChars(line, "{") - countChars(line, "}");
+      if (depth <= 0) {
+        spans.push(cur);
+        cur = null;
+      }
+      continue;
+    }
+    depth += countChars(line, "{") - countChars(line, "}");
+    cur.end = i;
+    if (depth <= 0) {
+      spans.push(cur);
+      cur = null;
+    }
+  }
+  if (cur) spans.push(cur);
+  return spans;
+}
+
+function checkGenClock(ctx, file, lines) {
+  for (const span of genSpans(lines)) {
+    for (let i = span.start; i <= span.end; i++) {
+      if (DATE_NOW.test(lines[i])) {
+        ctx.report.finding({ rule: "date-now-in-gen", file, line: i + 1 });
+      }
+    }
+  }
+}
+
+// --- zod boundary discipline --------------------------------------------------------
+
+// Single-argument z.record is the legacy loose form: the call's argument
+// span (generics optional) must contain a top-level comma to name both
+// halves of the record.
+const Z_RECORD = /\bz\.record\b\s*(?:<[^>]*>)?\s*\(/;
+
+function checkZodRecord(ctx, file, lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const m = Z_RECORD.exec(lines[i]);
+    if (!m) continue;
+    // The call may wrap: scan the tail of the file (from this line) so a
+    // closing paren on a later line still bounds the argument span.
+    const tail = lines.slice(i).join(" ");
+    const tailMatch = Z_RECORD.exec(tail);
+    const open = tail.indexOf("(", tailMatch.index + tailMatch[0].length - 1);
+    const close = matchingParen(tail, open);
+    if (close === -1) continue;
+    // A trailing comma (multiline call style) is not a separator.
+    const args = tail.slice(open + 1, close).replace(/[,\s]+$/, "");
+    if (!hasTopLevelComma(args)) {
+      ctx.report.finding({ rule: "zod-single-record", file, line: i + 1 });
+    }
+  }
+}
+
+function hasTopLevelComma(args) {
+  let depth = 0;
+  for (const ch of args) {
+    if (ch === "(" || ch === "[" || ch === "{") depth++;
+    else if (ch === ")" || ch === "]" || ch === "}") depth--;
+    else if (ch === "," && depth === 0) return true;
+  }
+  return false;
+}
+
+function matchingParen(text, open) {
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "(") depth++;
+    if (text[i] === ")") {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
 }
 
 // --- scope gate ---------------------------------------------------------------
@@ -116,6 +235,10 @@ export async function doctor(ctx) {
 // package (static, dynamic, or subpath). "useEffect" from react does not
 // match - the from-clause must name effect itself.
 const EFFECT_IMPORT = /\bfrom\s+["']effect(?:\/[^"']*)?["']|\b(?:require|import)\s*\(\s*["']effect(?:\/[^"']*)?["']/;
+
+// zod is the ecosystem's other validation boundary: these checks apply to
+// zod-importing files whether or not effect is present.
+const ZOD_IMPORT = /\bfrom\s+["']zod["']|\b(?:require|import)\s*\(\s*["']zod["']/;
 
 // Two faces of the platform's test-file law, matching contract.ts's
 // isTestPath on every reachable path (ctx.files.list extension-filters,
