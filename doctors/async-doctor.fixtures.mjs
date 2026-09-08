@@ -182,6 +182,78 @@ export const fixtures = [
     "expected": []
   },
   {
+    "name": "degraded mode still flags the plain dropped binding",
+    "analysis": "off",
+    "seed": {
+      "src/off-a.ts": "export function work(ids: string[]) {\n  const results = ids.map(async id => load(id))\n  return results.length\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/off-a.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "degraded mode still sees next-line combiner consumption",
+    "analysis": "off",
+    "seed": {
+      "src/off-b.ts": "export async function work(ids: string[]) {\n  const results = ids.map(async id => load(id))\n  return Promise.all(results)\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "degraded mode still flags the bare discarded statement",
+    "analysis": "off",
+    "seed": {
+      "src/off-bare.ts": "export function warm(ids: string[]) {\n  ids.map(async id => prime(id));\n  return ids.length;\n}\n"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/off-bare.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "degraded mode still flags await directly on the mapped array",
+    "analysis": "off",
+    "seed": {
+      "src/off-await-array.ts": "export async function warm(ids: string[]) {\n  await ids.map(async id => prime(id));\n  return ids.length;\n}\n"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/off-await-array.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "degraded mode still sees same-line consumption after the declaration",
+    "analysis": "off",
+    "seed": {
+      "src/off-one-line.ts": "export const saveAll = (items: string[]) => { const jobs = items.map(async item => save(item)); return Promise.all(jobs); };"
+    },
+    "expected": []
+  },
+  {
+    "name": "degraded mode still flags the optional-chained bound map",
+    "analysis": "off",
+    "seed": {
+      "src/off-opt-bound.ts": "export function work(ids?: string[]) {\n  const jobs = ids?.map(async id => load(id))\n  return jobs?.length ?? 0\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/off-opt-bound.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
     "name": "allSettled-consumed result in a later batch loop is not flagged",
     "seed": {
       "src/d.ts": "export async function work(items: string[]) {\n  const allPromises = items.map(async item => load(item))\n  const allResults = await Promise.allSettled(allPromises)\n  return allResults\n}"

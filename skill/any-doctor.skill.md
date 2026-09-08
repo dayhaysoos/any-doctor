@@ -127,9 +127,10 @@ if (ctx.analysis.available) {
 
 The composing pattern (this is the whole trick): find **shapes** with a
 rule query, find **identities** with an analysis query, and join them by
-position — both use 1-based lines and 0-based columns, ends exclusive,
-so a Match's `line`/`column`/`endLine`/`endColumn` contains a reference
-(`m.line <= r.line <= m.endLine`, column-wise) without conversion.
+position — both use 1-based lines and 0-based columns with exclusive
+ends, so containment is `start <= ref < end` comparing (line, column)
+pairs left to right: a reference is inside a match when it is not before
+the match's start and not at-or-after its end.
 
 Three rules of the degradation contract:
 

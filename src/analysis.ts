@@ -1,4 +1,5 @@
 import { createRequire } from "module";
+import { AnalysisFile, BindingInfo, BindingRef } from "./contract.js";
 
 // The analysis adapter: the one place that knows how to run the identity
 // stack — oxc-parser (fast TS parse, a native optional dependency) plus
@@ -12,6 +13,8 @@ import { createRequire } from "module";
 // the host reports it, checks narrow, and the report says so. If oxc
 // ever ships JS semantic bindings of its own (their issue #22985), this
 // module's implementation swaps; nothing above it moves.
+
+export type { AnalysisFile, BindingInfo, BindingRef };
 
 export interface AnalysisStatus {
   available: true;
@@ -50,32 +53,6 @@ function loadStack(): LoadedStack {
 export function analysisStatus(): AnalysisStatusResult {
   const stack = loadStack();
   return stack.error !== undefined ? { available: false, reason: stack.error } : { available: true };
-}
-
-// The wire shapes doctors see (contract.ts re-exports the types). Lines
-// are 1-based, columns 0-based — ctx.search's convention, so reference
-// positions compose with Match positions without conversion.
-export interface BindingRef {
-  line: number;
-  column: number;
-  endLine: number;
-  endColumn: number;
-  write: boolean;
-}
-
-export interface BindingInfo {
-  name: string;
-  kind: string;
-  line: number;
-  column: number;
-  endLine: number;
-  endColumn: number;
-  references: BindingRef[];
-}
-
-export interface AnalysisFile {
-  file: string;
-  bindings: BindingInfo[];
 }
 
 export type AnalysisResult = { ok: true; file: AnalysisFile } | { ok: false; error: string };

@@ -337,7 +337,10 @@ async function cmdVerify(args) {
     console.log(renderVerifyResult(result, useColor()));
     const failures = result.results.filter(x => !x.ok).length;
     console.log("");
-    console.log(dim(`${result.results.length - failures}/${result.results.length} fixtures passed for ${result.meta.id}`));
+    const skipped = result.results.filter((x) => x.skipped !== undefined).length;
+    const passed = result.results.filter((x) => x.ok && x.skipped === undefined).length;
+    console.log(dim(`${passed}/${result.results.length} fixtures passed for ${result.meta.id}`
+        + (skipped > 0 ? ` — ${skipped} skipped (analysis engine unavailable)` : "")));
     return failures > 0 ? 1 : 0;
 }
 // The planted copy of the skill once went three decisions stale

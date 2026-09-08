@@ -151,6 +151,19 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
         lines.push(`${c("✔", GREEN)} ${c(g.meta.id, DIM)} — clean`);
       }
     }
+    // A clean degraded run must never read as a full-power clean — the
+    // narrowed notice renders here too, exactly as it does under
+    // findings (D20 Stage 2's own words).
+    const narrowedDoctors = input.analysisAvailable === false
+      ? groups.filter((g) => (g.meta.checks ?? []).some((ck) => ck.needs && ck.needs.length > 0))
+      : [];
+    if (narrowedDoctors.length > 0) {
+      lines.push("");
+      for (const g of narrowedDoctors) {
+        const ids = g.meta.checks!.filter((ck) => ck.needs && ck.needs.length > 0).map((ck) => ck.id);
+        lines.push(c(`narrowed: analysis engine unavailable — ${ids.join(", ")} ran in degraded mode`, YELLOW));
+      }
+    }
     return lines.join("\n");
   }
 
@@ -223,6 +236,12 @@ export function renderVerifyResult(result: VerifyRunResult, useColor: boolean): 
   const c = colorizer(useColor);
   const lines: string[] = [];
   for (const fixture of result.results) {
+    if (fixture.skipped !== undefined) {
+      // An honest skip is data, not a pass: this fixture pins the
+      // analysis-on path and the engine is not installed here.
+      lines.push(c("  – " + fixture.name + " — skipped: " + fixture.skipped, DIM));
+      continue;
+    }
     if (fixture.ok) {
       lines.push(c("  ✔ " + fixture.name, GREEN));
     } else {
