@@ -197,14 +197,14 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
   return lines.join("\n").replace(/\n+$/, "");
 }
 
-// Verify-gate rendering: pure state -> string, colored on request. The
-// command layer prints it and counts failures from the data.
 // A diff entry's location includes its rule when it has one — the gate is
 // rule-aware (D20), so the line must say which check was missing or extra.
 function where(f: ExpectedFinding): string {
   return (f.rule ? f.rule + " " : "") + f.file + ":" + f.line;
 }
 
+// Verify-gate rendering: pure state -> string, colored on request. The
+// command layer prints it and counts failures from the data.
 export function renderVerifyResult(result: VerifyRunResult, useColor: boolean): string {
   const c = colorizer(useColor);
   const lines: string[] = [];

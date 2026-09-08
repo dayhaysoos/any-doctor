@@ -58,7 +58,7 @@ export const fixtures = [
 - `ctx.search.pattern(pattern, language?)` → `[{ file, line, column, text }]`
   (ast-grep pattern syntax, e.g. `"fetch($URL)"`; requires ast-grep installed;
   respects the same test-path exclusion — `--include-tests` includes them)
-- `ctx.report.finding({ file, line, column?, message?, severity? })`
+- `ctx.report.finding({ rule, file, line, column?, message?, severity? })`
 
 Zero dependencies, zero imports — a doctor is one self-contained file;
 everything reaches it through `ctx`. Node >= 18.
