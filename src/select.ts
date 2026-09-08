@@ -22,6 +22,7 @@ export type Selection =
 export interface SelectOptions {
   cwd: string;
   globalDir?: string;
+  bundledDir?: string;
   useColor: boolean;
   // false forces the non-interactive listing even on a real terminal
   // (ANY_DOCTOR_HEADLESS).
@@ -31,13 +32,19 @@ export interface SelectOptions {
 
 export async function selectDoctor(doctorArg: string | undefined, options: SelectOptions): Promise<Selection> {
   if (doctorArg !== undefined) {
-    const resolved = resolveDoctorPath(doctorArg, options.cwd, options.globalDir !== undefined ? { globalDir: options.globalDir } : undefined);
+    const resolved = resolveDoctorPath(doctorArg, options.cwd, {
+      ...(options.globalDir !== undefined ? { globalDir: options.globalDir } : {}),
+      ...(options.bundledDir !== undefined ? { bundledDir: options.bundledDir } : {}),
+    });
     return resolved !== null
       ? { kind: "doctor", doctorPath: resolved, skipped: [], unsafe: [] }
       : { kind: "not-found", arg: doctorArg };
   }
 
-  const discovered = await discoverDoctors(options.cwd, options.globalDir !== undefined ? { globalDir: options.globalDir } : undefined);
+  const discovered = await discoverDoctors(options.cwd, {
+    ...(options.globalDir !== undefined ? { globalDir: options.globalDir } : {}),
+    ...(options.bundledDir !== undefined ? { bundledDir: options.bundledDir } : {}),
+  });
   const valid = discovered.filter(d => d.meta !== null);
   const unsafe = unsafeSlugs(discovered);
   const broken = brokenDoctors(discovered);

@@ -61,11 +61,39 @@ test("main: verify failing fixture exits 1", async (t) => {
   }
 });
 
-test("main: usage exits 0; unknown command exits 1", async (t) => {
+test("main: help exits 0; unknown command exits 1", async (t) => {
   silentConsole(t);
-  assert.equal(await cli.main([]), 0);
   assert.equal(await cli.main(["help"]), 0);
   assert.equal(await cli.main(["bogus"]), 1);
+});
+
+test("main: no arguments runs every discovered doctor (D15 cold start), not usage", async (t) => {
+  const { globalDoctorsDir } = await import("../bin/discover.js");
+  const global = globalDoctorsDir();
+  if (fs.existsSync(global) && fs.readdirSync(global).length > 0) {
+    t.skip("user-global doctors would join this cohort — skipping for hermeticity");
+    return;
+  }
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-noargs-"));
+  const prevCwd = process.cwd();
+  try {
+    fs.mkdirSync(path.join(dir, "doctors"));
+    fs.writeFileSync(path.join(dir, "doctors", "mini.mjs"), [
+      "export const meta = { id: 'mini', description: 'mini', severity: 'info' }",
+      "export async function doctor(ctx) {}",
+    ].join("\n"));
+    fs.writeFileSync(path.join(dir, "target.ts"), "export const x = 1;\n");
+    process.chdir(dir);
+    const logs = silentConsole(t);
+    const code = await cli.main([]);
+    assert.equal(code, 0);
+    const printed = logs.mock.calls.map((c) => String(c.arguments[0])).join("\n");
+    assert.match(printed, /Scanned/, "a run report rendered, not the usage wall");
+    assert.ok(!printed.includes("generate \""), "usage text did not print");
+  } finally {
+    process.chdir(prevCwd);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("main: run --all treats a crashed doctor as data and still exits 1", async (t) => {

@@ -144,8 +144,10 @@ discovery reads it directly, with no separate index or cache.
 ## Scope
 
 Where a doctor program lives: repo-local (`./doctors/`, committed with
-the consuming repo) or user-global (`~/.any-doctor/doctors/`, available
-in every repo). Repo-local wins slug collisions. Scanning a target repo
+the consuming repo), user-global (`~/.any-doctor/doctors/`, available
+in every repo), or bundled (the first-party pack inside the package,
+read-only — a starting point, not a dependency). Repo-local wins slug
+collisions, then user-global, then bundled. Scanning a target repo
 never writes to any scope.
 
 ## Skill

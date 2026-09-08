@@ -74,6 +74,7 @@ test("selectDoctor: non-interactive session yields listing rows, not a picker", 
   const sel = await selectDoctor(undefined, {
     cwd: REPO,
     globalDir: emptyGlobalDir(),
+    bundledDir: emptyGlobalDir(),
     useColor: false,
     env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
   });
@@ -90,6 +91,7 @@ test("selectDoctor: enter on the picker yields the top doctor", async () => {
   const done = selectDoctor(undefined, {
     cwd: REPO,
     globalDir: emptyGlobalDir(),
+    bundledDir: emptyGlobalDir(),
     useColor: false,
     env: { stdin, stdout },
   });
@@ -110,6 +112,7 @@ test("selectDoctor: esc during the pick is cancelled, distinct from non-interact
   const done = selectDoctor(undefined, {
     cwd: REPO,
     globalDir: emptyGlobalDir(),
+    bundledDir: emptyGlobalDir(),
     useColor: false,
     env: { stdin, stdout },
   });
@@ -130,6 +133,7 @@ test("selectDoctor: no valid doctors is none-discovered with the broken list", a
   const sel = await selectDoctor(undefined, {
     cwd: root,
     globalDir: emptyGlobalDir(),
+    bundledDir: emptyGlobalDir(),
     useColor: false,
     env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
   });
@@ -143,6 +147,7 @@ test("selectDoctor: allowPicker=false forces the non-interactive listing even on
   const sel = await selectDoctor(undefined, {
     cwd: REPO,
     globalDir: emptyGlobalDir(),
+    bundledDir: emptyGlobalDir(),
     useColor: false,
     allowPicker: false,
     env: { stdin: new FakeStdin(true), stdout: new FakeStdout(true) },
