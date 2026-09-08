@@ -358,10 +358,11 @@ doctor to gate is the actual job.
 **Amendment (2026-09-08):** The pack outgrew the no-picker flow — nine
 bundled doctors (and growing) overwhelmed the cold start more than a
 menu would have. Bare interactive runs now open a cohort selector
-first: every doctor pre-selected, space deselects, and one Enter still
-runs everything — the findings-first property survives because the
-default keypress is unchanged. An empty selection refuses to run
-(notice, stays); esc cancels before anything executes. --all,
+first, and selection is opt-in: nothing is pre-selected, so narrowing
+to one doctor is one space instead of nine deselects. Space toggles the
+row under the cursor, `a` toggles every row the filter shows (the
+run-everything gesture), an empty selection refuses to run (notice,
+stays), and esc cancels before anything executes. --all,
 ANY_DOCTOR_HEADLESS, and non-TTY never see a prompt; the tree
 dashboard remains what follows.
 

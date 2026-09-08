@@ -161,19 +161,20 @@ test("pickItemOn: empty item list resolves null without touching the tty", async
 
 // ---- the cohort selector ----
 
-test("pickItemsOn: every doctor pre-selected — bare enter runs all", async () => {
+test("pickItemsOn: opens with nothing selected; a + enter runs everything", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
   const done = pickItemsOn({ stdin, stdout }, items, false);
   await new Promise((r) => setTimeout(r, 10));
-  assert.match(stdout.frames.find(f => f.includes("space select")), /2 of 2 selected/);
+  assert.match(stdout.frames.find(f => f.includes("space select")), /0 of 2 selected/);
+  stdin.send("a");
   stdin.send("\r");
   const out = await settle(done);
   assert.ok(out.done && Array.isArray(out.value));
-  assert.equal(out.value.length, items.length, "one Enter still runs everything");
+  assert.equal(out.value.length, items.length, "a selects all — the run-everything gesture");
 });
 
-test("pickItemsOn: space deselects the row under the cursor", async () => {
+test("pickItemsOn: space selects the row under the cursor — narrowing to one is one keypress", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
   const done = pickItemsOn({ stdin, stdout }, items, false);
@@ -181,19 +182,16 @@ test("pickItemsOn: space deselects the row under the cursor", async () => {
   stdin.send(" ");
   stdin.send("\r");
   const out = await settle(done);
-  assert.ok(out.done && out.value.length === items.length - 1);
-  assert.ok(!out.value.some(it => it.id === items[0].id), "the first row was deselected");
-  assert.match(stdout.frames.find(f => f.includes("[ ]")), new RegExp(items[0].id));
+  assert.ok(out.done && out.value.length === 1);
+  assert.equal(out.value[0].id, items[0].id, "the row under the cursor is the selection");
+  assert.match(stdout.frames.find(f => f.includes("[x]")), new RegExp(items[0].id));
 });
 
-test("pickItemsOn: an empty selection refuses to run — notice, session stays; esc cancels", async () => {
+test("pickItemsOn: bare enter on the empty default refuses and stays; esc cancels", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
   const done = pickItemsOn({ stdin, stdout }, items, false);
   await new Promise((r) => setTimeout(r, 10));
-  stdin.send(" ");
-  stdin.send("j");
-  stdin.send(" ");
   stdin.send("\r");
   await new Promise((r) => setTimeout(r, 10));
   assert.ok(stdout.frames.some(f => f.includes("nothing selected")), "the refusal is visible");

@@ -22,7 +22,7 @@ export function pickerFrame(
   const c = colorizer(useColor);
   const multi = chosen !== undefined;
   const hint = multi
-    ? "  (type to filter · ↑↓ move · space select · enter run · esc cancel)"
+    ? "  (type to filter · ↑↓ move · space select · a all · enter run · esc cancel)"
     : "  (type to filter · ↑↓ move · enter select · esc cancel)";
   const lines: string[] = [];
   lines.push(c(title, BOLD) + c(hint, DIM));
@@ -58,11 +58,11 @@ export function isPrintable(s: string): boolean {
   return s.length === 1 && s >= " " && s !== "\x7f";
 }
 
-// The cohort selector: every doctor pre-selected (Enter alone still runs
-// everything — the cold start stays one keypress), space toggles the row
-// under the cursor, and an empty selection refuses to run (notice, stay).
-// Toggling operates on the FILTERED row, so query + space deselects
-// precisely what the filter shows.
+// The cohort selector: selection is opt-in — nothing is pre-selected, so
+// narrowing to one doctor is one space, not nine deselects. Space toggles
+// the row under the cursor, `a` toggles every row the filter shows (the
+// run-everything gesture), and an empty selection refuses to run (notice,
+// stay). All toggling operates on the FILTERED rows.
 export async function pickItemsOn(
   env: TtyEnv,
   items: PickerItem[],
@@ -71,7 +71,7 @@ export async function pickItemsOn(
 ): Promise<PickerItem[] | null> {
   if (items.length === 0 || !canRunTui(env)) return null;
 
-  const chosen = new Set(items.map(it => it.id));
+  const chosen = new Set<string>();
   let query = "";
   let selected = 0;
   let notice: string | undefined;
@@ -105,17 +105,25 @@ export async function pickItemsOn(
         return;
       }
       if (key === " ") {
-        const list = filtered();
-        const it = list[Math.min(selected, list.length - 1)];
+        const it = filtered()[Math.min(selected, filtered().length - 1)];
         if (it) {
           if (chosen.has(it.id)) chosen.delete(it.id);
           else chosen.add(it.id);
         }
         return;
       }
+      if (key === "a") {
+        const list = filtered();
+        const every = list.every(it => chosen.has(it.id));
+        for (const it of list) {
+          if (every) chosen.delete(it.id);
+          else chosen.add(it.id);
+        }
+        return;
+      }
       if (key === "\r" || key === "\n") {
         if (chosen.size === 0) {
-          notice = "nothing selected — space to select, or esc to cancel";
+          notice = "nothing selected — space to select, a for all, or esc to cancel";
           return;
         }
         finish(items.filter(it => chosen.has(it.id)));
