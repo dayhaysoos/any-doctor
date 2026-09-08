@@ -45,7 +45,7 @@ export const fixtures = [
   {
     name: "<what this case proves>",
     seed: { "src/example.ts": "...inline file contents..." },
-    expected: [{ file: "src/example.ts", line: 2 }],   // exact set on (file, line)
+    expected: [{ rule: "<check-id>", file: "src/example.ts", line: 2 }],  // exact multiset on (rule, file, line)
   },
   // include cases where expected: [] — innocent lookalikes must stay silent
 ];
@@ -58,7 +58,7 @@ export const fixtures = [
 - `ctx.search.pattern(pattern, language?)` → `[{ file, line, column, text }]`
   (ast-grep pattern syntax, e.g. `"fetch($URL)"`; requires ast-grep installed;
   respects the same test-path exclusion — `--include-tests` includes them)
-- `ctx.report.finding({ file, line, column?, message?, severity? })`
+- `ctx.report.finding({ rule, file, line, column?, message?, severity? })`
 
 Zero dependencies, zero imports — a doctor is one self-contained file;
 everything reaches it through `ctx`. Node >= 18.
@@ -98,12 +98,30 @@ own `severity` only for exceptions.
 3. ALL fixtures must pass. Iterate until green — a failed fixture is the
    system telling you your rule or your expectations are wrong; fix the rule,
    or fix the expectation if the expectation itself was wrong.
-4. Report: id, what it detects, declared blind spots, fixture count.
+4. Adversarial pass — attack your own doctor before it ships. Your fixtures
+   and your doctor share your blind spots; a second wave of
+   **counter-fixtures**, written to break what you built, is what breaks
+   that shared blind spot. Author fixtures in three attack classes:
+   - **Lookalikes** the first wave never tried — innocent shapes a naive
+     pattern catches (masked comments and strings, near-miss identifiers).
+   - **Same-line variants** — the violation and its consumption (or two
+     violations) squeezed onto one line, where line-by-line scanning goes
+     blind.
+   - **Semantic traps** — shapes that satisfy your pattern but not the
+     intent (`await promiseArray` is not settling the promises), and shapes
+     the intent condemns that merely look handled.
+   Reason every expectation from the intent alone — never from what your
+   doctor currently reports (that is the self-grading trap). Verify again
+   and iterate until the attack wave is green too.
+5. Report: id, what it detects, declared blind spots, fixture count.
 
 ## Fixture discipline
 
-- Matching is exact-set on (file, line): a missing expected finding fails
-  (recall); an unexpected extra finding fails (precision). Get both sides right.
+- Matching is exact multiset on (rule, file, line): each expected finding
+  must be emitted by the check that carries its rule, each actual finding
+  must be expected, and duplicates count — a finding twice needs the
+  expectation twice. A missing expected finding fails recall; an
+  unexpected finding fails precision. Get both sides right.
 - Every doctor needs at least one `expected: []` fixture containing code that
   LOOKS like a violation but isn't — the lookalike that a naive implementation
   would wrongly flag.
@@ -179,6 +197,20 @@ out of scope for a doctor: say so in your final report instead.
    declare the gap in `blindSpots`. Never drop an intent condition silently.
 6. Your own `console.log` goes to stderr, not the report. Don't rely on
    stdout — stdout carries only the structured result.
+7. A region anchor is a point, not a line. When a rule scans for the
+   consumer of a declaration, scan from the declaration's end — never from
+   the next line. Same-line consumption is real consumption (a one-line
+   `const jobs = xs.map(async f); return Promise.all(jobs)` was a false
+   positive because the scan started on the following line).
+8. `await promiseArray` does not settle the promises — an array is not a
+   promise, so the await resolves immediately. Only combiners
+   (Promise.all/allSettled/race/any) or per-element awaits consume;
+   awaiting the array itself is the dropped-promises bug.
+9. Key the trigger on the defect, not on the decorated shape you first
+   wrote. A bare discarded `xs.map(async ...)` with no `const` binding is
+   the same dropped-promises bug — judge by what surrounds the expression
+   (statement position means discarded), not by requiring your favorite
+   decoration.
 
 ## What NOT to do
 

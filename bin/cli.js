@@ -188,9 +188,11 @@ async function cmdRun(args) {
             return 1;
         let doctors = cohort.valid;
         const skippedUnsafe = cohort.skippedUnsafe;
-        // The cold start stays one Enter: the selector pre-selects every
-        // doctor, space deselects, and Enter runs the selection (D15
-        // amendment 2026-09-08 — the pack outgrew the no-picker flow).
+        // The cold start is opt-in: the selector opens with nothing
+        // pre-selected, space selects, a selects every filtered row, and
+        // Enter runs the selection — narrowing to one doctor is one space,
+        // not nine deselects (D15 amendment 2026-09-08 — the pack outgrew
+        // the no-picker flow).
         // --all, headless, and non-TTY never see a prompt.
         const selEnv = processTtyEnv();
         const selCols = (_a = process.stdout.columns) !== null && _a !== void 0 ? _a : 0;
@@ -389,6 +391,9 @@ async function cmdGenerate(args) {
         "",
         "Then verify with exactly this command and iterate until every fixture passes:",
         '  node "' + cliJs + '" verify "' + doctorAbs + '"',
+        "Then run the skill's adversarial pass (Hard workflow, step 4): attack",
+        "your own doctor with a counter-fixture wave — lookalikes, same-line",
+        "variants, semantic traps — and verify again until it survives.",
         "Then stop and report.",
     ].join("\n");
     console.log(BOLD + "doctor prompt ready: " + CYAN + slug + RESET + dim(global ? " (global scope)" : ""));

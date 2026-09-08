@@ -17,7 +17,7 @@ No Cloudflare, no API keys, no server.
 
 ```bash
 any-doctor generate "find fetch calls without an AbortSignal"   # copies the exact prompt for your agent
-any-doctor verify doctors/fetch-without-abort-signal.mjs        # fixture gate (exact-set)
+any-doctor verify doctors/fetch-without-abort-signal.mjs        # fixture gate (exact on rule:file:line, duplicates count)
 any-doctor run doctors/fetch-without-abort-signal.mjs path/to/repo   # scan + score + report + review menu
 any-doctor run                                                        # every doctor (terminal: select first — space to choose, a for all)
 ```
@@ -49,7 +49,7 @@ per-check fixtures and the interactive check tree in `run`.
 | Doc | What it holds |
 |---|---|
 | [CONTEXT.md](CONTEXT.md) | Domain glossary — canonical terms |
-| [docs/decisions.md](docs/decisions.md) | Decision log (D1–D19). Read first; don't relitigate |
+| [docs/decisions.md](docs/decisions.md) | Decision log (D1–D20). Read first; don't relitigate |
 | [docs/vision.md](docs/vision.md) | Product idea and the lifecycle novelty |
 | [docs/features.md](docs/features.md) | Doctor discovery & registry spec + status |
 | [docs/research.md](docs/research.md) | Landscape, React Doctor teardown |

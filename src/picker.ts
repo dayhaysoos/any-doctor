@@ -27,7 +27,9 @@ export function pickerFrame(
   const lines: string[] = [];
   lines.push(c(title, BOLD) + c(hint, DIM));
   lines.push("");
-  lines.push(c("❯ " + query, BOLD) + c("▏", DIM));
+  // The filter input marks "/" — a different glyph than the row cursor
+  // "❯" below, so the two cursors cannot be mistaken for each other.
+  lines.push(c("/ " + query, BOLD) + c("▏", DIM));
   lines.push("");
   if (items.length === 0) {
     lines.push(c("  no matching doctors", DIM));

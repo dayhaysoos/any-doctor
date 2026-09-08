@@ -54,10 +54,16 @@ export interface DoctorCtx {
   };
 }
 
+export interface ExpectedFinding {
+  rule?: string;
+  file: string;
+  line: number;
+}
+
 export interface Fixture {
   name: string;
   seed: Record<string, string>;
-  expected: { file: string; line: number }[];
+  expected: ExpectedFinding[];
 }
 
 export const PROTOCOL_VERSION = 1;
@@ -109,8 +115,8 @@ export interface RunResult {
 }
 
 export interface FixtureDiff {
-  missing: { file: string; line: number }[];
-  unexpected: { file: string; line: number }[];
+  missing: ExpectedFinding[];
+  unexpected: ExpectedFinding[];
 }
 
 export interface FixtureResult extends FixtureDiff {
@@ -176,12 +182,41 @@ export function runCommandFor(doctorPath: string, root: string, invoker = "any-d
   return `${invoker} run "${doctorPath}" "${root}"`;
 }
 
-export function compareFindings(expected: { file: string; line: number }[], actual: Finding[]): FixtureDiff {
-  const key = (f: { file: string; line: number }): string => `${f.file}:${f.line}`;
-  const expectedKeys = new Set(expected.map(key));
-  const actualKeys = new Set(actual.map(key));
-  const missing = expected.filter(f => !actualKeys.has(key(f))).map(f => ({ file: f.file, line: f.line }));
-  const unexpected = actual.filter(f => !expectedKeys.has(key(f))).map(f => ({ file: f.file, line: f.line }));
+// The fixture gate, D20: rule-aware and multiset. The key is
+// rule:file:line — a wrong-rule finding at the right line is both a
+// missing expectation and an unexpected finding (the gate was rule-blind
+// for multi-check doctors), and two findings where one was expected leave
+// one unexpected (duplicates used to collapse into one satisfied entry).
+// A finding or expectation without a rule keys on "" — rule-less expected
+// matches rule-less findings only.
+export function compareFindings(expected: ExpectedFinding[], actual: Finding[]): FixtureDiff {
+  const key = (f: ExpectedFinding): string => `${f.rule ?? ""}:${f.file}:${f.line}`;
+  const asDiffEntry = (f: ExpectedFinding): ExpectedFinding =>
+    f.rule === undefined ? { file: f.file, line: f.line } : { rule: f.rule, file: f.file, line: f.line };
+
+  // Expectations are a consumption budget per key: each matching actual
+  // satisfies one, further actuals are unexpected, unsatisfied
+  // expectations are missing.
+  const budget = new Map<string, number>();
+  for (const e of expected) budget.set(key(e), (budget.get(key(e)) ?? 0) + 1);
+
+  const satisfied = new Map<string, number>();
+  const unexpected: ExpectedFinding[] = [];
+  for (const a of actual) {
+    const k = key(a);
+    const n = satisfied.get(k) ?? 0;
+    if (n < (budget.get(k) ?? 0)) satisfied.set(k, n + 1);
+    else unexpected.push(asDiffEntry(a));
+  }
+
+  const missing: ExpectedFinding[] = [];
+  const matchedExpectations = new Map<string, number>();
+  for (const e of expected) {
+    const k = key(e);
+    const n = matchedExpectations.get(k) ?? 0;
+    if (n < (satisfied.get(k) ?? 0)) matchedExpectations.set(k, n + 1);
+    else missing.push(asDiffEntry(e));
+  }
   return { missing, unexpected };
 }
 

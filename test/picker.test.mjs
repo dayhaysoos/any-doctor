@@ -11,9 +11,18 @@ const items = [
 test("pickerFrame: header, query line, and items render", () => {
   const out = pickerFrame("Select a doctor", items, 0, "", false);
   assert.match(out, /Select a doctor/);
-  assert.match(out, /❯ ▏/);
+  assert.match(out, /\/ ▏/);
   assert.match(out, /unawaited-async-map\.mjs/);
   assert.match(out, /no-console-log\.mjs/);
+});
+
+test("pickerFrame: the filter input and the row cursor use different glyphs", () => {
+  const out = pickerFrame("Select a doctor", items, 0, "", false);
+  const lines = out.split("\n");
+  const input = lines.find(l => l.includes("▏"));
+  const cursor = lines.find(l => l.startsWith("❯ "));
+  assert.ok(input?.startsWith("/ "), "filter input is marked with /");
+  assert.ok(cursor !== undefined, "row cursor is still ❯");
 });
 
 test("pickerFrame: selected item is marked", () => {

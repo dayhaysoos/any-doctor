@@ -1,4 +1,4 @@
-import { DoctorMeta, Finding, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
+import { DoctorMeta, ExpectedFinding, Finding, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
 import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
 
@@ -197,6 +197,12 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
   return lines.join("\n").replace(/\n+$/, "");
 }
 
+// A diff entry's location includes its rule when it has one — the gate is
+// rule-aware (D20), so the line must say which check was missing or extra.
+function where(f: ExpectedFinding): string {
+  return (f.rule ? f.rule + " " : "") + f.file + ":" + f.line;
+}
+
 // Verify-gate rendering: pure state -> string, colored on request. The
 // command layer prints it and counts failures from the data.
 export function renderVerifyResult(result: VerifyRunResult, useColor: boolean): string {
@@ -207,8 +213,8 @@ export function renderVerifyResult(result: VerifyRunResult, useColor: boolean): 
       lines.push(c("  ✔ " + fixture.name, GREEN));
     } else {
       lines.push(c("  ✖ " + fixture.name, RED));
-      for (const m of fixture.missing) lines.push("    " + c("missing expected finding", RED) + " " + m.file + ":" + m.line);
-      for (const u of fixture.unexpected) lines.push("    " + c("unexpected finding", RED) + " " + u.file + ":" + u.line);
+      for (const m of fixture.missing) lines.push("    " + c("missing expected finding", RED) + " " + where(m));
+      for (const u of fixture.unexpected) lines.push("    " + c("unexpected finding", RED) + " " + where(u));
       if (fixture.error) lines.push("    " + c("crashed: ", RED) + fixture.error);
     }
   }

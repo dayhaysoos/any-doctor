@@ -12,7 +12,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "src/user.ts", line: 4 }],
+    expected: [{ rule: "type-silencing-cast", file: "src/user.ts", line: 4 }],
   },
   {
     name: "type-silencing-cast: flags a double cast in an effect file",
@@ -23,7 +23,7 @@ export const fixtures = [
         "export const frame = parseResult(raw) as unknown as RunResult;",
       ].join("\n"),
     },
-    expected: [{ file: "src/frame.ts", line: 3 }],
+    expected: [{ rule: "type-silencing-cast", file: "src/frame.ts", line: 3 }],
   },
   {
     name: "type-silencing-cast: flags a non-null assertion in an effect file",
@@ -34,7 +34,7 @@ export const fixtures = [
         "export const userName = user!.name;",
       ].join("\n"),
     },
-    expected: [{ file: "src/name.ts", line: 3 }],
+    expected: [{ rule: "type-silencing-cast", file: "src/name.ts", line: 3 }],
   },
   {
     name: "type-silencing-cast: accepts `as any` in a file that is not Effect code (scope gate)",
@@ -65,7 +65,7 @@ export const fixtures = [
         "}) {}",
       ].join("\n"),
     },
-    expected: [{ file: "src/user.ts", line: 3 }],
+    expected: [{ rule: "schema-class-as-default", file: "src/user.ts", line: 3 }],
   },
   {
     name: "schema-class-as-default: accepts Schema.Struct as the record model",
@@ -93,7 +93,7 @@ export const fixtures = [
         "}",
       ].join("\n"),
     },
-    expected: [{ file: "src/errors.ts", line: 3 }],
+    expected: [{ rule: "handrolled-tagged-error", file: "src/errors.ts", line: 3 }],
   },
   {
     name: "handrolled-tagged-error: flags the Data.TaggedError class builder",
@@ -106,7 +106,7 @@ export const fixtures = [
         "}> {}",
       ].join("\n"),
     },
-    expected: [{ file: "src/errors.ts", line: 3 }],
+    expected: [{ rule: "handrolled-tagged-error", file: "src/errors.ts", line: 3 }],
   },
   {
     name: "handrolled-tagged-error: accepts Schema.TaggedErrorClass",
@@ -137,7 +137,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "src/user.ts", line: 5 }],
+    expected: [{ rule: "cause-level-recovery", file: "src/user.ts", line: 5 }],
   },
   {
     name: "cause-level-recovery: accepts typed-error recovery",
@@ -168,7 +168,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "src/config.ts", line: 4 }],
+    expected: [{ rule: "direct-process-env-read", file: "src/config.ts", line: 4 }],
   },
   {
     name: "direct-process-env-read: accepts Config as the read path",
@@ -197,7 +197,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "src/user.ts", line: 3 }],
+    expected: [{ rule: "unnamed-effect-fn", file: "src/user.ts", line: 3 }],
   },
   {
     name: "unnamed-effect-fn: accepts the named form",
@@ -225,7 +225,7 @@ export const fixtures = [
         "};",
       ].join("\n"),
     },
-    expected: [{ file: "src/user.test.ts", line: 4 }],
+    expected: [{ rule: "sleep-in-test", file: "src/user.test.ts", line: 4 }],
   },
   {
     name: "sleep-in-test: flags case-variant test file names (Spec.Test.ts)",
@@ -238,7 +238,7 @@ export const fixtures = [
         "};",
       ].join("\n"),
     },
-    expected: [{ file: "src/Spec.Test.ts", line: 4 }],
+    expected: [{ rule: "sleep-in-test", file: "src/Spec.Test.ts", line: 4 }],
   },
   {
     name: "sleep-in-test: exact-case-only directory (src/Test/) is not a test file",
@@ -282,7 +282,7 @@ export const fixtures = [
         ");",
       ].join("\n"),
     },
-    expected: [{ file: "src/layers.ts", line: 3 }],
+    expected: [{ rule: "blind-layer-merge", file: "src/layers.ts", line: 3 }],
   },
   {
     name: "blind-layer-merge: accepts a layer built from its dependencies",
@@ -312,7 +312,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "src/direct.ts", line: 3 }],
+    expected: [{ rule: "date-now-in-gen", file: "src/direct.ts", line: 3 }],
   },
   {
     name: "date-now-in-gen: Date.now in a nested callback inside the generator is flagged",
@@ -324,7 +324,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "src/nested.ts", line: 3 }],
+    expected: [{ rule: "date-now-in-gen", file: "src/nested.ts", line: 3 }],
   },
   {
     name: "date-now-in-gen: a string lookalike and bare Date.now outside generators stay silent",
@@ -354,14 +354,14 @@ export const fixtures = [
     seed: {
       "src/schema.ts": 'import { z } from "zod";\nconst labels = z.record(z.string());\n',
     },
-    expected: [{ file: "src/schema.ts", line: 2 }],
+    expected: [{ rule: "zod-single-record", file: "src/schema.ts", line: 2 }],
   },
   {
     name: "zod-single-record: a generic record with a multiline single argument is flagged",
     seed: {
       "src/schema.ts": 'import { z } from "zod";\nconst labels = z.record<string>(\n  z.number(),\n);\n',
     },
-    expected: [{ file: "src/schema.ts", line: 2 }],
+    expected: [{ rule: "zod-single-record", file: "src/schema.ts", line: 2 }],
   },
   {
     name: "zod-single-record: explicit key and value schemas are accepted",

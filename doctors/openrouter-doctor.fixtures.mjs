@@ -10,7 +10,7 @@ export const fixtures = [
         "}",
       ].join("\n"),
     },
-    expected: [{ file: "src/stream-bad.ts", line: 4 }],
+    expected: [{ rule: "midstream-error-ignored", file: "src/stream-bad.ts", line: 4 }],
   },
   {
     name: "midstream: an error check before consumption silences it",
@@ -41,7 +41,7 @@ export const fixtures = [
         "}",
       ].join("\n"),
     },
-    expected: [{ file: "src/sse-bad.ts", line: 6 }],
+    expected: [{ rule: "sse-comment-parse-crash", file: "src/sse-bad.ts", line: 6 }],
   },
   {
     name: "sse: comment lines skipped before parsing",
@@ -74,7 +74,7 @@ export const fixtures = [
         "}",
       ].join("\n"),
     },
-    expected: [{ file: "src/abort-bad.ts", line: 2 }],
+    expected: [{ rule: "missing-abort-signal", file: "src/abort-bad.ts", line: 2 }],
   },
   {
     name: "abort: signal threaded through the same statement",
@@ -108,7 +108,7 @@ export const fixtures = [
         "}",
       ].join("\n"),
     },
-    expected: [{ file: "src/retry-bad.ts", line: 6 }],
+    expected: [{ rule: "retry-after-ignored", file: "src/retry-bad.ts", line: 6 }],
   },
   {
     name: "retry: Retry-After read before waiting",
@@ -141,7 +141,7 @@ export const fixtures = [
         "};",
       ].join("\n"),
     },
-    expected: [{ file: "src/model-bad.ts", line: 4 }],
+    expected: [{ rule: "hardcoded-dated-model-slug", file: "src/model-bad.ts", line: 4 }],
   },
   {
     name: "slug: ~latest alias survives provider removals",

@@ -67,6 +67,50 @@ test("compareFindings: message and severity differences do not matter", () => {
   assert.deepEqual(diff, { missing: [], unexpected: [] });
 });
 
+test("compareFindings: the rule is part of the match (D20 — the gate is rule-aware)", () => {
+  const diff = compareFindings(
+    [{ rule: "check-a", file: "a.ts", line: 2 }],
+    [{ rule: "check-b", file: "a.ts", line: 2 }]
+  );
+  assert.deepEqual(diff, {
+    missing: [{ rule: "check-a", file: "a.ts", line: 2 }],
+    unexpected: [{ rule: "check-b", file: "a.ts", line: 2 }],
+  });
+});
+
+test("compareFindings: rule-less expected matches only rule-less findings", () => {
+  const diff = compareFindings(
+    [{ file: "a.ts", line: 2 }],
+    [{ rule: "check-a", file: "a.ts", line: 2 }]
+  );
+  assert.deepEqual(diff, {
+    missing: [{ file: "a.ts", line: 2 }],
+    unexpected: [{ rule: "check-a", file: "a.ts", line: 2 }],
+  });
+});
+
+test("compareFindings: same rule+location twice against one expected leaves one unexpected (multiset)", () => {
+  const diff = compareFindings(
+    [{ rule: "check-a", file: "a.ts", line: 2 }],
+    [
+      { rule: "check-a", file: "a.ts", line: 2 },
+      { rule: "check-a", file: "a.ts", line: 2 },
+    ]
+  );
+  assert.deepEqual(diff, { missing: [], unexpected: [{ rule: "check-a", file: "a.ts", line: 2 }] });
+});
+
+test("compareFindings: a doubled expectation needs two findings (multiset)", () => {
+  const diff = compareFindings(
+    [
+      { rule: "check-a", file: "a.ts", line: 2 },
+      { rule: "check-a", file: "a.ts", line: 2 },
+    ],
+    [{ rule: "check-a", file: "a.ts", line: 2 }]
+  );
+  assert.deepEqual(diff, { missing: [{ rule: "check-a", file: "a.ts", line: 2 }], unexpected: [] });
+});
+
 test("protocol constants exist and are versioned", () => {
   assert.equal(typeof RESULT_SENTINEL, "string");
   assert.ok(RESULT_SENTINEL.length > 0);

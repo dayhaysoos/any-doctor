@@ -47,13 +47,15 @@ export interface DoctorCtx {
         finding(f: Finding): void;
     };
 }
+export interface ExpectedFinding {
+    rule?: string;
+    file: string;
+    line: number;
+}
 export interface Fixture {
     name: string;
     seed: Record<string, string>;
-    expected: {
-        file: string;
-        line: number;
-    }[];
+    expected: ExpectedFinding[];
 }
 export declare const PROTOCOL_VERSION = 1;
 export declare const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
@@ -84,14 +86,8 @@ export interface RunResult {
     findings: Finding[];
 }
 export interface FixtureDiff {
-    missing: {
-        file: string;
-        line: number;
-    }[];
-    unexpected: {
-        file: string;
-        line: number;
-    }[];
+    missing: ExpectedFinding[];
+    unexpected: ExpectedFinding[];
 }
 export interface FixtureResult extends FixtureDiff {
     name: string;
@@ -116,10 +112,7 @@ export declare function fixturesPathFor(programPath: string): string;
 export declare function isTestPath(relativePath: string): boolean;
 export declare function includeTestsFor(mode: Mode): boolean;
 export declare function runCommandFor(doctorPath: string, root: string, invoker?: string): string;
-export declare function compareFindings(expected: {
-    file: string;
-    line: number;
-}[], actual: Finding[]): FixtureDiff;
+export declare function compareFindings(expected: ExpectedFinding[], actual: Finding[]): FixtureDiff;
 export interface JoinedFinding {
     doctorId: string;
     checkId: string;

@@ -120,7 +120,7 @@ async function main(): Promise<void> {
         process.exit(3);
       }
       const results: unknown[] = [];
-      for (const fixture of fixtures as { name: string; seed: Record<string, string>; expected: { file: string; line: number }[] }[]) {
+      for (const fixture of fixtures as contract.Fixture[]) {
         const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-verify-"));
         try {
           for (const [rel, content] of Object.entries(fixture.seed)) {
