@@ -6,21 +6,20 @@ export type EngineQuery = {
     op: "rule";
     rule: RuleQuery;
 };
+interface RawSgPos {
+    line?: number;
+    column?: number;
+}
+interface RawSgRange {
+    start?: RawSgPos;
+    end?: RawSgPos;
+}
 export interface RawSgMatch {
     file?: string;
     text?: string;
     lines?: string;
     language?: string;
-    range?: {
-        start?: {
-            line?: number;
-            column?: number;
-        };
-        end?: {
-            line?: number;
-            column?: number;
-        };
-    };
+    range?: RawSgRange;
     metaVariables?: {
         single?: Record<string, RawSgCapture>;
         multi?: Record<string, RawSgCapture[]>;
@@ -28,16 +27,7 @@ export interface RawSgMatch {
 }
 export interface RawSgCapture {
     text?: string;
-    range?: {
-        start?: {
-            line?: number;
-            column?: number;
-        };
-        end?: {
-            line?: number;
-            column?: number;
-        };
-    };
+    range?: RawSgRange;
 }
 export type EngineResult = {
     ok: true;
@@ -47,3 +37,4 @@ export type EngineResult = {
     error: string;
 };
 export declare function runEngine(query: EngineQuery, language: string, root: string): EngineResult;
+export {};

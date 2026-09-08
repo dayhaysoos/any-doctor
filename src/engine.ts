@@ -15,18 +15,25 @@ export type EngineQuery =
   | { op: "pattern"; pattern: string }
   | { op: "rule"; rule: RuleQuery };
 
-// The raw JSON ast-grep emits, kept whole (D20 Stage 1: the seam stopped
-// subtracting structure). end ranges and metavariable captures flow
+// ast-grep's JSON wire shapes, kept whole (D20 Stage 1: the seam stopped
+// subtracting structure). End ranges and metavariable captures flow
 // through to the sdk's Match mapping.
+interface RawSgPos {
+  line?: number;
+  column?: number;
+}
+
+interface RawSgRange {
+  start?: RawSgPos;
+  end?: RawSgPos;
+}
+
 export interface RawSgMatch {
   file?: string;
   text?: string;
   lines?: string;
   language?: string;
-  range?: {
-    start?: { line?: number; column?: number };
-    end?: { line?: number; column?: number };
-  };
+  range?: RawSgRange;
   metaVariables?: {
     single?: Record<string, RawSgCapture>;
     multi?: Record<string, RawSgCapture[]>;
@@ -35,10 +42,7 @@ export interface RawSgMatch {
 
 export interface RawSgCapture {
   text?: string;
-  range?: {
-    start?: { line?: number; column?: number };
-    end?: { line?: number; column?: number };
-  };
+  range?: RawSgRange;
 }
 
 export type EngineResult = { ok: true; matches: RawSgMatch[] } | { ok: false; error: string };
