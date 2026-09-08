@@ -48,11 +48,14 @@ lives in the program's meta, not in individual findings.
 ## Check
 
 One rule within a doctor program. A finding names its check via `rule`;
-the check's meta supplies description, severity, impact, why, and fix;
-the doctor's meta supplies the defaults when a finding names no check.
-A check id is a short kebab-case noun phrase over [a-z0-9-], unique
-within its doctor, naming the defect (fetch-calls-without-abortsignal,
-filter-table-scan). One doctor program, many checks.
+the check's meta supplies description, severity, impact, why, and fix —
+and, when the check uses the identity engine at full power, its
+declaration of that need (`needs`), which is what renders "narrowed"
+when the engine is absent; the doctor's meta supplies the defaults when
+a finding names no check. A check id is a short kebab-case noun phrase
+over [a-z0-9-], unique within its doctor, naming the defect
+(fetch-calls-without-abortsignal, filter-table-scan). One doctor
+program, many checks.
 
 ## Doctor contract
 
