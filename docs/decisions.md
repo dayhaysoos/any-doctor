@@ -661,7 +661,7 @@ loudly like ctx.search), and verify pins both paths: fixtures carry
 differ). The pilot is unawaited-async-map's identity path: per-element
 consumption, same-name bindings in other scopes, and never-reassigned
 let targets are now checked (the degraded path keeps its declared blind
-spots, pinned by "off" fixtures); 31 fixtures cover both paths.
+spots, pinned by "off" fixtures); 40 fixtures cover both paths.
 
 ---
 
