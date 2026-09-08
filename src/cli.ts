@@ -10,6 +10,7 @@ import { brokenDoctors, BrokenDoctor, discoverDoctors, DiscoveredDoctor, globalD
 import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, runDoctorCohort, RunnerError, RunOptions, verifyDoctor } from "./runner.js";
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor, Selection } from "./select.js";
+import { pickItemsOn } from "./picker.js";
 import { canRunTui, processTtyEnv } from "./tty.js";
 
 import { BOLD, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./palette.js";
@@ -199,8 +200,24 @@ async function cmdRun(args: string[]): Promise<number> {
     const cohort = await gatherDoctors();
     warnBrokenDoctors(cohort.broken);
     if (cohortUnusable(cohort)) return 1;
-    const discovered = cohort.valid;
+    let doctors = cohort.valid;
     const skippedUnsafe = cohort.skippedUnsafe;
+    // The cold start stays one Enter: the selector pre-selects every
+    // doctor, space deselects, and Enter runs the selection (D15
+    // amendment 2026-09-08 — the pack outgrew the no-picker flow).
+    // --all, headless, and non-TTY never see a prompt.
+    const selEnv = processTtyEnv();
+    const selCols = process.stdout.columns ?? 0;
+    if (!parsed.all && canRunTui(selEnv) && !process.env.ANY_DOCTOR_HEADLESS && (selCols === 0 || selCols >= 60)) {
+      const chosen = await pickItemsOn(selEnv, doctors.map(d => ({
+        id: d.meta!.id,
+        label: d.meta!.id,
+        sub: `${d.scope} · ${d.meta!.description}`,
+      })), useColor());
+      if (chosen === null) return 0; // esc — nothing ran, nothing to report
+      const keep = new Set(chosen.map(it => it.id));
+      doctors = doctors.filter(d => keep.has(d.meta!.id));
+    }
     const runStarted = Date.now();
     const groups: ReportGroup[] = [];
     const crashed: string[] = [];
@@ -208,15 +225,15 @@ async function cmdRun(args: string[]): Promise<number> {
     // The cohort runs through the runner's bounded pool (see
     // runDoctorCohort) — order preserved, a crash stays data, and the
     // per-crash line is the same one a single-doctor run prints.
-    const runs = await runDoctorCohort(discovered.map(d => ({
+    const runs = await runDoctorCohort(doctors.map(d => ({
       programPath: d.path,
       targetDir: parsed.targetDir,
       includeTests: parsed.includeTests,
     })));
     const fileCounts: number[] = [];
     for (const [i, run] of runs.entries()) {
-      const id = discovered[i].meta!.id;
-      const programPath = discovered[i].path;
+      const id = doctors[i].meta!.id;
+      const programPath = doctors[i].path;
       if (!run.ok) {
         crashed.push(id);
         fail(describeRunnerError(run.cause));

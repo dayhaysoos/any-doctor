@@ -21,6 +21,12 @@ const EXPECT_SCRIPT = `
 set timeout 30
 spawn -noecho $env(NODE_BIN) bin/cli.js run fixtures/sample-app
 expect {
+  "space select" {}
+  timeout { puts ">FAIL selector-timeout"; exit 112 }
+  eof { puts ">FAIL selector-eof"; exit 113 }
+}
+send "\\r"
+expect {
   "async-doctor" {}
   timeout { puts ">FAIL dashboard-timeout"; exit 103 }
   eof { puts ">FAIL dashboard-eof"; exit 104 }
@@ -90,7 +96,8 @@ test("bare run opens the aggregate tree directly; enter walks doctor-check-findi
   assert.equal(closed, 0, `expect driver should pass cleanly (exit=${closed}):\n${stripAnsi(transcript).slice(-800)}`);
 
   const text = stripAnsi(transcript);
-  assert.ok(!text.includes("Select a doctor"), "no doctor picker in the default flow");
+  assert.ok(text.includes("Select doctors to run"), "the cohort selector is the first screen");
+  assert.ok(text.includes("async-doctor"), "the aggregate tree follows one Enter");
   assert.ok(text.includes("async-doctor"), "the aggregate tree is the first screen");
   assert.ok(text.includes("enter copy finding"), "dashboard footer in transcript");
   assert.ok(text.includes("copied finding"), "copy notice in transcript");

@@ -355,6 +355,16 @@ picker: doctor rows (worst-severity-first, counts, collapsible) → check
 rows → instances. The picker remains only for `verify`, where choosing one
 doctor to gate is the actual job.
 
+**Amendment (2026-09-08):** The pack outgrew the no-picker flow — nine
+bundled doctors (and growing) overwhelmed the cold start more than a
+menu would have. Bare interactive runs now open a cohort selector
+first: every doctor pre-selected, space deselects, and one Enter still
+runs everything — the findings-first property survives because the
+default keypress is unchanged. An empty selection refuses to run
+(notice, stays); esc cancels before anything executes. --all,
+ANY_DOCTOR_HEADLESS, and non-TTY never see a prompt; the tree
+dashboard remains what follows.
+
 **Amendment (2026-09-07):** The bundled scope landed. The pack resolves
 from the package's own `doctors/` (a sibling of `bin/` wherever the
 package is installed — repo dev, node_modules, or the npx cache), joins

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-const { pickerFrame, filterPickerItems, pickItemOn } = (await import("../bin/picker.js"));
+const { pickerFrame, filterPickerItems, pickItemOn, pickItemsOn } = (await import("../bin/picker.js"));
 
 const items = [
   { id: "unawaited-async-map", label: ".map(async ...) result is never awaited", sub: "repo/unawaited-async-map.mjs", severity: "warning" },
@@ -157,4 +157,47 @@ test("pickItemOn: empty item list resolves null without touching the tty", async
   assert.equal(out, null);
   assert.equal(stdin.rawModeHistory.length, 0, "never enters raw mode");
   assert.equal(stdout.frames.length, 0, "never paints");
+});
+
+// ---- the cohort selector ----
+
+test("pickItemsOn: every doctor pre-selected — bare enter runs all", async () => {
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = pickItemsOn({ stdin, stdout }, items, false);
+  await new Promise((r) => setTimeout(r, 10));
+  assert.match(stdout.frames.find(f => f.includes("space select")), /2 of 2 selected/);
+  stdin.send("\r");
+  const out = await settle(done);
+  assert.ok(out.done && Array.isArray(out.value));
+  assert.equal(out.value.length, items.length, "one Enter still runs everything");
+});
+
+test("pickItemsOn: space deselects the row under the cursor", async () => {
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = pickItemsOn({ stdin, stdout }, items, false);
+  await new Promise((r) => setTimeout(r, 10));
+  stdin.send(" ");
+  stdin.send("\r");
+  const out = await settle(done);
+  assert.ok(out.done && out.value.length === items.length - 1);
+  assert.ok(!out.value.some(it => it.id === items[0].id), "the first row was deselected");
+  assert.match(stdout.frames.find(f => f.includes("[ ]")), new RegExp(items[0].id));
+});
+
+test("pickItemsOn: an empty selection refuses to run — notice, session stays; esc cancels", async () => {
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = pickItemsOn({ stdin, stdout }, items, false);
+  await new Promise((r) => setTimeout(r, 10));
+  stdin.send(" ");
+  stdin.send("j");
+  stdin.send(" ");
+  stdin.send("\r");
+  await new Promise((r) => setTimeout(r, 10));
+  assert.ok(stdout.frames.some(f => f.includes("nothing selected")), "the refusal is visible");
+  stdin.send("\x1b");
+  const out = await settle(done);
+  assert.ok(out.done && out.value === null, "esc cancels the session");
 });

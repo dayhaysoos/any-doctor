@@ -10,6 +10,7 @@ import { brokenDoctors, discoverDoctors, globalDoctorsDir, unsafeSlugs } from ".
 import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, runDoctorCohort, verifyDoctor } from "./runner.js";
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor } from "./select.js";
+import { pickItemsOn } from "./picker.js";
 import { canRunTui, processTtyEnv } from "./tty.js";
 import { BOLD, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./palette.js";
 function fail(msg) {
@@ -149,7 +150,7 @@ function cohortUnusable(cohort) {
     return true;
 }
 async function cmdRun(args) {
-    var _a;
+    var _a, _b;
     const parsed = parseArgs(args);
     if (parsed.global) {
         fail("--global is a generate-only flag");
@@ -185,8 +186,25 @@ async function cmdRun(args) {
         warnBrokenDoctors(cohort.broken);
         if (cohortUnusable(cohort))
             return 1;
-        const discovered = cohort.valid;
+        let doctors = cohort.valid;
         const skippedUnsafe = cohort.skippedUnsafe;
+        // The cold start stays one Enter: the selector pre-selects every
+        // doctor, space deselects, and Enter runs the selection (D15
+        // amendment 2026-09-08 — the pack outgrew the no-picker flow).
+        // --all, headless, and non-TTY never see a prompt.
+        const selEnv = processTtyEnv();
+        const selCols = (_a = process.stdout.columns) !== null && _a !== void 0 ? _a : 0;
+        if (!parsed.all && canRunTui(selEnv) && !process.env.ANY_DOCTOR_HEADLESS && (selCols === 0 || selCols >= 60)) {
+            const chosen = await pickItemsOn(selEnv, doctors.map(d => ({
+                id: d.meta.id,
+                label: d.meta.id,
+                sub: `${d.scope} · ${d.meta.description}`,
+            })), useColor());
+            if (chosen === null)
+                return 0; // esc — nothing ran, nothing to report
+            const keep = new Set(chosen.map(it => it.id));
+            doctors = doctors.filter(d => keep.has(d.meta.id));
+        }
         const runStarted = Date.now();
         const groups = [];
         const crashed = [];
@@ -194,15 +212,15 @@ async function cmdRun(args) {
         // The cohort runs through the runner's bounded pool (see
         // runDoctorCohort) — order preserved, a crash stays data, and the
         // per-crash line is the same one a single-doctor run prints.
-        const runs = await runDoctorCohort(discovered.map(d => ({
+        const runs = await runDoctorCohort(doctors.map(d => ({
             programPath: d.path,
             targetDir: parsed.targetDir,
             includeTests: parsed.includeTests,
         })));
         const fileCounts = [];
         for (const [i, run] of runs.entries()) {
-            const id = discovered[i].meta.id;
-            const programPath = discovered[i].path;
+            const id = doctors[i].meta.id;
+            const programPath = doctors[i].path;
             if (!run.ok) {
                 crashed.push(id);
                 fail(describeRunnerError(run.cause));
@@ -223,7 +241,7 @@ async function cmdRun(args) {
         };
     }
     const env = processTtyEnv();
-    const ttyCols = (_a = process.stdout.columns) !== null && _a !== void 0 ? _a : 0;
+    const ttyCols = (_b = process.stdout.columns) !== null && _b !== void 0 ? _b : 0;
     // Report-vs-dashboard policy: --all is the batch/report mode; otherwise
     // a real terminal with room and no headless override gets the tree.
     const interactive = !parsed.all

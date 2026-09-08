@@ -1,10 +1,14 @@
 import { fuzzyFilter } from "./fuzzy.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, SEVERITY_COLOR } from "./palette.js";
 import { canRunTui, runTty } from "./tty.js";
-export function pickerFrame(title, items, selected, query, useColor, notice) {
+export function pickerFrame(title, items, selected, query, useColor, notice, chosen) {
     const c = colorizer(useColor);
+    const multi = chosen !== undefined;
+    const hint = multi
+        ? "  (type to filter · ↑↓ move · space select · enter run · esc cancel)"
+        : "  (type to filter · ↑↓ move · enter select · esc cancel)";
     const lines = [];
-    lines.push(c(title, BOLD) + c("  (type to filter · ↑↓ move · enter select · esc cancel)", DIM));
+    lines.push(c(title, BOLD) + c(hint, DIM));
     lines.push("");
     lines.push(c("❯ " + query, BOLD) + c("▏", DIM));
     lines.push("");
@@ -16,11 +20,14 @@ export function pickerFrame(title, items, selected, query, useColor, notice) {
         for (let i = 0; i < cap; i++) {
             const it = items[i];
             const glyph = it.severity ? c(GLYPH[it.severity] + " ", SEVERITY_COLOR[it.severity]) : "";
-            const row = `${glyph}${it.label}${it.sub ? c("  " + it.sub, DIM) : ""}`;
+            const box = multi ? c(chosen.has(it.id) ? "[x] " : "[ ] ", chosen.has(it.id) ? GREEN : DIM) : "";
+            const row = `${glyph}${box}${it.label}${it.sub ? c("  " + it.sub, DIM) : ""}`;
             lines.push(i === selected ? c("❯ " + row, BOLD) : "  " + row);
         }
         if (items.length > cap)
             lines.push(c(`  … +${items.length - cap} more`, DIM));
+        if (multi)
+            lines.push(c(`${chosen.size} of ${items.length} selected · enter runs the selection`, DIM));
     }
     if (notice) {
         lines.push("");
@@ -33,6 +40,73 @@ export function filterPickerItems(items, query) {
 }
 export function isPrintable(s) {
     return s.length === 1 && s >= " " && s !== "\x7f";
+}
+// The cohort selector: every doctor pre-selected (Enter alone still runs
+// everything — the cold start stays one keypress), space toggles the row
+// under the cursor, and an empty selection refuses to run (notice, stay).
+// Toggling operates on the FILTERED row, so query + space deselects
+// precisely what the filter shows.
+export async function pickItemsOn(env, items, useColor, title = "Select doctors to run") {
+    if (items.length === 0 || !canRunTui(env))
+        return null;
+    const chosen = new Set(items.map(it => it.id));
+    let query = "";
+    let selected = 0;
+    let notice;
+    const filtered = () => filterPickerItems(items, query);
+    const frame = () => {
+        const list = filtered();
+        if (selected >= list.length)
+            selected = Math.max(0, list.length - 1);
+        return pickerFrame(title, list, selected, query, useColor, notice, chosen);
+    };
+    return runTty({
+        stdin: env.stdin,
+        stdout: env.stdout,
+        frame,
+        onKey: (key, finish) => {
+            notice = undefined;
+            if (key === "\x03" || key === "esc")
+                return finish(null);
+            if (key === "\x7f" || key === "\b") {
+                query = query.slice(0, -1);
+                selected = 0;
+                return;
+            }
+            if (key === "up" || key === "k") {
+                selected = Math.max(0, selected - 1);
+                return;
+            }
+            if (key === "down" || key === "j") {
+                selected = Math.min(filtered().length - 1, selected + 1);
+                return;
+            }
+            if (key === " ") {
+                const list = filtered();
+                const it = list[Math.min(selected, list.length - 1)];
+                if (it) {
+                    if (chosen.has(it.id))
+                        chosen.delete(it.id);
+                    else
+                        chosen.add(it.id);
+                }
+                return;
+            }
+            if (key === "\r" || key === "\n") {
+                if (chosen.size === 0) {
+                    notice = "nothing selected — space to select, or esc to cancel";
+                    return;
+                }
+                finish(items.filter(it => chosen.has(it.id)));
+                return;
+            }
+            if (isPrintable(key)) {
+                query += key;
+                selected = 0;
+                return;
+            }
+        },
+    });
 }
 export async function pickItemOn(env, items, useColor, title = "Select an option", notice) {
     if (items.length === 0 || !canRunTui(env))
