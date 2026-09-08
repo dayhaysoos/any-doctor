@@ -1,4 +1,4 @@
-import { DoctorMeta, Finding, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
+import { DoctorMeta, ExpectedFinding, Finding, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
 import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
 
@@ -201,7 +201,7 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
 // command layer prints it and counts failures from the data.
 // A diff entry's location includes its rule when it has one — the gate is
 // rule-aware (D20), so the line must say which check was missing or extra.
-function where(f: { rule?: string; file: string; line: number }): string {
+function where(f: ExpectedFinding): string {
   return (f.rule ? f.rule + " " : "") + f.file + ":" + f.line;
 }
 

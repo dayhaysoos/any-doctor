@@ -23,6 +23,7 @@ for (const slug of doctors) {
   const programPath = path.join(REPO, "doctors", slug + ".mjs");
   const fixturesPath = path.join(REPO, "doctors", slug + ".fixtures.mjs");
   const { fixtures } = await import(pathToFileURL(fixturesPath).href);
+  let slugFailed = false;
 
   // Per fixture (module order == document order): one rule per non-empty
   // expected entry, or null when the run could not pair them.
@@ -61,12 +62,13 @@ for (const slug of doctors) {
     }
     if (problems.length > 0) {
       failures += 1;
+      slugFailed = true;
       console.error(`!! ${slug} / "${fixture.name}": ${problems.join("; ")}`);
     }
     queue.push(rules);
   }
 
-  if (failures > 0) continue;
+  if (slugFailed) continue;
 
   // Textual graft: the j-th non-empty expected block takes the j-th queued
   // rule list; single-entry blocks only (the contract's shape to date).
@@ -74,11 +76,11 @@ for (const slug of doctors) {
   const grafted = { count: 0 };
   const out = text.replace(
     /expected: \[\{ file: ("(?:[^"\\]|\\.)*"), line: (\d+) \}\]/g,
-    (whole, file) => {
+    (whole, file, line) => {
       const rules = queue.shift();
       if (rules === undefined || rules.length !== 1 || rules[0] === null) return whole;
       grafted.count += 1;
-      return `expected: [{ rule: "${rules[0]}", file: ${file}, line: ${whole.match(/line: (\d+)/)[1]} }]`;
+      return `expected: [{ rule: "${rules[0]}", file: ${file}, line: ${line} }]`;
     },
   );
   if (queue.length > 0) {

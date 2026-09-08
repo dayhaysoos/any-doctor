@@ -190,8 +190,8 @@ export function runCommandFor(doctorPath: string, root: string, invoker = "any-d
 // A finding or expectation without a rule keys on "" — rule-less expected
 // matches rule-less findings only.
 export function compareFindings(expected: ExpectedFinding[], actual: Finding[]): FixtureDiff {
-  const key = (f: { rule?: string; file: string; line: number }): string => `${f.rule ?? ""}:${f.file}:${f.line}`;
-  const asDiffEntry = (f: { rule?: string; file: string; line: number }): ExpectedFinding =>
+  const key = (f: ExpectedFinding): string => `${f.rule ?? ""}:${f.file}:${f.line}`;
+  const asDiffEntry = (f: ExpectedFinding): ExpectedFinding =>
     f.rule === undefined ? { file: f.file, line: f.line } : { rule: f.rule, file: f.file, line: f.line };
 
   // Expectations are a consumption budget per key: each matching actual
@@ -210,11 +210,11 @@ export function compareFindings(expected: ExpectedFinding[], actual: Finding[]):
   }
 
   const missing: ExpectedFinding[] = [];
-  const reported = new Map<string, number>();
+  const matchedExpectations = new Map<string, number>();
   for (const e of expected) {
     const k = key(e);
-    const n = reported.get(k) ?? 0;
-    if (n < (satisfied.get(k) ?? 0)) reported.set(k, n + 1);
+    const n = matchedExpectations.get(k) ?? 0;
+    if (n < (satisfied.get(k) ?? 0)) matchedExpectations.set(k, n + 1);
     else missing.push(asDiffEntry(e));
   }
   return { missing, unexpected };

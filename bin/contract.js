@@ -91,12 +91,12 @@ export function compareFindings(expected, actual) {
             unexpected.push(asDiffEntry(a));
     }
     const missing = [];
-    const reported = new Map();
+    const matchedExpectations = new Map();
     for (const e of expected) {
         const k = key(e);
-        const n = (_d = reported.get(k)) !== null && _d !== void 0 ? _d : 0;
+        const n = (_d = matchedExpectations.get(k)) !== null && _d !== void 0 ? _d : 0;
         if (n < ((_e = satisfied.get(k)) !== null && _e !== void 0 ? _e : 0))
-            reported.set(k, n + 1);
+            matchedExpectations.set(k, n + 1);
         else
             missing.push(asDiffEntry(e));
     }

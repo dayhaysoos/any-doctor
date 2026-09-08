@@ -147,6 +147,19 @@ export const fixtures = [
     ]
   },
   {
+    "name": "a bare map(async) in an else branch is flagged",
+    "seed": {
+      "src/else-branch.ts": "export function warm(ids: string[], fast: boolean) {\n  if (fast) return ids.length;\n  else ids.map(async id => prime(id));\n}\n"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/else-branch.ts",
+        "line": 3
+      }
+    ]
+  },
+  {
     "name": "await directly on the mapped array does not settle it — flagged",
     "seed": {
       "src/await-array.ts": "export async function warm(ids: string[]) {\n  await ids.map(async id => prime(id));\n  return ids.length;\n}\n"

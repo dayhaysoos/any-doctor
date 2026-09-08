@@ -184,9 +184,9 @@ async function checkUnawaitedMap(ctx, readFile) {
 }
 
 // What precedes the receiver at `index`: "statement" (nothing, `;`, `{`,
-// `}`, `)` — a discarded expression), "awaited" (directly after `await`),
-// or "flowing" (assigned, wrapped, or keyword/operator context — the
-// result goes somewhere, declared blind spot or another pass's case).
+// `}`, `)`, or `else` — a discarded expression), "awaited" (directly after
+// `await`), or "flowing" (assigned, wrapped, or keyword/operator context —
+// the result goes somewhere, declared blind spot or another pass's case).
 function statementPosition(masked, index) {
   let cursor = index - 1;
   while (cursor >= 0 && /\s/.test(masked[cursor])) cursor -= 1;
@@ -200,7 +200,9 @@ function statementPosition(masked, index) {
       word = masked[scan] + word;
       scan -= 1;
     }
-    return word === "await" ? "awaited" : "flowing";
+    if (word === "await") return "awaited";
+    if (word === "else") return "statement";
+    return "flowing";
   }
   return "flowing";
 }
