@@ -5,7 +5,8 @@ export const meta = {
   category: "async",
   blindSpots: [
     "Fetch: cannot determine whether an options variable, spread, or helper supplies a signal at runtime; aliased or member-expression fetch functions are not recognized.",
-    "Promises: consumption inside template strings or dynamic property access is not tracked; per-element consumption (a for-of loop awaiting each promise) is not recognized — only combiner calls are; mapped results that are returned, passed into a call, assigned to rebindable targets (let/var/reassignment), or chained after another call (xs.filter(f).map(async ...)) are not tracked — a bare map(async) is judged only in statement or await position.",
+    "Promises: only combiner calls (Promise.all/allSettled/race/any over the bound name) are recognized consumption — per-element awaits (a for-of loop awaiting each promise), template-string consumption, and dynamic property access are not tracked.",
+    "Promises: mapped results that are returned, passed into a call, wrapped in parens or comma expressions, assigned to rebindable targets (let/var/reassignment), or chained after another call (xs.filter(f).map(async ...)) are not tracked — a bare map(async) is judged only in statement or await position.",
     "Timers: only directly named useEffect/setTimeout/clearTimeout are recognized; handles must be a simple local identifier cleared in the same effect.",
     "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source.",
   ],
