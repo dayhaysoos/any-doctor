@@ -33,6 +33,24 @@ export interface Match {
     line: number;
     column: number;
     text: string;
+    endLine?: number;
+    endColumn?: number;
+    captures?: Record<string, Capture | Capture[]>;
+}
+export interface Capture {
+    text: string;
+    line: number;
+    column: number;
+    endLine: number;
+    endColumn: number;
+}
+export interface RuleQuery {
+    pattern: string;
+    inside?: RuleInside;
+}
+export interface RuleInside {
+    pattern: string;
+    stopBy?: "end" | "neighbor";
 }
 export interface DoctorCtx {
     root: string;
@@ -42,6 +60,7 @@ export interface DoctorCtx {
     };
     search: {
         pattern(pattern: string, language?: "TypeScript" | "JavaScript"): Match[];
+        rule(query: RuleQuery, language?: "TypeScript" | "JavaScript"): Match[];
     };
     report: {
         finding(f: Finding): void;

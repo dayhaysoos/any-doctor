@@ -1,7 +1,7 @@
 import * as os from "os";
 import * as path from "path";
-import { includeTestsFor, isTestPath, Mode, SEARCH_REQUEST } from "./contract.js";
-import { runEngineSearch, RawSgMatch } from "./engine.js";
+import { includeTestsFor, isTestPath, Mode, RuleQuery, SEARCH_REQUEST } from "./contract.js";
+import { runEngine, EngineQuery, RawSgMatch } from "./engine.js";
 
 // The search host: the doctor child cannot spawn (Confinement), so it asks
 // any-doctor to run the Engine over a dedicated channel. This module is
@@ -24,7 +24,7 @@ export function searchBase(mode: Mode): string {
   }
 }
 
-type Engine = typeof runEngineSearch;
+type Engine = typeof runEngine;
 
 // Bases are anchors: a run's target directory (anything beneath it), or
 // verify's sandbox prefix (any any-doctor-verify-* sandbox). The prefix
@@ -38,10 +38,11 @@ function withinBase(root: string, base: string): boolean {
 // One request line in, one response body out (the SEARCH_RESULT sentinel
 // is framing added by the transport in the runner). Returns null for lines
 // that are not requests — the channel carries nothing else, so they are
-// ignored rather than answered.
-export function handleSearchLine(line: string, mode: Mode, engine: Engine = runEngineSearch): string | null {
+// ignored rather than answered. The op discriminator selects the engine
+// query shape; a body without one is a bare pattern (the original form).
+export function handleSearchLine(line: string, mode: Mode, engine: Engine = runEngine): string | null {
   if (!line.startsWith(SEARCH_REQUEST)) return null;
-  let req: { pattern?: unknown; language?: unknown; root?: unknown };
+  let req: { op?: unknown; pattern?: unknown; rule?: unknown; language?: unknown; root?: unknown };
   try {
     req = JSON.parse(line.slice(SEARCH_REQUEST.length));
   } catch {
@@ -54,7 +55,13 @@ export function handleSearchLine(line: string, mode: Mode, engine: Engine = runE
   if (base === "" || !withinBase(root, base)) {
     return JSON.stringify({ error: "ctx.search failed: search root is outside the allowed target" });
   }
-  const r = engine(String(req.pattern ?? ""), typeof req.language === "string" ? req.language : "TypeScript", root);
+  const language = typeof req.language === "string" ? req.language : "TypeScript";
+  const op = req.op === "rule" ? "rule" : "pattern";
+  const query: EngineQuery =
+    op === "rule"
+      ? { op, rule: (req.rule ?? {}) as RuleQuery }
+      : { op, pattern: String(req.pattern ?? "") };
+  const r = engine(query, language, root);
   if (!r.ok) return JSON.stringify({ error: r.error });
   const matches = includeTestsFor(mode) ? r.matches : r.matches.filter((m) => !isTestPath(matchRel(root, m)));
   return JSON.stringify({ matches });

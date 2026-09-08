@@ -55,13 +55,50 @@ export const fixtures = [
 
 - `ctx.files.list(exts?)` → relative paths (default .ts/.tsx/.js/.jsx/.mjs; test-named code files and `test|tests|__tests__/` directories are excluded by default — `--include-tests` scans them; in verify sandboxes test-named seeds are always visible: fixtures are the doctor's own world)
 - `ctx.files.read(rel)` → file contents
-- `ctx.search.pattern(pattern, language?)` → `[{ file, line, column, text }]`
+- `ctx.search.pattern(pattern, language?)` → `[{ file, line, column, text, endLine?, endColumn?, captures? }]`
   (ast-grep pattern syntax, e.g. `"fetch($URL)"`; requires ast-grep installed;
   respects the same test-path exclusion — `--include-tests` includes them)
+- `ctx.search.rule(query, language?)` → same Match shape — a composite
+  structural question: `{ pattern, inside: { pattern, stopBy? } }` (see below)
 - `ctx.report.finding({ rule, file, line, column?, message?, severity? })`
 
 Zero dependencies, zero imports — a doctor is one self-contained file;
 everything reaches it through `ctx`. Node >= 18.
+
+## Rule queries — ask structure, don't parse text
+
+`ctx.search.rule` asks the engine a composite structural question and
+hands back matches with their extent and captures — prefer it over
+re-parsing `text` with brace counting:
+
+```js
+const timers = ctx.search.rule({
+  pattern: "setTimeout($$$ARGS)",           // what to find
+  inside: { pattern: "useEffect($$$B)" },   // ...only inside this
+});
+for (const m of timers) {
+  const args = m.captures.ARGS; // multi-capture → ARRAY of {text, line, column, endLine, endColumn}
+  ctx.report.finding({ rule: "uncleared-settimeout-in-effect", file: m.file, line: m.line });
+}
+```
+
+Three traps — the interface guards the last one, the first two are yours:
+
+- **`inside` defaults to `stopBy: "end"`** — the scan runs to the
+  enclosing node's end. ast-grep's own default (`"neighbor"`) is NOT
+  ours; pass `stopBy: "neighbor"` only when you truly mean "stop at the
+  next sibling".
+- **Multi-captures are arrays keyed by the bare name**: `$$$ARGS` →
+  `captures.ARGS` is an array (separator commas are already filtered —
+  it holds argument nodes, so `captures.ARGS[1]` is the second
+  argument). `captures.ARGS.text` is the classic silent-undefined trap.
+- **A rule query that matches nothing proves nothing.** Every rule query
+  needs at least one fixture where it FIRES — a query silently matching
+  nothing everywhere is broken-and-silent, not correctly-silent.
+
+Queries are validated before anything runs: unknown keys are refused
+with the allowed list (and a typo suggestion), so a misspelled `inside`
+fails loudly instead of matching nothing.
 
 ## One doctor, many checks
 

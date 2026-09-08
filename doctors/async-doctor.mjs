@@ -59,27 +59,34 @@ export async function doctor(ctx) {
 // --- fetch-calls-without-abortsignal ------------------------------------
 
 async function checkFetch(ctx) {
-  const calls = await ctx.search.pattern("fetch($$$ARGS)");
+  // The rule query hands back the argument list as parsed capture nodes —
+  // the options argument is args[1], no brace-counting the call text to
+  // find where it begins (D20 Stage 1 pilot: the seam stopped discarding
+  // what the engine already parsed).
+  const calls = await ctx.search.rule({ pattern: "fetch($$$ARGS)" });
   for (const call of calls) {
-    if (!hasInlineSignal(call.text)) {
-      ctx.report.finding({ ...call, rule: "fetch-calls-without-abortsignal" });
+    const args = call.captures?.ARGS;
+    const options = Array.isArray(args) ? args[1]?.text : undefined;
+    if (!hasInlineSignal(options)) {
+      ctx.report.finding({
+        rule: "fetch-calls-without-abortsignal",
+        file: call.file,
+        line: call.line,
+        column: call.column,
+      });
     }
   }
 }
 
-function hasInlineSignal(call) {
-  const open = call.indexOf("(");
-  if (open < 0) return false;
+function hasInlineSignal(options) {
+  if (typeof options !== "string") return false;
+  const text = options.trim();
+  if (!text.startsWith("{")) return false;
 
-  const argumentsText = call.slice(open + 1, -1);
-  const argumentsList = splitTopLevel(argumentsText);
-  const options = argumentsList[1]?.trim();
-  if (!options?.startsWith("{")) return false;
-
-  const close = matchingBrace(options);
+  const close = matchingBrace(text);
   if (close < 0) return false;
 
-  return splitTopLevel(options.slice(1, close)).some((property) =>
+  return splitTopLevel(text.slice(1, close)).some((property) =>
     /^(?:signal|["']signal["'])\s*(?::|$)/.test(property.trim()),
   );
 }

@@ -612,6 +612,25 @@ whose promised behavior exceeds the available engine narrow honestly
 instead of approximating silently. The bundled pack's text-based span
 tracking is temporary scaffolding — expected to migrate, not to grow.
 
+**Amendment (2026-09-08): Stage 1 shipped as primitives + pilot.**
+`ctx.search.rule` (pattern + inside; `inside.stopBy` defaults to `end` —
+deliberately diverged from ast-grep's neighbor default, per the repair
+log's stopBy lessons), Matches enriched with end positions and
+metavariable captures (multi-captures as bare-name arrays, ast-grep's
+separator commas filtered at the seam), the host payload extended in
+place with an op discriminator (no protocol bump — runner and loader
+ship atomically), and ast-grep invoked by its current name with an sg
+fallback. The async fetch check migrated as the pilot: the `$$$ARGS`
+capture replaced its argument brace-counting, fixtures unchanged. The
+bundled pack's bulk migration is deliberately deferred, with named
+triggers: the next D20-class bug found in the old string-surgery layer,
+or Stage 2's start (it needs the proving ground) — zero users make
+churning four working doctors unjustified until then. Agent guardrails
+shipped with the surface: query validation with typo suggestions,
+verbatim engine errors echoing the query, too-old engine detection, and
+the skill's rule-query section teaching the stopBy default, the
+capture-array shape, and the positive-fixture requirement.
+
 ---
 
 ## Open questions

@@ -1,7 +1,7 @@
 import * as os from "os";
 import * as path from "path";
 import { includeTestsFor, isTestPath, SEARCH_REQUEST } from "./contract.js";
-import { runEngineSearch } from "./engine.js";
+import { runEngine } from "./engine.js";
 // The search host: the doctor child cannot spawn (Confinement), so it asks
 // any-doctor to run the Engine over a dedicated channel. This module is
 // the host side — a pure function from request line to response JSON,
@@ -34,9 +34,10 @@ function withinBase(root, base) {
 // One request line in, one response body out (the SEARCH_RESULT sentinel
 // is framing added by the transport in the runner). Returns null for lines
 // that are not requests — the channel carries nothing else, so they are
-// ignored rather than answered.
-export function handleSearchLine(line, mode, engine = runEngineSearch) {
-    var _a;
+// ignored rather than answered. The op discriminator selects the engine
+// query shape; a body without one is a bare pattern (the original form).
+export function handleSearchLine(line, mode, engine = runEngine) {
+    var _a, _b;
     if (!line.startsWith(SEARCH_REQUEST))
         return null;
     let req;
@@ -53,7 +54,12 @@ export function handleSearchLine(line, mode, engine = runEngineSearch) {
     if (base === "" || !withinBase(root, base)) {
         return JSON.stringify({ error: "ctx.search failed: search root is outside the allowed target" });
     }
-    const r = engine(String((_a = req.pattern) !== null && _a !== void 0 ? _a : ""), typeof req.language === "string" ? req.language : "TypeScript", root);
+    const language = typeof req.language === "string" ? req.language : "TypeScript";
+    const op = req.op === "rule" ? "rule" : "pattern";
+    const query = op === "rule"
+        ? { op, rule: ((_a = req.rule) !== null && _a !== void 0 ? _a : {}) }
+        : { op, pattern: String((_b = req.pattern) !== null && _b !== void 0 ? _b : "") };
+    const r = engine(query, language, root);
     if (!r.ok)
         return JSON.stringify({ error: r.error });
     const matches = includeTestsFor(mode) ? r.matches : r.matches.filter((m) => !isTestPath(matchRel(root, m)));

@@ -78,6 +78,18 @@ path is a deliberate choice. Verify always sees everything its fixtures
 seed: the sandbox is the doctor's own world, and a seed named
 `*.test.ts` is deliberate test data.
 
+## Rule query
+
+A composite structural question asked through `ctx.search.rule`: a
+pattern to match, optionally constrained by `inside` (the enclosing
+construct, scanned to that node's end by default — `stopBy`,
+deliberately not ast-grep's own neighbor default). Answers arrive as
+Matches carrying end positions and metavariable captures;
+multi-metavariables (`$$$NAME`) arrive as arrays of nodes under the bare
+NAME, separator commas filtered at the seam. The surface is curated —
+pattern + inside — and validated: unknown keys fail loudly with the
+allowed list.
+
 ## Engine
 
 The structural-search backend a DoctorCtx uses to answer ctx.search.
