@@ -1,6 +1,7 @@
 import { DoctorMeta } from "./contract.js";
 import { RunnerError } from "./runner.js";
 export type Scope = "repo" | "global" | "bundled";
+export declare function scopeLabel(scope: Scope | string): string;
 export interface DiscoveredDoctor {
     slug: string;
     scope: Scope;

@@ -1,4 +1,4 @@
-import { brokenDoctors, discoverDoctors, resolveDoctorPath, unsafeSlugs } from "./discover.js";
+import { brokenDoctors, discoverDoctors, resolveDoctorPath, unsafeSlugs, scopeLabel } from "./discover.js";
 import { canRunTui } from "./tty.js";
 import { pickItemOn } from "./picker.js";
 export async function selectDoctor(doctorArg, options) {
@@ -37,7 +37,7 @@ export async function selectDoctor(doctorArg, options) {
     const chosen = await pickItemOn(options.env, valid.map(d => ({
         id: d.slug,
         label: d.meta.description,
-        sub: d.scope,
+        sub: scopeLabel(d.scope),
         severity: d.meta.severity,
     })), options.useColor, "Select a doctor");
     if (chosen === null)

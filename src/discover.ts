@@ -7,6 +7,13 @@ import { metaDoctor, RunnerError } from "./runner.js";
 
 export type Scope = "repo" | "global" | "bundled";
 
+// Bundled is the ambient default — every row saying "bundled" carries no
+// signal exactly when discovery is all-bundled. Scope labels mark the
+// deviations: a repo doctor is yours to edit, a global one is installed.
+export function scopeLabel(scope: Scope | string): string {
+  return scope === "bundled" ? "" : scope;
+}
+
 export interface DiscoveredDoctor {
   slug: string;
   scope: Scope;
