@@ -53,6 +53,17 @@ export declare function permissionArgs(allowTmpWrites: boolean): Promise<string[
 export declare function deniedByPermissionModel(stderr: string): boolean;
 export declare function denialCapability(stderr: string): string;
 export declare function runDoctor(options: RunOptions): Promise<RunResult>;
+export declare const DOCTOR_POOL_SIZE = 4;
+export type CohortRun = {
+    ok: true;
+    options: RunOptions;
+    result: RunResult;
+} | {
+    ok: false;
+    options: RunOptions;
+    cause: RunnerError;
+};
+export declare function runDoctorCohort(options: RunOptions[]): Promise<CohortRun[]>;
 export declare function verifyDoctor(options: VerifyOptions): Promise<VerifyRunResult>;
 export declare function metaDoctor({ programPath }: {
     programPath: string;

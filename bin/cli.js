@@ -7,7 +7,7 @@ import { cohortFileCount, renderReport, renderVerifyResult, unsafeSkipLine } fro
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
 import { brokenDoctors, discoverDoctors, globalDoctorsDir, unsafeSlugs } from "./discover.js";
-import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, verifyDoctor } from "./runner.js";
+import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, runDoctorCohort, verifyDoctor } from "./runner.js";
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor } from "./select.js";
 import { canRunTui, processTtyEnv } from "./tty.js";
@@ -191,43 +191,26 @@ async function cmdRun(args) {
         const groups = [];
         const crashed = [];
         const doctorPaths = new Map();
-        // The cohort runs concurrently — each doctor is its own confined child
-        // process, so wall clock approaches the slowest doctor, not the sum of
-        // them. The pool is capped: doctors are CPU-bound parsers, and an
-        // unbounded fan-out contends with the machine's real work (a cap of 4
-        // measured faster than 9-wide on a busy 10-core laptop). Results keep
-        // discovery order; a crash stays data.
-        const DOCTOR_POOL = 4;
-        const scanOne = async (d) => {
-            try {
-                const scan = await scanOnce({ programPath: d.path, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
-                return { ok: true, id: d.meta.id, path: d.path, scan };
-            }
-            catch (e) {
-                if (!(e instanceof ExitCode))
-                    throw e;
-                return { ok: false, id: d.meta.id, path: d.path };
-            }
-        };
-        const settled = new Array(discovered.length);
-        let next = 0;
-        await Promise.all(Array.from({ length: Math.min(DOCTOR_POOL, discovered.length) }, async () => {
-            for (;;) {
-                const i = next++;
-                if (i >= discovered.length)
-                    return;
-                settled[i] = await scanOne(discovered[i]);
-            }
-        }));
+        // The cohort runs through the runner's bounded pool (see
+        // runDoctorCohort) — order preserved, a crash stays data, and the
+        // per-crash line is the same one a single-doctor run prints.
+        const runs = await runDoctorCohort(discovered.map(d => ({
+            programPath: d.path,
+            targetDir: parsed.targetDir,
+            includeTests: parsed.includeTests,
+        })));
         const fileCounts = [];
-        for (const r of settled) {
-            if (!r.ok) {
-                crashed.push(r.id);
+        for (const [i, run] of runs.entries()) {
+            const id = discovered[i].meta.id;
+            const programPath = discovered[i].path;
+            if (!run.ok) {
+                crashed.push(id);
+                fail(describeRunnerError(run.cause));
                 continue;
             }
-            fileCounts.push(r.scan.fileCount);
-            doctorPaths.set(r.id, r.path);
-            groups.push(r.scan.group);
+            fileCounts.push(run.result.fileCount);
+            doctorPaths.set(id, programPath);
+            groups.push({ programName: path.basename(programPath), meta: run.result.meta, findings: run.result.findings });
         }
         outcome = {
             groups,
