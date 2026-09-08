@@ -38,9 +38,21 @@ export const meta = {
 };
 
 export async function doctor(ctx) {
+  // One read+mask per file, shared by every check: a full-repo pass is
+  // this doctor's dominant cost, and the checks examine the same files.
+  const byFile = new Map();
+  const readFile = (file) => {
+    let entry = byFile.get(file);
+    if (entry === undefined) {
+      const raw = ctx.files.read(file);
+      entry = { raw, masked: maskNonCode(raw) };
+      byFile.set(file, entry);
+    }
+    return entry;
+  };
   await checkFetch(ctx);
-  await checkUnawaitedMap(ctx);
-  await checkSetTimeout(ctx);
+  await checkUnawaitedMap(ctx, readFile);
+  await checkSetTimeout(ctx, readFile);
 }
 
 // --- fetch-calls-without-abortsignal ------------------------------------
@@ -119,16 +131,15 @@ function matchingBrace(text) {
 
 // --- unawaited-async-map -------------------------------------------------
 
-async function checkUnawaitedMap(ctx) {
+async function checkUnawaitedMap(ctx, readFile) {
   const CONSUMERS = /(Promise\s*\.\s*(all|allSettled|race|any)\s*\((?:[^()]|\([^()]*\))*\bNAME\b|await\s+(?:[\w.$]+\s*=\s*)?\s*\bNAME\b)/;
 
   for (const file of ctx.files.list([".ts", ".tsx", ".js", ".jsx", ".mjs"])) {
     // Fixture sandboxes are doctor test data, not target source.
     if (/\.fixtures\.mjs$/.test(file)) continue;
-    // Masked, not raw: a commented-out or string-literal ".map(async ..."
-    // is not code — raw scanning false-positives on documentation and
-    // test seeds (the same mask the timer check below already applies).
-    const lines = maskNonCode(ctx.files.read(file)).split("\n");
+    // Masked (shared cache): a commented-out or string-literal ".map(async ..."
+    // is not code — raw scanning false-positives on documentation and seeds.
+    const lines = readFile(file).masked.split("\n");
 
     for (let i = 0; i < lines.length; i++) {
       const decl = lines[i].match(/\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*[\w.$\]]+\s*\.\s*map\(\s*async\b/);
@@ -155,12 +166,11 @@ function escapeRe(s) {
 
 // --- uncleared-settimeout-in-effect ---------------------------
 
-async function checkSetTimeout(ctx) {
+async function checkSetTimeout(ctx, readFile) {
   const files = await ctx.files.list();
 
   for (const file of files) {
-    const source = await ctx.files.read(file);
-    const masked = maskNonCode(source);
+    const { raw, masked } = readFile(file);
     const effects = [];
     const useEffect = /\buseEffect\b/g;
     let match;
@@ -191,7 +201,7 @@ async function checkSetTimeout(ctx) {
         const before = masked.slice(effect.start, index);
         const assignment = /(?:(?:\bconst|\blet|\bvar)\s+)?([A-Za-z_$][\w$]*)\s*=\s*$/.exec(before);
         if (!assignment || !cleared.has(assignment[1])) {
-          ctx.report.finding({ rule: "uncleared-settimeout-in-effect", file, line: lineAt(source, index) });
+          ctx.report.finding({ rule: "uncleared-settimeout-in-effect", file, line: lineAt(raw, index) });
         }
       }
     }
