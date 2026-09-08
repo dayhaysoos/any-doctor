@@ -14,12 +14,16 @@ export async function doctor(ctx) {
     ctx.search.pattern("JSON.parse($VALUE)"),
     ctx.files.list(),
   ]);
-  const sources = new Map(
-    await Promise.all(files.map(async (file) => [file, await ctx.files.read(file)])),
-  );
+  const listed = new Set(files);
+  // Read on demand, cached: the search names the few files worth reading.
+  const sources = new Map();
+  const sourceOf = (file) => {
+    if (!sources.has(file)) sources.set(file, listed.has(file) ? ctx.files.read(file) : null);
+    return sources.get(file);
+  };
 
   for (const call of calls) {
-    const source = sources.get(call.file);
+    const source = sourceOf(call.file);
     if (!source || isSchemaValidated(source, call) || !isLlmResponse(call.text, source)) {
       continue;
     }

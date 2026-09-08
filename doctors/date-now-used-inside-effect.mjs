@@ -10,13 +10,18 @@ export const meta = {
 };
 
 export async function doctor(ctx) {
-  const files = new Map(
-    ctx.files.list([".ts", ".tsx", ".js", ".jsx", ".mjs"]).map(file => [file, ctx.files.read(file)]),
-  );
+  const listed = new Set(ctx.files.list([".ts", ".tsx", ".js", ".jsx", ".mjs"]));
+  // Read on demand, cached: the search names the few files worth reading —
+  // eagerly reading the whole target dominated this doctor's runtime.
+  const sources = new Map();
+  const sourceOf = (file) => {
+    if (!sources.has(file)) sources.set(file, listed.has(file) ? ctx.files.read(file) : null);
+    return sources.get(file);
+  };
   const dateCalls = ctx.search.pattern("Date.now()");
 
   for (const match of dateCalls) {
-    const source = files.get(match.file);
+    const source = sourceOf(match.file);
     if (!source) continue;
 
     const offset = offsetAt(source, match.line, match.column);

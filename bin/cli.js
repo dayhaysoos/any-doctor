@@ -191,19 +191,43 @@ async function cmdRun(args) {
         const groups = [];
         const crashed = [];
         const doctorPaths = new Map();
-        const fileCounts = [];
-        for (const d of discovered) {
+        // The cohort runs concurrently — each doctor is its own confined child
+        // process, so wall clock approaches the slowest doctor, not the sum of
+        // them. The pool is capped: doctors are CPU-bound parsers, and an
+        // unbounded fan-out contends with the machine's real work (a cap of 4
+        // measured faster than 9-wide on a busy 10-core laptop). Results keep
+        // discovery order; a crash stays data.
+        const DOCTOR_POOL = 4;
+        const scanOne = async (d) => {
             try {
                 const scan = await scanOnce({ programPath: d.path, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
-                fileCounts.push(scan.fileCount);
-                doctorPaths.set(d.meta.id, d.path);
-                groups.push(scan.group);
+                return { ok: true, id: d.meta.id, path: d.path, scan };
             }
             catch (e) {
                 if (!(e instanceof ExitCode))
                     throw e;
-                crashed.push(d.meta.id);
+                return { ok: false, id: d.meta.id, path: d.path };
             }
+        };
+        const settled = new Array(discovered.length);
+        let next = 0;
+        await Promise.all(Array.from({ length: Math.min(DOCTOR_POOL, discovered.length) }, async () => {
+            for (;;) {
+                const i = next++;
+                if (i >= discovered.length)
+                    return;
+                settled[i] = await scanOne(discovered[i]);
+            }
+        }));
+        const fileCounts = [];
+        for (const r of settled) {
+            if (!r.ok) {
+                crashed.push(r.id);
+                continue;
+            }
+            fileCounts.push(r.scan.fileCount);
+            doctorPaths.set(r.id, r.path);
+            groups.push(r.scan.group);
         }
         outcome = {
             groups,
