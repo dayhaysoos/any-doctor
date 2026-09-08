@@ -7,6 +7,9 @@ export interface RunOutcome {
     fileCount: number;
     durationMs: number;
     targetDir: string;
+    /** Could the identity engine power this run? (D20 Stage 2) — checks
+     * that declared `needs` render "narrowed" when false. */
+    analysisAvailable?: boolean;
 }
 export declare function cohortFileCount(counts: number[]): number;
 export declare function unsafeSkipLine(names: string[]): string;

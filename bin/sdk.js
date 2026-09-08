@@ -3,6 +3,29 @@ import * as path from "path";
 import { isTestPath, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
+// The verify harness forces the degraded path per fixture (fixture
+// `analysis: "off"`): the loader flips this switch before running that
+// fixture's sandbox, and every ctx in the child answers accordingly.
+// Nothing else can disable analysis — a run never narrows silently.
+let analysisForcedOff = false;
+export function setAnalysisDisabled(disabled) {
+    analysisForcedOff = disabled;
+}
+// The loader's skip probe: would a ctx built now see the analysis engine?
+// One channel question, cached by the verify loop. A channel-less direct
+// loader invocation answers false — no host means no analysis, which is
+// the honest answer for a narrowing decision (bindings() still fails
+// loudly on a missing channel, exactly like ctx.search).
+export function probeAnalysisAvailable(root) {
+    if (analysisForcedOff)
+        return false;
+    try {
+        return Boolean(runAnalysis({ kind: "available" }, root).available);
+    }
+    catch {
+        return false;
+    }
+}
 // Production posture (D18): ctx.files.list() excludes test paths — tests
 // mimic production shapes without being production reads. The law itself
 // (isTestPath) and the run/verify derivation live in contract.ts; a run
@@ -10,6 +33,7 @@ const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 // an explicit path is a doctor's deliberate choice.
 export function buildCtx(root, opts = {}) {
     const findings = [];
+    let availabilityCache;
     function walk(dir, exts, out) {
         for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
             if (entry.name === "node_modules" || entry.name.startsWith("."))
@@ -49,6 +73,36 @@ export function buildCtx(root, opts = {}) {
             },
             rule(query, language = "TypeScript") {
                 return runSearch({ op: "rule", rule: validateRuleQuery(query) }, language, root);
+            },
+        },
+        analysis: {
+            // One channel question, cached per ctx — availability is cheap and
+            // honest data, never a guess. The verify harness's forced-off
+            // switch (fixture `analysis: "off"`) overrides a present engine so
+            // the degraded path is pinnable anywhere.
+            get available() {
+                if (availabilityCache === undefined) {
+                    // No host channel → no analysis: the honest answer for a
+                    // narrowing decision, not a crash (bindings() is the loud path).
+                    try {
+                        availabilityCache = Boolean(runAnalysis({ kind: "available" }, root).available);
+                    }
+                    catch {
+                        availabilityCache = false;
+                    }
+                }
+                return availabilityCache && !analysisForcedOff;
+            },
+            bindings(file) {
+                var _a;
+                if (analysisForcedOff || !this.available) {
+                    throw new Error("ctx.analysis.bindings requires the analysis engine and it is unavailable"
+                        + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.");
+                }
+                const r = runAnalysis({ kind: "bindings", file }, root);
+                if (r.file === undefined)
+                    throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
+                return r.file;
             },
         },
         report: {
@@ -153,6 +207,18 @@ function runSearch(query, language, root) {
         throw new Error(detail);
     }
     return toMatches((_a = response.matches) !== null && _a !== void 0 ? _a : [], root);
+}
+function runAnalysis(body, root) {
+    let response;
+    try {
+        fs.writeSync(3, SEARCH_REQUEST + JSON.stringify({ op: "analysis", ...body, root }) + "\n");
+        response = readSearchResponse();
+    }
+    catch (e) {
+        throw new Error(`ctx.analysis is unavailable — no host on this channel (${e instanceof Error ? e.message : String(e)}). `
+            + "Doctors run through any-doctor; a bare doctor-loader.mjs invocation has no host.");
+    }
+    return response;
 }
 function readSearchResponse() {
     const chunk = Buffer.alloc(65536);

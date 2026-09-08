@@ -94,14 +94,29 @@ NAME, separator commas filtered at the seam. The surface is curated —
 pattern + inside — and validated: unknown keys fail loudly with the
 allowed list.
 
+## Analysis query
+
+An identity question asked through `ctx.analysis`: which **Binding** a
+name resolves to, and every **Reference** to it. `ctx.analysis.bindings(file)`
+returns the file's whole identity model in one answer — every binding
+with its declaration span and its references (positions in ctx.search's
+convention, plus read/write). The engine is optional (oxc-parser +
+eslint-scope behind the Engine seam's second adapter): checks declare
+the analysis they need on their CheckMeta (`needs`), narrow without it,
+and the report renders "narrowed" — a degraded run is visible, never
+silent. References answer by position, so analysis queries compose with
+rule queries: shapes from one engine, identities from the other.
+
 ## Engine
 
 The structural-search backend a DoctorCtx uses to answer ctx.search.
-ast-grep is the engine today; oxc is a candidate for TypeScript-heavy
-repos. Engine selection is invisible to doctor programs: one doctor
-program runs unchanged on any engine. One module owns the invocation
-(src/engine.ts); the search host sits on it, and the sdk asks the host —
-there is exactly one path, with no unconfined fallback.
+ast-grep is the engine today; the identity engine (ctx.analysis) is its
+second adapter — oxc-parser + eslint-scope, optional by design. Engine
+selection is invisible to doctor programs: one doctor program runs
+unchanged on any engine. One module owns each invocation
+(src/engine.ts, src/analysis.ts); the search and analysis hosts sit on
+them, and the sdk asks the hosts — there is exactly one path, with no
+unconfined fallback.
 
 ## Score
 

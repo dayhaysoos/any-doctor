@@ -130,6 +130,7 @@ function parseArgs(args: string[]): ParsedArgs {
 interface Scan {
   group: ReportGroup;
   fileCount: number;
+  analysisAvailable: boolean;
 }
 
 // Discovery and the gate's partition, computed once per command — pure
@@ -149,6 +150,7 @@ async function scanOnce(options: RunOptions): Promise<Scan> {
   return {
     group: { programName: path.basename(options.programPath), meta: result.meta, findings: result.findings },
     fileCount: result.fileCount,
+    analysisAvailable: result.capabilities?.analysis ?? false,
   };
 }
 
@@ -195,6 +197,7 @@ async function cmdRun(args: string[]): Promise<number> {
       fileCount: scan.fileCount,
       durationMs: Date.now() - runStarted,
       targetDir: parsed.targetDir,
+      analysisAvailable: scan.analysisAvailable,
     };
   } else {
     const cohort = await gatherDoctors();
@@ -233,6 +236,7 @@ async function cmdRun(args: string[]): Promise<number> {
       includeTests: parsed.includeTests,
     })));
     const fileCounts: number[] = [];
+    let analysisAvailable: boolean | undefined;
     for (const [i, run] of runs.entries()) {
       const id = doctors[i].meta!.id;
       const programPath = doctors[i].path;
@@ -242,6 +246,8 @@ async function cmdRun(args: string[]): Promise<number> {
         continue;
       }
       fileCounts.push(run.result.fileCount);
+      // Process-wide capability: any run's answer is every run's answer.
+      analysisAvailable ??= run.result.capabilities?.analysis;
       doctorPaths.set(id, programPath);
       groups.push({ programName: path.basename(programPath), meta: run.result.meta, findings: run.result.findings });
     }
@@ -253,6 +259,7 @@ async function cmdRun(args: string[]): Promise<number> {
       fileCount: cohortFileCount(fileCounts),
       durationMs: Date.now() - runStarted,
       targetDir: parsed.targetDir,
+      analysisAvailable: analysisAvailable ?? false,
     };
   }
 

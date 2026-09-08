@@ -86,6 +86,7 @@ export function dedupeGroups(groups) {
     return { groups: out, hidden };
 }
 export function renderReport(input, useColor) {
+    var _a, _b;
     const c = colorizer(useColor);
     const lines = [];
     const { groups, hidden } = dedupeGroups(input.groups);
@@ -146,6 +147,17 @@ export function renderReport(input, useColor) {
             if (n > 20)
                 lines.push(`  ${c(`… and ${n - 20} more`, DIM)}`);
             lines.push("");
+        }
+        // The degradation contract as data (D20 Stage 2): checks that declared
+        // analysis needs but ran without the engine say so — including checks
+        // with zero findings, where a narrowed clean must never read as a
+        // full-power clean.
+        if (input.analysisAvailable === false) {
+            const narrowed = (_b = (_a = g.meta.checks) === null || _a === void 0 ? void 0 : _a.filter((ck) => ck.needs && ck.needs.length > 0)) !== null && _b !== void 0 ? _b : [];
+            if (narrowed.length > 0) {
+                lines.push(`  ${c(`narrowed: analysis engine unavailable — ${narrowed.map((ck) => ck.id).join(", ")} ran in degraded mode`, YELLOW)}`);
+                lines.push("");
+            }
         }
         if (g.findings.length > 0 && g.meta.blindSpots && g.meta.blindSpots.length > 0) {
             lines.push(`  ${c("blind spots: " + g.meta.blindSpots.join("; "), DIM)}`);

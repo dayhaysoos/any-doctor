@@ -126,3 +126,8 @@ test("runDoctorCohort: bounded pool, input order preserved, a crash is typed dat
     crasher.cleanup();
   }
 });
+
+test("runDoctor: the result carries analysis capabilities (present in this repo)", async () => {
+  const r = await runDoctor({ programPath: DOCTOR, targetDir: TARGET });
+  assert.deepEqual(r.capabilities, { analysis: true });
+});

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-const { compareFindings, RESULT_SENTINEL, PROTOCOL_VERSION, resolveFinding, modeArgs, decodeLoaderArgs } = (await import("../bin/contract.js"));
+const { compareFindings, decodeSearchOp, RESULT_SENTINEL, PROTOCOL_VERSION, resolveFinding, modeArgs, decodeLoaderArgs } = (await import("../bin/contract.js"));
 
 test("Mode round-trip: encoded once, decoded once, identical on both sides", () => {
   const program = "/repo/doctors/x.mjs";
@@ -109,6 +109,14 @@ test("compareFindings: a doubled expectation needs two findings (multiset)", () 
     [{ rule: "check-a", file: "a.ts", line: 2 }]
   );
   assert.deepEqual(diff, { missing: [{ rule: "check-a", file: "a.ts", line: 2 }], unexpected: [] });
+});
+
+test("decodeSearchOp: known ops decode, unknown ops are loud with the known list", () => {
+  assert.deepEqual(decodeSearchOp("pattern"), { op: "pattern" });
+  assert.deepEqual(decodeSearchOp("rule"), { op: "rule" });
+  assert.deepEqual(decodeSearchOp("analysis"), { op: "analysis" });
+  assert.match(decodeSearchOp("analysiss").error, /unknown search-channel op "analysiss"/);
+  assert.match(decodeSearchOp(undefined).error, /known ops: pattern, rule, analysis/);
 });
 
 test("protocol constants exist and are versioned", () => {

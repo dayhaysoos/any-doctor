@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { register } from "node:module";
-import { buildCtx } from "./sdk.js";
+import { buildCtx, setAnalysisDisabled, probeAnalysisAvailable } from "./sdk.js";
 import * as contract from "./contract.js";
 // The doctor loader: the child process every doctor program runs inside.
 // It owns the Doctor-run choreography — decode the Mode, confine the
@@ -75,6 +75,7 @@ function materializeSeed(tmp, rel, content) {
     fs.writeFileSync(abs, content);
 }
 async function main() {
+    var _a;
     confineProcess();
     // The mode arrives as argv and is decoded exactly once, here, into a value.
     const decoded = contract.decodeLoaderArgs(process.argv.slice(2));
@@ -112,11 +113,37 @@ async function main() {
                 process.exit(3);
             }
             const results = [];
+            // Only a doctor whose checks declare analysis needs can have
+            // analysis-on fixtures — probing anyone else would make a
+            // channel-less direct invocation fail fixtures that never touch
+            // analysis at all.
+            const meta = mod.meta;
+            const declaresNeeds = ((_a = meta.checks) !== null && _a !== void 0 ? _a : []).some((c) => c.needs && c.needs.length > 0);
+            let analysisAvailable;
             for (const fixture of fixtures) {
                 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-verify-"));
                 try {
                     for (const [rel, content] of Object.entries(fixture.seed)) {
                         materializeSeed(tmp, rel, content);
+                    }
+                    // The fixture's declared analysis mode: "off" forces the
+                    // degraded path (pinning the narrowed behavior); the default
+                    // "on" runs with the engine — and skips honestly when it is
+                    // not installed here, rather than failing a fixture whose
+                    // expectations belong to the full-power path.
+                    setAnalysisDisabled(fixture.analysis === "off");
+                    if (declaresNeeds && fixture.analysis !== "off" && analysisAvailable === undefined) {
+                        analysisAvailable = probeAnalysisAvailable(tmp);
+                    }
+                    if (declaresNeeds && fixture.analysis !== "off" && analysisAvailable === false) {
+                        results.push({
+                            name: fixture.name,
+                            ok: true,
+                            missing: [],
+                            unexpected: [],
+                            skipped: "analysis engine unavailable — pins the analysis-on path",
+                        });
+                        continue;
                     }
                     // Verify always lists everything (includeTestsFor): the sandbox is
                     // the doctor's own world — a seed named *.test.ts is deliberate
@@ -129,6 +156,7 @@ async function main() {
                     results.push({ name: fixture.name, ok: false, missing: [], unexpected: [], error: e instanceof Error ? e.message : String(e) });
                 }
                 finally {
+                    setAnalysisDisabled(false);
                     fs.rmSync(tmp, { recursive: true, force: true });
                 }
             }

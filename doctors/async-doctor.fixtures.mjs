@@ -113,7 +113,15 @@ export const fixtures = [
     ]
   },
   {
-    "name": "per-element for-of awaits are not recognized — flagged (declared blind spot)",
+    "name": "per-element for-of consumption is recognized — not flagged",
+    "seed": {
+      "src/for-of-on.ts": "export async function work(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  for (const p of jobs) {\n    await p\n  }\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "per-element for-of awaits are not recognized — flagged (degraded mode)",
+    "analysis": "off",
     "seed": {
       "src/for-of.ts": "export async function work(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  for (const job of jobs) {\n    await job\n  }\n}"
     },
@@ -124,6 +132,54 @@ export const fixtures = [
         "line": 2
       }
     ]
+  },
+  {
+    "name": "an inline for-of over the mapped array with awaited elements is not flagged",
+    "seed": {
+      "src/for-of-inline.ts": "export async function work(ids: string[]) {\n  for (const p of ids.map(async id => load(id))) {\n    await p\n  }\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "a same-named binding in another scope cannot silence this one",
+    "seed": {
+      "src/shadow.ts": "export function main(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  return jobs.length\n}\n\nfunction other(otherIds: string[]) {\n  const jobs = otherIds.map(async x => save(x))\n  return Promise.all(jobs)\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/shadow.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "same-name consumption silences both bindings (degraded mode)",
+    "analysis": "off",
+    "seed": {
+      "src/shadow-off.ts": "export function main(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  return jobs.length\n}\n\nfunction other(otherIds: string[]) {\n  const jobs = otherIds.map(async x => save(x))\n  return Promise.all(jobs)\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "a never-reassigned let binding is checked like a const — flagged",
+    "seed": {
+      "src/let-never.ts": "export function work(ids: string[]) {\n  let jobs = ids.map(async id => load(id))\n  return jobs.length\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/let-never.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "a reassigned binding is inconclusive and skipped",
+    "seed": {
+      "src/let-reassigned.ts": "export function work(ids: string[], fresh: string[]) {\n  let jobs = ids.map(async id => load(id))\n  jobs = fresh.map(async x => save(x))\n  return jobs.length\n}"
+    },
+    "expected": []
   },
   {
     "name": "allSettled-consumed result in a later batch loop is not flagged",

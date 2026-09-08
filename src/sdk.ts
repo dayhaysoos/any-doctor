@@ -1,10 +1,34 @@
 import * as fs from "fs";
 import * as path from "path";
-import { Capture, DoctorCtx, Finding, isTestPath, Match, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
+import { AnalysisFile, Capture, DoctorCtx, Finding, isTestPath, Match, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 import { EngineQuery, RawSgCapture, RawSgMatch } from "./engine.js";
 
 const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
+
+// The verify harness forces the degraded path per fixture (fixture
+// `analysis: "off"`): the loader flips this switch before running that
+// fixture's sandbox, and every ctx in the child answers accordingly.
+// Nothing else can disable analysis — a run never narrows silently.
+let analysisForcedOff = false;
+
+export function setAnalysisDisabled(disabled: boolean): void {
+  analysisForcedOff = disabled;
+}
+
+// The loader's skip probe: would a ctx built now see the analysis engine?
+// One channel question, cached by the verify loop. A channel-less direct
+// loader invocation answers false — no host means no analysis, which is
+// the honest answer for a narrowing decision (bindings() still fails
+// loudly on a missing channel, exactly like ctx.search).
+export function probeAnalysisAvailable(root: string): boolean {
+  if (analysisForcedOff) return false;
+  try {
+    return Boolean(runAnalysis({ kind: "available" }, root).available);
+  } catch {
+    return false;
+  }
+}
 
 // Production posture (D18): ctx.files.list() excludes test paths — tests
 // mimic production shapes without being production reads. The law itself
@@ -13,6 +37,7 @@ const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 // an explicit path is a doctor's deliberate choice.
 export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): { ctx: DoctorCtx; getFindings(): Finding[] } {
   const findings: Finding[] = [];
+  let availabilityCache: boolean | undefined;
 
   function walk(dir: string, exts: Set<string>, out: string[]): void {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -55,6 +80,37 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
 
       rule(query: RuleQuery, language: "TypeScript" | "JavaScript" = "TypeScript"): Match[] {
         return runSearch({ op: "rule", rule: validateRuleQuery(query) }, language, root);
+      },
+    },
+
+    analysis: {
+      // One channel question, cached per ctx — availability is cheap and
+      // honest data, never a guess. The verify harness's forced-off
+      // switch (fixture `analysis: "off"`) overrides a present engine so
+      // the degraded path is pinnable anywhere.
+      get available(): boolean {
+        if (availabilityCache === undefined) {
+          // No host channel → no analysis: the honest answer for a
+          // narrowing decision, not a crash (bindings() is the loud path).
+          try {
+            availabilityCache = Boolean(runAnalysis({ kind: "available" }, root).available);
+          } catch {
+            availabilityCache = false;
+          }
+        }
+        return availabilityCache && !analysisForcedOff;
+      },
+
+      bindings(file: string): AnalysisFile {
+        if (analysisForcedOff || !this.available) {
+          throw new Error(
+            "ctx.analysis.bindings requires the analysis engine and it is unavailable"
+            + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.",
+          );
+        }
+        const r = runAnalysis({ kind: "bindings", file }, root);
+        if (r.file === undefined) throw new Error(r.error ?? "ctx.analysis failed");
+        return r.file;
       },
     },
 
@@ -181,6 +237,30 @@ function runSearch(query: EngineQuery, language: "TypeScript" | "JavaScript", ro
     throw new Error(detail);
   }
   return toMatches(response.matches ?? [], root);
+}
+
+// The analysis channel call: same transport, op family member. Responses
+// carry either the identity model or an error — availability is a normal
+// answer, never a thrown guess.
+interface AnalysisResponse {
+  available?: boolean;
+  reason?: string;
+  file?: AnalysisFile;
+  error?: string;
+}
+
+function runAnalysis(body: { kind: "available" } | { kind: "bindings"; file: string }, root: string): AnalysisResponse {
+  let response: AnalysisResponse;
+  try {
+    fs.writeSync(3, SEARCH_REQUEST + JSON.stringify({ op: "analysis", ...body, root }) + "\n");
+    response = readSearchResponse() as unknown as AnalysisResponse;
+  } catch (e) {
+    throw new Error(
+      `ctx.analysis is unavailable — no host on this channel (${e instanceof Error ? e.message : String(e)}). `
+      + "Doctors run through any-doctor; a bare doctor-loader.mjs invocation has no host.",
+    );
+  }
+  return response;
 }
 
 function readSearchResponse(): SearchResponse {

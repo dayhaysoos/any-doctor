@@ -5,6 +5,13 @@ export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 // back on stdin.
 export const SEARCH_REQUEST = "###ANY_DOCTOR_SEARCH###";
 export const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
+export function decodeSearchOp(op) {
+    if (op === "pattern" || op === "rule" || op === "analysis")
+        return { op };
+    return {
+        error: `unknown search-channel op ${JSON.stringify(op)} — known ops: ${["pattern", "rule", "analysis"].join(", ")}`,
+    };
+}
 export function modeArgs(mode, programPath) {
     switch (mode.kind) {
         case "run": return mode.includeTests === true

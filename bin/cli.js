@@ -129,10 +129,12 @@ async function gatherDoctors() {
     };
 }
 async function scanOnce(options) {
+    var _a, _b;
     const result = await runOrReport(runDoctor(options));
     return {
         group: { programName: path.basename(options.programPath), meta: result.meta, findings: result.findings },
         fileCount: result.fileCount,
+        analysisAvailable: (_b = (_a = result.capabilities) === null || _a === void 0 ? void 0 : _a.analysis) !== null && _b !== void 0 ? _b : false,
     };
 }
 // The batch commands' empty-cohort policy: no doctors at all is a setup
@@ -150,7 +152,7 @@ function cohortUnusable(cohort) {
     return true;
 }
 async function cmdRun(args) {
-    var _a, _b;
+    var _a, _b, _c;
     const parsed = parseArgs(args);
     if (parsed.global) {
         fail("--global is a generate-only flag");
@@ -179,6 +181,7 @@ async function cmdRun(args) {
             fileCount: scan.fileCount,
             durationMs: Date.now() - runStarted,
             targetDir: parsed.targetDir,
+            analysisAvailable: scan.analysisAvailable,
         };
     }
     else {
@@ -220,6 +223,7 @@ async function cmdRun(args) {
             includeTests: parsed.includeTests,
         })));
         const fileCounts = [];
+        let analysisAvailable;
         for (const [i, run] of runs.entries()) {
             const id = doctors[i].meta.id;
             const programPath = doctors[i].path;
@@ -229,6 +233,8 @@ async function cmdRun(args) {
                 continue;
             }
             fileCounts.push(run.result.fileCount);
+            // Process-wide capability: any run's answer is every run's answer.
+            analysisAvailable !== null && analysisAvailable !== void 0 ? analysisAvailable : (analysisAvailable = (_b = run.result.capabilities) === null || _b === void 0 ? void 0 : _b.analysis);
             doctorPaths.set(id, programPath);
             groups.push({ programName: path.basename(programPath), meta: run.result.meta, findings: run.result.findings });
         }
@@ -240,10 +246,11 @@ async function cmdRun(args) {
             fileCount: cohortFileCount(fileCounts),
             durationMs: Date.now() - runStarted,
             targetDir: parsed.targetDir,
+            analysisAvailable: analysisAvailable !== null && analysisAvailable !== void 0 ? analysisAvailable : false,
         };
     }
     const env = processTtyEnv();
-    const ttyCols = (_b = process.stdout.columns) !== null && _b !== void 0 ? _b : 0;
+    const ttyCols = (_c = process.stdout.columns) !== null && _c !== void 0 ? _c : 0;
     // Report-vs-dashboard policy: --all is the batch/report mode; otherwise
     // a real terminal with room and no headless override gets the tree.
     const interactive = !parsed.all

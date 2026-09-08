@@ -634,6 +634,35 @@ suggestions, verbatim engine errors echoing the query, too-old engine
 detection, and the skill's rule-query section teaching the stopBy
 default, the capture-array shape, and the positive-fixture requirement.
 
+**Amendment (2026-09-08, later): Stage 2 shipped — the identity engine,
+analysis as data.** The engine facts first: oxc's semantic layer is not
+exposed to JavaScript (their issue #22985), so the adapter is
+oxc-parser (fast TS parse, an optionalDependency — install failure never
+kills any-doctor) plus eslint-scope (scope/reference resolution, a
+regular dependency), behind one swappable module (src/analysis.ts); if
+oxc ships JS semantics someday, the adapter's implementation swaps and
+nothing above it moves. The language posture is decided, not implied:
+analysis is per-language adapters with TypeScript/JavaScript first —
+the same seam accepts a second language later without doctor changes.
+`ctx.analysis.bindings(file)` answers once per file (host-side model
+cache keyed by mtime+size) with every binding's declaration span and
+references in ctx.search's position convention — shapes compose with
+identities by position, which the pilot proves. The op family gained its
+third member; decoding moved to contract.ts where unknown ops fail
+loudly instead of silently becoming pattern searches. Degradation is
+data: CheckMeta.needs declares what a check wants, the runner records
+capabilities on every run, and the report renders "narrowed" — including
+for zero-finding checks, where a narrowed clean must never read as a
+full-power clean. Availability is honest data (ctx.analysis.available,
+no-host answers false for narrowing decisions while bindings() fails
+loudly like ctx.search), and verify pins both paths: fixtures carry
+`analysis: "on"` (honest skip where the engine isn't installed) or
+`"off"` (forces the degraded path — expectations may legitimately
+differ). The pilot is unawaited-async-map's identity path: per-element
+consumption, same-name bindings in other scopes, and never-reassigned
+let targets are now checked (the degraded path keeps its declared blind
+spots, pinned by "off" fixtures); 31 fixtures cover both paths.
+
 ---
 
 ## Open questions

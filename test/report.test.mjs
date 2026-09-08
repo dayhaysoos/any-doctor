@@ -182,3 +182,30 @@ test("renderReport: a second check from the SAME doctor at one site survives ded
   assert.match(out, /2 findings/);
   assert.ok(!out.includes("duplicate finding hidden"), "same-doctor same-site is not a duplicate");
 });
+
+test("renderReport: checks that need analysis say narrowed when the engine was absent (D20 Stage 2)", () => {
+  const outcome = (analysisAvailable) => ({
+    fileCount: 3,
+    durationMs: 10,
+    analysisAvailable,
+    groups: [{
+      programName: "async-doctor.mjs",
+      meta: {
+        id: "async-doctor",
+        description: "Async discipline",
+        severity: "warning",
+        checks: [
+          { id: "unawaited-async-map", description: ".map(async ...) dropped", severity: "warning", needs: ["bindings"] },
+          { id: "fetch-calls-without-abortsignal", description: "Fetch without AbortSignal", severity: "warning" },
+        ],
+      },
+      findings: [{ rule: "fetch-calls-without-abortsignal", file: "src/a.ts", line: 2 }],
+    }],
+  });
+  const narrowed = renderReport(outcome(false), false);
+  assert.match(narrowed, /narrowed: analysis engine unavailable — unawaited-async-map ran in degraded mode/);
+  // the needs-less check is never accused of narrowing
+  assert.doesNotMatch(narrowed, /fetch-calls-without-abortsignal ran in degraded/);
+  const fullPower = renderReport(outcome(true), false);
+  assert.doesNotMatch(fullPower, /narrowed/);
+});
