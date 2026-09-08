@@ -551,6 +551,69 @@ questions.
 
 ---
 
+## D20 — The analysis ladder: factory first, engine second, migration last
+
+**Date:** 2026-09-08
+
+**Context:** An external review of 8c3ba52 (confirmed against source)
+found: compareFindings keys on file:line only — a wrong-rule finding at
+the right line passes, and duplicate findings collapse (the gate is
+rule-blind for multi-check doctors); three real precision bugs in
+async-doctor (same-line Promise.all consumption invisible because the
+consumer scan starts after the declaration LINE, not point; `await
+jobsArray` wrongly counts as consuming the array's promises; a bare
+discarded `items.map(async ...)` without a const assignment is never
+seen); the headless run exits 0 with findings (no CI gate); and the
+score rises when clean files are added (accepted — density metric,
+D19's never-conflate rule covers it). The three async bugs are bug
+CLASSES, not instances: wrong region anchor, wrong semantic assumption,
+over-narrow trigger — every authored doctor will re-make them, and the
+single-file law replicates the primitives that carry them.
+
+A key decomposition: the async class needs no type inference or
+dataflow. `const jobs = X.map(async ...)` proves array-of-promises at
+the declaration syntactically; what regex cannot do is collect the
+REFERENCE SET of that binding and check each reference's shape. So the
+SDK surface that fixes the class is: node-context queries + binding
+references. Regex keeps its legitimate home: filenames, naming
+conventions, text inside identified literals.
+
+**Decision — three stages, platform before migration:**
+- **Stage 0 (factory, no new engine):** fix the three async-doctor bugs
+  each pinned by new fixtures; compareFindings becomes rule-aware and
+  multiset (`rule:file:line`, duplicates detected) with the fixture
+  migration that follows; generate gains an adversarial counter-fixture
+  step — a second pass attacks the doctor with lookalikes, same-line
+  variants, and semantic traps before it ships (breaking the
+  shared-blind-spot problem of self-graded fixtures).
+- **Stage 1 (ast-grep expansion, no new deps):** expose structured
+  queries and enclosing-node context through ctx.search (killing the
+  brace-counting class with the engine we already ship), and
+  ctx.files.readMasked() (killing the masking-drift class).
+- **Stage 2 (the oxc adapter behind the Engine seam):** binding and
+  reference queries as ctx.analysis.*, host-side like the search host
+  (Confinement intact). oxc is an optional engine — same posture as sg
+  on PATH — with honest capability degradation: checks declare the
+  analysis they need, narrow without it, and say so in blindSpots.
+  Sequencing is deliberate: migrating bundled checks before the
+  primitives exist buys nothing; the bundled doctors migrate as the
+  SDK operations' first customers and become the reference examples
+  the skill teaches from. Stage 2 also unblocks slop-doctor: dead-export
+  and write-only-field are relational checks grep can only approximate.
+
+Also queued from the same review: the CI gate chapter (failure
+thresholds like --fail-on error, --format json, baseline/diff-scoped
+reporting) — already this log's oldest open question, independently
+reconfirmed as the top adoption lever.
+
+**Consequences:** Generated doctors stop being responsible for parsing
+code with regex; they compose reliable analysis operations. Checks
+whose promised behavior exceeds the available engine narrow honestly
+instead of approximating silently. The bundled pack's text-based span
+tracking is temporary scaffolding — expected to migrate, not to grow.
+
+---
+
 ## Open questions
 
 - Opt-in metrics/score API (parked, D19): count doctors run and findings
