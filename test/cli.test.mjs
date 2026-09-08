@@ -61,6 +61,28 @@ test("main: verify failing fixture exits 1", async (t) => {
   }
 });
 
+test("main: verify wrong-rule finding at the right line fails the gate, naming the rule (D20)", async (t) => {
+  const logs = silentConsole(t);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-cli-"));
+  const doctor = path.join(dir, "two-checks.mjs");
+  fs.writeFileSync(doctor, [
+    "export const meta = { id: 'two-checks', description: 'x', severity: 'info',",
+    "  checks: [{ id: 'check-a', description: 'a' }, { id: 'check-b', description: 'b' }] }",
+    "export async function doctor(ctx) { ctx.report.finding({ rule: 'check-b', file: 'a.ts', line: 1 }) }",
+  ].join("\n"));
+  fs.writeFileSync(path.join(dir, "two-checks.fixtures.mjs"),
+    "export const fixtures = [{ name: 'right line, wrong rule', seed: { 'a.ts': 'x\\n' }, expected: [{ rule: 'check-a', file: 'a.ts', line: 1 }] }]");
+  try {
+    const code = await cli.main(["verify", doctor]);
+    assert.equal(code, 1);
+    const out = logs.mock.calls.map((c) => c.arguments.join(" ")).join("\n");
+    assert.match(out, /missing expected finding check-a a\.ts:1/);
+    assert.match(out, /unexpected finding check-b a\.ts:1/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("main: help exits 0; unknown command exits 1", async (t) => {
   silentConsole(t);
   assert.equal(await cli.main(["help"]), 0);

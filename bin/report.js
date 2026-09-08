@@ -159,6 +159,11 @@ export function renderReport(input, useColor) {
 }
 // Verify-gate rendering: pure state -> string, colored on request. The
 // command layer prints it and counts failures from the data.
+// A diff entry's location includes its rule when it has one — the gate is
+// rule-aware (D20), so the line must say which check was missing or extra.
+function where(f) {
+    return (f.rule ? f.rule + " " : "") + f.file + ":" + f.line;
+}
 export function renderVerifyResult(result, useColor) {
     const c = colorizer(useColor);
     const lines = [];
@@ -169,9 +174,9 @@ export function renderVerifyResult(result, useColor) {
         else {
             lines.push(c("  ✖ " + fixture.name, RED));
             for (const m of fixture.missing)
-                lines.push("    " + c("missing expected finding", RED) + " " + m.file + ":" + m.line);
+                lines.push("    " + c("missing expected finding", RED) + " " + where(m));
             for (const u of fixture.unexpected)
-                lines.push("    " + c("unexpected finding", RED) + " " + u.file + ":" + u.line);
+                lines.push("    " + c("unexpected finding", RED) + " " + where(u));
             if (fixture.error)
                 lines.push("    " + c("crashed: ", RED) + fixture.error);
         }

@@ -389,6 +389,9 @@ async function cmdGenerate(args) {
         "",
         "Then verify with exactly this command and iterate until every fixture passes:",
         '  node "' + cliJs + '" verify "' + doctorAbs + '"',
+        "Then run the skill's adversarial pass (Hard workflow, step 4): attack",
+        "your own doctor with a counter-fixture wave — lookalikes, same-line",
+        "variants, semantic traps — and verify again until it survives.",
         "Then stop and report.",
     ].join("\n");
     console.log(BOLD + "doctor prompt ready: " + CYAN + slug + RESET + dim(global ? " (global scope)" : ""));

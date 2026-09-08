@@ -63,12 +63,43 @@ export function includeTestsFor(mode) {
 export function runCommandFor(doctorPath, root, invoker = "any-doctor") {
     return `${invoker} run "${doctorPath}" "${root}"`;
 }
+// The fixture gate, D20: rule-aware and multiset. The key is
+// rule:file:line — a wrong-rule finding at the right line is both a
+// missing expectation and an unexpected finding (the gate was rule-blind
+// for multi-check doctors), and two findings where one was expected leave
+// one unexpected (duplicates used to collapse into one satisfied entry).
+// A finding or expectation without a rule keys on "" — rule-less expected
+// matches rule-less findings only.
 export function compareFindings(expected, actual) {
-    const key = (f) => `${f.file}:${f.line}`;
-    const expectedKeys = new Set(expected.map(key));
-    const actualKeys = new Set(actual.map(key));
-    const missing = expected.filter(f => !actualKeys.has(key(f))).map(f => ({ file: f.file, line: f.line }));
-    const unexpected = actual.filter(f => !expectedKeys.has(key(f))).map(f => ({ file: f.file, line: f.line }));
+    var _a, _b, _c, _d, _e;
+    const key = (f) => { var _a; return `${(_a = f.rule) !== null && _a !== void 0 ? _a : ""}:${f.file}:${f.line}`; };
+    const asDiffEntry = (f) => f.rule === undefined ? { file: f.file, line: f.line } : { rule: f.rule, file: f.file, line: f.line };
+    // Expectations are a consumption budget per key: each matching actual
+    // satisfies one, further actuals are unexpected, unsatisfied
+    // expectations are missing.
+    const budget = new Map();
+    for (const e of expected)
+        budget.set(key(e), ((_a = budget.get(key(e))) !== null && _a !== void 0 ? _a : 0) + 1);
+    const satisfied = new Map();
+    const unexpected = [];
+    for (const a of actual) {
+        const k = key(a);
+        const n = (_b = satisfied.get(k)) !== null && _b !== void 0 ? _b : 0;
+        if (n < ((_c = budget.get(k)) !== null && _c !== void 0 ? _c : 0))
+            satisfied.set(k, n + 1);
+        else
+            unexpected.push(asDiffEntry(a));
+    }
+    const missing = [];
+    const reported = new Map();
+    for (const e of expected) {
+        const k = key(e);
+        const n = (_d = reported.get(k)) !== null && _d !== void 0 ? _d : 0;
+        if (n < ((_e = satisfied.get(k)) !== null && _e !== void 0 ? _e : 0))
+            reported.set(k, n + 1);
+        else
+            missing.push(asDiffEntry(e));
+    }
     return { missing, unexpected };
 }
 export function resolveFinding(meta, finding) {

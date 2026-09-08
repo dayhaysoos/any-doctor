@@ -9,7 +9,13 @@ export const fixtures = [
         "}});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/messages.ts", line: 2 }],
+    // The chain is a double violation at one line: the filter table scan
+    // AND the unbounded .collect() behind it (the old file:line gate
+    // collapsed the second finding — D20's duplicate class).
+    expected: [
+      { rule: "filter-table-scan", file: "convex/messages.ts", line: 2 },
+      { rule: "unbounded-collect", file: "convex/messages.ts", line: 2 },
+    ],
   },
   {
     name: "accepts .withIndex() with a range expression",
@@ -47,7 +53,12 @@ export const fixtures = [
         "}});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/messages.ts", line: 2 }],
+    // Double violation at one line: the index never narrows, and the
+    // collect behind it is unbounded.
+    expected: [
+      { rule: "index-without-range", file: "convex/messages.ts", line: 2 },
+      { rule: "unbounded-collect", file: "convex/messages.ts", line: 2 },
+    ],
   },
   {
     name: "flags .withIndex(name, q => ...) whose callback never calls q.eq",
@@ -58,7 +69,10 @@ export const fixtures = [
         "}});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/messages.ts", line: 2 }],
+    expected: [
+      { rule: "index-without-range", file: "convex/messages.ts", line: 2 },
+      { rule: "unbounded-collect", file: "convex/messages.ts", line: 2 },
+    ],
   },
   {
     name: "accepts .withIndex() with q.gt range",
@@ -96,7 +110,7 @@ export const fixtures = [
         "}",
       ].join("\n"),
     },
-    expected: [{ file: "src/App.tsx", line: 4 }],
+    expected: [{ rule: "unbounded-subscription", file: "src/App.tsx", line: 4 }],
   },
   {
     name: "accepts usePaginatedQuery",
@@ -124,7 +138,7 @@ export const fixtures = [
         "}});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/timers.ts", line: 2 }],
+    expected: [{ rule: "nondeterministic-clock-in-transaction", file: "convex/timers.ts", line: 2 }],
   },
   {
     name: "flags branching on Math.random() inside a query handler",
@@ -136,7 +150,7 @@ export const fixtures = [
         "}});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/roll.ts", line: 2 }],
+    expected: [{ rule: "nondeterministic-clock-in-transaction", file: "convex/roll.ts", line: 2 }],
   },
   {
     name: "flags elapsed-time math comparing two Date.now() calls in one transaction",
@@ -148,7 +162,7 @@ export const fixtures = [
         "}});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/sessions.ts", line: 2 }],
+    expected: [{ rule: "nondeterministic-clock-in-transaction", file: "convex/sessions.ts", line: 2 }],
   },
   {
     name: "accepts Date.now() in a plain (non-Convex) function",
@@ -222,7 +236,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "src/posts.ts", line: 4 }],
+    expected: [{ rule: "unbounded-collect", file: "src/posts.ts", line: 4 }],
   },
   {
     name: "unbounded-collect: index range bounds the collect",
@@ -264,7 +278,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "src/members.ts", line: 7 }],
+    expected: [{ rule: "index-filter-combo", file: "src/members.ts", line: 7 }],
   },
   {
     name: "index-filter-combo: multi-field index serves both bounds",
@@ -295,7 +309,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "src/heartbeat.ts", line: 4 }],
+    expected: [{ rule: "presence-patch-on-shared-document", file: "src/heartbeat.ts", line: 4 }],
   },
   {
     name: "presence-patch: segmented into its own table",
@@ -324,7 +338,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/tasks.ts", line: 1 }],
+    expected: [{ rule: "missing-args-validator", file: "convex/tasks.ts", line: 1 }],
   },
   {
     name: "missing-args-validator: accepts an explicit args object",
@@ -351,7 +365,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/prune.ts", line: 1 }],
+    expected: [{ rule: "missing-args-validator", file: "convex/prune.ts", line: 1 }],
   },
 
   // --- public-api-in-server-call ---
@@ -367,7 +381,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/ops.ts", line: 4 }],
+    expected: [{ rule: "public-api-in-server-call", file: "convex/ops.ts", line: 4 }],
   },
   {
     name: "public-api-in-server-call: accepts the internal namespace",
@@ -397,7 +411,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/views.ts", line: 4 }],
+    expected: [{ rule: "write-in-query", file: "convex/views.ts", line: 4 }],
   },
   {
     name: "write-in-query: accepts the same write in a mutation",
@@ -427,7 +441,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/sync.ts", line: 4 }],
+    expected: [{ rule: "db-in-action", file: "convex/sync.ts", line: 4 }],
   },
   {
     name: "db-in-action: accepts runQuery from an action",
@@ -457,7 +471,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/notes.ts", line: 4 }],
+    expected: [{ rule: "unawaited-convex-call", file: "convex/notes.ts", line: 4 }],
   },
   {
     name: "unawaited-convex-call: accepts the awaited form",
@@ -503,7 +517,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/reindex.ts", line: 3 }],
+    expected: [{ rule: "node-runtime-transaction", file: "convex/reindex.ts", line: 3 }],
   },
   {
     name: "node-runtime-transaction: accepts an action in a use-node file",
@@ -537,7 +551,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/touchAll.ts", line: 5 }],
+    expected: [{ rule: "sequential-run-in-loop", file: "convex/touchAll.ts", line: 5 }],
   },
   {
     name: "sequential-run-in-loop: accepts ctx.db writes looped inside one mutation",
@@ -569,7 +583,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ file: "convex/profile.ts", line: 4 }],
+    expected: [{ rule: "spread-into-patch", file: "convex/profile.ts", line: 4 }],
   },
   {
     name: "spread-into-patch: accepts explicitly named fields",

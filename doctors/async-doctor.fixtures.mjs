@@ -6,6 +6,7 @@ export const fixtures = [
     },
     "expected": [
       {
+        "rule": "fetch-calls-without-abortsignal",
         "file": "src/request.ts",
         "line": 1
       }
@@ -18,6 +19,7 @@ export const fixtures = [
     },
     "expected": [
       {
+        "rule": "fetch-calls-without-abortsignal",
         "file": "src/request.ts",
         "line": 1
       }
@@ -44,6 +46,7 @@ export const fixtures = [
     },
     "expected": [
       {
+        "rule": "fetch-calls-without-abortsignal",
         "file": "src/request.ts",
         "line": 1
       }
@@ -56,6 +59,7 @@ export const fixtures = [
     },
     "expected": [
       {
+        "rule": "fetch-calls-without-abortsignal",
         "file": "src/request.ts",
         "line": 2
       }
@@ -82,6 +86,7 @@ export const fixtures = [
     },
     "expected": [
       {
+        "rule": "unawaited-async-map",
         "file": "src/a.ts",
         "line": 2
       }
@@ -95,11 +100,17 @@ export const fixtures = [
     "expected": []
   },
   {
-    "name": "directly awaited result is not flagged",
+    "name": "await on the promise array does not settle it — flagged",
     "seed": {
       "src/c.ts": "export async function work(ids: string[]) {\n  const results = ids.map(async id => load(id))\n  await results\n}"
     },
-    "expected": []
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/c.ts",
+        "line": 2
+      }
+    ]
   },
   {
     "name": "allSettled-consumed result in a later batch loop is not flagged",
@@ -109,12 +120,53 @@ export const fixtures = [
     "expected": []
   },
   {
+    "name": "consumption on the declaration's own line is seen",
+    "seed": {
+      "src/one-line.ts": "export const saveAll = (items: string[]) => { const jobs = items.map(async item => save(item)); return Promise.all(jobs); };"
+    },
+    "expected": []
+  },
+  {
+    "name": "a map(async) wrapped in Promise.all at the declaration is not flagged",
+    "seed": {
+      "src/wrapped.ts": "export const loadAll = (ids: string[]) => Promise.all(ids.map(async id => load(id)));"
+    },
+    "expected": []
+  },
+  {
+    "name": "a bare discarded map(async) with no binding is flagged",
+    "seed": {
+      "src/bare.ts": "export function warm(ids: string[]) {\n  ids.map(async id => prime(id));\n  return ids.length;\n}\n"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/bare.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "await directly on the mapped array does not settle it — flagged",
+    "seed": {
+      "src/await-array.ts": "export async function warm(ids: string[]) {\n  await ids.map(async id => prime(id));\n  return ids.length;\n}\n"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/await-array.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
     "name": "reports an assigned timeout without cleanup",
     "seed": {
       "src/example.tsx": "useEffect(() => {\n  const timer = setTimeout(() => save(), 1000);\n}, []);\n"
     },
     "expected": [
       {
+        "rule": "uncleared-settimeout-in-effect",
         "file": "src/example.tsx",
         "line": 2
       }
@@ -134,6 +186,7 @@ export const fixtures = [
     },
     "expected": [
       {
+        "rule": "uncleared-settimeout-in-effect",
         "file": "src/example.jsx",
         "line": 3
       }
@@ -146,6 +199,7 @@ export const fixtures = [
     },
     "expected": [
       {
+        "rule": "uncleared-settimeout-in-effect",
         "file": "src/example.js",
         "line": 2
       }

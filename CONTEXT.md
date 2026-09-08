@@ -127,8 +127,17 @@ known input.
 ## Fixture
 
 One seed plus the findings expected from running a doctor program against
-it. Expected findings match exactly on (file, line): a missing expected
-finding is a recall failure; an unexpected finding is a precision failure.
+it. Expected findings match exactly on (rule, file, line), duplicates
+counted: a missing expected finding is a recall failure; an unexpected
+finding is a precision failure. The rule in an expectation is part of the
+match — a wrong-check finding at the right line fails the gate.
+
+## Counter-fixture
+
+A fixture authored adversarially after the doctor is green: lookalikes,
+same-line variants, and semantic traps, each expectation reasoned from the
+intent alone — never from what the doctor currently reports. The generate
+workflow's second pass; a doctor ships only after surviving its attack.
 
 ## Verify
 

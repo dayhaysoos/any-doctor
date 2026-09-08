@@ -5,7 +5,7 @@ export const meta = {
   category: "async",
   blindSpots: [
     "Fetch: cannot determine whether an options variable, spread, or helper supplies a signal at runtime; aliased or member-expression fetch functions are not recognized.",
-    "Promises: consumption inside template strings or dynamic property access, reassignable bindings (let) with conditional awaits, and results passed to a helper that awaits internally are not tracked.",
+    "Promises: consumption inside template strings or dynamic property access is not tracked; mapped results that are returned, passed into a call, assigned to rebindable targets (let/var/reassignment), or chained after another call (xs.filter(f).map(async ...)) are not tracked — a bare map(async) is judged only in statement position.",
     "Timers: only directly named useEffect/setTimeout/clearTimeout are recognized; handles must be a simple local identifier cleared in the same effect.",
     "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source.",
   ],
@@ -131,33 +131,82 @@ function matchingBrace(text) {
 
 // --- unawaited-async-map -------------------------------------------------
 
-async function checkUnawaitedMap(ctx, readFile) {
-  const CONSUMERS = /(Promise\s*\.\s*(all|allSettled|race|any)\s*\((?:[^()]|\([^()]*\))*\bNAME\b|await\s+(?:[\w.$]+\s*=\s*)?\s*\bNAME\b)/;
+// Consumption means a combiner call over the bound array. `await jobs` on
+// an array of promises resolves immediately — the array is not itself a
+// promise — so only Promise.all/allSettled/race/any prove the promises
+// are settled (D20: the await alternative was a wrong semantic assumption).
+const CONSUMERS = /Promise\s*\.\s*(?:allSettled|all|race|any)\s*\((?:[^()]|\([^()]*\))*\bNAME\b/;
 
+async function checkUnawaitedMap(ctx, readFile) {
   for (const file of ctx.files.list([".ts", ".tsx", ".js", ".jsx", ".mjs"])) {
     // Fixture sandboxes are doctor test data, not target source.
     if (/\.fixtures\.mjs$/.test(file)) continue;
     // Masked (shared cache): a commented-out or string-literal ".map(async ..."
     // is not code — raw scanning false-positives on documentation and seeds.
-    const lines = readFile(file).masked.split("\n");
+    const masked = readFile(file).masked;
 
-    for (let i = 0; i < lines.length; i++) {
-      const decl = lines[i].match(/\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*[\w.$\]]+\s*\.\s*map\(\s*async\b/);
-      if (!decl) continue;
-      const name = decl[1];
-
-      const rest = lines.slice(i + 1).join("\n");
-      const consumer = new RegExp(CONSUMERS.source.replace(/NAME/g, escapeRe(name)));
-      if (consumer.test(rest)) continue;
-
+    // Bound arrays: `const jobs = xs.map(async ...)`. The consumer scan is
+    // anchored at the declaration POINT, not the line after it —
+    // consumption on the same line (`...; return Promise.all(jobs);` in
+    // one statement block) is real consumption (D20: wrong region anchor).
+    const decl = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*[\w.$\]]+\s*\.\s*map\(\s*async\b/g;
+    let match;
+    while ((match = decl.exec(masked))) {
+      const consumer = new RegExp(CONSUMERS.source.replace(/NAME/g, escapeRe(match[1])));
+      if (consumer.test(masked.slice(match.index + match[0].length))) continue;
       ctx.report.finding({
         rule: "unawaited-async-map",
         file: file,
-        line: i + 1,
-        column: decl.index + 1,
+        line: lineAt(masked, match.index),
+        column: columnAt(masked, match.index),
+      });
+    }
+
+    // Discarded arrays: a bare `xs.map(async ...)` statement with no binding
+    // at all — the promises are dropped the moment the expression completes
+    // (D20: over-narrow trigger saw only the const-decorated shape). Only
+    // statement position counts: preceded by `=`, `(`, a keyword, or an
+    // operator, the result flows somewhere else and is not this check's to
+    // judge (blind spots). `await xs.map(async ...)` is the exception —
+    // awaiting the array leaves the promises unsettled, the same defect.
+    const bare = /[\w.$\]]+\s*\.\s*map\(\s*async\b/g;
+    while ((match = bare.exec(masked))) {
+      const position = statementPosition(masked, match.index);
+      if (position !== "statement" && position !== "awaited") continue;
+      ctx.report.finding({
+        rule: "unawaited-async-map",
+        file: file,
+        line: lineAt(masked, match.index),
+        column: columnAt(masked, match.index),
       });
     }
   }
+}
+
+// What precedes the receiver at `index`: "statement" (nothing, `;`, `{`,
+// `}`, `)` — a discarded expression), "awaited" (directly after `await`),
+// or "flowing" (assigned, wrapped, or keyword/operator context — the
+// result goes somewhere, declared blind spot or another pass's case).
+function statementPosition(masked, index) {
+  let cursor = index - 1;
+  while (cursor >= 0 && /\s/.test(masked[cursor])) cursor -= 1;
+  if (cursor < 0) return "statement";
+  const previous = masked[cursor];
+  if (previous === ";" || previous === "{" || previous === "}" || previous === ")") return "statement";
+  if (/[\w$]/.test(previous)) {
+    let word = "";
+    let scan = cursor;
+    while (scan >= 0 && /[\w$]/.test(masked[scan])) {
+      word = masked[scan] + word;
+      scan -= 1;
+    }
+    return word === "await" ? "awaited" : "flowing";
+  }
+  return "flowing";
+}
+
+function columnAt(source, index) {
+  return index - source.lastIndexOf("\n", index - 1);
 }
 
 function escapeRe(s) {
