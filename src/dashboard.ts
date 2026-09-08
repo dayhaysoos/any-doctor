@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { Finding, JoinedFinding, ReportGroup, resolveFinding, runCommandFor, Severity } from "./contract.js";
-import { computeScore, ScoreResult, scoreHeaderLines } from "./score.js";
+import { computeScore, scoreFromFileHealth, ScoreResult, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
@@ -221,6 +221,9 @@ export interface DoctorSummary {
   worst: Severity;
   count: number;
   files: number;
+  // This doctor's findings against the same denominator the repo-wide
+  // score uses — its own health, not a share of the header's number.
+  score: ScoreResult;
   checks: { description: string; severity: Severity; count: number }[];
   blindSpots?: string[];
 }
@@ -245,6 +248,7 @@ export interface DoctorGroup {
   multiCheck: boolean;
   count: number;
   worst: Severity;
+  score: ScoreResult;
 }
 
 export type DoctorTree = DoctorGroup[];
@@ -255,38 +259,43 @@ export const FINDINGS_PER_CHECK = 50;
 
 const SEVERITY_RANK: Record<Severity, number> = { error: 0, warning: 1, info: 2 };
 
-export function buildTree(items: SiteFinding[]): DoctorTree {
-  const doctors: DoctorGroup[] = [];
+export function buildTree(items: SiteFinding[], filesTotal: number): DoctorTree {
   const byDoctor = new Map<string, Map<string, SiteFinding[]>>();
   for (const it of items) {
     let checks = byDoctor.get(it.doctorId);
     if (!checks) {
       checks = new Map();
       byDoctor.set(it.doctorId, checks);
-      doctors.push({ doctorId: it.doctorId, checks: [], multiCheck: false, count: 0, worst: "info" });
     }
     const group = checks.get(it.checkKey) ?? [];
     group.push(it);
     checks.set(it.checkKey, group);
   }
-  for (const d of doctors) {
-    const entries = [...byDoctor.get(d.doctorId)!.entries()].map(([checkKey, list]) => ({
+  const doctors: DoctorGroup[] = [...byDoctor.entries()].map(([doctorId, checks]) => {
+    const entries = [...checks.entries()].map(([checkKey, list]) => ({
       checkKey,
       items: [...list].sort((a, b) => a.site.file === b.site.file
         ? a.site.line - b.site.line
         : a.site.file < b.site.file ? -1 : 1),
-    }));
-    d.checks = entries.sort((a, b) => {
+    })).sort((a, b) => {
       const sa = SEVERITY_RANK[a.items[0].declaredSeverity];
       const sb = SEVERITY_RANK[b.items[0].declaredSeverity];
       return sa !== sb ? sa - sb : b.items.length - a.items.length || (a.checkKey < b.checkKey ? -1 : 1);
     });
-    d.multiCheck = entries.length > 1;
-    d.count = entries.reduce((n, g) => n + g.items.length, 0);
-    d.worst = entries.reduce((w, g) => (
-      SEVERITY_RANK[g.items[0].severity] < SEVERITY_RANK[w] ? g.items[0].severity : w
-    ), "info" as Severity);
-  }
+    return {
+      doctorId,
+      checks: entries,
+      multiCheck: entries.length > 1,
+      count: entries.reduce((n, g) => n + g.items.length, 0),
+      worst: entries.reduce((w, g) => (
+        SEVERITY_RANK[g.items[0].severity] < SEVERITY_RANK[w] ? g.items[0].severity : w
+      ), "info" as Severity),
+      score: scoreFromFileHealth(
+        entries.flatMap(g => g.items.map(it => ({ file: it.site.file, severity: it.severity }))),
+        filesTotal,
+      ),
+    };
+  });
   // Triage order: worst severity first, then most findings, then name.
   return doctors.sort((a, b) =>
     SEVERITY_RANK[a.worst] - SEVERITY_RANK[b.worst]
@@ -322,6 +331,7 @@ export function summarizeDoctor(d: DoctorGroup): DoctorSummary {
     worst: d.worst,
     count: d.count,
     files: files.size,
+    score: d.score,
     checks: d.checks.map(g => ({
       description: g.items[0].description,
       severity: g.items[0].declaredSeverity,
@@ -397,7 +407,7 @@ export function buildListRows(
       const isOpen = open.has(d.doctorId);
       rows.push({
         kind: "section",
-        text: `${selectedRow === rowIndex ? c("›", BOLD) : " "}${c(isOpen ? "▾" : "▸", DIM)} ${c(GLYPH[summary.worst], SEVERITY_COLOR[summary.worst])} ${c(summary.doctorId, BOLD)} ${c("×" + summary.count, DIM)}`,
+        text: `${selectedRow === rowIndex ? c("›", BOLD) : " "}${c(isOpen ? "▾" : "▸", DIM)} ${c(GLYPH[summary.worst], SEVERITY_COLOR[summary.worst])} ${c(summary.doctorId, BOLD)} ${c("×" + summary.count, DIM)} ${c("· " + summary.score.score, gradeColor(summary.score.score))}`,
         severity: summary.worst,
         selectable: true,
         doctor: summary,
@@ -576,6 +586,8 @@ export function dashboardFrame(state: DashboardFrameState): string {
     const d = selRow.doctor;
     detail.push(c(d.doctorId, BOLD));
     detail.push(c(`${d.count} finding${d.count === 1 ? "" : "s"} across ${d.files} file${d.files === 1 ? "" : "s"} · worst ${d.worst}`, DIM));
+    detail.push(c(scoreBar(d.score.score, Math.max(16, Math.min(46, layout.detailWidth - 4))), gradeColor(d.score.score)));
+    detail.push(c(`${d.score.score} / 100 — ${d.score.grade} · ${d.score.filesClean}/${d.score.filesTotal} files clean of this doctor`, DIM));
     detail.push("");
     for (const ck of d.checks) {
       detail.push(`${c(GLYPH[ck.severity], SEVERITY_COLOR[ck.severity])} ${c(ck.description, d.checks.length > 1 ? BOLD : undefined)} ${c("×" + ck.count, DIM)}`);
@@ -684,7 +696,7 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
   // consume the same deduplicated groups the report renders — counts and
   // score can never disagree between surfaces.
   const { groups: deduped } = dedupeGroups(input.outcome.groups);
-  const tree = buildTree(buildItems(deduped));
+  const tree = buildTree(buildItems(deduped), input.outcome.fileCount);
   const score = computeScore(deduped, input.outcome.fileCount);
   const expanded = initialExpanded(tree);
   const readKeys = new Set<string>();
