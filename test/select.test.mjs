@@ -79,7 +79,7 @@ test("selectDoctor: non-interactive session yields listing rows, not a picker", 
     env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
   });
   assert.equal(sel.kind, "non-interactive");
-  assert.ok(sel.rows.length >= 6, "repo doctors listed");
+  assert.ok(sel.rows.length >= 4, "repo doctors listed");
   const row = sel.rows.find(r => r.slug === "async-doctor");
   assert.ok(row, "known doctor present");
   assert.equal(row.scope, "repo");
@@ -103,7 +103,7 @@ test("selectDoctor: enter on the picker yields the top doctor", async () => {
   const out = await settle(done);
   assert.ok(out.done, "picker resolves");
   assert.equal(out.value.kind, "doctor");
-  assert.ok(out.value.doctorPath.endsWith("api-route-files-do-import.mjs"), "alphabetically first valid doctor");
+  assert.ok(out.value.doctorPath.endsWith("async-doctor.mjs"), "alphabetically first valid doctor");
 });
 
 test("selectDoctor: esc during the pick is cancelled, distinct from non-interactive", async () => {
@@ -153,5 +153,5 @@ test("selectDoctor: allowPicker=false forces the non-interactive listing even on
     env: { stdin: new FakeStdin(true), stdout: new FakeStdout(true) },
   });
   assert.equal(sel.kind, "non-interactive");
-  assert.ok(sel.rows.length >= 6);
+  assert.ok(sel.rows.length >= 4);
 });

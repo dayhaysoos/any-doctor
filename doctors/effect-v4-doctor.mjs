@@ -1,6 +1,6 @@
 export const meta = {
-  id: "effect-doctor",
-  description: "Effect v4 discipline: typed errors over hand-rolled tags, Config over direct env reads, named Effect.fn, deterministic generators, validated boundaries, no casts that silence the type system.",
+  id: "effect-v4-doctor",
+  description: "Effect v4 discipline: typed errors over hand-rolled tags, Config over direct env reads, named Effect.fn, deterministic generators, validated boundaries, no casts that silence the type system. The mechanical rules of the kitlangton Effect skill, enforced.",
   severity: "warning",
   category: "effect",
   blindSpots: [
