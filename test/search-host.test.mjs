@@ -120,7 +120,12 @@ test("handleSearchLine: verify keeps test paths — the sandbox is the doctor's 
   assert.equal(out.matches.length, 1);
 });
 
-test("engine: a real ast-grep round trip through the one invocation module", { skip: spawnSync("sg", ["--version"]).status === 0 ? false : "ast-grep (sg) not on PATH" }, async () => {
+// The engine tries ast-grep first and falls back to sg — either binary
+// on PATH means the round trip can run.
+const hasEngine = ["ast-grep", "sg"].some((name) => spawnSync(name, ["--version"]).status === 0);
+const engineSkip = hasEngine ? false : "ast-grep not on PATH";
+
+test("engine: a real ast-grep round trip through the one invocation module", { skip: engineSkip }, async () => {
   const { runEngine } = await import("../bin/engine.js");
   const repo = path.resolve(import.meta.dirname, "..");
   const r = runEngine({ op: "pattern", pattern: "const $A = $B" }, "TypeScript", path.join(repo, "fixtures", "sample-app"));
@@ -128,7 +133,7 @@ test("engine: a real ast-grep round trip through the one invocation module", { s
   assert.ok(Array.isArray(r.matches) && r.matches.length > 0, "matches the sample app");
 });
 
-test("engine: a rule query round trip returns end ranges and metavariable captures", { skip: spawnSync("sg", ["--version"]).status === 0 ? false : "ast-grep (sg) not on PATH" }, async () => {
+test("engine: a rule query round trip returns end ranges and metavariable captures", { skip: engineSkip }, async () => {
   const { runEngine } = await import("../bin/engine.js");
   const repo = path.resolve(import.meta.dirname, "..");
   const r = runEngine({ op: "rule", rule: { pattern: "fetch($$$ARGS)" } }, "TypeScript", path.join(repo, "fixtures", "sample-app"));
