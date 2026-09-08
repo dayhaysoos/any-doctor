@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { resolveFinding, runCommandFor } from "./contract.js";
-import { computeScore, scoreFromFileHealth, scoreHeaderLines } from "./score.js";
+import { scoreFromFileHealth, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
@@ -405,23 +405,35 @@ function itemRowText(it, isSelected, readKeys, c, showCheckId = true) {
     return `${isSelected ? c("›", BOLD) : " "}${glyph} ${c(it.site.file + ":" + it.site.line, wrap)}${suffix}`;
 }
 export function dashboardFrame(state) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
     const { tree, selectedRow, readKeys, useColor, cols, rows } = state;
     const c = colorizer(useColor);
     const findings = tree.flatMap(d => d.checks.flatMap(g => g.items));
     const layout = resolveDashboardLayout(cols, rows, findings.length);
-    const header = scoreHeaderLines(state.score);
     const barWidth = Math.min(46, Math.max(16, cols - 60));
-    const headerLines = [
-        c(header.scoreLine, BOLD + gradeColor(state.score.score)),
-        c(scoreBar(state.score.score, barWidth), gradeColor(state.score.score)),
-        c(`${findings.length} finding${findings.length === 1 ? "" : "s"} · ${(_a = header.cleanLine) !== null && _a !== void 0 ? _a : state.score.filesTotal + " files"} · ${state.durationMs}ms`, DIM),
-    ];
+    // The header is the SELECTED doctor's report — never a cohort total,
+    // which read as belonging to whichever row was on screen. Rows are
+    // needed first: the selection's payload names the doctor.
+    const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded);
+    const sel = rowsData[selectedRow];
+    const scopedId = (_f = (_d = (_b = (_a = sel === null || sel === void 0 ? void 0 : sel.doctor) === null || _a === void 0 ? void 0 : _a.doctorId) !== null && _b !== void 0 ? _b : (_c = sel === null || sel === void 0 ? void 0 : sel.check) === null || _c === void 0 ? void 0 : _c.doctorId) !== null && _d !== void 0 ? _d : (_e = sel === null || sel === void 0 ? void 0 : sel.item) === null || _e === void 0 ? void 0 : _e.doctorId) !== null && _f !== void 0 ? _f : (_g = tree[0]) === null || _g === void 0 ? void 0 : _g.doctorId;
+    const scoped = tree.find(d => d.doctorId === scopedId);
+    const headerLines = [];
+    if (scoped) {
+        const h = scoreHeaderLines(scoped.score);
+        headerLines.push(`${c(scoped.doctorId, BOLD)}  ${c(h.scoreLine, BOLD + gradeColor(scoped.score.score))}`);
+        headerLines.push(c(scoreBar(scoped.score.score, barWidth), gradeColor(scoped.score.score)));
+        headerLines.push(c(`${scoped.count} finding${scoped.count === 1 ? "" : "s"} · ${(_h = h.cleanLine) !== null && _h !== void 0 ? _h : state.filesTotal + " files"} · ${state.durationMs}ms`, DIM));
+    }
+    else {
+        headerLines.push(c("No findings", BOLD + GREEN));
+        headerLines.push(c(scoreBar(100, barWidth), GREEN));
+        headerLines.push(c(`0 findings · ${state.filesTotal} file${state.filesTotal === 1 ? "" : "s"} · ${state.durationMs}ms`, DIM));
+    }
     if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
         headerLines.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
     }
     headerLines.push("");
-    const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded);
     const viewport = Math.max(1, Math.min(layout.listHeight, layout.bodyRows));
     let firstVisible = Math.max(0, Math.min(selectedRow - viewport + 1, Math.max(0, rowsData.length - viewport)));
     if (selectedRow >= 0 && selectedRow < firstVisible)
@@ -440,11 +452,11 @@ export function dashboardFrame(state) {
         detail.push(c(`${sel.site.file}:${sel.site.line}`, BOLD));
         detail.push(c(`${cap(sel.category)} · ${sel.severity}`, DIM));
         detail.push("");
-        const impact = (_b = sel.impact) !== null && _b !== void 0 ? _b : sel.description;
+        const impact = (_j = sel.impact) !== null && _j !== void 0 ? _j : sel.description;
         for (const l of wordWrap(impact, layout.detailWidth - 2))
             detail.push(c(l, SEVERITY_COLOR[sel.severity]));
         detail.push("");
-        proseSection(detail, "Why", (_c = sel.why) !== null && _c !== void 0 ? _c : "Not documented for this check.", layout.detailWidth - 2, c);
+        proseSection(detail, "Why", (_k = sel.why) !== null && _k !== void 0 ? _k : "Not documented for this check.", layout.detailWidth - 2, c);
         detail.push("");
         detail.push(c("Code", DIM));
         for (const l of codeFrameLines(state.readSource(sel.site.file), sel.site.line, layout.detailWidth - 2, useColor))
@@ -458,8 +470,6 @@ export function dashboardFrame(state) {
         const d = selRow.doctor;
         detail.push(c(d.doctorId, BOLD));
         detail.push(c(`${d.count} finding${d.count === 1 ? "" : "s"} across ${d.files} file${d.files === 1 ? "" : "s"} · worst ${d.worst}`, DIM));
-        detail.push(c(scoreBar(d.score.score, Math.max(16, Math.min(46, layout.detailWidth - 4))), gradeColor(d.score.score)));
-        detail.push(c(`${d.score.score} / 100 — ${d.score.grade} · ${d.score.filesClean}/${d.score.filesTotal} files clean of this doctor`, DIM));
         detail.push("");
         for (const ck of d.checks) {
             detail.push(`${c(GLYPH[ck.severity], SEVERITY_COLOR[ck.severity])} ${c(ck.description, d.checks.length > 1 ? BOLD : undefined)} ${c("×" + ck.count, DIM)}`);
@@ -495,7 +505,7 @@ export function dashboardFrame(state) {
     const body = [];
     if (layout.mode === "split") {
         for (let i = 0; i < layout.bodyRows; i++) {
-            body.push(padVisible(truncateVisible((_d = listLines[i]) !== null && _d !== void 0 ? _d : "", layout.listWidth), layout.listWidth) + "  " + ((_e = detail[i]) !== null && _e !== void 0 ? _e : ""));
+            body.push(padVisible(truncateVisible((_l = listLines[i]) !== null && _l !== void 0 ? _l : "", layout.listWidth), layout.listWidth) + "  " + ((_m = detail[i]) !== null && _m !== void 0 ? _m : ""));
         }
     }
     else {
@@ -506,7 +516,7 @@ export function dashboardFrame(state) {
             ...detail,
         ];
         for (let i = 0; i < layout.bodyRows; i++)
-            body.push((_f = stacked[i]) !== null && _f !== void 0 ? _f : "");
+            body.push((_o = stacked[i]) !== null && _o !== void 0 ? _o : "");
     }
     // Fixed-shape footer: the notice line is always present (blank when idle)
     // so showing or clearing a notice never changes the frame height.
@@ -563,7 +573,6 @@ export async function runDashboardOn(env, input, deps = {}) {
     // score can never disagree between surfaces.
     const { groups: deduped } = dedupeGroups(input.outcome.groups);
     const tree = buildTree(buildItems(deduped), input.outcome.fileCount);
-    const score = computeScore(deduped, input.outcome.fileCount);
     const expanded = initialExpanded(tree);
     const readKeys = new Set();
     let notice;
@@ -612,7 +621,7 @@ export async function runDashboardOn(env, input, deps = {}) {
                 readKeys,
                 readSource,
                 expanded,
-                score,
+                filesTotal: input.outcome.fileCount,
                 durationMs: input.outcome.durationMs,
                 useColor,
                 notice,

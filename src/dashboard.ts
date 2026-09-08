@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { Finding, JoinedFinding, ReportGroup, resolveFinding, runCommandFor, Severity } from "./contract.js";
-import { computeScore, scoreFromFileHealth, ScoreResult, scoreHeaderLines } from "./score.js";
+import { scoreFromFileHealth, ScoreResult, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
@@ -525,9 +525,8 @@ export interface DashboardFrameState {
   readKeys: Set<string>;
   readSource: FrameSource;
   expanded?: ReadonlySet<string>;
-  // Computed once per run (it never changes during interaction) by the
-  // score module's single entry point — the frame only renders it.
-  score: ScoreResult;
+  // The scan's denominator — every doctor's score is computed against it.
+  filesTotal: number;
   durationMs: number;
   useColor: boolean;
   notice?: string;
@@ -541,20 +540,32 @@ export function dashboardFrame(state: DashboardFrameState): string {
   const c = colorizer(useColor);
   const findings = tree.flatMap(d => d.checks.flatMap(g => g.items));
   const layout = resolveDashboardLayout(cols, rows, findings.length);
-  const header = scoreHeaderLines(state.score);
   const barWidth = Math.min(46, Math.max(16, cols - 60));
 
-  const headerLines: string[] = [
-    c(header.scoreLine, BOLD + gradeColor(state.score.score)),
-    c(scoreBar(state.score.score, barWidth), gradeColor(state.score.score)),
-    c(`${findings.length} finding${findings.length === 1 ? "" : "s"} · ${header.cleanLine ?? state.score.filesTotal + " files"} · ${state.durationMs}ms`, DIM),
-  ];
+  // The header is the SELECTED doctor's report — never a cohort total,
+  // which read as belonging to whichever row was on screen. Rows are
+  // needed first: the selection's payload names the doctor.
+  const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded);
+  const sel = rowsData[selectedRow];
+  const scopedId = sel?.doctor?.doctorId ?? sel?.check?.doctorId ?? sel?.item?.doctorId ?? tree[0]?.doctorId;
+  const scoped = tree.find(d => d.doctorId === scopedId);
+
+  const headerLines: string[] = [];
+  if (scoped) {
+    const h = scoreHeaderLines(scoped.score);
+    headerLines.push(`${c(scoped.doctorId, BOLD)}  ${c(h.scoreLine, BOLD + gradeColor(scoped.score.score))}`);
+    headerLines.push(c(scoreBar(scoped.score.score, barWidth), gradeColor(scoped.score.score)));
+    headerLines.push(c(`${scoped.count} finding${scoped.count === 1 ? "" : "s"} · ${h.cleanLine ?? state.filesTotal + " files"} · ${state.durationMs}ms`, DIM));
+  } else {
+    headerLines.push(c("No findings", BOLD + GREEN));
+    headerLines.push(c(scoreBar(100, barWidth), GREEN));
+    headerLines.push(c(`0 findings · ${state.filesTotal} file${state.filesTotal === 1 ? "" : "s"} · ${state.durationMs}ms`, DIM));
+  }
   if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
     headerLines.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
   }
   headerLines.push("");
 
-  const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded);
   const viewport = Math.max(1, Math.min(layout.listHeight, layout.bodyRows));
   let firstVisible = Math.max(0, Math.min(selectedRow - viewport + 1, Math.max(0, rowsData.length - viewport)));
   if (selectedRow >= 0 && selectedRow < firstVisible) firstVisible = selectedRow;
@@ -586,8 +597,6 @@ export function dashboardFrame(state: DashboardFrameState): string {
     const d = selRow.doctor;
     detail.push(c(d.doctorId, BOLD));
     detail.push(c(`${d.count} finding${d.count === 1 ? "" : "s"} across ${d.files} file${d.files === 1 ? "" : "s"} · worst ${d.worst}`, DIM));
-    detail.push(c(scoreBar(d.score.score, Math.max(16, Math.min(46, layout.detailWidth - 4))), gradeColor(d.score.score)));
-    detail.push(c(`${d.score.score} / 100 — ${d.score.grade} · ${d.score.filesClean}/${d.score.filesTotal} files clean of this doctor`, DIM));
     detail.push("");
     for (const ck of d.checks) {
       detail.push(`${c(GLYPH[ck.severity], SEVERITY_COLOR[ck.severity])} ${c(ck.description, d.checks.length > 1 ? BOLD : undefined)} ${c("×" + ck.count, DIM)}`);
@@ -697,7 +706,6 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
   // score can never disagree between surfaces.
   const { groups: deduped } = dedupeGroups(input.outcome.groups);
   const tree = buildTree(buildItems(deduped), input.outcome.fileCount);
-  const score = computeScore(deduped, input.outcome.fileCount);
   const expanded = initialExpanded(tree);
   const readKeys = new Set<string>();
   let notice: string | undefined;
@@ -746,7 +754,7 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
         readKeys,
         readSource,
         expanded,
-        score,
+        filesTotal: input.outcome.fileCount,
         durationMs: input.outcome.durationMs,
         useColor,
         notice,

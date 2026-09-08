@@ -102,11 +102,14 @@ file:line are deduplicated before scoring — the first-sorted copy wins
 override, else the doctor's declared default; equal-severity groups
 fall back to input order) and a hidden duplicate's severity does not
 contribute. Each doctor also carries its own score — its findings
-against the same denominator — shown on its dashboard row and in its
-detail pane; a doctor's score is its own health, not a share of the
-repo score (a file's worst finding counts once repo-wide). The score
-summarizes health — the findings are the work; the two are reported
-together, never conflated.
+against the same denominator — shown on its dashboard row; the
+dashboard header carries the selected doctor's score, never a cohort
+total (a total mixed doctors into one number that read as whichever row
+was on screen). A doctor's score is its own health, not a share of the
+repo score (a file's worst finding counts once repo-wide). The report
+header keeps the repo-wide score — one number for a run is the job
+there. The score summarizes health — the findings are the work; the two
+are reported together, never conflated.
 
 ## Meta
 
