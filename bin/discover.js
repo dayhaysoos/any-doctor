@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import { DOCTOR_FILE_RE, FIXTURES_FILE_RE } from "./contract.js";
 import { metaDoctor } from "./runner.js";
 // The gate's partition over discovery — owned by the data so every surface
@@ -18,6 +19,12 @@ export function brokenDoctors(discovered) {
 export function globalDoctorsDir() {
     return path.join(os.homedir(), ".any-doctor", "doctors");
 }
+// The bundled pack: the package's own doctors/, a sibling of bin/ wherever
+// the package lives (repo dev, node_modules, or the npx cache). Read-only
+// and lowest priority (D15) — repo-local and user-global win collisions.
+export function bundledDoctorsDir() {
+    return path.join(path.resolve(fileURLToPath(new URL("..", import.meta.url))), "doctors");
+}
 export function findRepoDoctorsDir(cwd) {
     let dir = path.resolve(cwd);
     for (;;) {
@@ -31,14 +38,22 @@ export function findRepoDoctorsDir(cwd) {
     }
 }
 export async function discoverDoctors(cwd, opts) {
-    var _a;
+    var _a, _b;
     const repoDir = findRepoDoctorsDir(cwd);
     const scopes = [
         ...(repoDir ? [{ scope: "repo", dir: repoDir }] : []),
         { scope: "global", dir: (_a = opts === null || opts === void 0 ? void 0 : opts.globalDir) !== null && _a !== void 0 ? _a : globalDoctorsDir() },
+        { scope: "bundled", dir: (_b = opts === null || opts === void 0 ? void 0 : opts.bundledDir) !== null && _b !== void 0 ? _b : bundledDoctorsDir() },
     ];
     const bySlug = new Map();
+    const seenDirs = [];
     for (const { scope, dir } of scopes) {
+        // Running inside this repo, the bundled dir IS the repo dir — scan it
+        // once, as the repo scope.
+        const resolved = path.resolve(dir);
+        if (seenDirs.includes(resolved))
+            continue;
+        seenDirs.push(resolved);
         if (!fs.existsSync(dir))
             continue;
         const files = fs.readdirSync(dir)
@@ -60,10 +75,11 @@ export async function discoverDoctors(cwd, opts) {
     return [...bySlug.values()];
 }
 // Explicit paths (absolute, or containing separators) resolve directly.
-// Bare filenames are slugs: scopes win - repo-local first - so a stray
-// slug.mjs in the working directory cannot shadow an installed doctor.
+// Bare filenames are slugs: scopes win — repo-local first, then global,
+// then bundled — so a stray slug.mjs in the working directory cannot
+// shadow an installed doctor.
 export function resolveDoctorPath(arg, cwd, opts) {
-    var _a;
+    var _a, _b;
     const bare = path.basename(arg) === arg && !path.isAbsolute(arg);
     if (!bare) {
         const direct = path.resolve(cwd, arg);
@@ -73,7 +89,11 @@ export function resolveDoctorPath(arg, cwd, opts) {
     if (bare) {
         const base = path.basename(arg);
         const repoDir = findRepoDoctorsDir(cwd);
-        const scopes = [repoDir, (_a = opts === null || opts === void 0 ? void 0 : opts.globalDir) !== null && _a !== void 0 ? _a : globalDoctorsDir()].filter((d) => Boolean(d));
+        const scopes = [
+            repoDir,
+            (_a = opts === null || opts === void 0 ? void 0 : opts.globalDir) !== null && _a !== void 0 ? _a : globalDoctorsDir(),
+            (_b = opts === null || opts === void 0 ? void 0 : opts.bundledDir) !== null && _b !== void 0 ? _b : bundledDoctorsDir(),
+        ].filter((d) => Boolean(d));
         for (const dir of scopes) {
             const candidate = path.join(dir, base);
             if (fs.existsSync(candidate))

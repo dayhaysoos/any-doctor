@@ -28,6 +28,7 @@ export type Selection = {
 export interface SelectOptions {
     cwd: string;
     globalDir?: string;
+    bundledDir?: string;
     useColor: boolean;
     allowPicker?: boolean;
     env: TtyEnv;

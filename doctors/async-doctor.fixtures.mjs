@@ -62,6 +62,20 @@ export const fixtures = [
     ]
   },
   {
+    "name": "commented-out map(async) lookalike is not flagged",
+    "seed": {
+      "src/commented.ts": "export function work(ids: string[]) {\n  // const results = ids.map(async id => load(id))\n  return ids.length\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "string-literal map(async) lookalike is not flagged",
+    "seed": {
+      "src/in-docs.ts": "export const snippet = \"const results = ids.map(async id => load(id))\";\nexport function work(ids: string[]) {\n  return ids.length\n}"
+    },
+    "expected": []
+  },
+  {
     "name": "unawaited map(async) is flagged",
     "seed": {
       "src/a.ts": "export function work(ids: string[]) {\n  const results = ids.map(async id => load(id))\n  return results.length\n}"

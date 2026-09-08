@@ -395,7 +395,7 @@ function usage() {
     console.log("  run [--all] [--include-tests] [doctor.(m)js] [dir]   scan; no argument = every doctor in one review tree");
     console.log("  verify [--all] [doctor.(m)js]     fixture gate (no doctor: fuzzy picker; --all: every doctor)");
     console.log("");
-    console.log(dim("doctors live in ./doctors/ (repo) and ~/.any-doctor/doctors/ (global)."));
+    console.log(dim("doctors live in ./doctors/ (repo), ~/.any-doctor/doctors/ (global), and the bundled pack (lowest priority)."));
     console.log(dim("generation delegates to your installed agent — run and verify never touch a model."));
 }
 export async function main(argv = process.argv.slice(2)) {
@@ -406,10 +406,15 @@ export async function main(argv = process.argv.slice(2)) {
     }
     const cmd = argv[0];
     const rest = argv.slice(1);
-    if (!cmd || cmd === "help" || cmd === "--help") {
+    if (cmd === "help" || cmd === "--help") {
         usage();
         return 0;
     }
+    // D15: bare `npx any-doctor` is the cold start — every discovered
+    // doctor (bundled included), straight into the report/tree, no usage
+    // wall. `help` remains the explicit usage door.
+    if (!cmd)
+        return await cmdRun(rest);
     try {
         if (cmd === "generate")
             return await cmdGenerate(rest);

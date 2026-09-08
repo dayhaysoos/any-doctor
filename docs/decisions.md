@@ -355,6 +355,15 @@ picker: doctor rows (worst-severity-first, counts, collapsible) → check
 rows → instances. The picker remains only for `verify`, where choosing one
 doctor to gate is the actual job.
 
+**Amendment (2026-09-07):** The bundled scope landed. The pack resolves
+from the package's own `doctors/` (a sibling of `bin/` wherever the
+package is installed — repo dev, node_modules, or the npx cache), joins
+discovery after user-global, and dedupes when it IS the repo dir
+(running inside this repo). Bare `npx any-doctor` with no arguments now
+runs (build-order item 2): every discovered doctor, straight to the
+report/tree; `help` remains the usage door. Remaining from the build
+order: `init` + the `create` rename.
+
 ---
 
 ## D16 — The doctor experience: category doctors and the check tree

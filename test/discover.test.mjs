@@ -18,7 +18,7 @@ test("discoverDoctors: finds repo-scope doctor with real meta", async () => {
   const root = tmp();
   fs.mkdirSync(path.join(root, "doctors"));
   fs.writeFileSync(path.join(root, "doctors", "async-doctor.mjs"), pilotSource);
-  const found = await discoverDoctors(root, { globalDir: path.join(root, "no-global") });
+  const found = await discoverDoctors(root, { globalDir: path.join(root, "no-global"), bundledDir: path.join(root, "no-bundled") });
   assert.equal(found.length, 1);
   assert.equal(found[0].slug, "async-doctor");
   assert.equal(found[0].scope, "repo");
@@ -39,7 +39,7 @@ test("discoverDoctors: global scope found, repo wins slug collisions", async () 
   ].join("\n"));
   fs.writeFileSync(path.join(globalDir, "async-doctor.mjs"), pilotSource);
 
-  const found = await discoverDoctors(root, { globalDir });
+  const found = await discoverDoctors(root, { globalDir, bundledDir: path.join(root, "no-bundled") });
   assert.equal(found.length, 2);
   const pilot = found.find(d => d.slug === "async-doctor");
   assert.equal(pilot.scope, "repo");
@@ -52,7 +52,7 @@ test("discoverDoctors: broken doctor surfaces with its typed cause, fixture file
   fs.mkdirSync(path.join(root, "doctors"));
   fs.writeFileSync(path.join(root, "doctors", "broken.mjs"), "export async function doctor(ctx) {}");
   fs.writeFileSync(path.join(root, "doctors", "unawaited-async-map.fixtures.mjs"), "export const fixtures = []");
-  const found = await discoverDoctors(root, { globalDir: path.join(root, "no-global") });
+  const found = await discoverDoctors(root, { globalDir: path.join(root, "no-global"), bundledDir: path.join(root, "no-bundled") });
   assert.equal(found.length, 1);
   assert.equal(found[0].slug, "broken");
   assert.equal(found[0].meta, null);
@@ -99,5 +99,74 @@ test("resolveDoctorPath: a bare slug resolves scopes-first; cwd cannot shadow", 
     path.join(root, "dual.mjs"),
     "explicit paths keep resolving directly",
   );
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+const miniDoctor = (id) => [
+  `export const meta = { id: '${id}', description: '${id}', severity: 'info' }`,
+  "export async function doctor(ctx) {}",
+].join("\n");
+
+test("discoverDoctors: the bundled pack is discovered when repo and global are absent", async () => {
+  const root = tmp();
+  const bundledDir = path.join(root, "pack");
+  fs.mkdirSync(bundledDir, { recursive: true });
+  fs.writeFileSync(path.join(bundledDir, "convex-doctor.mjs"), miniDoctor("convex-doctor"));
+  const cwd = path.join(root, "target");
+  fs.mkdirSync(cwd, { recursive: true });
+  const found = await discoverDoctors(cwd, { globalDir: path.join(root, "no-global"), bundledDir });
+  assert.equal(found.length, 1);
+  assert.equal(found[0].slug, "convex-doctor");
+  assert.equal(found[0].scope, "bundled");
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("discoverDoctors: repo beats global beats bundled on slug collisions (D15 order)", async () => {
+  const root = tmp();
+  const globalDir = path.join(root, "global");
+  const bundledDir = path.join(root, "pack");
+  fs.mkdirSync(path.join(root, "doctors"), { recursive: true });
+  fs.mkdirSync(globalDir, { recursive: true });
+  fs.mkdirSync(bundledDir, { recursive: true });
+  fs.writeFileSync(path.join(root, "doctors", "shared.mjs"), miniDoctor("repo-copy"));
+  fs.writeFileSync(path.join(globalDir, "shared.mjs"), miniDoctor("global-copy"));
+  fs.writeFileSync(path.join(bundledDir, "shared.mjs"), miniDoctor("bundled-copy"));
+
+  const allThree = await discoverDoctors(root, { globalDir, bundledDir });
+  assert.equal(allThree.filter(d => d.slug === "shared").length, 1);
+  assert.equal(allThree.find(d => d.slug === "shared").meta.id, "repo-copy");
+
+  fs.rmSync(path.join(root, "doctors", "shared.mjs"));
+  const two = await discoverDoctors(root, { globalDir, bundledDir });
+  assert.equal(two.find(d => d.slug === "shared").meta.id, "global-copy", "global beats bundled");
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("discoverDoctors: the bundled dir that IS the repo dir is scanned once", async () => {
+  const root = tmp();
+  fs.mkdirSync(path.join(root, "doctors"));
+  fs.writeFileSync(path.join(root, "doctors", "async-doctor.mjs"), pilotSource);
+  // bundledDir deliberately equals the repo dir — the in-repo dev layout.
+  const found = await discoverDoctors(root, { globalDir: path.join(root, "no-global"), bundledDir: path.join(root, "doctors") });
+  const pilots = found.filter(d => d.slug === "async-doctor");
+  assert.equal(pilots.length, 1);
+  assert.equal(pilots[0].scope, "repo", "the repo scope owns it; bundled does not double-report");
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("resolveDoctorPath: a bare slug resolves from the bundled pack last", async () => {
+  const { resolveDoctorPath } = await import("../bin/discover.js");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-bundled-resolve-"));
+  const globalDir = path.join(root, "global");
+  const bundledDir = path.join(root, "pack");
+  fs.mkdirSync(globalDir, { recursive: true });
+  fs.mkdirSync(bundledDir, { recursive: true });
+  fs.writeFileSync(path.join(bundledDir, "convex-doctor.mjs"), miniDoctor("convex-doctor"));
+  fs.writeFileSync(path.join(globalDir, "convex-doctor.mjs"), miniDoctor("global-copy"));
+  const cwd = path.join(root, "target");
+  fs.mkdirSync(cwd, { recursive: true });
+  assert.equal(resolveDoctorPath("convex-doctor.mjs", cwd, { globalDir, bundledDir }), path.join(globalDir, "convex-doctor.mjs"), "global first");
+  fs.rmSync(path.join(globalDir, "convex-doctor.mjs"));
+  assert.equal(resolveDoctorPath("convex-doctor.mjs", cwd, { globalDir, bundledDir }), path.join(bundledDir, "convex-doctor.mjs"), "bundled catches it");
   fs.rmSync(root, { recursive: true, force: true });
 });
