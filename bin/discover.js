@@ -4,6 +4,12 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { DOCTOR_FILE_RE, FIXTURES_FILE_RE } from "./contract.js";
 import { metaDoctor } from "./runner.js";
+// Bundled is the ambient default — every row saying "bundled" carries no
+// signal exactly when discovery is all-bundled. Scope labels mark the
+// deviations: a repo doctor is yours to edit, a global one is installed.
+export function scopeLabel(scope) {
+    return scope === "bundled" ? "" : scope;
+}
 // The gate's partition over discovery — owned by the data so every surface
 // (run cohorts, verify, the picker) splits identically. Only null-meta
 // doctors belong to either bucket; a healthy doctor is neither skipped nor

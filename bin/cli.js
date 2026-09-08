@@ -6,7 +6,7 @@ import { DOCTOR_FILE_RE } from "./contract.js";
 import { cohortFileCount, renderReport, renderVerifyResult, unsafeSkipLine } from "./report.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
-import { brokenDoctors, discoverDoctors, globalDoctorsDir, unsafeSlugs } from "./discover.js";
+import { brokenDoctors, discoverDoctors, globalDoctorsDir, unsafeSlugs, scopeLabel } from "./discover.js";
 import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, runDoctorCohort, verifyDoctor } from "./runner.js";
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor } from "./select.js";
@@ -89,7 +89,7 @@ function selectionOutcome(sel) {
                 warn("\u26a0 " + unsafeSkipLine(sel.unsafe));
             console.log("available doctors:");
             for (const row of sel.rows) {
-                console.log("  " + row.scope.padEnd(7) + row.slug.padEnd(32) + dim(row.description));
+                console.log("  " + scopeLabel(row.scope).padEnd(7) + row.slug.padEnd(32) + dim(row.description));
             }
             fail("non-interactive session — specify a doctor path");
             return { exit: 1 };
@@ -198,7 +198,7 @@ async function cmdRun(args) {
             const chosen = await pickItemsOn(selEnv, doctors.map(d => ({
                 id: d.meta.id,
                 label: d.meta.id,
-                sub: `${d.scope} · ${d.meta.description}`,
+                sub: [scopeLabel(d.scope), d.meta.description].filter(Boolean).join(" · "),
             })), useColor());
             if (chosen === null)
                 return 0; // esc — nothing ran, nothing to report
