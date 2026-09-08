@@ -58,7 +58,7 @@ test("capability gate: bare run in a real terminal — dashboard opens with the 
       '  "space select" {}',
       '  timeout { puts ">FAIL selector-timeout"; exit 105 }',
       "}",
-      'send "\\r"',
+      'send "a\\r"',
       "expect {",
       '  "skipped: evil" {}',
       '  timeout { puts ">FAIL note-timeout"; exit 103 }',

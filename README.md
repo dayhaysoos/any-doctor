@@ -19,7 +19,7 @@ No Cloudflare, no API keys, no server.
 any-doctor generate "find fetch calls without an AbortSignal"   # copies the exact prompt for your agent
 any-doctor verify doctors/fetch-without-abort-signal.mjs        # fixture gate (exact-set)
 any-doctor run doctors/fetch-without-abort-signal.mjs path/to/repo   # scan + score + report + review menu
-any-doctor run                                                        # every doctor (terminal: select first — all pre-chosen, space to deselect)
+any-doctor run                                                        # every doctor (terminal: select first — space to choose, a for all)
 ```
 
 `generate` plants the skill as `AGENTS.md` in the scope dir (agents load it

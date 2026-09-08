@@ -25,7 +25,7 @@ expect {
   timeout { puts ">FAIL selector-timeout"; exit 112 }
   eof { puts ">FAIL selector-eof"; exit 113 }
 }
-send "\\r"
+send "a\\r"
 expect {
   "async-doctor" {}
   timeout { puts ">FAIL dashboard-timeout"; exit 103 }
