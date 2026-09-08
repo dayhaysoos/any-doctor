@@ -19,7 +19,9 @@ export function gradeFor(score) {
         return "Poor";
     return "Critical";
 }
-function scoreFromFileHealth(perFile, filesTotal) {
+// Exported for the dashboard's per-doctor scores: each doctor's findings
+// against the same denominator the repo-wide score uses.
+export function scoreFromFileHealth(perFile, filesTotal) {
     const worst = new Map();
     for (const { file, severity } of perFile) {
         const cur = worst.get(file);

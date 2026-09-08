@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { resolveFinding, runCommandFor } from "./contract.js";
-import { computeScore, scoreHeaderLines } from "./score.js";
+import { computeScore, scoreFromFileHealth, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
@@ -186,37 +186,39 @@ export function resolveDashboardLayout(cols, rows, itemCount) {
 // then an affordance to fix a few and run again.
 export const FINDINGS_PER_CHECK = 50;
 const SEVERITY_RANK = { error: 0, warning: 1, info: 2 };
-export function buildTree(items) {
+export function buildTree(items, filesTotal) {
     var _a;
-    const doctors = [];
     const byDoctor = new Map();
     for (const it of items) {
         let checks = byDoctor.get(it.doctorId);
         if (!checks) {
             checks = new Map();
             byDoctor.set(it.doctorId, checks);
-            doctors.push({ doctorId: it.doctorId, checks: [], multiCheck: false, count: 0, worst: "info" });
         }
         const group = (_a = checks.get(it.checkKey)) !== null && _a !== void 0 ? _a : [];
         group.push(it);
         checks.set(it.checkKey, group);
     }
-    for (const d of doctors) {
-        const entries = [...byDoctor.get(d.doctorId).entries()].map(([checkKey, list]) => ({
+    const doctors = [...byDoctor.entries()].map(([doctorId, checks]) => {
+        const entries = [...checks.entries()].map(([checkKey, list]) => ({
             checkKey,
             items: [...list].sort((a, b) => a.site.file === b.site.file
                 ? a.site.line - b.site.line
                 : a.site.file < b.site.file ? -1 : 1),
-        }));
-        d.checks = entries.sort((a, b) => {
+        })).sort((a, b) => {
             const sa = SEVERITY_RANK[a.items[0].declaredSeverity];
             const sb = SEVERITY_RANK[b.items[0].declaredSeverity];
             return sa !== sb ? sa - sb : b.items.length - a.items.length || (a.checkKey < b.checkKey ? -1 : 1);
         });
-        d.multiCheck = entries.length > 1;
-        d.count = entries.reduce((n, g) => n + g.items.length, 0);
-        d.worst = entries.reduce((w, g) => (SEVERITY_RANK[g.items[0].severity] < SEVERITY_RANK[w] ? g.items[0].severity : w), "info");
-    }
+        return {
+            doctorId,
+            checks: entries,
+            multiCheck: entries.length > 1,
+            count: entries.reduce((n, g) => n + g.items.length, 0),
+            worst: entries.reduce((w, g) => (SEVERITY_RANK[g.items[0].severity] < SEVERITY_RANK[w] ? g.items[0].severity : w), "info"),
+            score: scoreFromFileHealth(entries.flatMap(g => g.items.map(it => ({ file: it.site.file, severity: it.severity }))), filesTotal),
+        };
+    });
     // Triage order: worst severity first, then most findings, then name.
     return doctors.sort((a, b) => SEVERITY_RANK[a.worst] - SEVERITY_RANK[b.worst]
         || b.count - a.count
@@ -252,6 +254,7 @@ export function summarizeDoctor(d) {
         worst: d.worst,
         count: d.count,
         files: files.size,
+        score: d.score,
         checks: d.checks.map(g => ({
             description: g.items[0].description,
             severity: g.items[0].declaredSeverity,
@@ -305,7 +308,7 @@ export function buildListRows(tree, useColor, selectedRow, readKeys, expanded) {
             const isOpen = open.has(d.doctorId);
             rows.push({
                 kind: "section",
-                text: `${selectedRow === rowIndex ? c("›", BOLD) : " "}${c(isOpen ? "▾" : "▸", DIM)} ${c(GLYPH[summary.worst], SEVERITY_COLOR[summary.worst])} ${c(summary.doctorId, BOLD)} ${c("×" + summary.count, DIM)}`,
+                text: `${selectedRow === rowIndex ? c("›", BOLD) : " "}${c(isOpen ? "▾" : "▸", DIM)} ${c(GLYPH[summary.worst], SEVERITY_COLOR[summary.worst])} ${c(summary.doctorId, BOLD)} ${c("×" + summary.count, DIM)} ${c("· " + summary.score.score, gradeColor(summary.score.score))}`,
                 severity: summary.worst,
                 selectable: true,
                 doctor: summary,
@@ -455,6 +458,8 @@ export function dashboardFrame(state) {
         const d = selRow.doctor;
         detail.push(c(d.doctorId, BOLD));
         detail.push(c(`${d.count} finding${d.count === 1 ? "" : "s"} across ${d.files} file${d.files === 1 ? "" : "s"} · worst ${d.worst}`, DIM));
+        detail.push(c(scoreBar(d.score.score, Math.max(16, Math.min(46, layout.detailWidth - 4))), gradeColor(d.score.score)));
+        detail.push(c(`${d.score.score} / 100 — ${d.score.grade} · ${d.score.filesClean}/${d.score.filesTotal} files clean of this doctor`, DIM));
         detail.push("");
         for (const ck of d.checks) {
             detail.push(`${c(GLYPH[ck.severity], SEVERITY_COLOR[ck.severity])} ${c(ck.description, d.checks.length > 1 ? BOLD : undefined)} ${c("×" + ck.count, DIM)}`);
@@ -557,7 +562,7 @@ export async function runDashboardOn(env, input, deps = {}) {
     // consume the same deduplicated groups the report renders — counts and
     // score can never disagree between surfaces.
     const { groups: deduped } = dedupeGroups(input.outcome.groups);
-    const tree = buildTree(buildItems(deduped));
+    const tree = buildTree(buildItems(deduped), input.outcome.fileCount);
     const score = computeScore(deduped, input.outcome.fileCount);
     const expanded = initialExpanded(tree);
     const readKeys = new Set();

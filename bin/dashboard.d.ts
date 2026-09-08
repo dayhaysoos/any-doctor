@@ -33,6 +33,7 @@ export interface DoctorSummary {
     worst: Severity;
     count: number;
     files: number;
+    score: ScoreResult;
     checks: {
         description: string;
         severity: Severity;
@@ -62,10 +63,11 @@ export interface DoctorGroup {
     multiCheck: boolean;
     count: number;
     worst: Severity;
+    score: ScoreResult;
 }
 export type DoctorTree = DoctorGroup[];
 export declare const FINDINGS_PER_CHECK = 50;
-export declare function buildTree(items: SiteFinding[]): DoctorTree;
+export declare function buildTree(items: SiteFinding[], filesTotal: number): DoctorTree;
 export declare function summarizeCheck(checkKey: string, groupItems: SiteFinding[]): CheckSummary;
 export declare function summarizeDoctor(d: DoctorGroup): DoctorSummary;
 export declare function initialExpanded(tree: DoctorTree): Set<string>;

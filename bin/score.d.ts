@@ -7,6 +7,10 @@ export interface ScoreResult {
 }
 export declare function findingSeverity(g: ReportGroup, f: Finding): Severity;
 export declare function gradeFor(score: number): string;
+export declare function scoreFromFileHealth(perFile: {
+    file: string;
+    severity: Severity;
+}[], filesTotal: number): ScoreResult;
 export declare function computeScore(groups: ReportGroup[], filesTotal: number): ScoreResult;
 export declare function scoreHeaderLines(s: ScoreResult): {
     scoreLine: string;
