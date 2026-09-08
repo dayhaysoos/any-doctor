@@ -158,12 +158,20 @@ async function checkUnawaitedMapAnalyzed(ctx, readFile) {
     .filter((file) => !/\.fixtures\.mjs$/.test(file));
   if (files.length === 0) return;
 
-  // Shapes once for the whole root (both receiver spellings), plus the
-  // constructs references compose against — all spans, all by position.
-  const shapes = [
-    ...ctx.search.rule({ pattern: "$X.map(async $A => $B)" }),
-    ...ctx.search.rule({ pattern: "$X?.map(async $A => $B)" }),
+  // Shapes once for the whole root — every receiver spelling (plain and
+  // optional-chained) times every callback form (arrow, unnamed and named
+  // async function — the degraded regex caught all three; full power
+  // must be a superset, never narrower), plus the constructs references
+  // compose against — all spans, all by position.
+  const CALLBACKS = [
+    "async $A => $B",
+    "async function ($$$A) { $$$B }",
+    "async function $F($$$A) { $$$B }",
   ];
+  const shapes = CALLBACKS.flatMap((cb) => [
+    ...ctx.search.rule({ pattern: `$X.map(${cb})` }),
+    ...ctx.search.rule({ pattern: `$X?.map(${cb})` }),
+  ]);
   const combiners = ctx.search.rule({ pattern: "Promise.$M($$$A)" })
     .filter((m) => ["all", "allSettled", "race", "any"].includes(m.captures?.M?.text));
   const forOfs = ctx.search.rule({ pattern: "for (const $V of $ARR) $$$B" });

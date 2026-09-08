@@ -124,8 +124,7 @@ async function main(): Promise<void> {
       // analysis-on fixtures — probing anyone else would make a
       // channel-less direct invocation fail fixtures that never touch
       // analysis at all.
-      const meta = mod.meta as contract.DoctorMeta;
-      const declaresNeeds = (meta.checks ?? []).some((c) => c.needs && c.needs.length > 0);
+      const declaresNeeds = contract.narrowedCheckIds(mod.meta as contract.DoctorMeta).length > 0;
       let analysisAvailable: boolean | undefined;
       for (const fixture of fixtures as contract.Fixture[]) {
         const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-verify-"));

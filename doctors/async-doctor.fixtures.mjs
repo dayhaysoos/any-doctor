@@ -340,6 +340,39 @@ export const fixtures = [
     ]
   },
   {
+    "name": "an async-function callback in a dropped binding is flagged",
+    "seed": {
+      "src/fn-bound.ts": "export function work(ids: string[]) {\n  const jobs = ids.map(async function (id) { return load(id); });\n  return jobs.length;\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/fn-bound.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "a bare async-function map statement is flagged",
+    "seed": {
+      "src/fn-bare.ts": "export function warm(ids: string[]) {\n  ids.map(async function named(id) { prime(id); });\n  return ids.length;\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/fn-bare.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "an async-function map consumed by a combiner is not flagged",
+    "seed": {
+      "src/fn-consumed.ts": "export async function work(ids: string[]) {\n  const jobs = ids.map(async function named(id) { return load(id); });\n  return Promise.all(jobs);\n}"
+    },
+    "expected": []
+  },
+  {
     "name": "reports an assigned timeout without cleanup",
     "seed": {
       "src/example.tsx": "useEffect(() => {\n  const timer = setTimeout(() => save(), 1000);\n}, []);\n"

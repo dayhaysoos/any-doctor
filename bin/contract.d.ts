@@ -186,6 +186,7 @@ export declare function isTestPath(relativePath: string): boolean;
 export declare function includeTestsFor(mode: Mode): boolean;
 export declare function runCommandFor(doctorPath: string, root: string, invoker?: string): string;
 export declare function compareFindings(expected: ExpectedFinding[], actual: Finding[]): FixtureDiff;
+export declare function narrowedCheckIds(meta: DoctorMeta): string[];
 export interface JoinedFinding {
     doctorId: string;
     checkId: string;

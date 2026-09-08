@@ -1,4 +1,4 @@
-import { DoctorMeta, ExpectedFinding, Finding, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
+import { DoctorMeta, ExpectedFinding, Finding, narrowedCheckIds, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
 import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
 
@@ -154,14 +154,15 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
     // A clean degraded run must never read as a full-power clean — the
     // narrowed notice renders here too, exactly as it does under
     // findings (D20 Stage 2's own words).
-    const narrowedDoctors = input.analysisAvailable === false
-      ? groups.filter((g) => (g.meta.checks ?? []).some((ck) => ck.needs && ck.needs.length > 0))
-      : [];
-    if (narrowedDoctors.length > 0) {
-      lines.push("");
-      for (const g of narrowedDoctors) {
-        const ids = g.meta.checks!.filter((ck) => ck.needs && ck.needs.length > 0).map((ck) => ck.id);
-        lines.push(c(`narrowed: analysis engine unavailable — ${ids.join(", ")} ran in degraded mode`, YELLOW));
+    if (input.analysisAvailable === false) {
+      const notices = groups
+        .map((g) => narrowedCheckIds(g.meta))
+        .filter((ids) => ids.length > 0);
+      if (notices.length > 0) {
+        lines.push("");
+        for (const ids of notices) {
+          lines.push(c(narrowedLine(ids), YELLOW));
+        }
       }
     }
     return lines.join("\n");
@@ -204,12 +205,10 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
     // analysis needs but ran without the engine say so — including checks
     // with zero findings, where a narrowed clean must never read as a
     // full-power clean.
-    if (input.analysisAvailable === false) {
-      const narrowed = g.meta.checks?.filter((ck) => ck.needs && ck.needs.length > 0) ?? [];
-      if (narrowed.length > 0) {
-        lines.push(`  ${c(`narrowed: analysis engine unavailable — ${narrowed.map((ck) => ck.id).join(", ")} ran in degraded mode`, YELLOW)}`);
-        lines.push("");
-      }
+    const narrowedIds = input.analysisAvailable === false ? narrowedCheckIds(g.meta) : [];
+    if (narrowedIds.length > 0) {
+      lines.push(`  ${c(narrowedLine(narrowedIds), YELLOW)}`);
+      lines.push("");
     }
     if (g.findings.length > 0 && g.meta.blindSpots && g.meta.blindSpots.length > 0) {
       lines.push(`  ${c("blind spots: " + g.meta.blindSpots.join("; "), DIM)}`);
@@ -228,6 +227,12 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
 // rule-aware (D20), so the line must say which check was missing or extra.
 function where(f: ExpectedFinding): string {
   return (f.rule ? f.rule + " " : "") + f.file + ":" + f.line;
+}
+
+// The narrowed notice's one wording (D20 Stage 2) — one source for both
+// the clean and the findings branch.
+function narrowedLine(checkIds: string[]): string {
+  return `narrowed: analysis engine unavailable — ${checkIds.join(", ")} ran in degraded mode`;
 }
 
 // Verify-gate rendering: pure state -> string, colored on request. The

@@ -322,6 +322,14 @@ export function compareFindings(expected: ExpectedFinding[], actual: Finding[]):
   return { missing, unexpected };
 }
 
+// The degradation contract's one projection (D20 Stage 2): which checks
+// of this doctor declared analysis needs — the ids the report names when
+// it renders "narrowed", and the predicate verify uses to decide whether
+// analysis-on fixtures apply.
+export function narrowedCheckIds(meta: DoctorMeta): string[] {
+  return (meta.checks ?? []).filter((c) => c.needs !== undefined && c.needs.length > 0).map((c) => c.id);
+}
+
 // The single home of the Finding↔Meta join. Every consumer — score, report,
 // dashboard — projects from this record instead of re-implementing the
 // lookup-and-fallback ladder.

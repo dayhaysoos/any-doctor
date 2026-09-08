@@ -75,7 +75,6 @@ function materializeSeed(tmp, rel, content) {
     fs.writeFileSync(abs, content);
 }
 async function main() {
-    var _a;
     confineProcess();
     // The mode arrives as argv and is decoded exactly once, here, into a value.
     const decoded = contract.decodeLoaderArgs(process.argv.slice(2));
@@ -117,8 +116,7 @@ async function main() {
             // analysis-on fixtures — probing anyone else would make a
             // channel-less direct invocation fail fixtures that never touch
             // analysis at all.
-            const meta = mod.meta;
-            const declaresNeeds = ((_a = meta.checks) !== null && _a !== void 0 ? _a : []).some((c) => c.needs && c.needs.length > 0);
+            const declaresNeeds = contract.narrowedCheckIds(mod.meta).length > 0;
             let analysisAvailable;
             for (const fixture of fixtures) {
                 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-verify-"));

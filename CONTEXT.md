@@ -23,7 +23,9 @@ One scan invocation's batch of results, assembled once and rendered by the
 report and the dashboard alike: the ReportGroups that ran, the doctor ids
 that crashed (data, named), the slugs Confinement skipped, the doctor
 id → program path map for re-run commands, and the target's file count and
-the batch's wall-clock duration — one defined meaning per field.
+the batch's wall-clock duration — one defined meaning per field. A run also
+records whether the identity engine could power it
+(`analysisAvailable`) — the data behind "narrowed" rendering.
 
 ## Confinement
 
@@ -164,7 +166,11 @@ One seed plus the findings expected from running a doctor program against
 it. Expected findings match exactly on (rule, file, line), duplicates
 counted: a missing expected finding is a recall failure; an unexpected
 finding is a precision failure. The rule in an expectation is part of the
-match — a wrong-check finding at the right line fails the gate.
+match — a wrong-check finding at the right line fails the gate. A fixture
+also declares its analysis mode (D20 Stage 2): "on" (default) pins the
+full-power path and skips with a named notice where the engine is not
+installed; "off" forces the degraded path, whose expectations may
+legitimately differ.
 
 ## Counter-fixture
 

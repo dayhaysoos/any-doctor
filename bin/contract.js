@@ -109,6 +109,14 @@ export function compareFindings(expected, actual) {
     }
     return { missing, unexpected };
 }
+// The degradation contract's one projection (D20 Stage 2): which checks
+// of this doctor declared analysis needs — the ids the report names when
+// it renders "narrowed", and the predicate verify uses to decide whether
+// analysis-on fixtures apply.
+export function narrowedCheckIds(meta) {
+    var _a;
+    return ((_a = meta.checks) !== null && _a !== void 0 ? _a : []).filter((c) => c.needs !== undefined && c.needs.length > 0).map((c) => c.id);
+}
 export function resolveFinding(meta, finding) {
     var _a, _b, _c, _d, _e, _f, _g;
     const checkId = (_a = finding.rule) !== null && _a !== void 0 ? _a : meta.id;
