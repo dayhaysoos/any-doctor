@@ -7,6 +7,7 @@ export const meta = {
     "Fetch: cannot determine whether an options variable, spread, or helper supplies a signal at runtime; aliased or member-expression fetch functions are not recognized.",
     "Promises: consumption inside template strings or dynamic property access, reassignable bindings (let) with conditional awaits, and results passed to a helper that awaits internally are not tracked.",
     "Timers: only directly named useEffect/setTimeout/clearTimeout are recognized; handles must be a simple local identifier cleared in the same effect.",
+    "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source.",
   ],
   checks: [
     {
@@ -122,8 +123,12 @@ async function checkUnawaitedMap(ctx) {
   const CONSUMERS = /(Promise\s*\.\s*(all|allSettled|race|any)\s*\((?:[^()]|\([^()]*\))*\bNAME\b|await\s+(?:[\w.$]+\s*=\s*)?\s*\bNAME\b)/;
 
   for (const file of ctx.files.list([".ts", ".tsx", ".js", ".jsx", ".mjs"])) {
-    const src = ctx.files.read(file);
-    const lines = src.split("\n");
+    // Fixture sandboxes are doctor test data, not target source.
+    if (/\.fixtures\.mjs$/.test(file)) continue;
+    // Masked, not raw: a commented-out or string-literal ".map(async ..."
+    // is not code — raw scanning false-positives on documentation and
+    // test seeds (the same mask the timer check below already applies).
+    const lines = maskNonCode(ctx.files.read(file)).split("\n");
 
     for (let i = 0; i < lines.length; i++) {
       const decl = lines[i].match(/\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*[\w.$\]]+\s*\.\s*map\(\s*async\b/);
