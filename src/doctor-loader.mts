@@ -128,7 +128,7 @@ async function main(): Promise<void> {
           }
           // Verify always lists everything (includeTestsFor): the sandbox is
           // the doctor's own world — a seed named *.test.ts is deliberate
-          // test data (effect-doctor's sleep-in-test depends on it).
+          // test data (effect-v4-doctor's sleep-in-test depends on it).
           const result = await runOnce(tmp, mod, { includeTests: contract.includeTestsFor(mode) });
           const diff = contract.compareFindings(fixture.expected, (result as { findings: Finding[] }).findings);
           results.push({ name: fixture.name, ok: diff.missing.length === 0 && diff.unexpected.length === 0, ...diff });
