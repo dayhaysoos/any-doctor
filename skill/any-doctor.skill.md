@@ -55,6 +55,10 @@ export const fixtures = [
 
 - `ctx.files.list(exts?)` → relative paths (default .ts/.tsx/.js/.jsx/.mjs; test-named code files and `test|tests|__tests__/` directories are excluded by default — `--include-tests` scans them; in verify sandboxes test-named seeds are always visible: fixtures are the doctor's own world)
 - `ctx.files.read(rel)` → file contents
+- `ctx.files.readMasked(rel)` → contents with comments and strings blanked,
+  offsets and length preserved — the one masking implementation; a position
+  in the masked text addresses the same char in the source. Never carry a
+  private masking copy.
 - `ctx.search.pattern(pattern, language?)` → `[{ file, line, column, text, endLine?, endColumn?, captures? }]`
   (ast-grep pattern syntax, e.g. `"fetch($URL)"`; requires ast-grep installed;
   respects the same test-path exclusion — `--include-tests` includes them)
@@ -210,10 +214,10 @@ subprocesses are denied by the process itself — even code the scan cannot
 see. Worker threads exist only as the import guard's carrier and inherit
 every denial.
 
-One helper recurs across doctor programs by design: the comment/string
-masking function that blanks non-code before pattern matching. The
-single-file law forbids importing it, so copy it in — that duplication is
-the contract working, not a smell to fix.
+One helper used to recur across doctor programs by design — the
+comment/string masking function, copied file to file under the
+single-file law. It is a host operation now (`ctx.files.readMasked`):
+use it, never re-create it.
 
 If you cannot implement the intent without breaking a rule, the intent is
 out of scope for a doctor: say so in your final report instead.

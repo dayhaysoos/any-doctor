@@ -39,11 +39,11 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
       },
 
       read(relativePath: string): string {
-        const abs = path.resolve(root, relativePath);
-        if (abs !== root && !abs.startsWith(root + path.sep)) {
-          throw new Error(`ctx.files.read escapes the repo root: ${relativePath}`);
-        }
-        return fs.readFileSync(abs, "utf8");
+        return readFileWithin(root, relativePath);
+      },
+
+      readMasked(relativePath: string): string {
+        return maskNonCode(readFileWithin(root, relativePath));
       },
     },
 
@@ -69,6 +69,68 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// The one read with one guard: an explicit path is a doctor's deliberate
+// choice (never test-path filtered), but it must stay inside the repo.
+function readFileWithin(root: string, relativePath: string): string {
+  const abs = path.resolve(root, relativePath);
+  if (abs !== root && !abs.startsWith(root + path.sep)) {
+    throw new Error(`ctx.files.read escapes the repo root: ${relativePath}`);
+  }
+  return fs.readFileSync(abs, "utf8");
+}
+
+// The one masking implementation (D20 Stage 1). Comments and string
+// literals are blanked; OFFSETS AND LENGTH ARE PRESERVED — every char
+// becomes a space except newlines, so a position computed on the masked
+// text addresses the same char in the raw source. That invariant is the
+// interface's guarantee now, not four private copies' coincidence: it
+// grew up inside the bundled doctors (copied file to file under the
+// single-file law) and moved here when ctx.files.readMasked was born.
+function maskNonCode(source: string): string {
+  const chars = source.split("");
+  let index = 0;
+
+  while (index < source.length) {
+    const char = source[index];
+    const next = source[index + 1];
+
+    if (char === "/" && next === "/") {
+      const end = source.indexOf("\n", index + 2);
+      const stop = end === -1 ? source.length : end;
+      for (let cursor = index; cursor < stop; cursor += 1) chars[cursor] = " ";
+      index = stop;
+    } else if (char === "/" && next === "*") {
+      const end = source.indexOf("*/", index + 2);
+      const stop = end === -1 ? source.length : end + 2;
+      for (let cursor = index; cursor < stop; cursor += 1) {
+        if (chars[cursor] !== "\n") chars[cursor] = " ";
+      }
+      index = stop;
+    } else if (char === "'" || char === '"' || char === "`") {
+      const quote = char;
+      let cursor = index + 1;
+      while (cursor < source.length) {
+        if (source[cursor] === "\\") {
+          cursor += 2;
+        } else if (source[cursor] === quote) {
+          cursor += 1;
+          break;
+        } else {
+          cursor += 1;
+        }
+      }
+      for (let position = index; position < cursor; position += 1) {
+        if (chars[position] !== "\n") chars[position] = " ";
+      }
+      index = cursor;
+    } else {
+      index += 1;
+    }
+  }
+
+  return chars.join("");
 }
 
 // Rule queries are curated (D20 Stage 1): pattern + inside, nothing else.

@@ -74,9 +74,12 @@ shapes without being production reads. The one law (`isTestPath`) and
 the one derivation (`includeTestsFor`) live in contract.ts; every read
 capability applies them. A Doctor run opts back in with
 `--include-tests`; `ctx.files.read()` is never filtered — an explicit
-path is a deliberate choice. Verify always sees everything its fixtures
-seed: the sandbox is the doctor's own world, and a seed named
-`*.test.ts` is deliberate test data.
+path is a deliberate choice. `ctx.files.readMasked()` is the one
+masking implementation (comments and strings blanked, offsets and
+length preserved — a masked position addresses the same char in the
+source); doctors carry no private copies. Verify always sees everything
+its fixtures seed: the sandbox is the doctor's own world, and a seed
+named `*.test.ts` is deliberate test data.
 
 ## Rule query
 

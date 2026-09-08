@@ -39,14 +39,15 @@ export const meta = {
 };
 
 export async function doctor(ctx) {
-  // One read+mask per file, shared by every check: a full-repo pass is
+  // One masked read per file, shared by every check: a full-repo pass is
   // this doctor's dominant cost, and the checks examine the same files.
+  // Masking itself is the host's (ctx.files.readMasked) — the one
+  // implementation, offsets preserved (D20 Stage 1).
   const byFile = new Map();
   const readFile = (file) => {
     let entry = byFile.get(file);
     if (entry === undefined) {
-      const raw = ctx.files.read(file);
-      entry = { raw, masked: maskNonCode(raw) };
+      entry = { masked: ctx.files.readMasked(file) };
       byFile.set(file, entry);
     }
     return entry;
@@ -230,7 +231,7 @@ async function checkSetTimeout(ctx, readFile) {
   const files = await ctx.files.list();
 
   for (const file of files) {
-    const { raw, masked } = readFile(file);
+    const masked = readFile(file).masked;
     const effects = [];
     const useEffect = /\buseEffect\b/g;
     let match;
@@ -261,56 +262,13 @@ async function checkSetTimeout(ctx, readFile) {
         const before = masked.slice(effect.start, index);
         const assignment = /(?:(?:\bconst|\blet|\bvar)\s+)?([A-Za-z_$][\w$]*)\s*=\s*$/.exec(before);
         if (!assignment || !cleared.has(assignment[1])) {
-          ctx.report.finding({ rule: "uncleared-settimeout-in-effect", file, line: lineAt(raw, index) });
+          // masked preserves offsets and newlines — lineAt on it addresses
+          // the same line as the raw source (readMasked's guarantee).
+          ctx.report.finding({ rule: "uncleared-settimeout-in-effect", file, line: lineAt(masked, index) });
         }
       }
     }
   }
-}
-
-function maskNonCode(source) {
-  const chars = source.split("");
-  let index = 0;
-
-  while (index < source.length) {
-    const char = source[index];
-    const next = source[index + 1];
-
-    if (char === "/" && next === "/") {
-      const end = source.indexOf("\n", index + 2);
-      const stop = end === -1 ? source.length : end;
-      for (let cursor = index; cursor < stop; cursor += 1) chars[cursor] = " ";
-      index = stop;
-    } else if (char === "/" && next === "*") {
-      const end = source.indexOf("*/", index + 2);
-      const stop = end === -1 ? source.length : end + 2;
-      for (let cursor = index; cursor < stop; cursor += 1) {
-        if (chars[cursor] !== "\n") chars[cursor] = " ";
-      }
-      index = stop;
-    } else if (char === "'" || char === '"' || char === "`") {
-      const quote = char;
-      let cursor = index + 1;
-      while (cursor < source.length) {
-        if (source[cursor] === "\\") {
-          cursor += 2;
-        } else if (source[cursor] === quote) {
-          cursor += 1;
-          break;
-        } else {
-          cursor += 1;
-        }
-      }
-      for (let position = index; position < cursor; position += 1) {
-        if (chars[position] !== "\n") chars[position] = " ";
-      }
-      index = cursor;
-    } else {
-      index += 1;
-    }
-  }
-
-  return chars.join("");
 }
 
 function nextNonSpace(source, index) {

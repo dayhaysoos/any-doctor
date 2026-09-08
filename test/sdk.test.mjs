@@ -45,3 +45,33 @@ test("ctx.search.rule: inside needs its own pattern; stopBy is validated", () =>
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("ctx.files.readMasked: comments and strings blanked, offsets and length preserved", () => {
+  const { ctx: c, dir } = ctx();
+  try {
+    const source = [
+      "const a = 1; // trailing comment",
+      "const s = 'string with // and /* inside';",
+      "/* block",
+      "comment */ const t = `template ${x}`;",
+      "const real = fetch(url);",
+    ].join("\n");
+    fs.writeFileSync(path.join(dir, "m.ts"), source);
+    const masked = c.files.readMasked("m.ts");
+    assert.equal(masked.length, source.length, "length preserved");
+    for (let i = 0; i < source.length; i += 1) {
+      assert.equal(masked[i] === "\n", source[i] === "\n", `newline positions identical at ${i}`);
+    }
+    assert.ok(!masked.includes("//"), "line comments masked");
+    assert.ok(!masked.includes("string with"), "string literals masked");
+    assert.ok(!masked.includes("block"), "block comments masked");
+    assert.ok(!masked.includes("template"), "template literals masked");
+    assert.match(masked, /const real = fetch\(url\);/, "code survives");
+    // the invariant doctors rely on: a raw-source index addresses the
+    // same char in the masked text
+    const fetchAt = source.indexOf("fetch");
+    assert.equal(masked[fetchAt], "f", "offsets address the same char");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

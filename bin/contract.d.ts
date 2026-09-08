@@ -57,6 +57,7 @@ export interface DoctorCtx {
     files: {
         list(exts?: string[]): string[];
         read(relativePath: string): string;
+        readMasked(relativePath: string): string;
     };
     search: {
         pattern(pattern: string, language?: "TypeScript" | "JavaScript"): Match[];
