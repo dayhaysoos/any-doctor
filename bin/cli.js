@@ -174,8 +174,9 @@ function unusableTargetReason(targetDir) {
 // The live line's one gate: interactive TTYs get a spinner, headless and
 // piped output stay byte-clean — the same gate family as the picker, in
 // the one place both run paths share (D15's "one defined meaning" as a
-// function instead of a copy-pasted condition).
-function runSpinner(label, total) {
+// function instead of a copy-pasted condition). Exported for the gate's
+// pin: a non-TTY stdio pair must construct nothing.
+export function runSpinner(label, total) {
     const env = processTtyEnv();
     return canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS
         ? startSpinner(env.stdout, { label, total })
@@ -276,10 +277,11 @@ async function cmdRun(args) {
             })), spin
                 ? (p) => {
                     done += 1;
-                    spin.update({
-                        done,
-                        note: `${path.basename(p.programPath, ".mjs")} ${formatMs(p.durationMs)}${p.ok ? "" : " ✗"}`,
-                    });
+                    // A healthy settle carries its own duration; a crash carries
+                    // none (the runner reports 0) — showing "0ms" would fabricate
+                    // a duration that was never measured.
+                    const who = path.basename(p.programPath, ".mjs");
+                    spin.update({ done, note: p.ok ? `${who} ${formatMs(p.durationMs)}` : `${who} ✗` });
                 }
                 : undefined);
         }

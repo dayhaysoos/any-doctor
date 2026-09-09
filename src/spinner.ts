@@ -1,5 +1,5 @@
 import { CYAN, DIM, RESET } from "./palette.js";
-import { truncateVisible, type TtyStdout } from "./tty.js";
+import { paintWidth, truncateVisible, type TtyStdout } from "./tty.js";
 
 // The spinner: the one place that owns the "work is happening" line —
 // timer-driven, single-line, in-place, synchronized-output like every
@@ -54,10 +54,10 @@ export function startSpinner(
   let tick = 0;
 
   const paint = (): void => {
-    // Truncated to the terminal like every other paint (tty.ts's frame
-    // discipline): an overlong label+note would wrap, and the clear-line
-    // repaint would then leave residue on the second row.
-    const line = truncateVisible(spinnerLine(tick, state), Math.max(10, (stdout.columns ?? 120) - 1));
+    // Truncated through the shared paint-width policy (tty.ts): an
+    // overlong label+note would wrap, and the clear-line repaint would
+    // then leave residue on the second row.
+    const line = truncateVisible(spinnerLine(tick, state), paintWidth(stdout.columns));
     stdout.write(`\x1b[?2026h\r\x1b[2K${line}\x1b[?2026l`);
   };
 

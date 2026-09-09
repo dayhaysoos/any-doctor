@@ -61,11 +61,15 @@ export type EngineResult = { ok: true; matches: RawSgMatch[] } | { ok: false; er
 const MAX_BUFFER_BYTES = 256 * 1024 * 1024;
 
 // ast-grep renamed its binary; old installs only have `sg`. Try the new
-// name first (no deprecation warning on stderr), fall back once.
+// name first (no deprecation warning on stderr), fall back once. The
+// spawn options are one const so the fallback cannot drift from the
+// first try.
+const SPAWN_OPTS = { encoding: "utf8" as const, timeout: 120000, maxBuffer: MAX_BUFFER_BYTES };
+
 function invoke(args: string[], root: string) {
-  let r = spawnSync("ast-grep", [...args, root], { encoding: "utf8", timeout: 120000, maxBuffer: MAX_BUFFER_BYTES });
+  let r = spawnSync("ast-grep", [...args, root], SPAWN_OPTS);
   if (r.error && (r.error as NodeJS.ErrnoException).code === "ENOENT") {
-    r = spawnSync("sg", [...args, root], { encoding: "utf8", timeout: 120000, maxBuffer: MAX_BUFFER_BYTES });
+    r = spawnSync("sg", [...args, root], SPAWN_OPTS);
   }
   return r;
 }

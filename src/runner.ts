@@ -340,11 +340,12 @@ export async function runDoctorCohort(options: RunOptions[], onProgress?: (p: Co
         Effect.exit(runDoctorE(o)),
         (exit) => Effect.sync(() => {
           if (onProgress === undefined) return;
+          const ok = Exit.isSuccess(exit);
           onProgress({
             total: options.length,
             programPath: o.programPath,
-            ok: Exit.isSuccess(exit),
-            durationMs: Exit.isSuccess(exit) ? (exit.value.durationMs ?? 0) : 0,
+            ok,
+            durationMs: ok ? (exit.value.durationMs ?? 0) : 0,
           });
         }),
       ), {

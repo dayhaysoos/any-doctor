@@ -6,7 +6,7 @@ import { scoreFromFileHealth, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, GREEN, ORANGE, RESET, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { dedupeGroups, unsafeSkipLine } from "./report.js";
 const SPLIT_MIN_COLS = 100;
 const TOKEN_RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^'\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|await|async|try|catch|finally|import|export|from|new|class|extends|throw|typeof|instanceof|in|of|do|switch|case|break|continue|default|yield)\b|\b(\d+(?:\.\d+)?)\b/g;
@@ -308,9 +308,9 @@ export function buildListRows(tree, useColor, selectedRow, readKeys, expanded) {
             const summary = summarizeDoctor(d);
             const rowIndex = rows.length;
             const isOpen = open.has(d.doctorId);
-            const scoreBit = summary.score.filesTotal === 0
-                ? c("· n/a", YELLOW)
-                : c("· " + summary.score.score, gradeColor(summary.score.score));
+            // The row's score rides the header's tone policy — n/a in yellow
+            // over an empty denominator, never a green vacuous 100.
+            const scoreBit = c("· " + (summary.score.filesTotal === 0 ? "n/a" : summary.score.score), scoreHeaderTone(summary.score));
             rows.push({
                 kind: "section",
                 text: `${selectedRow === rowIndex ? c("›", BOLD) : " "}${c(isOpen ? "▾" : "▸", DIM)} ${c(GLYPH[summary.worst], SEVERITY_COLOR[summary.worst])} ${c(summary.doctorId, BOLD)} ${c("×" + summary.count, DIM)} ${scoreBit}`,
@@ -410,7 +410,7 @@ function itemRowText(it, isSelected, readKeys, c, showCheckId = true) {
     return `${isSelected ? c("›", BOLD) : " "}${glyph} ${c(it.site.file + ":" + it.site.line, wrap)}${suffix}`;
 }
 export function dashboardFrame(state) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
     const { tree, selectedRow, readKeys, useColor, cols, rows } = state;
     const c = colorizer(useColor);
     const findings = tree.flatMap(d => d.checks.flatMap(g => g.items));
@@ -423,29 +423,35 @@ export function dashboardFrame(state) {
     const sel = rowsData[selectedRow];
     const scopedId = (_f = (_d = (_b = (_a = sel === null || sel === void 0 ? void 0 : sel.doctor) === null || _a === void 0 ? void 0 : _a.doctorId) !== null && _b !== void 0 ? _b : (_c = sel === null || sel === void 0 ? void 0 : sel.check) === null || _c === void 0 ? void 0 : _c.doctorId) !== null && _d !== void 0 ? _d : (_e = sel === null || sel === void 0 ? void 0 : sel.item) === null || _e === void 0 ? void 0 : _e.doctorId) !== null && _f !== void 0 ? _f : (_g = tree[0]) === null || _g === void 0 ? void 0 : _g.doctorId;
     const scoped = tree.find(d => d.doctorId === scopedId);
+    // The header's third line, one shape for every header state — a
+    // count, the clean fraction (or the raw file count when there is
+    // none), and the run's duration. Composed three ways before, which is
+    // how format drift starts.
+    const summaryLine = (count, cleanLine, ms) => `${count} finding${count === 1 ? "" : "s"} · ${cleanLine !== null && cleanLine !== void 0 ? cleanLine : state.filesTotal + " file" + (state.filesTotal === 1 ? "" : "s")} · ${ms}ms`;
     const headerLines = [];
     if (scoped) {
         const h = scoreHeaderLines(scoped.score);
-        const tone = scoreHeaderTone(h, scoped.score.score);
+        const tone = scoreHeaderTone(scoped.score);
         headerLines.push(`${c(scoped.doctorId, BOLD)}  ${c(h.scoreLine, BOLD + tone)}`);
         // An empty scan draws an empty bar: nothing was measured, and a
         // filled bar would assert the vacuous 100 the n/a line just refused.
         headerLines.push(c(scoreBar(h.emptyScan ? 0 : scoped.score.score, barWidth), tone));
-        headerLines.push(c(`${scoped.count} finding${scoped.count === 1 ? "" : "s"} · ${(_h = h.cleanLine) !== null && _h !== void 0 ? _h : state.filesTotal + " files"} · ${state.durationMs}ms`, DIM));
+        headerLines.push(c(summaryLine(scoped.count, h.cleanLine, state.durationMs), DIM));
     }
     else if (state.filesTotal === 0) {
         // Zero groups over zero files: the same n/a the report renders —
         // composed through the public score surface, not re-worded here.
-        const h = scoreHeaderLines(scoreFromFileHealth([], 0));
-        const tone = scoreHeaderTone(h, 0);
+        const empty = scoreFromFileHealth([], 0);
+        const h = scoreHeaderLines(empty);
+        const tone = scoreHeaderTone(empty);
         headerLines.push(c(h.scoreLine, BOLD + tone));
         headerLines.push(c(scoreBar(0, barWidth), tone));
-        headerLines.push(c(`0 findings · 0 files · ${state.durationMs}ms`, DIM));
+        headerLines.push(c(summaryLine(0, h.cleanLine, state.durationMs), DIM));
     }
     else {
         headerLines.push(c("No findings", BOLD + GREEN));
         headerLines.push(c(scoreBar(100, barWidth), GREEN));
-        headerLines.push(c(`0 findings · ${state.filesTotal} file${state.filesTotal === 1 ? "" : "s"} · ${state.durationMs}ms`, DIM));
+        headerLines.push(c(summaryLine(0, null, state.durationMs), DIM));
     }
     if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
         headerLines.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
@@ -469,11 +475,11 @@ export function dashboardFrame(state) {
         detail.push(c(`${sel.site.file}:${sel.site.line}`, BOLD));
         detail.push(c(`${cap(sel.category)} · ${sel.severity}`, DIM));
         detail.push("");
-        const impact = (_j = sel.impact) !== null && _j !== void 0 ? _j : sel.description;
+        const impact = (_h = sel.impact) !== null && _h !== void 0 ? _h : sel.description;
         for (const l of wordWrap(impact, layout.detailWidth - 2))
             detail.push(c(l, SEVERITY_COLOR[sel.severity]));
         detail.push("");
-        proseSection(detail, "Why", (_k = sel.why) !== null && _k !== void 0 ? _k : "Not documented for this check.", layout.detailWidth - 2, c);
+        proseSection(detail, "Why", (_j = sel.why) !== null && _j !== void 0 ? _j : "Not documented for this check.", layout.detailWidth - 2, c);
         detail.push("");
         detail.push(c("Code", DIM));
         for (const l of codeFrameLines(state.readSource(sel.site.file), sel.site.line, layout.detailWidth - 2, useColor))
@@ -522,7 +528,7 @@ export function dashboardFrame(state) {
     const body = [];
     if (layout.mode === "split") {
         for (let i = 0; i < layout.bodyRows; i++) {
-            body.push(padVisible(truncateVisible((_l = listLines[i]) !== null && _l !== void 0 ? _l : "", layout.listWidth), layout.listWidth) + "  " + ((_m = detail[i]) !== null && _m !== void 0 ? _m : ""));
+            body.push(padVisible(truncateVisible((_k = listLines[i]) !== null && _k !== void 0 ? _k : "", layout.listWidth), layout.listWidth) + "  " + ((_l = detail[i]) !== null && _l !== void 0 ? _l : ""));
         }
     }
     else {
@@ -533,7 +539,7 @@ export function dashboardFrame(state) {
             ...detail,
         ];
         for (let i = 0; i < layout.bodyRows; i++)
-            body.push((_o = stacked[i]) !== null && _o !== void 0 ? _o : "");
+            body.push((_m = stacked[i]) !== null && _m !== void 0 ? _m : "");
     }
     // Fixed-shape footer: the notice line is always present (blank when idle)
     // so showing or clearing a notice never changes the frame height.

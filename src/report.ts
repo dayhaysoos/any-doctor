@@ -143,7 +143,7 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
   lines.push("");
   const doctorWord = groups.length === 1 ? "doctor" : "doctors";
   lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
-  lines.push(c(header.scoreLine, BOLD + scoreHeaderTone(header, sr.score)));
+  lines.push(c(header.scoreLine, BOLD + scoreHeaderTone(sr)));
   if (header.cleanLine) {
     lines.push(c(header.cleanLine, DIM));
   }
@@ -158,7 +158,10 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
   // zero count are still possible — a doctor reporting files it read
   // outside the default extensions — and fall through to render.)
   if (input.fileCount === 0 && total === 0) {
-    if (input.crashed.length > 0) {
+    // "Every doctor crashed" is claimable only when no doctor produced
+    // a group at all; a mixed cohort over an empty target still gets
+    // the sources story (the crashes are already named above).
+    if (input.crashed.length > 0 && groups.length === 0) {
       lines.push(c(`\u26a0 nothing to check — every doctor crashed before completing a scan (${input.crashed.join(", ")}; details above)`, YELLOW));
     } else {
       lines.push(c(`\u26a0 ${emptyScanLine()}`, YELLOW));

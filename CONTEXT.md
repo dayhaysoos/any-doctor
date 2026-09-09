@@ -132,8 +132,9 @@ The share of scanned files with no findings, weighted by each affected
 file's worst severity (error 1, warning 0.5, info 0.1). One sentence,
 locally computed: "491/628 files clean" is a 78. Zero findings is 100 by
 anchor; an empty scan computes 100 but renders n/a — "Score: n/a — no
-files scanned," yellow tone, empty bar, the empty-scan warning, and no
-clean claim anywhere (nothing was measured, so nothing is Excellent).
+files scanned," yellow tone, empty bar, and no clean claim anywhere
+(nothing was measured, so nothing is Excellent); the report also carries
+the one-copy empty-scan warning naming the extensions and the skips.
 The denominator is the target's file
 count as the doctors scanned it (default extensions); findings naming
 files outside that count can push the raw value negative, so the result

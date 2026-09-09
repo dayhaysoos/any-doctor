@@ -110,6 +110,20 @@ test("renderReport: an all-crashed cohort blames the crashes, not the sources", 
   assert.ok(!out.includes("No findings"), "no findings headline over doctors that died");
 });
 
+test("renderReport: a mixed cohort over an empty target keeps the sources story", () => {
+  // One doctor crashed, one completed over zero scannable files —
+  // "every doctor crashed" would contradict the doctor count above it.
+  const out = renderReport({
+    ...input,
+    fileCount: 0,
+    crashed: ["boom"],
+    groups: [{ ...input.groups[0], findings: [] }],
+  }, false);
+  assert.match(out, /Any Doctor — 1 doctor/);
+  assert.match(out, /nothing to check — no \.ts, \.tsx/, "the crashes are already named above; the sources story stays");
+  assert.ok(!out.includes("every doctor crashed"), "a surviving doctor forbids the every-crashed claim");
+});
+
 test("renderReport: degradation honesty survives an empty scan — narrowed still renders", () => {
   const out = renderReport({
     ...input,

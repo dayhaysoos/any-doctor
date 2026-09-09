@@ -46,6 +46,12 @@ test("main: run against a nonexistent target refuses in one line, no loader stac
   assert.ok(!printed.includes("at "), "a configuration error never renders a stack trace");
 });
 
+test("runSpinner: a non-TTY stdio pair constructs nothing — headless stays byte-clean", () => {
+  // The test runner's own stdio is piped, which is exactly the
+  // environment the gate must refuse: no spinner bytes, no cursor hide.
+  assert.equal(cli.runSpinner("running doctors", 2), null);
+});
+
 test("main: run against a file-as-target names the real problem", async (t) => {
   const err = t.mock.method(console, "error", () => {});
   const notADir = path.join(os.tmpdir(), "any-doctor-not-a-dir");

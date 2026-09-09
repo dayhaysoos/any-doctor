@@ -277,11 +277,12 @@ export async function runDoctorCohort(options, onProgress) {
         var _a;
         if (onProgress === undefined)
             return;
+        const ok = Exit.isSuccess(exit);
         onProgress({
             total: options.length,
             programPath: o.programPath,
-            ok: Exit.isSuccess(exit),
-            durationMs: Exit.isSuccess(exit) ? ((_a = exit.value.durationMs) !== null && _a !== void 0 ? _a : 0) : 0,
+            ok,
+            durationMs: ok ? ((_a = exit.value.durationMs) !== null && _a !== void 0 ? _a : 0) : 0,
         });
     })), {
         concurrency: Math.max(1, Math.min(DOCTOR_POOL_SIZE, options.length)),
