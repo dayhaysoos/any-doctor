@@ -14,6 +14,7 @@ const meta = {
 const input = {
   fileCount: 6,
   durationMs: 111,
+  crashed: [],
   groups: [
     {
       programName: "unawaited-async-map.mjs",
@@ -83,6 +84,64 @@ test("renderReport: clean single group scores 100", () => {
   const out = renderReport({ ...input, groups: [{ ...input.groups[0], findings: [] }] }, false);
   assert.match(out, /Score: 100 \/ 100 — Excellent/);
   assert.match(out, /No findings/);
+});
+
+test("renderReport: an empty scan is a warning, never a green 100", () => {
+  const out = renderReport({
+    ...input,
+    fileCount: 0,
+    groups: [{ ...input.groups[0], findings: [] }],
+  }, false);
+  assert.match(out, /Score: n\/a — no files scanned/);
+  assert.match(out, /⚠ nothing to check — no \.ts, \.tsx, \.js, \.jsx, or \.mjs sources found/);
+  assert.ok(!out.includes("Excellent"), "an empty scan claims no grade");
+  assert.ok(!out.includes("No findings"), "no findings headline over nothing checked");
+});
+
+test("renderReport: an all-crashed cohort blames the crashes, not the sources", () => {
+  const out = renderReport({
+    ...input,
+    fileCount: 0,
+    crashed: ["boom-a", "boom-b"],
+    groups: [],
+  }, false);
+  assert.match(out, /every doctor crashed before completing a scan \(boom-a, boom-b; details above\)/);
+  assert.ok(!out.includes("no .ts, .tsx"), "the empty-scan warning would blame the wrong thing");
+  assert.ok(!out.includes("No findings"), "no findings headline over doctors that died");
+});
+
+test("renderReport: a mixed cohort over an empty target keeps the sources story", () => {
+  // One doctor crashed, one completed over zero scannable files —
+  // "every doctor crashed" would contradict the doctor count above it.
+  const out = renderReport({
+    ...input,
+    fileCount: 0,
+    crashed: ["boom"],
+    groups: [{ ...input.groups[0], findings: [] }],
+  }, false);
+  assert.match(out, /Any Doctor — 1 doctor/);
+  assert.match(out, /nothing to check — no \.ts, \.tsx/, "the crashes are already named above; the sources story stays");
+  assert.ok(!out.includes("every doctor crashed"), "a surviving doctor forbids the every-crashed claim");
+});
+
+test("renderReport: degradation honesty survives an empty scan — narrowed still renders", () => {
+  const out = renderReport({
+    ...input,
+    fileCount: 0,
+    analysisAvailable: false,
+    groups: [{
+      programName: "async-doctor.mjs",
+      meta: {
+        id: "async-doctor",
+        description: "Async discipline",
+        severity: "warning",
+        checks: [{ id: "unawaited-async-map", description: ".map(async ...) dropped", severity: "warning", needs: ["bindings"] }],
+      },
+      findings: [],
+    }],
+  }, false);
+  assert.match(out, /Score: n\/a — no files scanned/);
+  assert.match(out, /narrowed: analysis engine unavailable — unawaited-async-map ran in degraded mode/);
 });
 
 test("renderReport: multiple clean groups list each as clean", () => {

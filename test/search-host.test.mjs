@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
@@ -168,4 +169,40 @@ test("engine: a multi-rule batch returns one invocation's matches, each tagged w
   assert.ok(ids.has("fetch-any"), "fetch rule tagged");
   assert.ok(!ids.has("never-matches"), "non-matching rule contributes nothing");
   assert.ok(!ids.has(undefined), "every match carries a ruleId");
+});
+
+// Dogfood find (sift-skills, 979 files): the pilot's ten-pattern batch
+// emits 24MB of JSON — spawnSync's 1MB default truncated it mid-array
+// and the run crashed as "unparseable output". This pins the raised
+// ceiling: a batch whose JSON clears the old cap must still parse.
+test("engine: a batch whose JSON outgrows spawnSync's 1MB default still parses", { skip: engineSkip }, async () => {
+  const { runEngine } = await import("../bin/engine.js");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-buffer-"));
+  try {
+    const lines = ["export async function f() {"];
+    for (let i = 0; i < 60; i++) lines.push("  await step" + i + "();");
+    lines.push("}");
+    const body = lines.join("\n") + "\n";
+    fs.mkdirSync(path.join(dir, "src"), { recursive: true });
+    for (let i = 0; i < 150; i++) {
+      fs.writeFileSync(path.join(dir, "src", "f" + String(i).padStart(4, "0") + ".ts"), body);
+    }
+    const r = runEngine({ op: "rules", rules: [{ id: "await", pattern: "await $E" }] }, "TypeScript", dir);
+    assert.ok(r.ok, "big batch succeeds: " + (r.ok ? "" : r.error));
+    assert.equal(r.ok ? r.matches.length : 0, 150 * 60, "every await matched through the raised buffer");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// The overflow branch's dead-code history: it matched only the
+// streams-side error name, while spawnSync actually reports ENOBUFS
+// (verified Node 14–26) — so a real overflow fell through to a
+// misleading "unparseable output" complaint. Pin both names.
+test("engine: an exceeded output buffer is named for what it is", async () => {
+  const { isBufferOverflow } = await import("../bin/engine.js");
+  assert.equal(isBufferOverflow({ error: { code: "ENOBUFS" } }), true, "spawnSync's actual overflow code");
+  assert.equal(isBufferOverflow({ error: { code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" } }), true, "the streams-side name, kept for belt and braces");
+  assert.equal(isBufferOverflow({ error: { code: "ENOENT" } }), false, "a missing binary is not an overflow");
+  assert.equal(isBufferOverflow({}), false, "no error is not an overflow");
 });

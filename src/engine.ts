@@ -52,18 +52,40 @@ export interface RawSgCapture {
 
 export type EngineResult = { ok: true; matches: RawSgMatch[] } | { ok: false; error: string };
 
+// One batched query over a real repo emits tens of megabytes of JSON (the
+// async-doctor pilot's ten patterns produce 24MB over a 979-file repo) —
+// spawnSync's 1MB default truncates that mid-array, and the crash reads as
+// an ast-grep bug instead of a buffer bug. The ceiling exists so a runaway
+// pattern (matching near-every node of a monorepo) fails loudly here
+// instead of buffering without end.
+const MAX_BUFFER_BYTES = 256 * 1024 * 1024;
+
 // ast-grep renamed its binary; old installs only have `sg`. Try the new
-// name first (no deprecation warning on stderr), fall back once.
+// name first (no deprecation warning on stderr), fall back once. The
+// spawn options are one const so the fallback cannot drift from the
+// first try.
+const SPAWN_OPTS = { encoding: "utf8" as const, timeout: 120000, maxBuffer: MAX_BUFFER_BYTES };
+
 function invoke(args: string[], root: string) {
-  let r = spawnSync("ast-grep", [...args, root], { encoding: "utf8", timeout: 120000 });
+  let r = spawnSync("ast-grep", [...args, root], SPAWN_OPTS);
   if (r.error && (r.error as NodeJS.ErrnoException).code === "ENOENT") {
-    r = spawnSync("sg", [...args, root], { encoding: "utf8", timeout: 120000 });
+    r = spawnSync("sg", [...args, root], SPAWN_OPTS);
   }
   return r;
 }
 
 function missingEngine(r: ReturnType<typeof spawnSync>): boolean {
   return Boolean(r.error && (r.error as NodeJS.ErrnoException).code === "ENOENT");
+}
+
+// spawnSync reports an exceeded maxBuffer as ENOBUFS (verified Node 14–26;
+// ERR_CHILD_PROCESS_STDIO_MAXBUFFER is the streams-side name and is kept
+// for belt and braces). The distinction matters: without this check the
+// truncated stdout falls through to JSON.parse and surfaces as a
+// misleading "unparseable output" complaint.
+export function isBufferOverflow(r: { error?: unknown }): boolean {
+  const code = (r.error as NodeJS.ErrnoException | undefined)?.code;
+  return code === "ENOBUFS" || code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER";
 }
 
 // Rule queries need `scan --inline-rules`, which older ast-greps lack.
@@ -93,6 +115,12 @@ export function runEngine(query: EngineQuery, language: string, root: string): E
   const r = invoke(args, root);
   if (missingEngine(r)) {
     return { ok: false, error: "ctx.search requires ast-grep (ast-grep or sg) on PATH — install: brew install ast-grep" };
+  }
+  if (isBufferOverflow(r)) {
+    return {
+      ok: false,
+      error: `ctx.search outgrew the engine's ${MAX_BUFFER_BYTES / (1024 * 1024)}MB output buffer — the query matches too much code for one batch; narrow the patterns or split the batch`,
+    };
   }
   if (r.status !== 0 && !String(r.stdout).trim()) {
     if (query.op !== "pattern" && tooOld(String(r.stderr))) {

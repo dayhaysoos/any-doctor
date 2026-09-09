@@ -28,6 +28,16 @@ export function truncateVisible(s, width) {
     }
     return out + "…";
 }
+// The one paint-width policy for every in-place painter (frames and the
+// live line): a column of headroom, floored so a tiny terminal cannot
+// produce a degenerate width. A tty that reports nothing — undefined OR
+// zero (expect's PTYs report 0) — is unknown, not tiny, and paints at
+// the 120 default. One definition — spinner.ts and paintFrame both call
+// it, so truncation cannot drift between them.
+export function paintWidth(columns) {
+    const cols = columns !== undefined && columns > 0 ? columns : 120;
+    return Math.max(10, cols - 1);
+}
 // In-place repaint, always: home the cursor and rewrite every line with a
 // clear-to-end-of-line, then clear below the frame. Per-line \x1b[K plus
 // the trailing \x1b[J fully own the screen, so no full-screen \x1b[2J
@@ -37,8 +47,7 @@ export function truncateVisible(s, width) {
 // it hold the repaint until the frame is fully transmitted, so they never
 // paint a half-frame; terminals that don't simply ignore the mode.
 export function paintFrame(stdout, frame, cols) {
-    const width = Math.max(10, cols - 1);
-    const lines = frame.split("\n").map(l => truncateVisible(l, width) + "\x1b[K");
+    const lines = frame.split("\n").map(l => truncateVisible(l, paintWidth(cols)) + "\x1b[K");
     stdout.write("\x1b[?2026h\x1b[H" + lines.join("\n") + "\x1b[J\x1b[?2026l");
 }
 export function runTty(options) {
@@ -54,7 +63,7 @@ export function runTty(options) {
             if (f === lastFrame)
                 return; // identical frame: not one byte of churn
             lastFrame = f;
-            paintFrame(stdout, f, stdout.columns || 120);
+            paintFrame(stdout, f, stdout.columns);
         };
         let settled = false;
         const finish = (result) => {

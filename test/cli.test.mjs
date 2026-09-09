@@ -37,6 +37,35 @@ test("main: run with a missing doctor exits 1", async (t) => {
   assert.equal(code, 1);
 });
 
+test("main: run against a nonexistent target refuses in one line, no loader stack", async (t) => {
+  const err = t.mock.method(console, "error", () => {});
+  const code = await cli.main(["run", DOCTOR, path.join(os.tmpdir(), "any-doctor-no-such-dir")]);
+  assert.equal(code, 1);
+  const printed = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+  assert.match(printed, /target directory not found: /);
+  assert.ok(!printed.includes("at "), "a configuration error never renders a stack trace");
+});
+
+test("runSpinner: a non-TTY stdio pair constructs nothing — headless stays byte-clean", () => {
+  // The test runner's own stdio is piped, which is exactly the
+  // environment the gate must refuse: no spinner bytes, no cursor hide.
+  assert.equal(cli.runSpinner("running doctors", 2), null);
+});
+
+test("main: run against a file-as-target names the real problem", async (t) => {
+  const err = t.mock.method(console, "error", () => {});
+  const notADir = path.join(os.tmpdir(), "any-doctor-not-a-dir");
+  fs.writeFileSync(notADir, "x");
+  try {
+    const code = await cli.main(["run", DOCTOR, notADir]);
+    assert.equal(code, 1);
+    const printed = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.match(printed, /target is not a directory: /);
+  } finally {
+    fs.rmSync(notADir, { force: true });
+  }
+});
+
 test("main: verify green doctor exits 0", async (t) => {
   silentConsole(t);
   const code = await cli.main(["verify", DOCTOR]);

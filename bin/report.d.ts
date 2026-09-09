@@ -13,6 +13,7 @@ export interface RunOutcome {
 }
 export declare function cohortFileCount(counts: number[]): number;
 export declare function unsafeSkipLine(names: string[]): string;
+export declare function emptyScanLine(): string;
 export declare function unsafeRefusalLine(name: string, capabilities: readonly string[]): string;
 export declare function dedupeGroups(groups: ReportGroup[]): {
     groups: ReportGroup[];

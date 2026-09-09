@@ -1,5 +1,6 @@
 import { narrowedCheckIds, resolveFinding } from "./contract.js";
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR, YELLOW } from "./palette.js";
+import { DEFAULT_EXTS } from "./sdk.js";
+import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
 // All doctors scan the same target, so the cohort's file count is any
 // doctor's count; the max is the honest pick when one crashed early. The
@@ -18,6 +19,15 @@ export function unsafeSkipLine(names) {
     const rest = names.length - SKIP_NAMES_SHOWN;
     const list = rest > 0 ? `${shown} \u2026 and ${rest} more` : shown;
     return `${names.length} doctor${names.length === 1 ? "" : "s"} could be malicious — skipped: ${list}`;
+}
+// The empty-scan warning's one copy: a run that scanned zero files must
+// never read as a clean pass — "No findings" over nothing checked is
+// the falsest green there is. The extension list is composed from the
+// walk's own DEFAULT_EXTS, so the prose cannot drift from what the walk
+// actually reads.
+export function emptyScanLine() {
+    const exts = DEFAULT_EXTS.join(", ").replace(/, ([^,]*)$/, ", or $1");
+    return `nothing to check — no ${exts} sources found (node_modules, hidden dirs, and test paths are skipped; --include-tests opts back in)`;
 }
 // The refusal for a doctor you explicitly asked to run: the file, its
 // capabilities, one line. The runner's DoctorUnsafe renderer and every
@@ -96,12 +106,31 @@ export function renderReport(input, useColor) {
     lines.push("");
     const doctorWord = groups.length === 1 ? "doctor" : "doctors";
     lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
-    lines.push(c(header.scoreLine, BOLD + gradeColor(sr.score)));
+    lines.push(c(header.scoreLine, BOLD + scoreHeaderTone(sr)));
     if (header.cleanLine) {
         lines.push(c(header.cleanLine, DIM));
     }
     if (input.skippedUnsafe !== undefined && input.skippedUnsafe.length > 0) {
         lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
+    }
+    // The empty scan is its own outcome, not a clean one: no findings
+    // headline, no per-doctor "clean" roll — those are claims a zero-file
+    // scan has not earned. Degradation honesty survives it: narrowed
+    // notices still render (visible, never silent). (Findings over a
+    // zero count are still possible — a doctor reporting files it read
+    // outside the default extensions — and fall through to render.)
+    if (input.fileCount === 0 && total === 0) {
+        // "Every doctor crashed" is claimable only when no doctor produced
+        // a group at all; a mixed cohort over an empty target still gets
+        // the sources story (the crashes are already named above).
+        if (input.crashed.length > 0 && groups.length === 0) {
+            lines.push(c(`\u26a0 nothing to check — every doctor crashed before completing a scan (${input.crashed.join(", ")}; details above)`, YELLOW));
+        }
+        else {
+            lines.push(c(`\u26a0 ${emptyScanLine()}`, YELLOW));
+        }
+        pushNarrowedNotices(lines, groups, input.analysisAvailable, c);
+        return lines.join("\n");
     }
     if (total === 0) {
         lines.push(c("No findings", BOLD + GREEN));
@@ -114,17 +143,7 @@ export function renderReport(input, useColor) {
         // A clean degraded run must never read as a full-power clean — the
         // narrowed notice renders here too, exactly as it does under
         // findings (D20 Stage 2's own words).
-        if (input.analysisAvailable === false) {
-            const notices = groups
-                .map((g) => narrowedCheckIds(g.meta))
-                .filter((ids) => ids.length > 0);
-            if (notices.length > 0) {
-                lines.push("");
-                for (const ids of notices) {
-                    lines.push(c(narrowedLine(ids), YELLOW));
-                }
-            }
-        }
+        pushNarrowedNotices(lines, groups, input.analysisAvailable, c);
         return lines.join("\n");
     }
     const bySeverity = { error: 0, warning: 0, info: 0 };
@@ -185,10 +204,27 @@ export function renderReport(input, useColor) {
 function where(f) {
     return (f.rule ? f.rule + " " : "") + f.file + ":" + f.line;
 }
-// The narrowed notice's one wording (D20 Stage 2) — one source for both
-// the clean and the findings branch.
+// The narrowed notice's one wording (D20 Stage 2) — one source for every
+// branch that renders it (clean, findings, and empty-scan).
 function narrowedLine(checkIds) {
     return `narrowed: analysis engine unavailable — ${checkIds.join(", ")} ran in degraded mode`;
+}
+// Degradation honesty survives every outcome shape: a run without the
+// analysis engine says so whether it ended clean, with findings, or —
+// over an empty scan — with nothing checked at all (visible, never
+// silent).
+function pushNarrowedNotices(lines, groups, analysisAvailable, c) {
+    if (analysisAvailable !== false)
+        return;
+    const notices = groups
+        .map((g) => narrowedCheckIds(g.meta))
+        .filter((ids) => ids.length > 0);
+    if (notices.length > 0) {
+        lines.push("");
+        for (const ids of notices) {
+            lines.push(c(narrowedLine(ids), YELLOW));
+        }
+    }
 }
 // Verify-gate rendering: pure state -> string, colored on request. The
 // command layer prints it and counts failures from the data.

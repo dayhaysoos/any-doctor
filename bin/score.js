@@ -44,13 +44,26 @@ export function scoreFromFileHealth(perFile, filesTotal) {
 export function computeScore(groups, filesTotal) {
     return scoreFromFileHealth(groups.flatMap(g => g.findings.map(f => ({ file: f.file, severity: findingSeverity(g, f) }))), filesTotal);
 }
+// The empty-scan predicate's one home: every surface that decides
+// anything by "nothing was scanned" — the header composer, the tone in
+// palette, the dashboard's row — asks this, so the policy cannot drift
+// into a fifth inline `filesTotal === 0`.
+export function isEmptyScan(s) {
+    return s.filesTotal === 0;
+}
 // The one composer for the score's header lines (D19): report and
 // dashboard render these strings, never re-compose them. The clean line
-// is null for an empty scan — there is nothing to be clean against.
+// is null for an empty scan — there is nothing to be clean against —
+// and so is any score claim: "100 — Excellent" over nothing checked is
+// a false green, so the header says n/a instead.
 export function scoreHeaderLines(s) {
+    if (isEmptyScan(s)) {
+        return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true };
+    }
     return {
         scoreLine: `Score: ${s.score} / 100 — ${s.grade}`,
-        cleanLine: s.filesTotal > 0 ? `${s.filesClean}/${s.filesTotal} files clean` : null,
+        cleanLine: `${s.filesClean}/${s.filesTotal} files clean`,
+        emptyScan: false,
     };
 }
 export function categoryRollup(groups) {

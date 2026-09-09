@@ -268,10 +268,23 @@ export async function runDoctor(options) {
 // order; a crash is typed data (RunnerError) and never interrupts its
 // siblings. Concurrency policy is execution policy — it lives here,
 // beside the Doctor-run protocol, and the command layer consumes the
-// facade.
+// facade. onProgress fires as each doctor settles (completion order,
+// not input order) — the live spinner's fuel; nothing else may depend
+// on its timing.
 export const DOCTOR_POOL_SIZE = 4;
-export async function runDoctorCohort(options) {
-    const exits = await Effect.runPromise(Effect.forEach(options, (o) => Effect.exit(runDoctorE(o)), {
+export async function runDoctorCohort(options, onProgress) {
+    const exits = await Effect.runPromise(Effect.forEach(options, (o) => Effect.tap(Effect.exit(runDoctorE(o)), (exit) => Effect.sync(() => {
+        var _a;
+        if (onProgress === undefined)
+            return;
+        const ok = Exit.isSuccess(exit);
+        onProgress({
+            total: options.length,
+            programPath: o.programPath,
+            ok,
+            durationMs: ok ? ((_a = exit.value.durationMs) !== null && _a !== void 0 ? _a : 0) : 0,
+        });
+    })), {
         concurrency: Math.max(1, Math.min(DOCTOR_POOL_SIZE, options.length)),
     }));
     return exits.map((exit, i) => Exit.match(exit, {

@@ -1,5 +1,5 @@
 import { Severity } from "./contract.js";
-import { gradeFor } from "./score.js";
+import { gradeFor, isEmptyScan } from "./score.js";
 
 // The severity palette: one home for how findings are glyphed and colored
 // across the picker, report, and dashboard. Grade colors derive from
@@ -20,4 +20,15 @@ export function colorizer(useColor: boolean): Colorizer {
 export function gradeColor(score: number): string {
   const grade = gradeFor(score);
   return grade === "Excellent" || grade === "Good" ? GREEN : grade === "Fair" ? YELLOW : RED;
+}
+
+// The score's tone, wherever a score renders — header line, bar, or a
+// doctor's row: an empty scan warns yellow (a vacuous 100 must not buy
+// the Excellent-green), everything else follows its grade. Takes the
+// score result itself so no caller re-derives the empty-scan policy
+// (D19: render the strings, never re-compose them). Param is
+// structurally typed: palette's score imports stay value-level
+// (gradeFor, isEmptyScan) — no type dependency rides along.
+export function scoreHeaderTone(score: { score: number; filesTotal: number }): string {
+  return isEmptyScan(score) ? YELLOW : gradeColor(score.score);
 }

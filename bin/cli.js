@@ -11,6 +11,7 @@ import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, runDoc
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor } from "./select.js";
 import { pickItemsOn } from "./picker.js";
+import { formatMs, startSpinner } from "./spinner.js";
 import { canRunTui, processTtyEnv } from "./tty.js";
 import { BOLD, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./palette.js";
 function fail(msg) {
@@ -151,11 +152,47 @@ function cohortUnusable(cohort) {
     }
     return true;
 }
+// A target that cannot be walked is a configuration error, not a doctor
+// crash: refuse it before the picker opens or any child spawns, so the
+// user gets one line instead of a loader stack trace.
+function unusableTargetReason(targetDir) {
+    var _a;
+    let st;
+    try {
+        st = fs.statSync(targetDir);
+    }
+    catch (e) {
+        const code = (_a = e.code) !== null && _a !== void 0 ? _a : "EUNKNOWN";
+        if (code === "ENOENT")
+            return `target directory not found: ${targetDir}`;
+        return `cannot read target directory (${code}): ${targetDir}`;
+    }
+    if (!st.isDirectory())
+        return `target is not a directory: ${targetDir}`;
+    return null;
+}
+// The live line's one gate: interactive TTYs get a spinner, headless and
+// piped output stay byte-clean — the same gate family as the picker, in
+// the one place both run paths share ("one defined meaning," as the
+// glossary puts it, as a function instead of a copy-pasted condition).
+// Exported for the gate's pin: a non-TTY stdio pair must construct
+// nothing.
+export function runSpinner(label, total) {
+    const env = processTtyEnv();
+    return canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS
+        ? startSpinner(env.stdout, { label, total })
+        : null;
+}
 async function cmdRun(args) {
     var _a, _b, _c;
     const parsed = parseArgs(args);
     if (parsed.global) {
         fail("--global is a generate-only flag");
+        return 1;
+    }
+    const badTarget = unusableTargetReason(parsed.targetDir);
+    if (badTarget !== null) {
+        fail(badTarget);
         return 1;
     }
     // One RunOutcome for both modes — a doctor path targets one doctor;
@@ -172,7 +209,17 @@ async function cmdRun(args) {
         if ("exit" in selection)
             return selection.exit;
         const runStarted = Date.now();
-        const scan = await scanOnce({ programPath: selection.doctorPath, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
+        // The live line: while the child runs, a spinner instead of frozen
+        // silence. total 0 — there is no "0 of 1" to count up to; the label
+        // and elapsed time carry the whole story.
+        const spin = runSpinner(`scanning with ${path.basename(selection.doctorPath, ".mjs")}`, 0);
+        let scan;
+        try {
+            scan = await scanOnce({ programPath: selection.doctorPath, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
+        }
+        finally {
+            spin === null || spin === void 0 ? void 0 : spin.stop();
+        }
         outcome = {
             groups: [scan.group],
             crashed: [],
@@ -216,12 +263,32 @@ async function cmdRun(args) {
         const doctorPaths = new Map();
         // The cohort runs through the runner's bounded pool (see
         // runDoctorCohort) — order preserved, a crash stays data, and the
-        // per-crash line is the same one a single-doctor run prints.
-        const runs = await runDoctorCohort(doctors.map(d => ({
-            programPath: d.path,
-            targetDir: parsed.targetDir,
-            includeTests: parsed.includeTests,
-        })));
+        // per-crash line is the same one a single-doctor run prints. While
+        // it runs, the live line ticks per settle with the doctor's own
+        // duration. stop() sits in finally: even a defect that rejects the
+        // batch must not leave a hidden cursor behind.
+        const spin = runSpinner("running doctors", doctors.length);
+        let done = 0;
+        let runs;
+        try {
+            runs = await runDoctorCohort(doctors.map(d => ({
+                programPath: d.path,
+                targetDir: parsed.targetDir,
+                includeTests: parsed.includeTests,
+            })), spin
+                ? (p) => {
+                    done += 1;
+                    // A healthy settle carries its own duration; a crash carries
+                    // none (the runner reports 0) — showing "0ms" would fabricate
+                    // a duration that was never measured.
+                    const who = path.basename(p.programPath, ".mjs");
+                    spin.update({ done, note: p.ok ? `${who} ${formatMs(p.durationMs)}` : `${who} ✗` });
+                }
+                : undefined);
+        }
+        finally {
+            spin === null || spin === void 0 ? void 0 : spin.stop();
+        }
         const fileCounts = [];
         let analysisAvailable;
         for (const [i, run] of runs.entries()) {

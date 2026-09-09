@@ -5,3 +5,7 @@ export declare const SEVERITY_COLOR: Record<Severity, string>;
 export type Colorizer = (s: string, wrap?: string) => string;
 export declare function colorizer(useColor: boolean): Colorizer;
 export declare function gradeColor(score: number): string;
+export declare function scoreHeaderTone(score: {
+    score: number;
+    filesTotal: number;
+}): string;

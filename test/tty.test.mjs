@@ -80,3 +80,11 @@ test("runTty: a throwing first paint degrades to an alive session, not a hang", 
   assert.notEqual(out, "pending", "finish still resolves — raw mode is not leaked");
   assert.equal(stdin.rawModeHistory[stdin.rawModeHistory.length - 1], false, "raw mode restored");
 });
+
+test("paintWidth: zero or unknown columns mean unknown, not tiny", async () => {
+  const { paintWidth } = await import("../bin/tty.js");
+  assert.equal(paintWidth(undefined), 119, "no column report paints at the default");
+  assert.equal(paintWidth(0), 119, "expect's PTYs report 0 — unknown, not a 1-char terminal");
+  assert.equal(paintWidth(80), 79, "a real terminal keeps its column of headroom");
+  assert.equal(paintWidth(4), 10, "a genuinely tiny terminal floors at 10");
+});

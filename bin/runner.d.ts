@@ -63,7 +63,13 @@ export type CohortRun = {
     options: RunOptions;
     cause: RunnerError;
 };
-export declare function runDoctorCohort(options: RunOptions[]): Promise<CohortRun[]>;
+export interface CohortProgress {
+    total: number;
+    programPath: string;
+    ok: boolean;
+    durationMs: number;
+}
+export declare function runDoctorCohort(options: RunOptions[], onProgress?: (p: CohortProgress) => void): Promise<CohortRun[]>;
 export declare function verifyDoctor(options: VerifyOptions): Promise<VerifyRunResult>;
 export declare function metaDoctor({ programPath }: {
     programPath: string;

@@ -2,12 +2,12 @@ import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { Finding, JoinedFinding, ReportGroup, resolveFinding, runCommandFor, Severity } from "./contract.js";
-import { scoreFromFileHealth, ScoreResult, scoreHeaderLines } from "./score.js";
+import { isEmptyScan, scoreFromFileHealth, ScoreResult, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, SEVERITY_COLOR, YELLOW } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, GREEN, ORANGE, RESET, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { dedupeGroups, RunOutcome, unsafeSkipLine } from "./report.js";
 
 const SPLIT_MIN_COLS = 100;
@@ -401,13 +401,21 @@ export function buildListRows(
       });
     } else {
       // The dashboard is the selection surface: every doctor is a
-      // collapsible row, severity-ordered, with its total count.
+      // collapsible row, severity-ordered, with its total count. The
+      // row's score obeys the header's honesty: a doctor over zero
+      // scanned files shows n/a — never a green vacuous 100.
       const summary = summarizeDoctor(d);
       const rowIndex = rows.length;
       const isOpen = open.has(d.doctorId);
+      // The row's score rides the header's tone policy — n/a in yellow
+      // over an empty denominator, never a green vacuous 100.
+      const scoreBit = c(
+        "· " + (isEmptyScan(summary.score) ? "n/a" : summary.score.score),
+        scoreHeaderTone(summary.score),
+      );
       rows.push({
         kind: "section",
-        text: `${selectedRow === rowIndex ? c("›", BOLD) : " "}${c(isOpen ? "▾" : "▸", DIM)} ${c(GLYPH[summary.worst], SEVERITY_COLOR[summary.worst])} ${c(summary.doctorId, BOLD)} ${c("×" + summary.count, DIM)} ${c("· " + summary.score.score, gradeColor(summary.score.score))}`,
+        text: `${selectedRow === rowIndex ? c("›", BOLD) : " "}${c(isOpen ? "▾" : "▸", DIM)} ${c(GLYPH[summary.worst], SEVERITY_COLOR[summary.worst])} ${c(summary.doctorId, BOLD)} ${c("×" + summary.count, DIM)} ${scoreBit}`,
         severity: summary.worst,
         selectable: true,
         doctor: summary,
@@ -550,16 +558,35 @@ export function dashboardFrame(state: DashboardFrameState): string {
   const scopedId = sel?.doctor?.doctorId ?? sel?.check?.doctorId ?? sel?.item?.doctorId ?? tree[0]?.doctorId;
   const scoped = tree.find(d => d.doctorId === scopedId);
 
+  // The header's third line, one shape for every header state — a
+  // count, the clean fraction (or the raw file count when there is
+  // none), and the run's duration. Composed three ways before, which is
+  // how format drift starts.
+  const summaryLine = (count: number, cleanLine: string | null, ms: number): string =>
+    `${count} finding${count === 1 ? "" : "s"} · ${cleanLine ?? state.filesTotal + " file" + (state.filesTotal === 1 ? "" : "s")} · ${ms}ms`;
+
   const headerLines: string[] = [];
   if (scoped) {
     const h = scoreHeaderLines(scoped.score);
-    headerLines.push(`${c(scoped.doctorId, BOLD)}  ${c(h.scoreLine, BOLD + gradeColor(scoped.score.score))}`);
-    headerLines.push(c(scoreBar(scoped.score.score, barWidth), gradeColor(scoped.score.score)));
-    headerLines.push(c(`${scoped.count} finding${scoped.count === 1 ? "" : "s"} · ${h.cleanLine ?? state.filesTotal + " files"} · ${state.durationMs}ms`, DIM));
+    const tone = scoreHeaderTone(scoped.score);
+    headerLines.push(`${c(scoped.doctorId, BOLD)}  ${c(h.scoreLine, BOLD + tone)}`);
+    // An empty scan draws an empty bar: nothing was measured, and a
+    // filled bar would assert the vacuous 100 the n/a line just refused.
+    headerLines.push(c(scoreBar(h.emptyScan ? 0 : scoped.score.score, barWidth), tone));
+    headerLines.push(c(summaryLine(scoped.count, h.cleanLine, state.durationMs), DIM));
+  } else if (state.filesTotal === 0) {
+    // Zero groups over zero files: the same n/a the report renders —
+    // composed through the public score surface, not re-worded here.
+    const empty = scoreFromFileHealth([], 0);
+    const h = scoreHeaderLines(empty);
+    const tone = scoreHeaderTone(empty);
+    headerLines.push(c(h.scoreLine, BOLD + tone));
+    headerLines.push(c(scoreBar(0, barWidth), tone));
+    headerLines.push(c(summaryLine(0, h.cleanLine, state.durationMs), DIM));
   } else {
     headerLines.push(c("No findings", BOLD + GREEN));
     headerLines.push(c(scoreBar(100, barWidth), GREEN));
-    headerLines.push(c(`0 findings · ${state.filesTotal} file${state.filesTotal === 1 ? "" : "s"} · ${state.durationMs}ms`, DIM));
+    headerLines.push(c(summaryLine(0, null, state.durationMs), DIM));
   }
   if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
     headerLines.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
