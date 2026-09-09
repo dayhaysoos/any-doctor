@@ -201,8 +201,13 @@ export async function doctor(ctx) {
       // several trigger lines but is one operation (the audit's
       // rateLimiter.ts 73/74/75 triple was one collect) - but different
       // rules on the same chain are different diagnoses.
+      // Dedup key is rule + chain-start-line: multi-line chains visited
+      // at several trigger lines are ONE finding, but the same chain text
+      // in a different function has a different start line and is a
+      // separate finding — the audit's billing.ts triple.
+      const chainStart = statementStartLine(lines, i);
       const once = (rule) => {
-        const key = rule + "@" + chain;
+        const key = rule + "@" + file + ":" + chainStart;
         if (reportedChains.has(key)) return;
         reportedChains.add(key);
         ctx.report.finding({ rule, file, line: i + 1 });
@@ -258,6 +263,15 @@ function statementAt(lines, i) {
   let end = i;
   while (end < lines.length - 1 && !statementEnds(lines[end])) end++;
   return lines.slice(start, end + 1).join(" ").replace(/\s+/g, "");
+}
+
+// The line where the statement containing line i begins — the chain's
+// origin. Multi-line chains visited at several trigger lines share it,
+// but the same chain in a different function does not.
+function statementStartLine(lines, i) {
+  let start = i;
+  while (start > 0 && !statementEnds(lines[start - 1])) start--;
+  return start;
 }
 
 function statementEnds(line) {
@@ -395,9 +409,13 @@ function clockIsMeasuringOrBranching(line) {
   if (!m) return false;
   const before = line.slice(0, m.index).trimEnd();
   const after = line.slice(m.index + m[0].length).trimStart();
-  return /^[-+*/%]/.test(after)
+  // Date.now() + N sets a future timestamp (expiration, TTL) — that is
+  // legitimate clock reading, not elapsed-time measurement. Only
+  // subtraction (X - Date.now(), Date.now() - X) measures elapsed time,
+  // and only comparisons branch on the pinned value.
+  return /^[-*/%]/.test(after)
     || /^(?:===|!==|==|!=|>=|<=|>|<)/.test(after)
-    || /[-+*/%]$/.test(before)
+    || /[-*/%]$/.test(before)
     || /(?:===|!==|==|!=|>=|<=|>|<)$/.test(before);
 }
 
@@ -508,7 +526,7 @@ function checkServerRuns(ctx, file, lines) {
 // context walk looks back to the statement's start and forward across
 // array/call closings for the promise combiners.
 const BARE_CTX_LINE = /^ctx\s*\.\s*(?:db\s*\.\s*(?:insert|patch|replace|delete|get|query)\s*\(|scheduler\s*\.\s*\w+\s*\(|run(?:Query|Mutation|Action)\s*\()/;
-const COMBINER = /Promise\s*\.\s*(?:all|allSettled|race|any)\s*\(|\.then\s*\(|\.catch\s*\(|\.finally\s*\(|Effect\s*\.\s*runPromise/;
+const COMBINER = /Promise\s*\.\s*(?:all|allSettled|race|any)\s*\(|\.then\s*\(|\.catch\s*\(|\.finally\s*\(|Effect\s*\.\s*(?:runPromise|promise)/;
 
 function callIsConsumed(lines, i) {
   if (COMBINER.test(lines[i]) || /\breturn\b|\bawait\b/.test(lines[i])) return true;
@@ -516,17 +534,18 @@ function callIsConsumed(lines, i) {
     const t = lines[j];
     if (COMBINER.test(t)) return true;
     if (/=\s*\[?\s*$/.test(t)) return true; // array literal or promise assignment
+    if (/\.push\s*\(/.test(t) || /\.push\s*$/.test(t)) return true; // push target
     if (/[;}!]\s*$/.test(t)) break; // left the statement
   }
-  for (let j = i + 1; j <= Math.min(lines.length - 1, i + 12); j++) {
+  // Forward walk: broad — an array of promise pushes is consumed by a
+  // Promise.all that may follow after several more pushes and closes.
+  let semicolons = 0;
+  for (let j = i + 1; j <= Math.min(lines.length - 1, i + 25); j++) {
     const t = lines[j];
     if (COMBINER.test(t)) return true;
-    // `];` closes the array - the Promise.all over it may be the next
-    // statement, so cross exactly one semicolon boundary.
     if (/;\s*$/.test(t)) {
-      const next = lines[j + 1] ?? "";
-      if (/^\s*(?:await\s+)?Promise|]\s*$/.test(t) && !COMBINER.test(next)) continue;
-      break;
+      semicolons++;
+      if (semicolons > 2) break;
     }
   }
   return false;
