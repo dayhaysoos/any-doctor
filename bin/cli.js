@@ -152,11 +152,35 @@ function cohortUnusable(cohort) {
     }
     return true;
 }
+// A target that cannot be walked is a configuration error, not a doctor
+// crash: refuse it before the picker opens or any child spawns, so the
+// user gets one line instead of a loader stack trace.
+function unusableTargetReason(targetDir) {
+    var _a;
+    let st;
+    try {
+        st = fs.statSync(targetDir);
+    }
+    catch (e) {
+        const code = (_a = e.code) !== null && _a !== void 0 ? _a : "EUNKNOWN";
+        if (code === "ENOENT")
+            return `target directory not found: ${targetDir}`;
+        return `cannot read target directory (${code}): ${targetDir}`;
+    }
+    if (!st.isDirectory())
+        return `target is not a directory: ${targetDir}`;
+    return null;
+}
 async function cmdRun(args) {
     var _a, _b, _c;
     const parsed = parseArgs(args);
     if (parsed.global) {
         fail("--global is a generate-only flag");
+        return 1;
+    }
+    const badTarget = unusableTargetReason(parsed.targetDir);
+    if (badTarget !== null) {
+        fail(badTarget);
         return 1;
     }
     // One RunOutcome for both modes — a doctor path targets one doctor;

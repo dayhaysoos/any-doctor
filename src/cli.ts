@@ -168,10 +168,31 @@ function cohortUnusable(cohort: { valid: DiscoveredDoctor[]; skippedUnsafe: stri
   return true;
 }
 
+// A target that cannot be walked is a configuration error, not a doctor
+// crash: refuse it before the picker opens or any child spawns, so the
+// user gets one line instead of a loader stack trace.
+function unusableTargetReason(targetDir: string): string | null {
+  let st: fs.Stats;
+  try {
+    st = fs.statSync(targetDir);
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code ?? "EUNKNOWN";
+    if (code === "ENOENT") return `target directory not found: ${targetDir}`;
+    return `cannot read target directory (${code}): ${targetDir}`;
+  }
+  if (!st.isDirectory()) return `target is not a directory: ${targetDir}`;
+  return null;
+}
+
 async function cmdRun(args: string[]): Promise<number> {
   const parsed = parseArgs(args);
   if (parsed.global) {
     fail("--global is a generate-only flag");
+    return 1;
+  }
+  const badTarget = unusableTargetReason(parsed.targetDir);
+  if (badTarget !== null) {
+    fail(badTarget);
     return 1;
   }
 
