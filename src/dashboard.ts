@@ -553,9 +553,19 @@ export function dashboardFrame(state: DashboardFrameState): string {
   const headerLines: string[] = [];
   if (scoped) {
     const h = scoreHeaderLines(scoped.score);
-    headerLines.push(`${c(scoped.doctorId, BOLD)}  ${c(h.scoreLine, BOLD + gradeColor(scoped.score.score))}`);
-    headerLines.push(c(scoreBar(scoped.score.score, barWidth), gradeColor(scoped.score.score)));
+    // An empty scan earns yellow, never the Excellent-green a vacuous
+    // 100 would buy — same honesty the report renders.
+    const tone = h.emptyScan ? YELLOW : gradeColor(scoped.score.score);
+    headerLines.push(`${c(scoped.doctorId, BOLD)}  ${c(h.scoreLine, BOLD + tone)}`);
+    headerLines.push(c(scoreBar(scoped.score.score, barWidth), tone));
     headerLines.push(c(`${scoped.count} finding${scoped.count === 1 ? "" : "s"} · ${h.cleanLine ?? state.filesTotal + " files"} · ${state.durationMs}ms`, DIM));
+  } else if (state.filesTotal === 0) {
+    // Zero groups over zero files: the same n/a the report renders —
+    // composed through the public score surface, not re-worded here.
+    const h = scoreHeaderLines(scoreFromFileHealth([], 0));
+    headerLines.push(c(h.scoreLine, BOLD + YELLOW));
+    headerLines.push(c(scoreBar(100, barWidth), YELLOW));
+    headerLines.push(c(`0 findings · 0 files · ${state.durationMs}ms`, DIM));
   } else {
     headerLines.push(c("No findings", BOLD + GREEN));
     headerLines.push(c(scoreBar(100, barWidth), GREEN));

@@ -46,11 +46,17 @@ export function computeScore(groups, filesTotal) {
 }
 // The one composer for the score's header lines (D19): report and
 // dashboard render these strings, never re-compose them. The clean line
-// is null for an empty scan — there is nothing to be clean against.
+// is null for an empty scan — there is nothing to be clean against —
+// and so is any score claim: "100 — Excellent" over nothing checked is
+// a false green, so the header says n/a instead.
 export function scoreHeaderLines(s) {
+    if (s.filesTotal === 0) {
+        return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true };
+    }
     return {
         scoreLine: `Score: ${s.score} / 100 — ${s.grade}`,
-        cleanLine: s.filesTotal > 0 ? `${s.filesClean}/${s.filesTotal} files clean` : null,
+        cleanLine: `${s.filesClean}/${s.filesTotal} files clean`,
+        emptyScan: false,
     };
 }
 export function categoryRollup(groups) {

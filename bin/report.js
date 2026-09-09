@@ -19,6 +19,13 @@ export function unsafeSkipLine(names) {
     const list = rest > 0 ? `${shown} \u2026 and ${rest} more` : shown;
     return `${names.length} doctor${names.length === 1 ? "" : "s"} could be malicious — skipped: ${list}`;
 }
+// The empty-scan warning's one copy: a run that scanned zero files must
+// never read as a clean pass — "No findings" over nothing checked is
+// the falsest green there is. It names what the walk looks for and what
+// it skips, so a wrong-directory or all-tests target explains itself.
+export function emptyScanLine() {
+    return "nothing to check — no .ts, .tsx, .js, .jsx, or .mjs sources found (node_modules, hidden dirs, and test paths are skipped; --include-tests opts back in)";
+}
 // The refusal for a doctor you explicitly asked to run: the file, its
 // capabilities, one line. The runner's DoctorUnsafe renderer and every
 // caller share this so the refusal reads identically everywhere; detail
@@ -96,12 +103,21 @@ export function renderReport(input, useColor) {
     lines.push("");
     const doctorWord = groups.length === 1 ? "doctor" : "doctors";
     lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
-    lines.push(c(header.scoreLine, BOLD + gradeColor(sr.score)));
+    lines.push(c(header.scoreLine, BOLD + (header.emptyScan ? YELLOW : gradeColor(sr.score))));
     if (header.cleanLine) {
         lines.push(c(header.cleanLine, DIM));
     }
     if (input.skippedUnsafe !== undefined && input.skippedUnsafe.length > 0) {
         lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
+    }
+    // The empty scan is its own outcome, not a clean one: no findings
+    // headline, no per-doctor "clean" roll, no narrowed notices — none of
+    // those are claims a zero-file scan has earned. (Findings over a
+    // zero count are still possible — a doctor reporting files it read
+    // outside the default extensions — and fall through to render.)
+    if (input.fileCount === 0 && total === 0) {
+        lines.push(c(`\u26a0 ${emptyScanLine()}`, YELLOW));
+        return lines.join("\n");
     }
     if (total === 0) {
         lines.push(c("No findings", BOLD + GREEN));

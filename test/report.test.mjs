@@ -85,6 +85,18 @@ test("renderReport: clean single group scores 100", () => {
   assert.match(out, /No findings/);
 });
 
+test("renderReport: an empty scan is a warning, never a green 100", () => {
+  const out = renderReport({
+    ...input,
+    fileCount: 0,
+    groups: [{ ...input.groups[0], findings: [] }],
+  }, false);
+  assert.match(out, /Score: n\/a — no files scanned/);
+  assert.match(out, /⚠ nothing to check — no \.ts, \.tsx, \.js, \.jsx, or \.mjs sources found/);
+  assert.ok(!out.includes("Excellent"), "an empty scan claims no grade");
+  assert.ok(!out.includes("No findings"), "no findings headline over nothing checked");
+});
+
 test("renderReport: multiple clean groups list each as clean", () => {
   const out = renderReport({
     fileCount: 6,
