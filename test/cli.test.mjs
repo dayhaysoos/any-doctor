@@ -307,3 +307,69 @@ test("plantSkill: plants with the provenance marker, refreshes planted copies, n
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// ---- the Gate chapter: --format json, --fail-on, --base -----------------
+
+test("gate: --format json puts one parseable schema-tagged object on stdout", async (t) => {
+  const log = t.mock.method(console, "log", () => {});
+  const code = await cli.main(["run", DOCTOR, TARGET, "--format", "json"]);
+  assert.equal(code, 0);
+  const printed = log.mock.calls.map(c => c.arguments.join(" ")).join("");
+  const j = JSON.parse(printed);
+  assert.equal(j.schema, 1);
+  assert.equal(j.tool, "any-doctor");
+  assert.ok(j.counts.total > 0, "findings counted");
+  assert.equal(j.groups[0].doctor, "async-doctor");
+  assert.deepEqual(j.crashed, []);
+  assert.equal(j.gate.failOn, "none");
+  assert.equal(j.gate.fails, false);
+  assert.equal(j.diff, undefined, "no diff without --base");
+});
+
+test("gate: --fail-on warning fails the sample app; error and none do not", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--fail-on", "warning"]), 1, "4 warnings clear the warning bar");
+  const printed = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+  assert.match(printed, /gate: \d+ findings at or above warning/);
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--fail-on", "error"]), 0, "no errors in the sample app");
+  assert.equal(await cli.main(["run", DOCTOR, TARGET]), 0, "advisory default");
+});
+
+test("gate: bad flag values refuse with the allowed choices", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--fail-on", "warn"]), 1);
+  assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /--fail-on must be one of none, error, warning, info/);
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--format", "yaml"]), 1);
+  assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /--format must be "report" or "json"/);
+});
+
+test("gate: --base against HEAD adds nothing — advisory findings pass, pre-existing debt is not blamed", async (t) => {
+  const log = t.mock.method(console, "log", () => {});
+  const code = await cli.main(["run", DOCTOR, TARGET, "--base", "HEAD", "--fail-on", "warning"]);
+  assert.equal(code, 0, "identical trees: zero added findings, the bar holds");
+  const printed = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+  assert.match(printed, /vs HEAD \(merged base\): 0 added · 0 resolved/, "the report carries the diff line");
+});
+
+test("gate: json output stays parseable when a doctor crashes — detail on stderr, exit 1", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-gate-crash-"));
+  try {
+    const doctor = path.join(dir, "boom.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'boom', description: 'x', severity: 'info' }",
+      "export async function doctor(ctx) { throw new Error('kaboom') }",
+    ].join("\n"));
+    const log = t.mock.method(console, "log", () => {});
+    const err = t.mock.method(console, "error", () => {});
+    const code = await cli.main(["run", doctor, TARGET, "--format", "json", "--fail-on", "none"]);
+    assert.equal(code, 1, "a crash fails regardless of the bar");
+    const j = JSON.parse(log.mock.calls.map(c => c.arguments.join(" ")).join(""));
+    assert.equal(j.crashed.length, 1);
+    assert.match(j.crashed[0].detail, /kaboom/);
+    assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /kaboom/, "human diagnostics stay on stderr");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

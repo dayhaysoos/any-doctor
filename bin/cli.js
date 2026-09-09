@@ -3,8 +3,11 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { DOCTOR_FILE_RE } from "./contract.js";
-import { renderReport, renderVerifyResult, unsafeSkipLine } from "./report.js";
+import { renderJson, renderReport, renderVerifyResult, unsafeSkipLine } from "./report.js";
 import { runCohort } from "./cohort.js";
+import { countsOfSeverities, gateVerdict, isFailOn } from "./gate.js";
+import { runDiff } from "./diff.js";
+import { deriveSummary } from "./summary.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
 import { brokenDoctors, discoverDoctors, globalDoctorsDir, unsafeSlugs, scopeLabel } from "./discover.js";
@@ -101,7 +104,7 @@ function selectionOutcome(sel) {
     }
 }
 function parseArgs(args) {
-    const out = { targetDir: path.resolve("."), all: false, global: false, includeTests: false };
+    const out = { targetDir: path.resolve("."), all: false, global: false, includeTests: false, format: "report", failOn: "none" };
     let targetDirSet = false;
     for (let i = 0; i < args.length; i++) {
         const a = args[i];
@@ -111,6 +114,12 @@ function parseArgs(args) {
             out.global = true;
         else if (a === "--include-tests")
             out.includeTests = true;
+        else if (a === "--fail-on")
+            out.failOn = args[++i];
+        else if (a === "--format")
+            out.format = args[++i];
+        else if (a === "--base")
+            out.base = args[++i];
         else if (out.doctorPath === undefined && DOCTOR_FILE_RE.test(a))
             out.doctorPath = a;
         else if (!targetDirSet) {
@@ -183,6 +192,14 @@ async function cmdRun(args) {
         fail("--global is a generate-only flag");
         return 1;
     }
+    if (!isFailOn(parsed.failOn)) {
+        fail(`--fail-on must be one of none, error, warning, info — got "${parsed.failOn}"`);
+        return 1;
+    }
+    if (parsed.format !== "report" && parsed.format !== "json") {
+        fail(`--format must be "report" or "json" — got "${parsed.format}"`);
+        return 1;
+    }
     const badTarget = unusableTargetReason(parsed.targetDir);
     if (badTarget !== null) {
         fail(badTarget);
@@ -247,12 +264,13 @@ async function cmdRun(args) {
     // rejects the batch must not leave a hidden cursor behind. Settle
     // notes name doctors by the spec's ids — one naming rule, shared with
     // the crash report.
+    const spec = { doctors, targetDir: parsed.targetDir, includeTests: parsed.includeTests };
     const idOf = new Map(doctors.map(d => [d.programPath, d.id]));
     const spin = runSpinner(explicitSingle ? `scanning with ${doctors[0].id}` : "running doctors", explicitSingle ? 0 : doctors.length);
     let done = 0;
     let ran;
     try {
-        ran = await runCohort({ doctors, targetDir: parsed.targetDir, includeTests: parsed.includeTests }, spin && !explicitSingle
+        ran = await runCohort(spec, spin && !explicitSingle
             ? (p) => {
                 var _a;
                 done += 1;
@@ -273,17 +291,58 @@ async function cmdRun(args) {
     for (const c of ran.crashed)
         fail(c.detail);
     const outcome = { ...ran, skippedUnsafe };
+    const summary = deriveSummary(outcome);
+    // Diff mode exists iff --base was passed: the same cohort against the
+    // merge base's tree, compared through the verify gate's multiset. A
+    // partial base aborts loudly — no report, no JSON, never a gate on
+    // guesses.
+    let diff;
+    if (parsed.base !== undefined) {
+        try {
+            diff = await runDiff(spec, parsed.base, summary.groups);
+        }
+        catch (e) {
+            fail(e instanceof Error ? e.message : String(e));
+            return 1;
+        }
+    }
+    // The Gate: advisory findings by default (--fail-on none), crashes
+    // and skips always fail, diff mode judges only what the change
+    // ADDED.
+    const gate = gateVerdict(parsed.failOn, diff !== undefined ? countsOfSeverities(diff.added.map(a => a.severity)) : summary.severityCounts, diff !== undefined ? "diff" : "full");
     const env = processTtyEnv();
     const ttyCols = (_b = process.stdout.columns) !== null && _b !== void 0 ? _b : 0;
-    // Report-vs-dashboard policy: --all is the batch/report mode; otherwise
-    // a real terminal with room and no headless override gets the tree.
-    const interactive = !parsed.all
+    // Report-vs-dashboard policy: --all is the batch/report mode; JSON is
+    // a machine surface and never opens a TUI; otherwise a real terminal
+    // with room and no headless override gets the tree.
+    const interactive = !parsed.all && parsed.format !== "json"
         && canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
-    if (!interactive) {
-        console.log(renderReport(outcome, useColor()));
+    // The machine surface: exactly one JSON object on stdout, diagnostics
+    // on stderr, the gate verdict data not prose.
+    if (parsed.format === "json") {
+        console.log(renderJson(outcome, summary, gate, diff));
         if (outcome.crashed.length > 0) {
             for (const c of outcome.crashed)
                 fail("doctor crashed (results above are partial): " + c.id);
+            return 1;
+        }
+        if (gate.fails) {
+            fail(gate.reason);
+            return 1;
+        }
+        return outcome.skippedUnsafe.length > 0 ? 1 : 0;
+    }
+    if (!interactive) {
+        console.log(renderReport(outcome, useColor(), diff !== undefined
+            ? { base: diff.base, added: diff.added.length, resolved: diff.resolved.length }
+            : undefined));
+        if (outcome.crashed.length > 0) {
+            for (const c of outcome.crashed)
+                fail("doctor crashed (results above are partial): " + c.id);
+            return 1;
+        }
+        if (gate.fails) {
+            fail(gate.reason);
             return 1;
         }
         return outcome.skippedUnsafe.length > 0 ? 1 : 0;
@@ -291,10 +350,16 @@ async function cmdRun(args) {
     const invoker = process.argv[1] ? `node "${fs.realpathSync(process.argv[1])}"` : "any-doctor";
     // Interactive runs always show what did run: skips and crashes cost the
     // exit code, never the results. Crashes are named before the dashboard
-    // paints — the dashboard itself renders findings and skips, not crashes.
+    // paints — the dashboard itself renders findings and skips, not
+    // crashes — and the dashboard ignores diff mode: it is the review
+    // experience, not the gate.
     for (const c of outcome.crashed)
         fail("doctor crashed (results above are partial): " + c.id);
     await runDashboard({ outcome, invoker, useColor: useColor() });
+    if (gate.fails) {
+        fail(gate.reason);
+        return 1;
+    }
     return outcome.crashed.length > 0 || outcome.skippedUnsafe.length > 0 ? 1 : 0;
 }
 async function cmdVerify(args) {

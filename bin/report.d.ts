@@ -1,4 +1,7 @@
 import { ReportGroup, VerifyRunResult } from "./contract.js";
+import { RunSummary } from "./summary.js";
+import type { DiffResult } from "./diff.js";
+import type { GateVerdict } from "./gate.js";
 export interface CrashedDoctor {
     id: string;
     detail: string;
@@ -19,5 +22,11 @@ export declare function cohortFileCount(counts: number[]): number;
 export declare function unsafeSkipLine(names: string[]): string;
 export declare function emptyScanLine(): string;
 export declare function unsafeRefusalLine(name: string, capabilities: readonly string[]): string;
-export declare function renderReport(input: RunOutcome, useColor: boolean): string;
+export interface ReportDiff {
+    base: string;
+    added: number;
+    resolved: number;
+}
+export declare function renderReport(input: RunOutcome, useColor: boolean, diff?: ReportDiff): string;
+export declare function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult): string;
 export declare function renderVerifyResult(result: VerifyRunResult, useColor: boolean): string;
