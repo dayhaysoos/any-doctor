@@ -114,9 +114,10 @@ test("compareFindings: a doubled expectation needs two findings (multiset)", () 
 test("decodeSearchOp: known ops decode, unknown ops are loud with the known list", () => {
   assert.deepEqual(decodeSearchOp("pattern"), { op: "pattern" });
   assert.deepEqual(decodeSearchOp("rule"), { op: "rule" });
+  assert.deepEqual(decodeSearchOp("rules"), { op: "rules" });
   assert.deepEqual(decodeSearchOp("analysis"), { op: "analysis" });
   assert.match(decodeSearchOp("analysiss").error, /unknown search-channel op "analysiss"/);
-  assert.match(decodeSearchOp(undefined).error, /known ops: pattern, rule, analysis/);
+  assert.match(decodeSearchOp(undefined).error, /known ops: pattern, rule, rules, analysis/);
 });
 
 test("protocol constants exist and are versioned", () => {

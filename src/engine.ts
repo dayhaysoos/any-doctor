@@ -1,5 +1,5 @@
 import { spawnSync } from "child_process";
-import { RuleQuery } from "./contract.js";
+import { NamedRuleQuery, RuleQuery } from "./contract.js";
 
 // The Engine: the one place that knows how to run ast-grep. The search
 // host sits on it — there is exactly one path from ctx.search to here
@@ -7,13 +7,17 @@ import { RuleQuery } from "./contract.js";
 // unconfined route exists). CONTEXT.md names this seam: ast-grep today; a
 // different backend slots in here alone.
 //
-// Two query shapes, one interface: a bare pattern (ast-grep run) and a
+// Three query shapes, one interface: a bare pattern (ast-grep run), a
 // Rule query (ast-grep scan --inline-rules) — pattern + inside, the
-// composite questions regex cannot ask honestly.
+// composite questions regex cannot ask honestly — and the multi-rule
+// batch: several named rules in ONE invocation, because every spawn
+// costs a process start (~85ms wall regardless of repo size) and a
+// check with many shapes must not pay that per question.
 
 export type EngineQuery =
   | { op: "pattern"; pattern: string }
-  | { op: "rule"; rule: RuleQuery };
+  | { op: "rule"; rule: RuleQuery }
+  | { op: "rules"; rules: NamedRuleQuery[] };
 
 // ast-grep's JSON wire shapes, kept whole (D20 Stage 1: the seam stopped
 // subtracting structure). End ranges and metavariable captures flow
@@ -33,6 +37,7 @@ export interface RawSgMatch {
   text?: string;
   lines?: string;
   language?: string;
+  ruleId?: string;
   range?: RawSgRange;
   metaVariables?: {
     single?: Record<string, RawSgCapture>;
@@ -69,17 +74,28 @@ function tooOld(stderr: string): boolean {
 }
 
 export function runEngine(query: EngineQuery, language: string, root: string): EngineResult {
-  const args =
-    query.op === "pattern"
-      ? ["run", "-p", query.pattern, "-l", language, "--json"]
-      : ["scan", "--inline-rules", JSON.stringify({ language, rule: toSgRule(query.rule) }), "--json"];
+  let args: string[];
+  if (query.op === "pattern") {
+    args = ["run", "-p", query.pattern, "-l", language, "--json"];
+  } else if (query.op === "rule") {
+    args = ["scan", "--inline-rules", JSON.stringify({ language, rule: toSgRule(query.rule) }), "--json"];
+  } else {
+    // ast-grep accepts multiple inline rules separated by a `---` line;
+    // each match comes back tagged with its rule's id.
+    args = [
+      "scan",
+      "--inline-rules",
+      query.rules.map((r) => JSON.stringify({ id: r.id, language, rule: toSgRule(r) })).join("\n---\n"),
+      "--json",
+    ];
+  }
 
   const r = invoke(args, root);
   if (missingEngine(r)) {
     return { ok: false, error: "ctx.search requires ast-grep (ast-grep or sg) on PATH — install: brew install ast-grep" };
   }
   if (r.status !== 0 && !String(r.stdout).trim()) {
-    if (query.op === "rule" && tooOld(String(r.stderr))) {
+    if (query.op !== "pattern" && tooOld(String(r.stderr))) {
       return { ok: false, error: "ctx.search.rule requires a newer ast-grep (no scan --inline-rules support) — upgrade: brew upgrade ast-grep" };
     }
     return { ok: false, error: "ctx.search failed: " + (r.stderr || "ast-grep exited " + r.status) };

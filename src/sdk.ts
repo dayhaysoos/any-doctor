@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, Capture, DoctorCtx, Finding, isTestPath, Match, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
+import { AnalysisFile, Capture, DoctorCtx, Finding, isTestPath, Match, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 import { EngineQuery, RawSgCapture, RawSgMatch } from "./engine.js";
 
@@ -80,6 +80,10 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
 
       rule(query: RuleQuery, language: "TypeScript" | "JavaScript" = "TypeScript"): Match[] {
         return runSearch({ op: "rule", rule: validateRuleQuery(query) }, language, root);
+      },
+
+      rules(queries: NamedRuleQuery[], language: "TypeScript" | "JavaScript" = "TypeScript"): Match[] {
+        return runSearch({ op: "rules", rules: validateNamedRuleQueries(queries) }, language, root);
       },
     },
 
@@ -189,6 +193,36 @@ function didYouMean(got: string, allowed: string[]): string {
   return near && near !== got ? ` — did you mean "${near}"?` : "";
 }
 
+// The multi-rule batch: same curation as a single rule, plus ids —
+// unique, non-empty strings, because every match comes back tagged with
+// the id of the rule that found it.
+function validateNamedRuleQueries(queries: NamedRuleQuery[]): NamedRuleQuery[] {
+  if (!Array.isArray(queries) || queries.length === 0) {
+    throw new Error("ctx.search.rules needs a non-empty array of named rules: [{ id, pattern, inside? }]");
+  }
+  const seen = new Set<string>();
+  return queries.map((q) => {
+    if (typeof q !== "object" || q === null) {
+      throw new Error('ctx.search.rules: each rule must be an object { id, pattern, inside? }');
+    }
+    const record = q as unknown as Record<string, unknown>;
+    for (const key of Object.keys(record)) {
+      if (!["id", ...RULE_KEYS].includes(key)) {
+        throw new Error(`ctx.search.rules: unknown key "${key}"${didYouMean(key, RULE_KEYS)} — allowed: id, ${RULE_KEYS.join(", ")}`);
+      }
+    }
+    if (typeof record.id !== "string" || record.id === "") {
+      throw new Error('ctx.search.rules: every rule needs an "id" string — matches come back tagged with it');
+    }
+    if (seen.has(record.id)) {
+      throw new Error(`ctx.search.rules: duplicate id "${record.id}" — ids must be unique`);
+    }
+    seen.add(record.id);
+    const validated = validateRuleQuery({ pattern: record.pattern, ...(record.inside !== undefined ? { inside: record.inside as never } : {}) } as RuleQuery);
+    return { id: record.id, ...validated };
+  });
+}
+
 function levenshtein(a: string, b: string): number {
   const row = Array.from({ length: b.length + 1 }, (_, i) => i);
   for (let i = 1; i <= a.length; i += 1) {
@@ -219,9 +253,12 @@ interface SearchResponse {
 function runSearch(query: EngineQuery, language: "TypeScript" | "JavaScript", root: string): Match[] {
   let response: SearchResponse;
   try {
-    const body = query.op === "rule"
-      ? { op: query.op, rule: query.rule, language, root }
-      : { op: query.op, pattern: query.pattern, language, root };
+    const body =
+      query.op === "rule"
+        ? { op: query.op, rule: query.rule, language, root }
+        : query.op === "rules"
+          ? { op: query.op, rules: query.rules, language, root }
+          : { op: query.op, pattern: query.pattern, language, root };
     fs.writeSync(3, SEARCH_REQUEST + JSON.stringify(body) + "\n");
     response = readSearchResponse();
   } catch (e) {
@@ -233,7 +270,9 @@ function runSearch(query: EngineQuery, language: "TypeScript" | "JavaScript", ro
   if (response.error !== undefined) {
     const detail = query.op === "rule"
       ? `${response.error}\nquery: ${JSON.stringify(query.rule)}`
-      : response.error;
+      : query.op === "rules"
+        ? `${response.error}\nrules: ${JSON.stringify(query.rules.map((r) => r.id))}`
+        : response.error;
     throw new Error(detail);
   }
   return toMatches(response.matches ?? [], root);
@@ -293,6 +332,7 @@ function toMatches(raw: RawSgMatch[], root: string): Match[] {
       line: (m.range?.start?.line ?? 0) + 1,
       column: (m.range?.start?.column ?? 1),
       text: m.text || "",
+      ...(m.ruleId !== undefined ? { ruleId: m.ruleId } : {}),
       ...(m.range?.end !== undefined ? { endLine: (m.range.end.line ?? 0) + 1, endColumn: m.range.end.column ?? 0 } : {}),
       ...(captures !== undefined ? { captures } : {}),
     };

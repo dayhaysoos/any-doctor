@@ -40,7 +40,7 @@ export function withinBase(root, base) {
 // is a loud error, never a silent pattern search. Analysis requests route
 // to the sibling analysis host.
 export function handleSearchLine(line, mode, engine = runEngine) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     if (!line.startsWith(SEARCH_REQUEST))
         return null;
     let req;
@@ -66,7 +66,9 @@ export function handleSearchLine(line, mode, engine = runEngine) {
     const language = typeof req.language === "string" ? req.language : "TypeScript";
     const query = decoded.op === "rule"
         ? { op: decoded.op, rule: ((_b = req.rule) !== null && _b !== void 0 ? _b : {}) }
-        : { op: decoded.op, pattern: String((_c = req.pattern) !== null && _c !== void 0 ? _c : "") };
+        : decoded.op === "rules"
+            ? { op: decoded.op, rules: ((_c = req.rules) !== null && _c !== void 0 ? _c : []) }
+            : { op: decoded.op, pattern: String((_d = req.pattern) !== null && _d !== void 0 ? _d : "") };
     const r = engine(query, language, root);
     if (!r.ok)
         return JSON.stringify({ error: r.error });

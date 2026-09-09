@@ -90,7 +90,22 @@ test("handleSearchLine: an unknown op is a loud error, never a silent pattern se
     RUN,
     () => ({ ok: true, matches: [] }),
   ));
-  assert.match(out.error, /unknown search-channel op "analysiss".*known ops: pattern, rule, analysis/);
+  assert.match(out.error, /unknown search-channel op "analysiss".*known ops: pattern, rule, rules, analysis/);
+});
+
+test("handleSearchLine: op rules reaches the engine as a named-rule batch", () => {
+  const seen = [];
+  const engine = (query) => {
+    seen.push(query);
+    return { ok: true, matches: [{ file: TARGET + "/a.ts", text: "t", ruleId: "map-arrow" }] };
+  };
+  const rules = [
+    { id: "map-arrow", pattern: "$X.map(async $A => $B)" },
+    { id: "combiner", pattern: "Promise.$M($$$A)" },
+  ];
+  const out = parse(handleSearchLine(request({ op: "rules", rules, root: TARGET }), RUN, engine));
+  assert.deepEqual(seen[0], { op: "rules", rules });
+  assert.deepEqual(out.matches, [{ file: TARGET + "/a.ts", text: "t", ruleId: "map-arrow" }]);
 });
 
 test("handleSearchLine: a missing op still means pattern (the original wire form)", () => {

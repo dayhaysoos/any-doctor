@@ -54,19 +54,48 @@ export async function doctor(ctx) {
     }
     return entry;
   };
-  await checkFetch(ctx);
-  await checkUnawaitedMap(ctx, readFile);
+
+  // Every structural question in ONE engine invocation — each ctx.search
+  // call is a process spawn (~85ms regardless of repo size), so a doctor
+  // with many shapes batches them and pays once.
+  const identity = ctx.analysis.available;
+  const queries = [
+    { id: "fetch", pattern: "fetch($$$ARGS)" },
+    ...(identity ? [
+      { id: "map-arrow", pattern: "$X.map(async $A => $B)" },
+      { id: "map-arrow-opt", pattern: "$X?.map(async $A => $B)" },
+      { id: "map-fn", pattern: "$X.map(async function ($$$A) { $$$B })" },
+      { id: "map-fn-opt", pattern: "$X?.map(async function ($$$A) { $$$B })" },
+      { id: "map-fn-named", pattern: "$X.map(async function $F($$$A) { $$$B })" },
+      { id: "map-fn-named-opt", pattern: "$X?.map(async function $F($$$A) { $$$B })" },
+      { id: "combiner", pattern: "Promise.$M($$$A)" },
+      { id: "forof", pattern: "for (const $V of $ARR) $$$B" },
+      { id: "await", pattern: "await $E" },
+    ] : []),
+  ];
+  const all = await ctx.search.rules(queries);
+  const byId = (id) => all.filter((m) => m.ruleId === id);
+  const bucket = identity
+    ? {
+      shapes: all.filter((m) => m.ruleId.startsWith("map-")),
+      combiners: byId("combiner").filter((m) => ["all", "allSettled", "race", "any"].includes(m.captures?.M?.text)),
+      forOfs: byId("forof"),
+      awaits: byId("await"),
+    }
+    : null;
+
+  await checkFetch(ctx, byId("fetch"));
+  await (identity ? checkUnawaitedMapAnalyzed(ctx, readFile, bucket) : checkUnawaitedMapRegex(ctx, readFile));
   await checkSetTimeout(ctx, readFile);
 }
 
 // --- fetch-calls-without-abortsignal ------------------------------------
 
-async function checkFetch(ctx) {
+async function checkFetch(ctx, calls) {
   // The rule query hands back the argument list as parsed capture nodes —
   // the options argument is args[1], no brace-counting the call text to
   // find where it begins (D20 Stage 1 pilot: the seam stopped discarding
   // what the engine already parsed).
-  const calls = await ctx.search.rule({ pattern: "fetch($$$ARGS)" });
   for (const call of calls) {
     const args = call.captures?.ARGS;
     const options = Array.isArray(args) ? args[1]?.text : undefined;
@@ -148,34 +177,13 @@ function matchingBrace(text) {
 // position, so a same-named binding in another scope can never silence
 // this one. The degraded path (no analysis engine) is the name-matching
 // regex, with its declared blind spots; the report says "narrowed".
-async function checkUnawaitedMap(ctx, readFile) {
-  if (ctx.analysis.available) return checkUnawaitedMapAnalyzed(ctx, readFile);
-  return checkUnawaitedMapRegex(ctx, readFile);
-}
 
-async function checkUnawaitedMapAnalyzed(ctx, readFile) {
+async function checkUnawaitedMapAnalyzed(ctx, readFile, queries) {
   const files = (await ctx.files.list([".ts", ".tsx", ".js", ".jsx", ".mjs"]))
     .filter((file) => !/\.fixtures\.mjs$/.test(file));
   if (files.length === 0) return;
 
-  // Shapes once for the whole root — every receiver spelling (plain and
-  // optional-chained) times every callback form (arrow, unnamed and named
-  // async function — the degraded regex caught all three; full power
-  // must be a superset, never narrower), plus the constructs references
-  // compose against — all spans, all by position.
-  const CALLBACKS = [
-    "async $A => $B",
-    "async function ($$$A) { $$$B }",
-    "async function $F($$$A) { $$$B }",
-  ];
-  const shapes = CALLBACKS.flatMap((cb) => [
-    ...ctx.search.rule({ pattern: `$X.map(${cb})` }),
-    ...ctx.search.rule({ pattern: `$X?.map(${cb})` }),
-  ]);
-  const combiners = ctx.search.rule({ pattern: "Promise.$M($$$A)" })
-    .filter((m) => ["all", "allSettled", "race", "any"].includes(m.captures?.M?.text));
-  const forOfs = ctx.search.rule({ pattern: "for (const $V of $ARR) $$$B" });
-  const awaits = ctx.search.rule({ pattern: "await $E" });
+  const { shapes, combiners, forOfs, awaits } = queries;
 
   for (const file of files) {
     const fileShapes = shapes.filter((m) => m.file === file);

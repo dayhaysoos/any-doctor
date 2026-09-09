@@ -40,6 +40,7 @@ export interface Match {
     endLine?: number;
     endColumn?: number;
     captures?: Record<string, Capture | Capture[]>;
+    ruleId?: string;
 }
 export interface Capture {
     text: string;
@@ -55,6 +56,11 @@ export interface RuleQuery {
 export interface RuleInside {
     pattern: string;
     stopBy?: "end" | "neighbor";
+}
+export interface NamedRuleQuery {
+    id: string;
+    pattern: string;
+    inside?: RuleInside;
 }
 export interface BindingRef {
     line: number;
@@ -86,6 +92,9 @@ export interface DoctorCtx {
     search: {
         pattern(pattern: string, language?: "TypeScript" | "JavaScript"): Match[];
         rule(query: RuleQuery, language?: "TypeScript" | "JavaScript"): Match[];
+        /** Many named rules, one engine invocation. Matches carry `ruleId`.
+         * Prefer this over N `rule()` calls — each call is a process spawn. */
+        rules(queries: NamedRuleQuery[], language?: "TypeScript" | "JavaScript"): Match[];
     };
     analysis: {
         /** Honest yes/no: is the identity engine installed? Cheap and cached.
@@ -120,7 +129,7 @@ export declare const PROTOCOL_VERSION = 1;
 export declare const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 export declare const SEARCH_REQUEST = "###ANY_DOCTOR_SEARCH###";
 export declare const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
-export type SearchOp = "pattern" | "rule" | "analysis";
+export type SearchOp = "pattern" | "rule" | "rules" | "analysis";
 export declare function decodeSearchOp(op: unknown): {
     op: SearchOp;
 } | {

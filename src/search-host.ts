@@ -1,6 +1,6 @@
 import * as os from "os";
 import * as path from "path";
-import { decodeSearchOp, includeTestsFor, isTestPath, Mode, RuleQuery, SEARCH_REQUEST } from "./contract.js";
+import { decodeSearchOp, includeTestsFor, isTestPath, Mode, NamedRuleQuery, RuleQuery, SEARCH_REQUEST } from "./contract.js";
 import { runEngine, EngineQuery, RawSgMatch } from "./engine.js";
 import { handleAnalysisRequest } from "./analysis-host.js";
 
@@ -45,7 +45,7 @@ type Engine = typeof runEngine;
 // to the sibling analysis host.
 export function handleSearchLine(line: string, mode: Mode, engine: Engine = runEngine): string | null {
   if (!line.startsWith(SEARCH_REQUEST)) return null;
-  let req: { op?: unknown; pattern?: unknown; rule?: unknown; kind?: unknown; file?: unknown; language?: unknown; root?: unknown };
+  let req: { op?: unknown; pattern?: unknown; rule?: unknown; rules?: unknown; kind?: unknown; file?: unknown; language?: unknown; root?: unknown };
   try {
     req = JSON.parse(line.slice(SEARCH_REQUEST.length));
   } catch {
@@ -67,7 +67,9 @@ export function handleSearchLine(line: string, mode: Mode, engine: Engine = runE
   const query: EngineQuery =
     decoded.op === "rule"
       ? { op: decoded.op, rule: (req.rule ?? {}) as RuleQuery }
-      : { op: decoded.op, pattern: String(req.pattern ?? "") };
+      : decoded.op === "rules"
+        ? { op: decoded.op, rules: (req.rules ?? []) as NamedRuleQuery[] }
+        : { op: decoded.op, pattern: String(req.pattern ?? "") };
   const r = engine(query, language, root);
   if (!r.ok) return JSON.stringify({ error: r.error });
   const matches = includeTestsFor(mode) ? r.matches : r.matches.filter((m) => !isTestPath(matchRel(root, m)));

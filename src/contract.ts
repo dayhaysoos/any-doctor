@@ -49,6 +49,9 @@ export interface Match {
   endLine?: number;
   endColumn?: number;
   captures?: Record<string, Capture | Capture[]>;
+  // D20 Stage 2: a multi-rule query tags each match with the id of the
+  // rule that found it.
+  ruleId?: string;
 }
 
 // One metavariable capture: the matched sub-node's text and extent.
@@ -75,6 +78,15 @@ export interface RuleQuery {
 export interface RuleInside {
   pattern: string;
   stopBy?: "end" | "neighbor";
+}
+
+// A named rule for the multi-rule query: several questions, ONE engine
+// invocation (each spawn costs ~an engine process start regardless of
+// repo size — batching is how a check with many shapes stays fast).
+export interface NamedRuleQuery {
+  id: string;
+  pattern: string;
+  inside?: RuleInside;
 }
 
 // The identity model ctx.analysis returns (CONTEXT.md: Analysis query,
@@ -117,6 +129,9 @@ export interface DoctorCtx {
   search: {
     pattern(pattern: string, language?: "TypeScript" | "JavaScript"): Match[];
     rule(query: RuleQuery, language?: "TypeScript" | "JavaScript"): Match[];
+    /** Many named rules, one engine invocation. Matches carry `ruleId`.
+     * Prefer this over N `rule()` calls — each call is a process spawn. */
+    rules(queries: NamedRuleQuery[], language?: "TypeScript" | "JavaScript"): Match[];
   };
   analysis: {
     /** Honest yes/no: is the identity engine installed? Cheap and cached.
@@ -162,12 +177,12 @@ export const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
 // The channel's operation vocabulary, decoded in one home. Unknown ops
 // are LOUD errors — a typo'd op silently degrading to a pattern search is
 // the silent-failure class this seam refuses (D20 Stage 2).
-export type SearchOp = "pattern" | "rule" | "analysis";
+export type SearchOp = "pattern" | "rule" | "rules" | "analysis";
 
 export function decodeSearchOp(op: unknown): { op: SearchOp } | { error: string } {
-  if (op === "pattern" || op === "rule" || op === "analysis") return { op };
+  if (op === "pattern" || op === "rule" || op === "rules" || op === "analysis") return { op };
   return {
-    error: `unknown search-channel op ${JSON.stringify(op)} — known ops: ${["pattern", "rule", "analysis"].join(", ")}`,
+    error: `unknown search-channel op ${JSON.stringify(op)} — known ops: ${["pattern", "rule", "rules", "analysis"].join(", ")}`,
   };
 }
 

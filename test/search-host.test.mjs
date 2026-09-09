@@ -150,3 +150,22 @@ test("engine: a rule query round trip returns end ranges and metavariable captur
     "raw multi-captures include commas (sdk filters them for doctors)",
   );
 });
+
+test("engine: a multi-rule batch returns one invocation's matches, each tagged with its ruleId", { skip: engineSkip }, async () => {
+  const { runEngine } = await import("../bin/engine.js");
+  const repo = path.resolve(import.meta.dirname, "..");
+  const r = runEngine({
+    op: "rules",
+    rules: [
+      { id: "map-arrow", pattern: "$X.map(async $A => $B)" },
+      { id: "fetch-any", pattern: "fetch($$$ARGS)" },
+      { id: "never-matches", pattern: "zzzImpossiblePattern($$$A)" },
+    ],
+  }, "TypeScript", path.join(repo, "fixtures", "sample-app"));
+  assert.ok(r.ok, "batch succeeds: " + (r.ok ? "" : r.error));
+  const ids = new Set(r.ok ? r.matches.map((m) => m.ruleId) : []);
+  assert.ok(ids.has("map-arrow"), "map rule tagged");
+  assert.ok(ids.has("fetch-any"), "fetch rule tagged");
+  assert.ok(!ids.has("never-matches"), "non-matching rule contributes nothing");
+  assert.ok(!ids.has(undefined), "every match carries a ruleId");
+});

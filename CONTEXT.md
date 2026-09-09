@@ -97,7 +97,10 @@ Matches carrying end positions and metavariable captures;
 multi-metavariables (`$$$NAME`) arrive as arrays of nodes under the bare
 NAME, separator commas filtered at the seam. The surface is curated —
 pattern + inside — and validated: unknown keys fail loudly with the
-allowed list.
+allowed list. The plural form (`ctx.search.rules`) asks many named
+rules in one engine invocation — every match tagged with its ruleId —
+because each call is a process spawn and batching is how a many-shape
+check stays fast.
 
 ## Analysis query
 

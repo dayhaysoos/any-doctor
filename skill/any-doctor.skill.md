@@ -64,6 +64,11 @@ export const fixtures = [
   respects the same test-path exclusion — `--include-tests` includes them)
 - `ctx.search.rule(query, language?)` → same Match shape — a composite
   structural question: `{ pattern, inside: { pattern, stopBy? } }` (see below)
+- `ctx.search.rules(queries, language?)` → same Match shape plus
+  `ruleId` — MANY named rules in ONE engine invocation:
+  `[{ id, pattern, inside? }, ...]`. Prefer this whenever you have more
+  than one question: every ctx.search call is a process spawn, so a
+  check with five shapes costs five spawns — or one.
 - `ctx.analysis.available` → boolean: is the identity engine installed?
   (optional — checks that use it must narrow without it, below)
 - `ctx.analysis.bindings(file)` → the file's identity model: every binding
@@ -109,7 +114,9 @@ Three traps — the interface guards the last one, the first two are yours:
 
 Queries are validated before anything runs: unknown keys are refused
 with the allowed list (and a typo suggestion), so a misspelled `inside`
-fails loudly instead of matching nothing.
+fails loudly instead of matching nothing. Named-rule batches carry the
+same curation (unique non-empty ids — every match returns tagged with
+the id that found it).
 
 ## Analysis queries — identities, composed with shapes by position
 

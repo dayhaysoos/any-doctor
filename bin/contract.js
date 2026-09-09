@@ -6,10 +6,10 @@ export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 export const SEARCH_REQUEST = "###ANY_DOCTOR_SEARCH###";
 export const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
 export function decodeSearchOp(op) {
-    if (op === "pattern" || op === "rule" || op === "analysis")
+    if (op === "pattern" || op === "rule" || op === "rules" || op === "analysis")
         return { op };
     return {
-        error: `unknown search-channel op ${JSON.stringify(op)} — known ops: ${["pattern", "rule", "analysis"].join(", ")}`,
+        error: `unknown search-channel op ${JSON.stringify(op)} — known ops: ${["pattern", "rule", "rules", "analysis"].join(", ")}`,
     };
 }
 export function modeArgs(mode, programPath) {

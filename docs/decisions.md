@@ -663,6 +663,18 @@ consumption, same-name bindings in other scopes, and never-reassigned
 let targets are now checked (the degraded path keeps its declared blind
 spots, pinned by "off" fixtures); 40 fixtures cover both paths.
 
+**Amendment (2026-09-08, latest): one invocation per doctor.** The
+pilot's first shape — nine separate rule queries — measured 2.2× slower
+than main on a 300-file repo: every ctx.search call spawns the engine,
+and a spawn costs ~85ms wall regardless of repo size (process start
+dominates; scanning 300 files is 6ms of CPU). The identity engine was
+innocent (35ms to resolve all files). The fix is a fourth channel op
+that was implicit all along: `ctx.search.rules` — many named rules in
+ONE ast-grep invocation (inline rules separated by `---`, matches
+returning tagged with their rule's id). The pilot now asks all ten of
+its questions in one spawn and measures within ~100ms of main; the
+skill teaches the rule (many questions → one batch) beside the op.
+
 ---
 
 ## Open questions

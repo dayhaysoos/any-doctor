@@ -74,6 +74,9 @@ export function buildCtx(root, opts = {}) {
             rule(query, language = "TypeScript") {
                 return runSearch({ op: "rule", rule: validateRuleQuery(query) }, language, root);
             },
+            rules(queries, language = "TypeScript") {
+                return runSearch({ op: "rules", rules: validateNamedRuleQueries(queries) }, language, root);
+            },
         },
         analysis: {
             // One channel question, cached per ctx — availability is cheap and
@@ -173,6 +176,35 @@ function didYouMean(got, allowed) {
     const near = allowed.find((a) => a.includes(got) || got.includes(a) || levenshtein(got, a) <= 2);
     return near && near !== got ? ` — did you mean "${near}"?` : "";
 }
+// The multi-rule batch: same curation as a single rule, plus ids —
+// unique, non-empty strings, because every match comes back tagged with
+// the id of the rule that found it.
+function validateNamedRuleQueries(queries) {
+    if (!Array.isArray(queries) || queries.length === 0) {
+        throw new Error("ctx.search.rules needs a non-empty array of named rules: [{ id, pattern, inside? }]");
+    }
+    const seen = new Set();
+    return queries.map((q) => {
+        if (typeof q !== "object" || q === null) {
+            throw new Error('ctx.search.rules: each rule must be an object { id, pattern, inside? }');
+        }
+        const record = q;
+        for (const key of Object.keys(record)) {
+            if (!["id", ...RULE_KEYS].includes(key)) {
+                throw new Error(`ctx.search.rules: unknown key "${key}"${didYouMean(key, RULE_KEYS)} — allowed: id, ${RULE_KEYS.join(", ")}`);
+            }
+        }
+        if (typeof record.id !== "string" || record.id === "") {
+            throw new Error('ctx.search.rules: every rule needs an "id" string — matches come back tagged with it');
+        }
+        if (seen.has(record.id)) {
+            throw new Error(`ctx.search.rules: duplicate id "${record.id}" — ids must be unique`);
+        }
+        seen.add(record.id);
+        const validated = validateRuleQuery({ pattern: record.pattern, ...(record.inside !== undefined ? { inside: record.inside } : {}) });
+        return { id: record.id, ...validated };
+    });
+}
 function levenshtein(a, b) {
     const row = Array.from({ length: b.length + 1 }, (_, i) => i);
     for (let i = 1; i <= a.length; i += 1) {
@@ -192,7 +224,9 @@ function runSearch(query, language, root) {
     try {
         const body = query.op === "rule"
             ? { op: query.op, rule: query.rule, language, root }
-            : { op: query.op, pattern: query.pattern, language, root };
+            : query.op === "rules"
+                ? { op: query.op, rules: query.rules, language, root }
+                : { op: query.op, pattern: query.pattern, language, root };
         fs.writeSync(3, SEARCH_REQUEST + JSON.stringify(body) + "\n");
         response = readSearchResponse();
     }
@@ -203,7 +237,9 @@ function runSearch(query, language, root) {
     if (response.error !== undefined) {
         const detail = query.op === "rule"
             ? `${response.error}\nquery: ${JSON.stringify(query.rule)}`
-            : response.error;
+            : query.op === "rules"
+                ? `${response.error}\nrules: ${JSON.stringify(query.rules.map((r) => r.id))}`
+                : response.error;
         throw new Error(detail);
     }
     return toMatches((_a = response.matches) !== null && _a !== void 0 ? _a : [], root);
@@ -251,6 +287,7 @@ function toMatches(raw, root) {
             line: ((_c = (_b = (_a = m.range) === null || _a === void 0 ? void 0 : _a.start) === null || _b === void 0 ? void 0 : _b.line) !== null && _c !== void 0 ? _c : 0) + 1,
             column: ((_f = (_e = (_d = m.range) === null || _d === void 0 ? void 0 : _d.start) === null || _e === void 0 ? void 0 : _e.column) !== null && _f !== void 0 ? _f : 1),
             text: m.text || "",
+            ...(m.ruleId !== undefined ? { ruleId: m.ruleId } : {}),
             ...(((_g = m.range) === null || _g === void 0 ? void 0 : _g.end) !== undefined ? { endLine: ((_h = m.range.end.line) !== null && _h !== void 0 ? _h : 0) + 1, endColumn: (_j = m.range.end.column) !== null && _j !== void 0 ? _j : 0 } : {}),
             ...(captures !== undefined ? { captures } : {}),
         };

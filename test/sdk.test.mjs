@@ -46,6 +46,19 @@ test("ctx.search.rule: inside needs its own pattern; stopBy is validated", () =>
   }
 });
 
+test("ctx.search.rules: validation — array with unique non-empty ids, same curation as rule", () => {
+  const { ctx: c, dir } = ctx();
+  try {
+    assert.throws(() => c.search.rules([]), /non-empty array of named rules/);
+    assert.throws(() => c.search.rules("x"), /non-empty array of named rules/);
+    assert.throws(() => c.search.rules([{ pattern: "x" }]), /needs an "id" string/);
+    assert.throws(() => c.search.rules([{ id: "a", pattern: "x" }, { id: "a", pattern: "y" }]), /duplicate id "a"/);
+    assert.throws(() => c.search.rules([{ id: "a", pattern: "x", insdie: {} }]), /unknown key "insdie" — did you mean "inside"\?/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("ctx.analysis: forced-off (verify's degraded fixtures) makes available false and bindings loud", async () => {
   const { setAnalysisDisabled, probeAnalysisAvailable } = await import("../bin/sdk.js");
   const { ctx: c, dir } = ctx();
