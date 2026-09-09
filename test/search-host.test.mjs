@@ -194,3 +194,15 @@ test("engine: a batch whose JSON outgrows spawnSync's 1MB default still parses",
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// The overflow branch's dead-code history: it matched only the
+// streams-side error name, while spawnSync actually reports ENOBUFS
+// (verified Node 14–26) — so a real overflow fell through to a
+// misleading "unparseable output" complaint. Pin both names.
+test("engine: an exceeded output buffer is named for what it is", async () => {
+  const { isBufferOverflow } = await import("../bin/engine.js");
+  assert.equal(isBufferOverflow({ error: { code: "ENOBUFS" } }), true, "spawnSync's actual overflow code");
+  assert.equal(isBufferOverflow({ error: { code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" } }), true, "the streams-side name, kept for belt and braces");
+  assert.equal(isBufferOverflow({ error: { code: "ENOENT" } }), false, "a missing binary is not an overflow");
+  assert.equal(isBufferOverflow({}), false, "no error is not an overflow");
+});

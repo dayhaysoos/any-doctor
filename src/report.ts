@@ -1,5 +1,5 @@
 import { DoctorMeta, ExpectedFinding, Finding, narrowedCheckIds, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR, YELLOW } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
 
 // One scan invocation's batch of results — assembled once, consumed by the
@@ -143,7 +143,7 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
   lines.push("");
   const doctorWord = groups.length === 1 ? "doctor" : "doctors";
   lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
-  lines.push(c(header.scoreLine, BOLD + (header.emptyScan ? YELLOW : gradeColor(sr.score))));
+  lines.push(c(header.scoreLine, BOLD + scoreHeaderTone(header, sr.score)));
   if (header.cleanLine) {
     lines.push(c(header.cleanLine, DIM));
   }
@@ -152,12 +152,18 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
   }
 
   // The empty scan is its own outcome, not a clean one: no findings
-  // headline, no per-doctor "clean" roll, no narrowed notices — none of
-  // those are claims a zero-file scan has earned. (Findings over a
+  // headline, no per-doctor "clean" roll — those are claims a zero-file
+  // scan has not earned. Degradation honesty survives it: narrowed
+  // notices still render (visible, never silent). (Findings over a
   // zero count are still possible — a doctor reporting files it read
   // outside the default extensions — and fall through to render.)
   if (input.fileCount === 0 && total === 0) {
-    lines.push(c(`\u26a0 ${emptyScanLine()}`, YELLOW));
+    if (input.crashed.length > 0) {
+      lines.push(c(`\u26a0 nothing to check — every doctor crashed before completing a scan (${input.crashed.join(", ")}; details above)`, YELLOW));
+    } else {
+      lines.push(c(`\u26a0 ${emptyScanLine()}`, YELLOW));
+    }
+    pushNarrowedNotices(lines, groups, input.analysisAvailable, c);
     return lines.join("\n");
   }
 
@@ -172,17 +178,7 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
     // A clean degraded run must never read as a full-power clean — the
     // narrowed notice renders here too, exactly as it does under
     // findings (D20 Stage 2's own words).
-    if (input.analysisAvailable === false) {
-      const notices = groups
-        .map((g) => narrowedCheckIds(g.meta))
-        .filter((ids) => ids.length > 0);
-      if (notices.length > 0) {
-        lines.push("");
-        for (const ids of notices) {
-          lines.push(c(narrowedLine(ids), YELLOW));
-        }
-      }
-    }
+    pushNarrowedNotices(lines, groups, input.analysisAvailable, c);
     return lines.join("\n");
   }
 
@@ -247,10 +243,32 @@ function where(f: ExpectedFinding): string {
   return (f.rule ? f.rule + " " : "") + f.file + ":" + f.line;
 }
 
-// The narrowed notice's one wording (D20 Stage 2) — one source for both
-// the clean and the findings branch.
+// The narrowed notice's one wording (D20 Stage 2) — one source for every
+// branch that renders it (clean, findings, and empty-scan).
 function narrowedLine(checkIds: string[]): string {
   return `narrowed: analysis engine unavailable — ${checkIds.join(", ")} ran in degraded mode`;
+}
+
+// Degradation honesty survives every outcome shape: a run without the
+// analysis engine says so whether it ended clean, with findings, or —
+// over an empty scan — with nothing checked at all (visible, never
+// silent).
+function pushNarrowedNotices(
+  lines: string[],
+  groups: ReportGroup[],
+  analysisAvailable: boolean | undefined,
+  c: (s: string, wrap?: string) => string,
+): void {
+  if (analysisAvailable !== false) return;
+  const notices = groups
+    .map((g) => narrowedCheckIds(g.meta))
+    .filter((ids) => ids.length > 0);
+  if (notices.length > 0) {
+    lines.push("");
+    for (const ids of notices) {
+      lines.push(c(narrowedLine(ids), YELLOW));
+    }
+  }
 }
 
 // Verify-gate rendering: pure state -> string, colored on request. The

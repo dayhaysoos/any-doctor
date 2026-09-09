@@ -699,20 +699,21 @@ test("dashboard header: zero groups over zero files is n/a in yellow, never a gr
   assert.ok(!plain.includes("No findings"), "no findings headline over nothing checked");
   const colored = dashboardFrame({ tree: [], selectedRow: 0, readKeys: new Set(), readSource: () => null, filesTotal: 0, durationMs: 114, useColor: true, cols: 120, rows: 34 });
   assert.match(colored, /\u001b\[1m\u001b\[33mScore: n\/a/, "the n/a line is toned yellow, not green");
-  assert.match(colored, /\u001b\[33m█/, "the bar is toned yellow too");
+  assert.match(colored, /\u001b\[33m░/, "the bar stays empty and yellow — nothing was measured");
 });
 
 test("dashboard header: a doctor over zero scanned files reports n/a, not Excellent", async () => {
   const { buildItems, buildTree, buildListRows, dashboardFrame } = await import("../bin/dashboard.js");
-  // A doctor whose findings name files outside the default-extension
+  // Two doctors whose findings name files outside the default-extension
   // walk: tree rows exist, but the scan's denominator is zero.
-  const groups = [
-    { programName: "a.mjs", meta: { id: "a", description: "x", severity: "warning" }, findings: [{ file: "src/spec.xs", line: 1 }] },
-  ];
+  const mk = (id, file) => ({ programName: id + ".mjs", meta: { id, description: "x", severity: "warning" }, findings: [{ file, line: 1 }] });
+  const groups = [mk("a", "src/spec-a.xs"), mk("b", "src/spec-b.xs")];
   const tree = buildTree(buildItems(groups), 0);
-  const rows = buildListRows(tree, false, 0, new Set(), new Set(["a"]));
+  const rows = buildListRows(tree, false, 0, new Set(), new Set(["a", "b"]));
   const aRow = rows.findIndex(r => r.doctor?.doctorId === "a");
-  const frame = dashboardFrame({ tree, selectedRow: aRow, readKeys: new Set(), readSource: () => null, expanded: new Set(["a"]), filesTotal: 0, durationMs: 114, useColor: false, cols: 120, rows: 34 });
+  assert.ok(aRow >= 0, "doctor a has a row");
+  assert.match(rows[aRow].text, /· n\/a/, "the doctor row refuses the vacuous 100 too");
+  const frame = dashboardFrame({ tree, selectedRow: aRow, readKeys: new Set(), readSource: () => null, expanded: new Set(["a", "b"]), filesTotal: 0, durationMs: 114, useColor: false, cols: 120, rows: 34 });
   assert.match(frame, /a  Score: n\/a — no files scanned/);
   assert.match(frame, /1 finding · 0 files · 114ms/);
   assert.ok(!frame.includes("Excellent"), "an empty scan claims no grade");

@@ -273,12 +273,11 @@ export async function runDoctor(options) {
 // on its timing.
 export const DOCTOR_POOL_SIZE = 4;
 export async function runDoctorCohort(options, onProgress) {
-    const exits = await Effect.runPromise(Effect.forEach(options, (o, i) => Effect.tap(Effect.exit(runDoctorE(o)), (exit) => Effect.sync(() => {
+    const exits = await Effect.runPromise(Effect.forEach(options, (o) => Effect.tap(Effect.exit(runDoctorE(o)), (exit) => Effect.sync(() => {
         var _a;
         if (onProgress === undefined)
             return;
         onProgress({
-            index: i,
             total: options.length,
             programPath: o.programPath,
             ok: Exit.isSuccess(exit),

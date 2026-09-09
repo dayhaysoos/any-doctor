@@ -18,6 +18,16 @@ function invoke(args, root) {
 function missingEngine(r) {
     return Boolean(r.error && r.error.code === "ENOENT");
 }
+// spawnSync reports an exceeded maxBuffer as ENOBUFS (verified Node 14–26;
+// ERR_CHILD_PROCESS_STDIO_MAXBUFFER is the streams-side name and is kept
+// for belt and braces). The distinction matters: without this check the
+// truncated stdout falls through to JSON.parse and surfaces as a
+// misleading "unparseable output" complaint.
+export function isBufferOverflow(r) {
+    var _a;
+    const code = (_a = r.error) === null || _a === void 0 ? void 0 : _a.code;
+    return code === "ENOBUFS" || code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER";
+}
 // Rule queries need `scan --inline-rules`, which older ast-greps lack.
 // A clap complaint about the flag or the subcommand is an age problem,
 // not a rule problem — say so instead of forwarding CLI noise.
@@ -46,7 +56,7 @@ export function runEngine(query, language, root) {
     if (missingEngine(r)) {
         return { ok: false, error: "ctx.search requires ast-grep (ast-grep or sg) on PATH — install: brew install ast-grep" };
     }
-    if (r.error && r.error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
+    if (isBufferOverflow(r)) {
         return {
             ok: false,
             error: `ctx.search outgrew the engine's ${MAX_BUFFER_BYTES / (1024 * 1024)}MB output buffer — the query matches too much code for one batch; narrow the patterns or split the batch`,

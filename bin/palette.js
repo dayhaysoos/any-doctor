@@ -12,3 +12,11 @@ export function gradeColor(score) {
     const grade = gradeFor(score);
     return grade === "Excellent" || grade === "Good" ? GREEN : grade === "Fair" ? YELLOW : RED;
 }
+// The score header's tone: an empty scan warns yellow — a vacuous 100
+// must not buy the Excellent-green — and everything else follows its
+// grade. Beside gradeColor because it is the same policy family; report
+// and dashboard call this, never re-compose it (D19). Structurally typed
+// so palette needs no import from score.
+export function scoreHeaderTone(header, score) {
+    return header.emptyScan ? YELLOW : gradeColor(score);
+}

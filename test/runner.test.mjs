@@ -141,8 +141,30 @@ test("runDoctorCohort: onProgress fires once per doctor as they settle", async (
   ], (p) => events.push(p));
   assert.equal(runs.length, 2);
   assert.equal(events.length, 2, "one event per doctor");
-  assert.deepEqual(events.map((e) => e.index).sort(), [0, 1]);
+  assert.deepEqual(events.map((e) => e.programPath).sort(), [DOCTOR, path.join(REPO, "doctors", "openrouter-doctor.mjs")].sort());
   assert.equal(events[0].total, 2);
   assert.ok(events.every((e) => e.ok), "both doctors healthy on the sample app");
   assert.ok(events.some((e) => e.durationMs >= 0), "durations reported");
+});
+
+test("runDoctorCohort: a crashed doctor still settles onProgress — once, flagged", async () => {
+  const { runDoctorCohort } = await import("../bin/runner.js");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-crash-"));
+  try {
+    const doctor = path.join(dir, "boom.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'boom', description: 'x', severity: 'info' }",
+      "export async function doctor(ctx) { throw new Error('kaboom') }",
+    ].join("\n"));
+    const events = [];
+    const runs = await runDoctorCohort([{ programPath: doctor, targetDir: TARGET }], (p) => events.push(p));
+    assert.equal(runs.length, 1);
+    assert.ok(!runs[0].ok, "the run itself is a failure");
+    assert.equal(events.length, 1, "the crash still fires exactly one settle event");
+    assert.equal(events[0].ok, false);
+    assert.equal(events[0].total, 1);
+    assert.equal(events[0].durationMs, 0, "a crash carries no duration");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

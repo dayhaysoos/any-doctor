@@ -1,4 +1,4 @@
-import type { TtyStdout } from "./tty.js";
+import { type TtyStdout } from "./tty.js";
 export interface SpinnerState {
     label: string;
     done: number;

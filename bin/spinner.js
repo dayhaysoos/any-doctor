@@ -1,4 +1,5 @@
 import { CYAN, DIM, RESET } from "./palette.js";
+import { truncateVisible } from "./tty.js";
 // The spinner: the one place that owns the "work is happening" line —
 // timer-driven, single-line, in-place, synchronized-output like every
 // other paint in this package. It exists for the silent gap after Enter:
@@ -32,7 +33,11 @@ export function startSpinner(stdout, initial, opts = {}) {
     const startedAt = now();
     let tick = 0;
     const paint = () => {
-        const line = spinnerLine(tick, state);
+        var _a;
+        // Truncated to the terminal like every other paint (tty.ts's frame
+        // discipline): an overlong label+note would wrap, and the clear-line
+        // repaint would then leave residue on the second row.
+        const line = truncateVisible(spinnerLine(tick, state), Math.max(10, ((_a = stdout.columns) !== null && _a !== void 0 ? _a : 120) - 1));
         stdout.write(`\x1b[?2026h\r\x1b[2K${line}\x1b[?2026l`);
     };
     stdout.write("\x1b[?25l");

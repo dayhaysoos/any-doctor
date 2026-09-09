@@ -64,7 +64,6 @@ export type CohortRun = {
     cause: RunnerError;
 };
 export interface CohortProgress {
-    index: number;
     total: number;
     programPath: string;
     ok: boolean;

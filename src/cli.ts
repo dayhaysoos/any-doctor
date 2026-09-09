@@ -11,7 +11,7 @@ import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, runDoc
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor, Selection } from "./select.js";
 import { pickItemsOn } from "./picker.js";
-import { startSpinner } from "./spinner.js";
+import { formatMs, SpinnerHandle, startSpinner } from "./spinner.js";
 import { canRunTui, processTtyEnv } from "./tty.js";
 
 import { BOLD, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./palette.js";
@@ -184,6 +184,17 @@ function unusableTargetReason(targetDir: string): string | null {
   return null;
 }
 
+// The live line's one gate: interactive TTYs get a spinner, headless and
+// piped output stay byte-clean — the same gate family as the picker, in
+// the one place both run paths share (D15's "one defined meaning" as a
+// function instead of a copy-pasted condition).
+function runSpinner(label: string, total: number): SpinnerHandle | null {
+  const env = processTtyEnv();
+  return canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS
+    ? startSpinner(env.stdout, { label, total })
+    : null;
+}
+
 async function cmdRun(args: string[]): Promise<number> {
   const parsed = parseArgs(args);
   if (parsed.global) {
@@ -211,12 +222,9 @@ async function cmdRun(args: string[]): Promise<number> {
     if ("exit" in selection) return selection.exit;
     const runStarted = Date.now();
     // The live line: while the child runs, a spinner instead of frozen
-    // silence — interactive TTYs only; headless and piped output stay
-    // byte-clean (same gate family as the picker).
-    const spinEnv = processTtyEnv();
-    const spin = canRunTui(spinEnv) && !process.env.ANY_DOCTOR_HEADLESS
-      ? startSpinner(spinEnv.stdout, { label: `scanning with ${path.basename(selection.doctorPath, ".mjs")}`, total: 1 })
-      : null;
+    // silence. total 0 — there is no "0 of 1" to count up to; the label
+    // and elapsed time carry the whole story.
+    const spin = runSpinner(`scanning with ${path.basename(selection.doctorPath, ".mjs")}`, 0);
     let scan;
     try {
       scan = await scanOnce({ programPath: selection.doctorPath, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
@@ -264,24 +272,29 @@ async function cmdRun(args: string[]): Promise<number> {
     // The cohort runs through the runner's bounded pool (see
     // runDoctorCohort) — order preserved, a crash stays data, and the
     // per-crash line is the same one a single-doctor run prints. While
-    // it runs, the live line ticks per completion — interactive TTYs
-    // only, same gate family as the picker.
-    const spinEnv = processTtyEnv();
-    const spin = canRunTui(spinEnv) && !process.env.ANY_DOCTOR_HEADLESS
-      ? startSpinner(spinEnv.stdout, { label: "running doctors", total: doctors.length })
-      : null;
+    // it runs, the live line ticks per settle with the doctor's own
+    // duration. stop() sits in finally: even a defect that rejects the
+    // batch must not leave a hidden cursor behind.
+    const spin = runSpinner("running doctors", doctors.length);
     let done = 0;
-    const runs = await runDoctorCohort(doctors.map(d => ({
-      programPath: d.path,
-      targetDir: parsed.targetDir,
-      includeTests: parsed.includeTests,
-    })), spin
-      ? (p) => {
-        done += 1;
-        spin.update({ done, note: path.basename(p.programPath, ".mjs") + (p.ok ? "" : " ✗") });
-      }
-      : undefined);
-    spin?.stop();
+    let runs;
+    try {
+      runs = await runDoctorCohort(doctors.map(d => ({
+        programPath: d.path,
+        targetDir: parsed.targetDir,
+        includeTests: parsed.includeTests,
+      })), spin
+        ? (p) => {
+          done += 1;
+          spin.update({
+            done,
+            note: `${path.basename(p.programPath, ".mjs")} ${formatMs(p.durationMs)}${p.ok ? "" : " ✗"}`,
+          });
+        }
+        : undefined);
+    } finally {
+      spin?.stop();
+    }
     const fileCounts: number[] = [];
     let analysisAvailable: boolean | undefined;
     for (const [i, run] of runs.entries()) {

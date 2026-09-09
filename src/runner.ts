@@ -324,8 +324,9 @@ export type CohortRun =
   | { ok: true; options: RunOptions; result: RunResult }
   | { ok: false; options: RunOptions; cause: RunnerError };
 
+// One event per settled doctor, fired as it settles (out of order under
+// concurrency — `total` is the batch size, the note carries the doctor).
 export interface CohortProgress {
-  index: number;
   total: number;
   programPath: string;
   ok: boolean;
@@ -334,13 +335,12 @@ export interface CohortProgress {
 
 export async function runDoctorCohort(options: RunOptions[], onProgress?: (p: CohortProgress) => void): Promise<CohortRun[]> {
   const exits = await Effect.runPromise(
-    Effect.forEach(options, (o, i) =>
+    Effect.forEach(options, (o) =>
       Effect.tap(
         Effect.exit(runDoctorE(o)),
         (exit) => Effect.sync(() => {
           if (onProgress === undefined) return;
           onProgress({
-            index: i,
             total: options.length,
             programPath: o.programPath,
             ok: Exit.isSuccess(exit),
