@@ -4,10 +4,10 @@ import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLO
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
 
 // One doctor whose run crashed: a crash is data. The id is the
-// discovery id (or the program's basename when selected by path); the
-// detail is the full describeRunnerError rendering, carried so any
-// surface — report, dashboard, or a future machine consumer — can name
-// the failure without re-deriving it.
+// discovery id (or the program's file name without .mjs when selected
+// by path); the detail is the full describeRunnerError rendering,
+// carried so any surface — report, dashboard, or a future machine
+// consumer — can name the failure without re-deriving it.
 export interface CrashedDoctor {
   id: string;
   detail: string;

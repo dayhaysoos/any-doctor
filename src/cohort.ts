@@ -19,8 +19,8 @@ import { CohortProgress, describeRunnerError, runDoctorCohort } from "./runner.j
 
 export interface CohortDoctor {
   // The discovery id (or, for a path-selected doctor, the program's
-  // basename) — the name a crash is reported under when the run itself
-  // produced no meta.
+  // file name without .mjs) — the name a crash is reported under when
+  // the run itself produced no meta.
   id: string;
   programPath: string;
 }

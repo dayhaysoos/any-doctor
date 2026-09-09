@@ -194,6 +194,11 @@ async function cmdRun(args) {
     // Cohort, which owns everything from first spawn to last settle.
     let doctors;
     let skippedUnsafe;
+    // The live line is mode-based, not count-based: an explicit path is a
+    // scan of one (label + elapsed, no counts, no settle notes); picker
+    // and --all are cohort runs (counts + per-settle notes) even when the
+    // selection narrows to a single doctor.
+    const explicitSingle = parsed.doctorPath !== undefined;
     if (parsed.doctorPath) {
         const sel = await selectDoctor(parsed.doctorPath, {
             cwd: process.cwd(),
@@ -238,21 +243,23 @@ async function cmdRun(args) {
         doctors = valid.map(d => ({ id: d.meta.id, programPath: d.path }));
     }
     // The live line: while the cohort's children run, a spinner instead
-    // of frozen silence. A cohort of one shows no counts — the label and
-    // elapsed time carry the whole story. stop() sits in finally: even a
-    // defect that rejects the batch must not leave a hidden cursor
-    // behind.
-    const spin = runSpinner(doctors.length === 1 ? `scanning with ${doctors[0].id}` : "running doctors", doctors.length === 1 ? 0 : doctors.length);
+    // of frozen silence. stop() sits in finally: even a defect that
+    // rejects the batch must not leave a hidden cursor behind. Settle
+    // notes name doctors by the spec's ids — one naming rule, shared with
+    // the crash report.
+    const idOf = new Map(doctors.map(d => [d.programPath, d.id]));
+    const spin = runSpinner(explicitSingle ? `scanning with ${doctors[0].id}` : "running doctors", explicitSingle ? 0 : doctors.length);
     let done = 0;
     let ran;
     try {
-        ran = await runCohort({ doctors, targetDir: parsed.targetDir, includeTests: parsed.includeTests }, spin
+        ran = await runCohort({ doctors, targetDir: parsed.targetDir, includeTests: parsed.includeTests }, spin && !explicitSingle
             ? (p) => {
+                var _a;
                 done += 1;
                 // A healthy settle carries its own duration; a crash carries
                 // none (the runner reports 0) — showing "0ms" would fabricate
                 // a duration that was never measured.
-                const who = path.basename(p.programPath, ".mjs");
+                const who = (_a = idOf.get(p.programPath)) !== null && _a !== void 0 ? _a : "doctor";
                 spin.update({ done, note: p.ok ? `${who} ${formatMs(p.durationMs)}` : `${who} ✗` });
             }
             : undefined);
