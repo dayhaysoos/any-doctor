@@ -120,7 +120,7 @@ export interface DoctorCtx {
   files: {
     list(exts?: string[]): string[];
     read(relativePath: string): string;
-    // The one masking implementation (D20 Stage 1): comments and strings
+    // The one masking implementation (D20 Stage 1): comments, strings, and regex literals
     // blanked, offsets and length preserved — a doctor indexes into it
     // with positions that line up with the raw source. Doctors stopped
     // carrying private copies the single-file law forced on them.

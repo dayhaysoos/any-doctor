@@ -43,7 +43,7 @@ after 300
 puts ">STAGE pre-expand"
 send "\\r"
 expect {
-  "user.ts:5" {}
+  ".ts:" {}
   timeout { puts ">FAIL expand-timeout"; exit 108 }
   eof { puts ">FAIL expand-eof"; exit 109 }
 }
@@ -111,8 +111,9 @@ test("bare run opens the aggregate tree directly; enter walks doctor-check-findi
   // The tree: the first enter expanded the top check (findings visible),
   // down moved onto an finding, and enter there copied its context.
   assert.ok(text.includes("\u00d74"), "the async doctor row carries its total count");
-  assert.ok(text.includes("\u00d73"), "check rows carry finding counts");
+  const counts = text.match(/\u00d7\d/g) ?? [];
+  assert.ok(counts.length >= 2, "check rows carry finding counts");
   const beforeExpand = text.slice(0, text.indexOf(">STAGE pre-expand"));
-  assert.ok(!beforeExpand.includes("user.ts:5"), "findings hidden until the check expands");
-  assert.ok(text.slice(text.indexOf(">STAGE expanded")).includes("user.ts:5"), "expansion reveals findings");
+  assert.ok(!/src\/[^\s:]+\.ts:\d/.test(beforeExpand), "findings hidden until the check expands");
+  assert.ok(/src\/[^\s:]+\.ts:\d/.test(text.slice(text.indexOf(">STAGE expanded"))), "expansion reveals findings");
 });

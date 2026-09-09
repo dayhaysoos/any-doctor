@@ -1,7 +1,6 @@
-import { SEVERITY_ORDER } from "./summary.js";
+import { SEVERITY_ORDER, deriveSummary } from "./summary.js";
 import { DEFAULT_EXTS } from "./sdk.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
-import { deriveSummary } from "./summary.js";
 // All doctors scan the same target, so the cohort's file count is any
 // doctor's count; the max is the honest pick when one crashed early. The
 // policy lives here, beside the RunOutcome field it fills and the Score
@@ -40,7 +39,7 @@ export function unsafeRefusalLine(name, capabilities) {
 // score, rollups, check buckets, narrowed ids) lives in summary.ts,
 // shared with the dashboard and the future JSON surface — rendering
 // here means prose and color, nothing else.
-export function renderReport(input, useColor) {
+export function renderReport(input, useColor, diff) {
     const c = colorizer(useColor);
     const lines = [];
     const summary = deriveSummary(input);
@@ -56,6 +55,9 @@ export function renderReport(input, useColor) {
     }
     if (input.skippedUnsafe !== undefined && input.skippedUnsafe.length > 0) {
         lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
+    }
+    if (diff !== undefined) {
+        lines.push(c(`vs ${diff.base} (merged base): ${diff.added} added · ${diff.resolved} resolved`, DIM));
     }
     // The empty scan is its own outcome, not a clean one: no findings
     // headline, no per-doctor "clean" roll — those are claims a zero-file
@@ -138,6 +140,57 @@ export function renderReport(input, useColor) {
         lines.push(c(`${hidden} duplicate finding${hidden === 1 ? "" : "s"} hidden (same location, different doctor)`, DIM));
     }
     return lines.join("\n").replace(/\n+$/, "");
+}
+// The machine adapter: exactly one JSON object, schema-tagged so
+// consumers can branch on shape. stdout carries only this when
+// --format json is set — human diagnostics (crash detail, gate
+// reasons) stay on stderr, so pipes stay parseable. Same Summary the
+// prose and the dashboard render; the same facts, no re-derivation.
+export function renderJson(input, summary, gate, diff) {
+    var _a;
+    return JSON.stringify({
+        schema: 1,
+        tool: "any-doctor",
+        target: input.targetDir,
+        fileCount: input.fileCount,
+        durationMs: input.durationMs,
+        score: summary.score,
+        counts: { ...summary.severityCounts, total: summary.total, hiddenDuplicates: summary.hidden },
+        analysisAvailable: (_a = input.analysisAvailable) !== null && _a !== void 0 ? _a : false,
+        emptyScan: summary.emptyScan,
+        groups: summary.groupChecks.map(gc => ({
+            doctor: gc.group.meta.id,
+            checks: gc.checks.map(b => ({
+                ...(b.ruleId !== null ? { rule: b.ruleId } : {}),
+                heading: b.heading,
+                severity: b.severity,
+                findings: b.findings.map(f => ({
+                    file: f.file,
+                    line: f.line,
+                    ...(f.severity !== undefined ? { severity: f.severity } : {}),
+                    ...(f.message !== undefined ? { message: f.message } : {}),
+                })),
+            })),
+            ...(gc.narrowedIds.length > 0 ? { narrowed: gc.narrowedIds } : {}),
+            ...(gc.group.meta.blindSpots !== undefined && gc.group.meta.blindSpots.length > 0 ? { blindSpots: gc.group.meta.blindSpots } : {}),
+        })),
+        crashed: input.crashed.map(cr => ({ id: cr.id, detail: cr.detail })),
+        skippedUnsafe: input.skippedUnsafe,
+        gate: {
+            failOn: gate.failOn,
+            mode: gate.mode,
+            fails: gate.fails,
+            ...(gate.reason !== null ? { reason: gate.reason } : {}),
+        },
+        ...(diff !== undefined ? {
+            diff: {
+                base: diff.base,
+                baseSha: diff.baseSha,
+                added: diff.added,
+                resolved: diff.resolved,
+            },
+        } : {}),
+    }, null, 2);
 }
 // A diff entry's location includes its rule when it has one — the gate is
 // rule-aware (D20), so the line must say which check was missing or extra.

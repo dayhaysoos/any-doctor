@@ -203,10 +203,13 @@ test("main: bare run partitions the cohort — healthy run, unsafe skipped and n
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cli-cohort-"));
   fs.mkdirSync(path.join(root, "doctors"));
   fs.mkdirSync(path.join(root, "src"));
-  fs.writeFileSync(path.join(root, "src", "a.ts"), "const a = 1;\n");
+  // Slop-free seed (slop-doctor joined the pack and correctly flagged the
+  // old `const a = 1` as an unread local, deduping good's finding away):
+  // index.ts is entry-exempt, and `a` is read by the export.
+  fs.writeFileSync(path.join(root, "src", "index.ts"), "const a = 1;\nexport const b = a;\n");
   fs.writeFileSync(path.join(root, "doctors", "good.mjs"), [
     "export const meta = { id: 'good', description: 'g', severity: 'info' }",
-    "export async function doctor(ctx) { ctx.report.finding({ file: 'src/a.ts', line: 1 }) }",
+    "export async function doctor(ctx) { ctx.report.finding({ file: 'src/index.ts', line: 1 }) }",
   ].join("\n"));
   fs.writeFileSync(path.join(root, "doctors", "evil.mjs"), [
     'import fs from "node:fs";',
@@ -217,8 +220,9 @@ test("main: bare run partitions the cohort — healthy run, unsafe skipped and n
   const cwd = process.cwd();
   process.chdir(root);
   try {
+    const errs = t.mock.method(console, "error", () => {});
     const code = await cli.main(["run", "--all"]);
-    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).concat(errs.mock.calls.flatMap(c => c.arguments.map(String))).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
     assert.equal(code, 1, "an unsafe skip fails the run");
     assert.match(out, /skipping broken doctor broken —/);
     assert.doesNotMatch(out, /skipping broken doctor (good|evil)/, "healthy and unsafe doctors are never 'broken'");
@@ -242,8 +246,9 @@ test("main: only-unsafe discovery names them as skipped, never as broken", async
   const cwd = process.cwd();
   process.chdir(root);
   try {
+    const errs = t.mock.method(console, "error", () => {});
     const code = await cli.main(["verify"]);
-    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    const out = logs.mock.calls.concat(errs.mock.calls).flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
     assert.equal(code, 1);
     assert.match(out, /1 doctor could be malicious — skipped: evil/);
     assert.doesNotMatch(out, /broken: evil/, "unsafe is not 'broken' on any surface");
@@ -259,8 +264,9 @@ test("demo repo: healthy doctors verify fixture-green, gate props are skipped an
   const cwd = process.cwd();
   process.chdir(demo);
   try {
+    const errs = t.mock.method(console, "error", () => {});
     const code = await cli.main(["verify", "--all"]);
-    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    const out = logs.mock.calls.concat(errs.mock.calls).flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
     assert.equal(code, 1, "the two malicious doctors fail the command");
     assert.match(out, /2 doctors could be malicious — skipped: bad, evil/);
     assert.match(out, /todo-doctor/);
@@ -305,5 +311,129 @@ test("plantSkill: plants with the provenance marker, refreshes planted copies, n
     assert.equal(fs.readFileSync(path.join(dir, "AGENTS.md"), "utf8"), "our team conventions\n");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ---- the Gate chapter: --format json, --fail-on, --base -----------------
+
+test("gate: --format json puts one parseable schema-tagged object on stdout", async (t) => {
+  const log = t.mock.method(console, "log", () => {});
+  const code = await cli.main(["run", DOCTOR, TARGET, "--format", "json"]);
+  assert.equal(code, 0);
+  const printed = log.mock.calls.map(c => c.arguments.join(" ")).join("");
+  const j = JSON.parse(printed);
+  assert.equal(j.schema, 1);
+  assert.equal(j.tool, "any-doctor");
+  assert.ok(j.counts.total > 0, "findings counted");
+  assert.equal(j.groups[0].doctor, "async-doctor");
+  assert.deepEqual(j.crashed, []);
+  assert.equal(j.gate.failOn, "none");
+  assert.equal(j.gate.fails, false);
+  assert.equal(j.diff, undefined, "no diff without --base");
+});
+
+test("gate: --fail-on warning fails the sample app; error and none do not", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--fail-on", "warning"]), 1, "4 warnings clear the warning bar");
+  const printed = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+  assert.match(printed, /gate: \d+ findings at or above warning/);
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--fail-on", "error"]), 0, "no errors in the sample app");
+  assert.equal(await cli.main(["run", DOCTOR, TARGET]), 0, "advisory default");
+});
+
+test("gate: bad flag values refuse with the allowed choices", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--fail-on", "warn"]), 1);
+  assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /--fail-on must be one of none, error, warning, info/);
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--format", "yaml"]), 1);
+  assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /--format must be "report" or "json"/);
+});
+
+test("gate: --base against HEAD adds nothing — advisory findings pass, pre-existing debt is not blamed", async (t) => {
+  const log = t.mock.method(console, "log", () => {});
+  const code = await cli.main(["run", DOCTOR, TARGET, "--base", "HEAD", "--fail-on", "warning"]);
+  assert.equal(code, 0, "identical trees: zero added findings, the bar holds");
+  const printed = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+  assert.match(printed, /vs HEAD \(merged base\): 0 added · 0 resolved/, "the report carries the diff line");
+});
+
+test("gate: json output stays parseable when a doctor crashes — detail on stderr, exit 1", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-gate-crash-"));
+  try {
+    const doctor = path.join(dir, "boom.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'boom', description: 'x', severity: 'info' }",
+      "export async function doctor(ctx) { throw new Error('kaboom') }",
+    ].join("\n"));
+    const log = t.mock.method(console, "log", () => {});
+    const err = t.mock.method(console, "error", () => {});
+    const code = await cli.main(["run", doctor, TARGET, "--format", "json", "--fail-on", "none"]);
+    assert.equal(code, 1, "a crash fails regardless of the bar");
+    const j = JSON.parse(log.mock.calls.map(c => c.arguments.join(" ")).join(""));
+    assert.equal(j.crashed.length, 1);
+    assert.match(j.crashed[0].detail, /kaboom/);
+    assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /kaboom/, "human diagnostics stay on stderr");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+
+test("gate: a dangling --base refuses — never silently full mode", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--base"]), 1);
+  assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /--base needs a value \(a git ref, e\.g\. --base main\)/);
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--base", "--all"]), 1, "a flag-shaped value is not a ref");
+});
+
+test("gate: verify refuses the run-only gate flags", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  assert.equal(await cli.main(["verify", DOCTOR, "--fail-on", "error"]), 1);
+  assert.equal(await cli.main(["verify", DOCTOR, "--format", "json"]), 1);
+  assert.equal(await cli.main(["verify", DOCTOR, "--base", "main"]), 1);
+  assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /run-only flags/);
+});
+
+// Dogfood find (sift-skills, 134KB payload): process.exit() cuts off a
+// piped stdout at the 64KB pipe-buffer boundary — --format json arrived
+// truncated on real repos while every small fixture passed. The guard
+// now sets exitCode and lets Node flush. Only a real child through a
+// real pipe can pin this; in-process main() calls cannot.
+test("gate: --format json survives a pipe at payload sizes past 64KB", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-pipe-"));
+  const doctorDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-pipe-doc-"));
+  try {
+    // The doctor lives outside the target: its own source contains the
+    // trigger word and would flag itself.
+    const doctor = path.join(doctorDir, "many.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'many', description: 'one finding per BAD line', severity: 'info' }",
+      "export async function doctor(ctx) {",
+      "  for (const file of ctx.files.list()) {",
+      "    ctx.files.read(file).split('\\n').forEach((line, i) => {",
+      '      if (line.includes("BAD")) ctx.report.finding({ file, line: i + 1, message: "padding padding padding padding" })',
+      "    })",
+      "  }",
+      "}",
+    ].join("\n"));
+    fs.writeFileSync(path.join(dir, "big.ts"), "const BAD = 1\n".repeat(3000));
+    const { spawn } = await import("node:child_process");
+    const child = spawn(process.execPath, [path.join(REPO, "bin", "cli.js"), "run", doctor, dir, "--format", "json"], {
+      env: { ...process.env, ANY_DOCTOR_HEADLESS: "1" },
+    });
+    let stdout = "";
+    child.stdout.on("data", (c) => { stdout += c; });
+    await new Promise((resolve) => child.on("close", resolve));
+    assert.ok(stdout.length > 65536, `payload must exceed one pipe buffer (got ${stdout.length})`);
+    const j = JSON.parse(stdout);
+    assert.equal(j.counts.total, 3000, "every finding survived the pipe");
+    assert.equal(child.exitCode, 0);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(doctorDir, { recursive: true, force: true });
   }
 });
