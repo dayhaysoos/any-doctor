@@ -1,10 +1,7 @@
 import { Finding, ReportGroup, Severity } from "./contract.js";
-import { RunOutcome } from "./report.js";
+import type { RunOutcome } from "./report.js";
 import { ScoreHeader, ScoreResult } from "./score.js";
-export declare function dedupeGroups(groups: ReportGroup[]): {
-    groups: ReportGroup[];
-    hidden: number;
-};
+export declare const SEVERITY_ORDER: Severity[];
 export interface CheckBucket {
     ruleId: string | null;
     heading: string;

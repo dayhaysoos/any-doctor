@@ -1,5 +1,5 @@
 import { Finding, narrowedCheckIds, ReportGroup, resolveFinding, Severity } from "./contract.js";
-import { RunOutcome } from "./report.js";
+import type { RunOutcome } from "./report.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines, ScoreHeader, ScoreResult } from "./score.js";
 
 // The Summary: the one derivation from a RunOutcome to everything its
@@ -15,7 +15,9 @@ import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines, ScoreH
 // Pure: derive twice from one RunOutcome, get one Summary. Rendering
 // (colors, prose, trees) belongs to the adapters, never here.
 
-const SEVERITY_ORDER: Severity[] = ["error", "warning", "info"];
+// Worst-first display order — one home; the report's rollup rendering
+// imports it rather than re-listing severities.
+export const SEVERITY_ORDER: Severity[] = ["error", "warning", "info"];
 
 function groupSeverity(g: ReportGroup): Severity {
   const explicit = g.findings.find(f => f.severity);
@@ -27,7 +29,7 @@ function groupSeverity(g: ReportGroup): Severity {
 // check from the SAME doctor at the same site is a different diagnosis
 // of one line (filter-table-scan and unbounded-collect on one chain)
 // and survives — the check tree exists to show each check's own story.
-export function dedupeGroups(groups: ReportGroup[]): { groups: ReportGroup[]; hidden: number } {
+function dedupeGroups(groups: ReportGroup[]): { groups: ReportGroup[]; hidden: number } {
   const owner = new Map<string, string>();
   const key = (f: Finding): string => `${f.file}:${f.line}`;
   const ordered = [...groups].sort(

@@ -12,7 +12,9 @@ import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from 
 //
 // Pure: derive twice from one RunOutcome, get one Summary. Rendering
 // (colors, prose, trees) belongs to the adapters, never here.
-const SEVERITY_ORDER = ["error", "warning", "info"];
+// Worst-first display order — one home; the report's rollup rendering
+// imports it rather than re-listing severities.
+export const SEVERITY_ORDER = ["error", "warning", "info"];
 function groupSeverity(g) {
     var _a;
     const explicit = g.findings.find(f => f.severity);
@@ -23,7 +25,7 @@ function groupSeverity(g) {
 // check from the SAME doctor at the same site is a different diagnosis
 // of one line (filter-table-scan and unbounded-collect on one chain)
 // and survives — the check tree exists to show each check's own story.
-export function dedupeGroups(groups) {
+function dedupeGroups(groups) {
     const owner = new Map();
     const key = (f) => `${f.file}:${f.line}`;
     const ordered = [...groups].sort((a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));

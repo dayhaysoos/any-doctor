@@ -1,4 +1,5 @@
-import { DoctorMeta, ExpectedFinding, ReportGroup, Severity, VerifyRunResult } from "./contract.js";
+import { ExpectedFinding, ReportGroup, Severity, VerifyRunResult } from "./contract.js";
+import { SEVERITY_ORDER } from "./summary.js";
 import { DEFAULT_EXTS } from "./sdk.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { deriveSummary } from "./summary.js";
@@ -78,8 +79,6 @@ export function emptyScanLine(): string {
 export function unsafeRefusalLine(name: string, capabilities: readonly string[]): string {
   return `${name} could be malicious (${capabilities.join(", ")}) — not running it.`;
 }
-
-const SEVERITY_ORDER: Severity[] = ["error", "warning", "info"];
 
 // The report is an adapter over the Summary: the derivation (dedupe,
 // score, rollups, check buckets, narrowed ids) lives in summary.ts,
