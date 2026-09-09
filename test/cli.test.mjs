@@ -394,3 +394,43 @@ test("gate: verify refuses the run-only gate flags", async (t) => {
   assert.equal(await cli.main(["verify", DOCTOR, "--base", "main"]), 1);
   assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /run-only flags/);
 });
+
+// Dogfood find (sift-skills, 134KB payload): process.exit() cuts off a
+// piped stdout at the 64KB pipe-buffer boundary — --format json arrived
+// truncated on real repos while every small fixture passed. The guard
+// now sets exitCode and lets Node flush. Only a real child through a
+// real pipe can pin this; in-process main() calls cannot.
+test("gate: --format json survives a pipe at payload sizes past 64KB", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-pipe-"));
+  const doctorDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-pipe-doc-"));
+  try {
+    // The doctor lives outside the target: its own source contains the
+    // trigger word and would flag itself.
+    const doctor = path.join(doctorDir, "many.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'many', description: 'one finding per BAD line', severity: 'info' }",
+      "export async function doctor(ctx) {",
+      "  for (const file of ctx.files.list()) {",
+      "    ctx.files.read(file).split('\\n').forEach((line, i) => {",
+      '      if (line.includes("BAD")) ctx.report.finding({ file, line: i + 1, message: "padding padding padding padding" })',
+      "    })",
+      "  }",
+      "}",
+    ].join("\n"));
+    fs.writeFileSync(path.join(dir, "big.ts"), "const BAD = 1\n".repeat(3000));
+    const { spawn } = await import("node:child_process");
+    const child = spawn(process.execPath, [path.join(REPO, "bin", "cli.js"), "run", doctor, dir, "--format", "json"], {
+      env: { ...process.env, ANY_DOCTOR_HEADLESS: "1" },
+    });
+    let stdout = "";
+    child.stdout.on("data", (c) => { stdout += c; });
+    await new Promise((resolve) => child.on("close", resolve));
+    assert.ok(stdout.length > 65536, `payload must exceed one pipe buffer (got ${stdout.length})`);
+    const j = JSON.parse(stdout);
+    assert.equal(j.counts.total, 3000, "every finding survived the pipe");
+    assert.equal(child.exitCode, 0);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(doctorDir, { recursive: true, force: true });
+  }
+});

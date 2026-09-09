@@ -600,8 +600,14 @@ const invokedDirectly = (() => {
     }
 })();
 if (invokedDirectly) {
-    main().then((code) => process.exit(code), (e) => {
+    // exitCode, never process.exit: a piped stdout drains asynchronously,
+    // and process.exit() cuts it off at the pipe-buffer boundary — a
+    // 134KB --format json payload arrived 64KB-truncated on a real repo.
+    // Setting exitCode lets Node flush every stream, then exit itself.
+    main().then((code) => {
+        process.exitCode = code;
+    }, (e) => {
         console.error(RED + (e && e.stack ? e.stack : String(e)) + RESET);
-        process.exit(1);
+        process.exitCode = 1;
     });
 }
