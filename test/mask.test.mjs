@@ -16,3 +16,13 @@ test("maskNonCode: regex literals containing quotes no longer open phantom strin
   assert.ok(masked.includes("ReportGroup"), "code after a quote-bearing regex is NOT swallowed");
   assert.ok(masked.includes("/ 2"), "division after a regex literal still reads as division");
 });
+
+test("maskNonCode: a JSX closing tag's slash is not a regex opener", () => {
+  const src = [
+    'import { Button } from "./ui";',
+    "export default function Demo() { return <div><span>Hi</span><Button /></div>; }",
+  ].join("\n");
+  const masked = maskNonCode(src);
+  assert.ok(masked.includes("Button"), "JSX component reference survives masking");
+  assert.ok(masked.includes("Demo"), "code after the first closing tag survives");
+});

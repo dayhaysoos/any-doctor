@@ -154,47 +154,52 @@ Three rules of the degradation contract:
   (forces the degraded path; expectations may legitimately differ — pin
   them).
 
-### The identity model's sharp edges (learned the hard way — do not relearn)
+### The identity model: language facts from the engine, not regexes
 
-The engine resolves VALUE positions via scope analysis. Its reference
-semantics have four edges that break naive predicates:
+The engine resolves **value, JSX, and type-position references** (the
+TypeScript-aware scope layer), and computes two facts doctors must take
+rather than re-derive: every binding carries `exported?: boolean`
+(computed from the export AST — every declarator, destructured pattern,
+and specifier; no text matching) and `excluded?: boolean` (declared in
+an object pattern with a rest sibling — the intentional omission
+idiom; its unreadness is the point, never a finding).
 
-- **The declarator is itself a write reference.** `const x = 1` gives `x`
-  one write reference inside its own declaration span; an unused import's
-  specifier likewise. NEVER test `references.length > 0` for "used."
-- **Loop variables declare over the whole loop.** For `for (const g of xs)`,
-  every `g` reference in the body sits inside the declaration span — so
-  span-containment alone reads a heavily-used loop variable as unread.
-- The correct "used" predicate for both edges — a binding is USED when
+The laws that follow:
+
+- **Unknown is not unused.** The declarator (or import specifier) is
+  itself a write reference; loop variables declare over the whole loop.
+  Never test `references.length > 0` for "used." A binding is USED when
   anything READS it, or writes it beyond its own declaration:
-
   ```js
   const isUsed = (b) =>
     b.references.some((r) => !r.write) ||
     b.references.some((r) => !refInsideDecl(r, b));
   ```
-
-- **Type positions never become references.** `import { Foo }` used only as
-  a type annotation has zero references but is legitimate. Guard with a
-  whole-word occurrence count over the MASKED source (type annotations
-  survive masking; comments and strings do not): if the name occurs beyond
-  its declaration, skip — precision first.
-- **Exports are statement-scoped, not line-scoped.** `export const A = 1,\n
-  B = 2` (wrapped, type-annotated: `export const C: Record<string, number>
-  = {...}`) exports EVERY declarator up to the terminating `;`. Match the
-  statement over masked text with
-  `/export\s+(?:const|let|var)\s+([^;]+);/` and pull each identifier
-  before its `=`.
-- **`import * as NS` members are consumers**: `NS.NAME` anywhere in another
-  file consumes `NAME` — collect namespace imports and match member access.
-- **Dynamically-consumed files are entry points**: doctor programs
-  (`doctors/`), `bin/`, `scripts/`, and entry-shaped names (cli, main,
-  index, server, app, mod) are loaded by import-machinery no static scan
-  sees — exempt them from dead-export checks entirely.
-- **Test files are invisible to the default scan** (they are excluded), so
-  a binding consumed only by tests looks dead. Declare it in blindSpots and
-  point users at `--include-tests`. `.d.ts` files declare types, not
-  behavior — skip them.
+  And when your detection cannot see a reference class, the honest
+  verdict is "unknown" — skip — never "unused."
+- **Backstop with the masked occurrence guard.** A whole-word count
+  over the MASKED source catches string-built references and
+  reflection: if the name occurs beyond its declaration, skip.
+  Masking blanks comments, strings, and regex literals but preserves
+  identifiers, JSX tags, and type annotations.
+- **Never re-derive exports with regexes.** `exported` is engine data.
+  Statement-scoped `/export ... ;/` matching fails on semicolons inside
+  type annotations, destructured exports, and semicolon-free code —
+  those exact failures shipped false positives once.
+- **Excluded bindings are off-limits**, and underscore-prefixed names
+  (`_secret`) are opt-out by convention.
+- **Consumers are an index, not a glance.** Collect named imports,
+  namespace-member usage (`NS.NAME`), and DYNAMIC import specifiers
+  (from RAW source — masking blanks the path strings) across every
+  file before claiming anything is unconsumed. `import("./x")`
+  consumes x's whole export surface.
+- **Entry-shaped files are exempt from dead-export**: doctor programs
+  (`doctors/`), `bin/`, `scripts/`, generated directories, and
+  entry names (cli, main, index, ...) are consumed by machinery static
+  analysis cannot see.
+- **Test files are invisible to the default scan**; a test-only
+  consumer looks dead. Declare it and point users at
+  `--include-tests`. `.d.ts` declares types, not behavior.
 
 ## One doctor, many checks
 

@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json && node -e \"const fs=require('fs');['bin/cli.js','bin/doctor-loader.mjs'].forEach(f=>fs.chmodSync(f,0o755))\"",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run build && npm test",
     "pretest": "npm run build",
     "test": "node --test"
   },
@@ -38,6 +38,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@typescript-eslint/scope-manager": "^8.70.0",
     "effect": "^4.0.0-beta.107",
     "eslint-scope": "^9.1.2",
     "eslint-visitor-keys": "^5.0.1"

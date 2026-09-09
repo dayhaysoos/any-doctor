@@ -77,6 +77,12 @@ export interface BindingInfo {
     endLine: number;
     endColumn: number;
     references: BindingRef[];
+    /** Named-exported from this module — computed from the export AST, not
+     *  text: every declarator of an export statement, specifiers, defaults. */
+    exported?: boolean;
+    /** Declared in an object pattern with a rest sibling — the intentional
+     *  omission idiom (`const { secret: _s, ...safe } = x`). Not dead code. */
+    excluded?: boolean;
 }
 export interface AnalysisFile {
     file: string;

@@ -414,4 +414,61 @@ export const fixtures = [
     expected: [],
     analysis: "off",
   },
+
+  // --- frozen reviewer counterexamples (0.0.4 regression corpus) ---
+  {
+    name: "reviewer: JSX component use after a closing tag is a reference",
+    seed: {
+      "src/index.tsx": 'import { Button } from "./ui";\nexport default function Demo() { return <div><span>Hi</span><Button /></div>; }',
+      "src/ui.tsx": "export function Button() { return null; }",
+    },
+    expected: [],
+  },
+  {
+    name: "reviewer: destructured export consumed elsewhere",
+    seed: {
+      "src/auth.ts": "const client = makeClient();\nexport const { signOut } = client;",
+      "src/index.ts": 'import { signOut } from "./auth";\nsignOut();',
+    },
+    expected: [],
+  },
+  {
+    name: "reviewer: intentional object-rest field exclusion is not unread",
+    seed: {
+      "src/index.ts": "export function publicData(value) {\n const { secret: _secret, ...safe } = value;\n return safe;\n}",
+    },
+    expected: [],
+  },
+  {
+    name: "reviewer: semicolon inside type annotation is still one export",
+    seed: {
+      "src/status.ts": 'export const status: { label: string; } = { label: "ready" };',
+      "src/index.ts": 'import { status } from "./status";\nconsole.log(status);',
+    },
+    expected: [],
+  },
+  {
+    name: "reviewer: dynamic import consumes the module's exports",
+    seed: {
+      "src/widget.ts": "export function Widget() { return 42; }",
+      "src/index.ts": 'export async function main() {\n const module = await import("./widget");\n return module.Widget();\n}',
+    },
+    expected: [],
+  },
+  {
+    name: "reviewer: a throwing QA guard is not environment routing",
+    seed: {
+      "src/index.ts": 'export function localOnly(siteUrl: string) {\n if (!siteUrl.startsWith("http://localhost:")) throw new Error("local only");\n}',
+    },
+    expected: [],
+  },
+  {
+    name: "reviewer: helpers differing only in literal values are not identical",
+    seed: {
+      "src/a.ts": 'export function normalize(value: string): string {\n const cleaned = value.trim().toLowerCase();\n return cleaned.replace(/\\s+/g, "-");\n}',
+      "src/b.ts": 'export function normalize(value: string): string {\n const cleaned = value.trim().toLowerCase();\n return cleaned.replace(/\\s+/g, "_");\n}',
+      "src/index.ts": 'import { normalize as a } from "./a";\nimport { normalize as b } from "./b";\nconsole.log(a("a b"),b("a b"));',
+    },
+    expected: [],
+  },
 ];

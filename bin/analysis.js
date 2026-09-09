@@ -8,10 +8,8 @@ function loadStack() {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { parseSync } = require_("oxc-parser");
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { analyze } = require_("eslint-scope");
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const keys = require_("eslint-visitor-keys");
-        loaded = { parseSync, analyze, keys };
+        const { analyze } = require_("@typescript-eslint/scope-manager");
+        loaded = { parseSync, analyze };
     }
     catch (e) {
         loaded = { error: `the analysis engine is not installed (${e instanceof Error ? e.message : String(e)}) — npm install oxc-parser` };
@@ -45,8 +43,6 @@ export function analyzeBindings(file, source) {
     try {
         scopeManager = stack.analyze(program, {
             sourceType: "module",
-            ecmaVersion: 2026,
-            childVisitorKeys: stack.keys.KEYS,
         });
     }
     catch (e) {
@@ -57,6 +53,10 @@ export function analyzeBindings(file, source) {
     const global = scopeManager.globalScope;
     if (global === null)
         return { ok: false, error: `analysis failed to resolve scopes in ${file}` };
+    // Language facts computed from the AST once, so doctors never re-derive
+    // them with regexes: what is exported, and what is an intentional
+    // object-rest exclusion.
+    const facts = languageFacts(program);
     for (const scope of allScopes(global)) {
         for (const variable of scope.variables) {
             const def = variable.defs[0];
@@ -64,7 +64,7 @@ export function analyzeBindings(file, source) {
                 continue; // builtins and implicit globals carry no def
             // The declaration's own extent: for variables the declarator (so a
             // binding's span contains its initializer), for parameters the
-            // identifier itself (eslint-scope hands the whole function node for
+            // identifier itself (scope managers hand the whole function node for
             // params, which would swallow the body).
             const node = def.node;
             const span = def.type === "Parameter" ? def.name.range : ((_a = node === null || node === void 0 ? void 0 : node.range) !== null && _a !== void 0 ? _a : def.name.range);
@@ -86,10 +86,101 @@ export function analyzeBindings(file, source) {
                     endColumn: pos.column(r.identifier.range[1]),
                     write: r.isWrite(),
                 })),
+                exported: facts.exported.has(variable.name) || undefined,
+                excluded: facts.excluded.has(variable.name) || undefined,
             });
         }
     }
     return { ok: true, file: { file, bindings } };
+}
+function languageFacts(program) {
+    const exported = new Set();
+    const excluded = new Set();
+    const visit = (node) => {
+        if (!node || typeof node !== "object")
+            return;
+        const n = node;
+        if (n.type === "ExportNamedDeclaration" && n.declaration) {
+            collectDeclaredNames(n.declaration, exported);
+        }
+        if (n.type === "ExportNamedDeclaration" && Array.isArray(n.specifiers)) {
+            for (const spec of n.specifiers) {
+                if (spec.local && typeof spec.local.name === "string") {
+                    exported.add(spec.local.name);
+                }
+            }
+        }
+        if (n.type === "ExportDefaultDeclaration") {
+            const d = n.declaration;
+            if (d && typeof d.id === "object" && d.id && typeof d.id.name === "string") {
+                exported.add(d.id.name);
+            }
+        }
+        if (n.type === "ObjectPattern" && Array.isArray(n.properties)) {
+            const hasRest = n.properties.some((p) => p.type === "RestElement");
+            if (hasRest) {
+                for (const p of n.properties) {
+                    if (p.type === "Property" && p.value && p.value.type === "Identifier") {
+                        excluded.add(p.value.name);
+                    }
+                }
+            }
+        }
+        for (const key of Object.keys(n)) {
+            if (key === "range" || key === "start" || key === "end" || key === "tokens" || key === "comments")
+                continue;
+            const v = n[key];
+            if (Array.isArray(v)) {
+                for (const child of v) {
+                    if (child && typeof child === "object" && typeof child.type === "string")
+                        visit(child);
+                }
+            }
+            else if (v && typeof v === "object" && typeof v.type === "string") {
+                visit(v);
+            }
+        }
+    };
+    visit(program);
+    return { exported, excluded };
+}
+// Every name a declaration binds: function/class ids, every declarator of
+// a variable statement (multi-declarator, destructured patterns), and the
+// property names of nested object/array patterns.
+function collectDeclaredNames(decl, into) {
+    if (decl.type === "FunctionDeclaration" || decl.type === "ClassDeclaration" || decl.type === "TSDeclareFunction") {
+        if (decl.id && typeof decl.id.name === "string") {
+            into.add(decl.id.name);
+        }
+        return;
+    }
+    if (decl.type === "VariableDeclaration" && Array.isArray(decl.declarations)) {
+        for (const d of decl.declarations) {
+            collectPatternNames(d.id, into);
+        }
+    }
+}
+function collectPatternNames(pattern, into) {
+    var _a, _b;
+    if (pattern.type === "Identifier") {
+        into.add(pattern.name);
+        return;
+    }
+    if ((pattern.type === "ObjectPattern" || pattern.type === "ArrayPattern") && Array.isArray((_a = pattern.properties) !== null && _a !== void 0 ? _a : pattern.elements)) {
+        const items = ((_b = pattern.properties) !== null && _b !== void 0 ? _b : pattern.elements);
+        for (const item of items) {
+            if (!item)
+                continue;
+            if (item.type === "Property")
+                collectPatternNames(item.value, into);
+            else if (item.type === "RestElement")
+                collectPatternNames(item.argument, into);
+            else
+                collectPatternNames(item, into);
+        }
+    }
+    if (pattern.type === "AssignmentPattern")
+        collectPatternNames(pattern.left, into);
 }
 // eslint-scope expects `range: [start, end]` on nodes; oxc emits start/end.
 function addRanges(node) {

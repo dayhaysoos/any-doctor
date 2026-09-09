@@ -3,10 +3,14 @@ import { AnalysisFile, BindingInfo, BindingRef } from "./contract.js";
 
 // The analysis adapter: the one place that knows how to run the identity
 // stack — oxc-parser (fast TS parse, a native optional dependency) plus
-// eslint-scope (scope and reference resolution over the ESTree-shaped
-// AST). CONTEXT.md names this seam: ast-grep answers shapes through the
-// search engine; this answers identities — which declaration a name
-// resolves to, and every place that binding is referenced.
+// @typescript-eslint/scope-manager (scope and reference resolution that
+// understands JSX references and TypeScript type positions — the two
+// classes eslint-scope cannot see, whose absence produced the 0.0.4
+// false-positive flood). CONTEXT.md names this seam: ast-grep answers
+// shapes through the search engine; this answers identities — which
+// declaration a name resolves to, every place that binding is
+// referenced, and the language facts (exportedness, exclusion patterns)
+// doctors must not re-derive with regexes.
 //
 // The stack loads lazily and synchronously: oxc-parser is an
 // optionalDependency, so absence is a first-class state, not a crash —
@@ -23,11 +27,10 @@ export interface AnalysisStatus {
 export type AnalysisStatusResult = AnalysisStatus | { available: false; reason: string };
 
 type ParseSync = typeof import("oxc-parser").parseSync;
-type Analyze = typeof import("eslint-scope").analyze;
-type VisitorKeys = typeof import("eslint-visitor-keys");
+type Analyze = typeof import("@typescript-eslint/scope-manager").analyze;
 
 type LoadedStack =
-  | { parseSync: ParseSync; analyze: Analyze; keys: VisitorKeys; error?: undefined }
+  | { parseSync: ParseSync; analyze: Analyze; error?: undefined }
   | { error: string };
 
 let loaded: LoadedStack | null = null;
@@ -40,10 +43,8 @@ function loadStack(): LoadedStack {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { parseSync } = require_("oxc-parser") as { parseSync: ParseSync };
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { analyze } = require_("eslint-scope") as { analyze: Analyze };
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const keys = require_("eslint-visitor-keys") as VisitorKeys;
-    loaded = { parseSync, analyze, keys };
+    const { analyze } = require_("@typescript-eslint/scope-manager") as { analyze: Analyze };
+    loaded = { parseSync, analyze };
   } catch (e) {
     loaded = { error: `the analysis engine is not installed (${e instanceof Error ? e.message : String(e)}) — npm install oxc-parser` };
   }
@@ -75,12 +76,10 @@ export function analyzeBindings(file: string, source: string): AnalysisResult {
   }
 
   addRanges(program as Record<string, unknown>);
-  let scopeManager: import("eslint-scope").ScopeManager;
+  let scopeManager: import("@typescript-eslint/scope-manager").ScopeManager;
   try {
     scopeManager = stack.analyze(program as never, {
       sourceType: "module",
-      ecmaVersion: 2026,
-      childVisitorKeys: stack.keys.KEYS as never,
     });
   } catch (e) {
     return { ok: false, error: `analysis failed to resolve scopes in ${file}: ${e instanceof Error ? e.message : String(e)}` };
@@ -90,15 +89,19 @@ export function analyzeBindings(file: string, source: string): AnalysisResult {
   const bindings: BindingInfo[] = [];
   const global = scopeManager.globalScope;
   if (global === null) return { ok: false, error: `analysis failed to resolve scopes in ${file}` };
+  // Language facts computed from the AST once, so doctors never re-derive
+  // them with regexes: what is exported, and what is an intentional
+  // object-rest exclusion.
+  const facts = languageFacts(program as never);
   for (const scope of allScopes(global)) {
     for (const variable of scope.variables) {
       const def = variable.defs[0];
       if (def === undefined) continue; // builtins and implicit globals carry no def
       // The declaration's own extent: for variables the declarator (so a
       // binding's span contains its initializer), for parameters the
-      // identifier itself (eslint-scope hands the whole function node for
+      // identifier itself (scope managers hand the whole function node for
       // params, which would swallow the body).
-      const node = def.node as { range?: [number, number] } | null;
+      const node = def.node;
       const span = def.type === "Parameter" ? def.name.range : (node?.range ?? def.name.range);
       if (span === undefined) continue;
       bindings.push({
@@ -117,10 +120,101 @@ export function analyzeBindings(file: string, source: string): AnalysisResult {
             endColumn: pos.column(r.identifier.range![1]),
             write: r.isWrite(),
           })),
+        exported: facts.exported.has(variable.name) || undefined,
+        excluded: facts.excluded.has(variable.name) || undefined,
       });
     }
   }
   return { ok: true, file: { file, bindings } };
+}
+
+// Walk the program for the two facts the scope manager does not surface:
+// named-export membership (every declarator under an export statement,
+// every specifier's local name, export-default function names) and the
+// object-rest exclusion idiom (identifiers bound beside a ...rest —
+// their unreadness is the point, not a defect).
+type Node = { type: string; range?: [number, number]; [k: string]: unknown };
+
+function languageFacts(program: Node): { exported: Set<string>; excluded: Set<string> } {
+  const exported = new Set<string>();
+  const excluded = new Set<string>();
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== "object") return;
+    const n = node as Node;
+    if (n.type === "ExportNamedDeclaration" && n.declaration) {
+      collectDeclaredNames(n.declaration as Node, exported);
+    }
+    if (n.type === "ExportNamedDeclaration" && Array.isArray(n.specifiers)) {
+      for (const spec of n.specifiers as Node[]) {
+        if (spec.local && typeof (spec.local as Node).name === "string") {
+          exported.add((spec.local as { name: string }).name);
+        }
+      }
+    }
+    if (n.type === "ExportDefaultDeclaration") {
+      const d = n.declaration as Node | undefined;
+      if (d && typeof d.id === "object" && d.id && typeof (d.id as { name?: unknown }).name === "string") {
+        exported.add((d.id as { name: string }).name);
+      }
+    }
+    if (n.type === "ObjectPattern" && Array.isArray(n.properties)) {
+      const hasRest = (n.properties as Node[]).some((p) => p.type === "RestElement");
+      if (hasRest) {
+        for (const p of n.properties as Node[]) {
+          if (p.type === "Property" && p.value && (p.value as Node).type === "Identifier") {
+            excluded.add((p.value as { name: string }).name);
+          }
+        }
+      }
+    }
+    for (const key of Object.keys(n)) {
+      if (key === "range" || key === "start" || key === "end" || key === "tokens" || key === "comments") continue;
+      const v = n[key];
+      if (Array.isArray(v)) {
+        for (const child of v) {
+          if (child && typeof child === "object" && typeof (child as { type?: unknown }).type === "string") visit(child);
+        }
+      } else if (v && typeof v === "object" && typeof (v as { type?: unknown }).type === "string") {
+        visit(v);
+      }
+    }
+  };
+  visit(program);
+  return { exported, excluded };
+}
+
+// Every name a declaration binds: function/class ids, every declarator of
+// a variable statement (multi-declarator, destructured patterns), and the
+// property names of nested object/array patterns.
+function collectDeclaredNames(decl: Node, into: Set<string>): void {
+  if (decl.type === "FunctionDeclaration" || decl.type === "ClassDeclaration" || decl.type === "TSDeclareFunction") {
+    if (decl.id && typeof (decl.id as { name?: unknown }).name === "string") {
+      into.add((decl.id as { name: string }).name);
+    }
+    return;
+  }
+  if (decl.type === "VariableDeclaration" && Array.isArray(decl.declarations)) {
+    for (const d of decl.declarations as Node[]) {
+      collectPatternNames(d.id as Node, into);
+    }
+  }
+}
+
+function collectPatternNames(pattern: Node, into: Set<string>): void {
+  if (pattern.type === "Identifier") {
+    into.add(pattern.name as string);
+    return;
+  }
+  if ((pattern.type === "ObjectPattern" || pattern.type === "ArrayPattern") && Array.isArray(pattern.properties ?? pattern.elements)) {
+    const items = (pattern.properties ?? pattern.elements) as Node[];
+    for (const item of items) {
+      if (!item) continue;
+      if (item.type === "Property") collectPatternNames(item.value as Node, into);
+      else if (item.type === "RestElement") collectPatternNames(item.argument as Node, into);
+      else collectPatternNames(item, into);
+    }
+  }
+  if (pattern.type === "AssignmentPattern") collectPatternNames(pattern.left as Node, into);
 }
 
 // eslint-scope expects `range: [start, end]` on nodes; oxc emits start/end.
@@ -139,7 +233,10 @@ function addRanges(node: unknown): void {
   }
 }
 
-function allScopes(scope: import("eslint-scope").Scope, out: import("eslint-scope").Scope[] = []): import("eslint-scope").Scope[] {
+type AnyRef = { identifier: { range?: [number, number] }; isWrite(): boolean };
+type AnyVariable = { name: string; defs: { type: string; node: { range?: [number, number] } | null; name: { range?: [number, number] } }[]; references: AnyRef[] };
+type AnyScope = { childScopes: AnyScope[]; variables: AnyVariable[] };
+function allScopes(scope: AnyScope, out: AnyScope[] = []): AnyScope[] {
   out.push(scope);
   for (const child of scope.childScopes) allScopes(child, out);
   return out;
