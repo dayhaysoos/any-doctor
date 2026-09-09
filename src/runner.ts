@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { Cause, Effect, Exit, Schema } from "effect";
 import { DoctorMeta, fixturesPathFor, Mode, modeArgs, RESULT_SENTINEL, RunResult, SEARCH_RESULT, VerifyRunResult } from "./contract.js";
 import { scanDoctorFile } from "./capabilities.js";
+import { analysisStatus } from "./analysis.js";
 import { unsafeRefusalLine } from "./report.js";
 import { handleSearchLine } from "./search-host.js";
 
@@ -249,7 +250,12 @@ const asRunResult = (frame: Record<string, unknown>): Effect.Effect<RunResult, R
     if (frame.kind !== "run" || !Array.isArray(frame.findings) || frame.meta === null || typeof frame.meta !== "object") {
       return yield* new NoFramedResult({ programPath: String(frame.root ?? ""), stdout: JSON.stringify(frame).slice(0, 500) });
     }
-    return frame as unknown as RunResult;
+    const result = frame as unknown as RunResult;
+    // The parent IS the host, so capabilities are known here, not asked:
+    // whether the identity engine could power this run — the data behind
+    // "narrowed" rendering (D20 Stage 2).
+    result.capabilities = { analysis: analysisStatus().available };
+    return result;
   });
 
 const asVerifyResult = (frame: Record<string, unknown>): Effect.Effect<VerifyRunResult, RunnerError> =>

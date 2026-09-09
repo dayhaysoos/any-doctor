@@ -1,7 +1,8 @@
 import * as os from "os";
 import * as path from "path";
-import { includeTestsFor, isTestPath, SEARCH_REQUEST } from "./contract.js";
+import { decodeSearchOp, includeTestsFor, isTestPath, SEARCH_REQUEST } from "./contract.js";
 import { runEngine } from "./engine.js";
+import { handleAnalysisRequest } from "./analysis-host.js";
 // The search host: the doctor child cannot spawn (Confinement), so it asks
 // any-doctor to run the Engine over a dedicated channel. This module is
 // the host side — a pure function from request line to response JSON,
@@ -23,8 +24,9 @@ export function searchBase(mode) {
 }
 // Bases are anchors: a run's target directory (anything beneath it), or
 // verify's sandbox prefix (any any-doctor-verify-* sandbox). The prefix
-// form ends in "-" on purpose — mkdtemp appends to it.
-function withinBase(root, base) {
+// form ends in "-" on purpose — mkdtemp appends to it. Shared by the
+// analysis host — one copy of the containment law.
+export function withinBase(root, base) {
     if (root === base)
         return true;
     if (base.endsWith("-"))
@@ -33,11 +35,12 @@ function withinBase(root, base) {
 }
 // One request line in, one response body out (the SEARCH_RESULT sentinel
 // is framing added by the transport in the runner). Returns null for lines
-// that are not requests — the channel carries nothing else, so they are
-// ignored rather than answered. The op discriminator selects the engine
-// query shape; a body without one is a bare pattern (the original form).
+// that are not requests. The op discriminator selects the engine query
+// shape and now decodes through the contract's one home — an unknown op
+// is a loud error, never a silent pattern search. Analysis requests route
+// to the sibling analysis host.
 export function handleSearchLine(line, mode, engine = runEngine) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     if (!line.startsWith(SEARCH_REQUEST))
         return null;
     let req;
@@ -54,11 +57,18 @@ export function handleSearchLine(line, mode, engine = runEngine) {
     if (base === "" || !withinBase(root, base)) {
         return JSON.stringify({ error: "ctx.search failed: search root is outside the allowed target" });
     }
+    const decoded = decodeSearchOp((_a = req.op) !== null && _a !== void 0 ? _a : "pattern");
+    if ("error" in decoded)
+        return JSON.stringify({ error: decoded.error });
+    if (decoded.op === "analysis") {
+        return JSON.stringify(handleAnalysisRequest({ kind: req.kind, file: req.file, root: req.root }, mode));
+    }
     const language = typeof req.language === "string" ? req.language : "TypeScript";
-    const op = req.op === "rule" ? "rule" : "pattern";
-    const query = op === "rule"
-        ? { op, rule: ((_a = req.rule) !== null && _a !== void 0 ? _a : {}) }
-        : { op, pattern: String((_b = req.pattern) !== null && _b !== void 0 ? _b : "") };
+    const query = decoded.op === "rule"
+        ? { op: decoded.op, rule: ((_b = req.rule) !== null && _b !== void 0 ? _b : {}) }
+        : decoded.op === "rules"
+            ? { op: decoded.op, rules: ((_c = req.rules) !== null && _c !== void 0 ? _c : []) }
+            : { op: decoded.op, pattern: String((_d = req.pattern) !== null && _d !== void 0 ? _d : "") };
     const r = engine(query, language, root);
     if (!r.ok)
         return JSON.stringify({ error: r.error });

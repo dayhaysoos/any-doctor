@@ -33,10 +33,16 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "oxc-parser": "^0.149.0",
     "typescript": "^5.6.0"
   },
   "type": "module",
   "dependencies": {
-    "effect": "^4.0.0-beta.107"
+    "effect": "^4.0.0-beta.107",
+    "eslint-scope": "^9.1.2",
+    "eslint-visitor-keys": "^5.0.1"
+  },
+  "optionalDependencies": {
+    "oxc-parser": "^0.149.0"
   }
 }

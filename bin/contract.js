@@ -5,6 +5,13 @@ export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 // back on stdin.
 export const SEARCH_REQUEST = "###ANY_DOCTOR_SEARCH###";
 export const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
+export function decodeSearchOp(op) {
+    if (op === "pattern" || op === "rule" || op === "rules" || op === "analysis")
+        return { op };
+    return {
+        error: `unknown search-channel op ${JSON.stringify(op)} — known ops: ${["pattern", "rule", "rules", "analysis"].join(", ")}`,
+    };
+}
 export function modeArgs(mode, programPath) {
     switch (mode.kind) {
         case "run": return mode.includeTests === true
@@ -101,6 +108,14 @@ export function compareFindings(expected, actual) {
             missing.push(asDiffEntry(e));
     }
     return { missing, unexpected };
+}
+// The degradation contract's one projection (D20 Stage 2): which checks
+// of this doctor declared analysis needs — the ids the report names when
+// it renders "narrowed", and the predicate verify uses to decide whether
+// analysis-on fixtures apply.
+export function narrowedCheckIds(meta) {
+    var _a;
+    return ((_a = meta.checks) !== null && _a !== void 0 ? _a : []).filter((c) => c.needs !== undefined && c.needs.length > 0).map((c) => c.id);
 }
 export function resolveFinding(meta, finding) {
     var _a, _b, _c, _d, _e, _f, _g;

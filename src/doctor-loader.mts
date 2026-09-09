@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { register } from "node:module";
-import { buildCtx } from "./sdk.js";
+import { buildCtx, setAnalysisDisabled, probeAnalysisAvailable } from "./sdk.js";
 import * as contract from "./contract.js";
 import type { Finding, Mode } from "./contract.js";
 
@@ -120,11 +120,36 @@ async function main(): Promise<void> {
         process.exit(3);
       }
       const results: unknown[] = [];
+      // Only a doctor whose checks declare analysis needs can have
+      // analysis-on fixtures — probing anyone else would make a
+      // channel-less direct invocation fail fixtures that never touch
+      // analysis at all.
+      const declaresNeeds = contract.narrowedCheckIds(mod.meta as contract.DoctorMeta).length > 0;
+      let analysisAvailable: boolean | undefined;
       for (const fixture of fixtures as contract.Fixture[]) {
         const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-verify-"));
         try {
           for (const [rel, content] of Object.entries(fixture.seed)) {
             materializeSeed(tmp, rel, content);
+          }
+          // The fixture's declared analysis mode: "off" forces the
+          // degraded path (pinning the narrowed behavior); the default
+          // "on" runs with the engine — and skips honestly when it is
+          // not installed here, rather than failing a fixture whose
+          // expectations belong to the full-power path.
+          setAnalysisDisabled(fixture.analysis === "off");
+          if (declaresNeeds && fixture.analysis !== "off" && analysisAvailable === undefined) {
+            analysisAvailable = probeAnalysisAvailable(tmp);
+          }
+          if (declaresNeeds && fixture.analysis !== "off" && analysisAvailable === false) {
+            results.push({
+              name: fixture.name,
+              ok: true,
+              missing: [],
+              unexpected: [],
+              skipped: "analysis engine unavailable — pins the analysis-on path",
+            });
+            continue;
           }
           // Verify always lists everything (includeTestsFor): the sandbox is
           // the doctor's own world — a seed named *.test.ts is deliberate
@@ -135,6 +160,7 @@ async function main(): Promise<void> {
         } catch (e) {
           results.push({ name: fixture.name, ok: false, missing: [], unexpected: [], error: e instanceof Error ? e.message : String(e) });
         } finally {
+          setAnalysisDisabled(false);
           fs.rmSync(tmp, { recursive: true, force: true });
         }
       }

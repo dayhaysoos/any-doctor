@@ -1,4 +1,4 @@
-import { resolveFinding } from "./contract.js";
+import { narrowedCheckIds, resolveFinding } from "./contract.js";
 import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, RED, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
 // All doctors scan the same target, so the cohort's file count is any
@@ -111,6 +111,20 @@ export function renderReport(input, useColor) {
                 lines.push(`${c("✔", GREEN)} ${c(g.meta.id, DIM)} — clean`);
             }
         }
+        // A clean degraded run must never read as a full-power clean — the
+        // narrowed notice renders here too, exactly as it does under
+        // findings (D20 Stage 2's own words).
+        if (input.analysisAvailable === false) {
+            const notices = groups
+                .map((g) => narrowedCheckIds(g.meta))
+                .filter((ids) => ids.length > 0);
+            if (notices.length > 0) {
+                lines.push("");
+                for (const ids of notices) {
+                    lines.push(c(narrowedLine(ids), YELLOW));
+                }
+            }
+        }
         return lines.join("\n");
     }
     const bySeverity = { error: 0, warning: 0, info: 0 };
@@ -147,6 +161,15 @@ export function renderReport(input, useColor) {
                 lines.push(`  ${c(`… and ${n - 20} more`, DIM)}`);
             lines.push("");
         }
+        // The degradation contract as data (D20 Stage 2): checks that declared
+        // analysis needs but ran without the engine say so — including checks
+        // with zero findings, where a narrowed clean must never read as a
+        // full-power clean.
+        const narrowedIds = input.analysisAvailable === false ? narrowedCheckIds(g.meta) : [];
+        if (narrowedIds.length > 0) {
+            lines.push(`  ${c(narrowedLine(narrowedIds), YELLOW)}`);
+            lines.push("");
+        }
         if (g.findings.length > 0 && g.meta.blindSpots && g.meta.blindSpots.length > 0) {
             lines.push(`  ${c("blind spots: " + g.meta.blindSpots.join("; "), DIM)}`);
             lines.push("");
@@ -162,12 +185,23 @@ export function renderReport(input, useColor) {
 function where(f) {
     return (f.rule ? f.rule + " " : "") + f.file + ":" + f.line;
 }
+// The narrowed notice's one wording (D20 Stage 2) — one source for both
+// the clean and the findings branch.
+function narrowedLine(checkIds) {
+    return `narrowed: analysis engine unavailable — ${checkIds.join(", ")} ran in degraded mode`;
+}
 // Verify-gate rendering: pure state -> string, colored on request. The
 // command layer prints it and counts failures from the data.
 export function renderVerifyResult(result, useColor) {
     const c = colorizer(useColor);
     const lines = [];
     for (const fixture of result.results) {
+        if (fixture.skipped !== undefined) {
+            // An honest skip is data, not a pass: this fixture pins the
+            // analysis-on path and the engine is not installed here.
+            lines.push(c("  – " + fixture.name + " — skipped: " + fixture.skipped, DIM));
+            continue;
+        }
         if (fixture.ok) {
             lines.push(c("  ✔ " + fixture.name, GREEN));
         }

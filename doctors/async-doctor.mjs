@@ -5,8 +5,9 @@ export const meta = {
   category: "async",
   blindSpots: [
     "Fetch: cannot determine whether an options variable, spread, or helper supplies a signal at runtime; aliased or member-expression fetch functions are not recognized.",
-    "Promises: only combiner calls (Promise.all/allSettled/race/any over the bound name) are recognized consumption — per-element awaits (a for-of loop awaiting each promise), template-string consumption, and dynamic property access are not tracked.",
-    "Promises: mapped results that are returned, passed into a call, wrapped in parens or comma expressions, assigned to rebindable targets (let/var/reassignment), chained after another call (xs.filter(f).map(async ...)), or behind a mid-chain optional link (a?.b.map(async ...)) are not tracked — a bare map(async) is judged only in statement or await position.",
+    "Promises: with the analysis engine, per-element consumption, same-name bindings in other scopes, and never-reassigned let/var targets are checked; without it (degraded mode) only combiner calls over the bound name are recognized — per-element awaits, rebinding, and shadowed names are not tracked.",
+    "Promises: reassigned bindings (written again after their declaration) are inconclusive and skipped; consumption inside template strings or dynamic property access is not tracked.",
+    "Promises: mapped results that are returned, passed into a call, wrapped in parens or comma expressions, chained after another call (xs.filter(f).map(async ...)), or behind a mid-chain optional link (a?.b.map(async ...)) are not tracked — a bare map(async) is judged only in statement or await position.",
     "Timers: only directly named useEffect/setTimeout/clearTimeout are recognized; handles must be a simple local identifier cleared in the same effect.",
     "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source.",
   ],
@@ -23,6 +24,7 @@ export const meta = {
       id: "unawaited-async-map",
       description: ".map(async ...) result is never awaited — the promises are dropped.",
       severity: "warning",
+      needs: ["bindings"],
       impact: "The async work starts but nothing waits for it: errors vanish silently and the results are lost mid-flight.",
       why: "Array.map returns a new array of promises. Without Promise.all or an await on the result, the async callbacks run fire-and-forget.",
       fix: "Wrap the mapped array in Promise.all and await it — or drop the async if the work should actually be sequential.",
@@ -52,19 +54,48 @@ export async function doctor(ctx) {
     }
     return entry;
   };
-  await checkFetch(ctx);
-  await checkUnawaitedMap(ctx, readFile);
+
+  // Every structural question in ONE engine invocation — each ctx.search
+  // call is a process spawn (~85ms regardless of repo size), so a doctor
+  // with many shapes batches them and pays once.
+  const identity = ctx.analysis.available;
+  const queries = [
+    { id: "fetch", pattern: "fetch($$$ARGS)" },
+    ...(identity ? [
+      { id: "map-arrow", pattern: "$X.map(async $A => $B)" },
+      { id: "map-arrow-opt", pattern: "$X?.map(async $A => $B)" },
+      { id: "map-fn", pattern: "$X.map(async function ($$$A) { $$$B })" },
+      { id: "map-fn-opt", pattern: "$X?.map(async function ($$$A) { $$$B })" },
+      { id: "map-fn-named", pattern: "$X.map(async function $F($$$A) { $$$B })" },
+      { id: "map-fn-named-opt", pattern: "$X?.map(async function $F($$$A) { $$$B })" },
+      { id: "combiner", pattern: "Promise.$M($$$A)" },
+      { id: "forof", pattern: "for (const $V of $ARR) $$$B" },
+      { id: "await", pattern: "await $E" },
+    ] : []),
+  ];
+  const all = await ctx.search.rules(queries);
+  const byId = (id) => all.filter((m) => m.ruleId === id);
+  const bucket = identity
+    ? {
+      shapes: all.filter((m) => m.ruleId.startsWith("map-")),
+      combiners: byId("combiner").filter((m) => ["all", "allSettled", "race", "any"].includes(m.captures?.M?.text)),
+      forOfs: byId("forof"),
+      awaits: byId("await"),
+    }
+    : null;
+
+  await checkFetch(ctx, byId("fetch"));
+  await (identity ? checkUnawaitedMapAnalyzed(ctx, readFile, bucket) : checkUnawaitedMapRegex(ctx, readFile));
   await checkSetTimeout(ctx, readFile);
 }
 
 // --- fetch-calls-without-abortsignal ------------------------------------
 
-async function checkFetch(ctx) {
+async function checkFetch(ctx, calls) {
   // The rule query hands back the argument list as parsed capture nodes —
   // the options argument is args[1], no brace-counting the call text to
   // find where it begins (D20 Stage 1 pilot: the seam stopped discarding
   // what the engine already parsed).
-  const calls = await ctx.search.rule({ pattern: "fetch($$$ARGS)" });
   for (const call of calls) {
     const args = call.captures?.ARGS;
     const options = Array.isArray(args) ? args[1]?.text : undefined;
@@ -140,13 +171,122 @@ function matchingBrace(text) {
 
 // --- unawaited-async-map -------------------------------------------------
 
-// Consumption means a combiner call over the bound array. `await jobs` on
-// an array of promises resolves immediately — the array is not itself a
-// promise — so only Promise.all/allSettled/race/any prove the promises
-// are settled (D20: the await alternative was a wrong semantic assumption).
+// Two engines, one defect (D20 Stage 2 pilot). The identity path: ast-grep
+// finds the map(async) shapes, ctx.analysis says which binding each one
+// initializes and every REAL reference to it — consumption is decided by
+// position, so a same-named binding in another scope can never silence
+// this one. The degraded path (no analysis engine) is the name-matching
+// regex, with its declared blind spots; the report says "narrowed".
+
+async function checkUnawaitedMapAnalyzed(ctx, readFile, queries) {
+  const files = (await ctx.files.list([".ts", ".tsx", ".js", ".jsx", ".mjs"]))
+    .filter((file) => !/\.fixtures\.mjs$/.test(file));
+  if (files.length === 0) return;
+
+  const { shapes, combiners, forOfs, awaits } = queries;
+
+  for (const file of files) {
+    const fileShapes = shapes.filter((m) => m.file === file);
+    if (fileShapes.length === 0) continue;
+
+    const model = ctx.analysis.bindings(file);
+    const fileCombiners = combiners.filter((m) => m.file === file);
+    const fileForOfs = forOfs.filter((m) => m.file === file);
+    const fileAwaits = awaits.filter((m) => m.file === file);
+    const masked = readFile(file).masked;
+
+    for (const shape of fileShapes) {
+      const shapePos = { line: shape.line, column: shape.column };
+      // Inline consumption: the combiner (or an awaiting for-of) wraps the
+      // map call itself — `Promise.all(ids.map(async ...))` settles the
+      // promises the moment they are created, no reference needed.
+      if (fileCombiners.some((c) => matchContains(c, shapePos))) continue;
+      if (fileForOfs.some((f) => matchContains(f, shapePos) && loopVarAwaited(f, model, fileAwaits))) continue;
+
+      // The binding this map initializes: the innermost variable
+      // declarator whose span contains the call. Only a Variable
+      // declarator can own an initializer — function and class bindings
+      // span their whole bodies and would claim anything inside them.
+      const containing = model.bindings.filter(
+        (b) => b.kind === "Variable" && spanContains(b, shape.line, shape.column),
+      );
+      const binding = containing.sort((a, b) =>
+        (a.endLine - a.line) - (b.endLine - b.line) || a.endColumn - b.endColumn,
+      )[0];
+      if (!binding) {
+        // No binding initialized here — a bare or flowing map. The same
+        // statement-position judgment as the degraded path owns it.
+        const index = offsetAt(masked, shape.line, shape.column);
+        const position = statementPosition(masked, index);
+        if (position === "statement" || position === "awaited") {
+          reportDropped(ctx, masked, file, index);
+        }
+        continue;
+      }
+
+      // A binding written again after its declaration may hold anything —
+      // consumption analysis would be a guess, so it is skipped (declared).
+      const reassigned = binding.references.some(
+        (r) => r.write && !spanContains(binding, r.line, r.column),
+      );
+      if (reassigned) continue;
+
+      const consumed = binding.references.some((r) => {
+        if (r.write) return false;
+        if (fileCombiners.some((c) => matchContains(c, r))) return true;
+        // Per-element: a read in a for-of head whose loop variable is
+        // itself awaited inside that same loop.
+        return fileForOfs.some(
+          (f) => matchContains(f, r) && loopVarAwaited(f, model, fileAwaits),
+        );
+      });
+      if (!consumed) {
+        reportDropped(ctx, masked, file, offsetAt(masked, shape.line, shape.column));
+      }
+    }
+  }
+}
+
+function loopVarAwaited(forOf, model, awaits) {
+  // The loop variable: a binding declared inside the for-of's head.
+  const loopVar = model.bindings.find(
+    (b) => matchContains(forOf, b) && b.references.some((r) => !r.write && matchContains(forOf, r)),
+  );
+  if (!loopVar) return false;
+  return loopVar.references.some(
+    (r) => !r.write && awaits.some((a) => matchContains(a, r)),
+  );
+}
+
+// Position containment: [start, end) in (line, column) pairs — lines
+// 1-based, columns 0-based, ends exclusive (both engines' convention).
+function posGe(a, b) {
+  return a.line > b.line || (a.line === b.line && a.column >= b.column);
+}
+
+function spanContains(span, line, column) {
+  const p = { line, column };
+  const start = { line: span.line, column: span.column };
+  const end = { line: span.endLine, column: span.endColumn };
+  return posGe(p, start) && !posGe(p, end);
+}
+
+function matchContains(m, ref) {
+  return spanContains(m, ref.line, ref.column);
+}
+
+function offsetAt(source, line, column) {
+  let off = 0;
+  for (let l = 1; l < line; l++) off = source.indexOf("\n", off) + 1;
+  return off + column;
+}
+
+// The degraded path: name-matching over masked text. Every limitation
+// here is declared in meta.blindSpots and pinned by analysis: "off"
+// fixtures; the check narrows to this exactly when the engine is absent.
 const CONSUMERS = /Promise\s*\.\s*(?:allSettled|all|race|any)\s*\((?:[^()]|\([^()]*\))*\bNAME\b/;
 
-async function checkUnawaitedMap(ctx, readFile) {
+async function checkUnawaitedMapRegex(ctx, readFile) {
   for (const file of ctx.files.list([".ts", ".tsx", ".js", ".jsx", ".mjs"])) {
     // Fixture sandboxes are doctor test data, not target source.
     if (/\.fixtures\.mjs$/.test(file)) continue;

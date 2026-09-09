@@ -1,10 +1,13 @@
-import { RuleQuery } from "./contract.js";
+import { NamedRuleQuery, RuleQuery } from "./contract.js";
 export type EngineQuery = {
     op: "pattern";
     pattern: string;
 } | {
     op: "rule";
     rule: RuleQuery;
+} | {
+    op: "rules";
+    rules: NamedRuleQuery[];
 };
 interface RawSgPos {
     line?: number;
@@ -19,6 +22,7 @@ export interface RawSgMatch {
     text?: string;
     lines?: string;
     language?: string;
+    ruleId?: string;
     range?: RawSgRange;
     metaVariables?: {
         single?: Record<string, RawSgCapture>;

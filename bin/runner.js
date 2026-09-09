@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { Cause, Effect, Exit, Schema } from "effect";
 import { fixturesPathFor, modeArgs, RESULT_SENTINEL, SEARCH_RESULT } from "./contract.js";
 import { scanDoctorFile } from "./capabilities.js";
+import { analysisStatus } from "./analysis.js";
 import { unsafeRefusalLine } from "./report.js";
 import { handleSearchLine } from "./search-host.js";
 // The Runner: the single owner of the doctor-loader protocol. Everything
@@ -215,7 +216,12 @@ const asRunResult = (frame) => Effect.gen(function* () {
     if (frame.kind !== "run" || !Array.isArray(frame.findings) || frame.meta === null || typeof frame.meta !== "object") {
         return yield* new NoFramedResult({ programPath: String((_a = frame.root) !== null && _a !== void 0 ? _a : ""), stdout: JSON.stringify(frame).slice(0, 500) });
     }
-    return frame;
+    const result = frame;
+    // The parent IS the host, so capabilities are known here, not asked:
+    // whether the identity engine could power this run — the data behind
+    // "narrowed" rendering (D20 Stage 2).
+    result.capabilities = { analysis: analysisStatus().available };
+    return result;
 });
 const asVerifyResult = (frame) => Effect.gen(function* () {
     var _a;

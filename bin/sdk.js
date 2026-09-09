@@ -3,6 +3,29 @@ import * as path from "path";
 import { isTestPath, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
+// The verify harness forces the degraded path per fixture (fixture
+// `analysis: "off"`): the loader flips this switch before running that
+// fixture's sandbox, and every ctx in the child answers accordingly.
+// Nothing else can disable analysis — a run never narrows silently.
+let analysisForcedOff = false;
+export function setAnalysisDisabled(disabled) {
+    analysisForcedOff = disabled;
+}
+// The loader's skip probe: would a ctx built now see the analysis engine?
+// One channel question, cached by the verify loop. A channel-less direct
+// loader invocation answers false — no host means no analysis, which is
+// the honest answer for a narrowing decision (bindings() still fails
+// loudly on a missing channel, exactly like ctx.search).
+export function probeAnalysisAvailable(root) {
+    if (analysisForcedOff)
+        return false;
+    try {
+        return Boolean(runAnalysis({ kind: "available" }, root).available);
+    }
+    catch {
+        return false;
+    }
+}
 // Production posture (D18): ctx.files.list() excludes test paths — tests
 // mimic production shapes without being production reads. The law itself
 // (isTestPath) and the run/verify derivation live in contract.ts; a run
@@ -10,6 +33,7 @@ const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 // an explicit path is a doctor's deliberate choice.
 export function buildCtx(root, opts = {}) {
     const findings = [];
+    let availabilityCache;
     function walk(dir, exts, out) {
         for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
             if (entry.name === "node_modules" || entry.name.startsWith("."))
@@ -49,6 +73,39 @@ export function buildCtx(root, opts = {}) {
             },
             rule(query, language = "TypeScript") {
                 return runSearch({ op: "rule", rule: validateRuleQuery(query) }, language, root);
+            },
+            rules(queries, language = "TypeScript") {
+                return runSearch({ op: "rules", rules: validateNamedRuleQueries(queries) }, language, root);
+            },
+        },
+        analysis: {
+            // One channel question, cached per ctx — availability is cheap and
+            // honest data, never a guess. The verify harness's forced-off
+            // switch (fixture `analysis: "off"`) overrides a present engine so
+            // the degraded path is pinnable anywhere.
+            get available() {
+                if (availabilityCache === undefined) {
+                    // No host channel → no analysis: the honest answer for a
+                    // narrowing decision, not a crash (bindings() is the loud path).
+                    try {
+                        availabilityCache = Boolean(runAnalysis({ kind: "available" }, root).available);
+                    }
+                    catch {
+                        availabilityCache = false;
+                    }
+                }
+                return availabilityCache && !analysisForcedOff;
+            },
+            bindings(file) {
+                var _a;
+                if (analysisForcedOff || !this.available) {
+                    throw new Error("ctx.analysis.bindings requires the analysis engine and it is unavailable"
+                        + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.");
+                }
+                const r = runAnalysis({ kind: "bindings", file }, root);
+                if (r.file === undefined)
+                    throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
+                return r.file;
             },
         },
         report: {
@@ -119,6 +176,35 @@ function didYouMean(got, allowed) {
     const near = allowed.find((a) => a.includes(got) || got.includes(a) || levenshtein(got, a) <= 2);
     return near && near !== got ? ` — did you mean "${near}"?` : "";
 }
+// The multi-rule batch: same curation as a single rule, plus ids —
+// unique, non-empty strings, because every match comes back tagged with
+// the id of the rule that found it.
+function validateNamedRuleQueries(queries) {
+    if (!Array.isArray(queries) || queries.length === 0) {
+        throw new Error("ctx.search.rules needs a non-empty array of named rules: [{ id, pattern, inside? }]");
+    }
+    const seen = new Set();
+    return queries.map((q) => {
+        if (typeof q !== "object" || q === null) {
+            throw new Error('ctx.search.rules: each rule must be an object { id, pattern, inside? }');
+        }
+        const record = q;
+        for (const key of Object.keys(record)) {
+            if (!["id", ...RULE_KEYS].includes(key)) {
+                throw new Error(`ctx.search.rules: unknown key "${key}"${didYouMean(key, RULE_KEYS)} — allowed: id, ${RULE_KEYS.join(", ")}`);
+            }
+        }
+        if (typeof record.id !== "string" || record.id === "") {
+            throw new Error('ctx.search.rules: every rule needs an "id" string — matches come back tagged with it');
+        }
+        if (seen.has(record.id)) {
+            throw new Error(`ctx.search.rules: duplicate id "${record.id}" — ids must be unique`);
+        }
+        seen.add(record.id);
+        const validated = validateRuleQuery({ pattern: record.pattern, ...(record.inside !== undefined ? { inside: record.inside } : {}) });
+        return { id: record.id, ...validated };
+    });
+}
 function levenshtein(a, b) {
     const row = Array.from({ length: b.length + 1 }, (_, i) => i);
     for (let i = 1; i <= a.length; i += 1) {
@@ -138,7 +224,9 @@ function runSearch(query, language, root) {
     try {
         const body = query.op === "rule"
             ? { op: query.op, rule: query.rule, language, root }
-            : { op: query.op, pattern: query.pattern, language, root };
+            : query.op === "rules"
+                ? { op: query.op, rules: query.rules, language, root }
+                : { op: query.op, pattern: query.pattern, language, root };
         fs.writeSync(3, SEARCH_REQUEST + JSON.stringify(body) + "\n");
         response = readSearchResponse();
     }
@@ -149,10 +237,24 @@ function runSearch(query, language, root) {
     if (response.error !== undefined) {
         const detail = query.op === "rule"
             ? `${response.error}\nquery: ${JSON.stringify(query.rule)}`
-            : response.error;
+            : query.op === "rules"
+                ? `${response.error}\nrules: ${JSON.stringify(query.rules.map((r) => r.id))}`
+                : response.error;
         throw new Error(detail);
     }
     return toMatches((_a = response.matches) !== null && _a !== void 0 ? _a : [], root);
+}
+function runAnalysis(body, root) {
+    let response;
+    try {
+        fs.writeSync(3, SEARCH_REQUEST + JSON.stringify({ op: "analysis", ...body, root }) + "\n");
+        response = readSearchResponse();
+    }
+    catch (e) {
+        throw new Error(`ctx.analysis is unavailable — no host on this channel (${e instanceof Error ? e.message : String(e)}). `
+            + "Doctors run through any-doctor; a bare doctor-loader.mjs invocation has no host.");
+    }
+    return response;
 }
 function readSearchResponse() {
     const chunk = Buffer.alloc(65536);
@@ -185,6 +287,7 @@ function toMatches(raw, root) {
             line: ((_c = (_b = (_a = m.range) === null || _a === void 0 ? void 0 : _a.start) === null || _b === void 0 ? void 0 : _b.line) !== null && _c !== void 0 ? _c : 0) + 1,
             column: ((_f = (_e = (_d = m.range) === null || _d === void 0 ? void 0 : _d.start) === null || _e === void 0 ? void 0 : _e.column) !== null && _f !== void 0 ? _f : 1),
             text: m.text || "",
+            ...(m.ruleId !== undefined ? { ruleId: m.ruleId } : {}),
             ...(((_g = m.range) === null || _g === void 0 ? void 0 : _g.end) !== undefined ? { endLine: ((_h = m.range.end.line) !== null && _h !== void 0 ? _h : 0) + 1, endColumn: (_j = m.range.end.column) !== null && _j !== void 0 ? _j : 0 } : {}),
             ...(captures !== undefined ? { captures } : {}),
         };

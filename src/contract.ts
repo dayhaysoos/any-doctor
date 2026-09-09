@@ -7,6 +7,10 @@ export interface CheckMeta {
   impact?: string;
   why?: string;
   fix?: string;
+  /** Analysis capabilities this check uses at full power; without them it
+   * narrows and says so in the report (D20's honest degradation). v1
+   * vocabulary: ["bindings"]. */
+  needs?: string[];
 }
 
 export interface DoctorMeta {
@@ -45,6 +49,9 @@ export interface Match {
   endLine?: number;
   endColumn?: number;
   captures?: Record<string, Capture | Capture[]>;
+  // D20 Stage 2: a multi-rule query tags each match with the id of the
+  // rule that found it.
+  ruleId?: string;
 }
 
 // One metavariable capture: the matched sub-node's text and extent.
@@ -73,6 +80,41 @@ export interface RuleInside {
   stopBy?: "end" | "neighbor";
 }
 
+// A named rule for the multi-rule query: several questions, ONE engine
+// invocation (each spawn costs ~an engine process start regardless of
+// repo size — batching is how a check with many shapes stays fast).
+export interface NamedRuleQuery {
+  id: string;
+  pattern: string;
+  inside?: RuleInside;
+}
+
+// The identity model ctx.analysis returns (CONTEXT.md: Analysis query,
+// Binding, Reference). Lines 1-based, columns 0-based — ctx.search's
+// convention, so reference positions compose with Match positions.
+export interface BindingRef {
+  line: number;
+  column: number;
+  endLine: number;
+  endColumn: number;
+  write: boolean;
+}
+
+export interface BindingInfo {
+  name: string;
+  kind: string;
+  line: number;
+  column: number;
+  endLine: number;
+  endColumn: number;
+  references: BindingRef[];
+}
+
+export interface AnalysisFile {
+  file: string;
+  bindings: BindingInfo[];
+}
+
 export interface DoctorCtx {
   root: string;
   files: {
@@ -87,6 +129,19 @@ export interface DoctorCtx {
   search: {
     pattern(pattern: string, language?: "TypeScript" | "JavaScript"): Match[];
     rule(query: RuleQuery, language?: "TypeScript" | "JavaScript"): Match[];
+    /** Many named rules, one engine invocation. Matches carry `ruleId`.
+     * Prefer this over N `rule()` calls — each call is a process spawn. */
+    rules(queries: NamedRuleQuery[], language?: "TypeScript" | "JavaScript"): Match[];
+  };
+  analysis: {
+    /** Honest yes/no: is the identity engine installed? Cheap and cached.
+     * Checks that narrow without it declare `needs` on their CheckMeta and
+     * the report says "narrowed". */
+    readonly available: boolean;
+    /** One file in, its whole identity model out: every binding with its
+     * declaration span and all references (positions + read/write).
+     * Throws loudly when unavailable — check `available` first. */
+    bindings(file: string): AnalysisFile;
   };
   report: {
     finding(f: Finding): void;
@@ -103,6 +158,11 @@ export interface Fixture {
   name: string;
   seed: Record<string, string>;
   expected: ExpectedFinding[];
+  /** Which analysis mode this fixture pins (D20 Stage 2): "on" (default)
+   * runs with the identity engine — and skips with a named notice when it
+   * is not installed in the environment; "off" forces the degraded path,
+   * pinning the narrowed behavior a check falls back to. */
+  analysis?: "on" | "off";
 }
 
 export const PROTOCOL_VERSION = 1;
@@ -113,6 +173,18 @@ export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 // back on stdin.
 export const SEARCH_REQUEST = "###ANY_DOCTOR_SEARCH###";
 export const SEARCH_RESULT = "###ANY_DOCTOR_SEARCH_RESULT###";
+
+// The channel's operation vocabulary, decoded in one home. Unknown ops
+// are LOUD errors — a typo'd op silently degrading to a pattern search is
+// the silent-failure class this seam refuses (D20 Stage 2).
+export type SearchOp = "pattern" | "rule" | "rules" | "analysis";
+
+export function decodeSearchOp(op: unknown): { op: SearchOp } | { error: string } {
+  if (op === "pattern" || op === "rule" || op === "rules" || op === "analysis") return { op };
+  return {
+    error: `unknown search-channel op ${JSON.stringify(op)} — known ops: ${["pattern", "rule", "rules", "analysis"].join(", ")}`,
+  };
+}
 
 // One execution mode, constructed once and decoded once — never re-parsed
 // from argv substrings. The runner builds it, serializes it at the spawn
@@ -151,6 +223,9 @@ export interface RunResult {
   durationMs: number;
   meta: DoctorMeta;
   findings: Finding[];
+  /** What the host could actually power for this run (D20 Stage 2): the
+   * identity engine's presence, so "narrowed" rendering is data. */
+  capabilities?: { analysis: boolean };
 }
 
 export interface FixtureDiff {
@@ -162,6 +237,9 @@ export interface FixtureResult extends FixtureDiff {
   name: string;
   ok: boolean;
   error?: string;
+  /** An honest skip (not a failure): this fixture pins the analysis-on
+   * path and the engine is not installed here. */
+  skipped?: string;
 }
 
 export interface VerifyRunResult {
@@ -257,6 +335,14 @@ export function compareFindings(expected: ExpectedFinding[], actual: Finding[]):
     else missing.push(asDiffEntry(e));
   }
   return { missing, unexpected };
+}
+
+// The degradation contract's one projection (D20 Stage 2): which checks
+// of this doctor declared analysis needs — the ids the report names when
+// it renders "narrowed", and the predicate verify uses to decide whether
+// analysis-on fixtures apply.
+export function narrowedCheckIds(meta: DoctorMeta): string[] {
+  return (meta.checks ?? []).filter((c) => c.needs !== undefined && c.needs.length > 0).map((c) => c.id);
 }
 
 // The single home of the Finding↔Meta join. Every consumer — score, report,

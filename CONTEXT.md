@@ -23,7 +23,9 @@ One scan invocation's batch of results, assembled once and rendered by the
 report and the dashboard alike: the ReportGroups that ran, the doctor ids
 that crashed (data, named), the slugs Confinement skipped, the doctor
 id → program path map for re-run commands, and the target's file count and
-the batch's wall-clock duration — one defined meaning per field.
+the batch's wall-clock duration — one defined meaning per field. A run also
+records whether the identity engine could power it
+(`analysisAvailable`) — the data behind "narrowed" rendering.
 
 ## Confinement
 
@@ -48,11 +50,14 @@ lives in the program's meta, not in individual findings.
 ## Check
 
 One rule within a doctor program. A finding names its check via `rule`;
-the check's meta supplies description, severity, impact, why, and fix;
-the doctor's meta supplies the defaults when a finding names no check.
-A check id is a short kebab-case noun phrase over [a-z0-9-], unique
-within its doctor, naming the defect (fetch-calls-without-abortsignal,
-filter-table-scan). One doctor program, many checks.
+the check's meta supplies description, severity, impact, why, and fix —
+and, when the check uses the identity engine at full power, its
+declaration of that need (`needs`), which is what renders "narrowed"
+when the engine is absent; the doctor's meta supplies the defaults when
+a finding names no check. A check id is a short kebab-case noun phrase
+over [a-z0-9-], unique within its doctor, naming the defect
+(fetch-calls-without-abortsignal, filter-table-scan). One doctor
+program, many checks.
 
 ## Doctor contract
 
@@ -92,16 +97,34 @@ Matches carrying end positions and metavariable captures;
 multi-metavariables (`$$$NAME`) arrive as arrays of nodes under the bare
 NAME, separator commas filtered at the seam. The surface is curated —
 pattern + inside — and validated: unknown keys fail loudly with the
-allowed list.
+allowed list. The plural form (`ctx.search.rules`) asks many named
+rules in one engine invocation — every match tagged with its ruleId —
+because each call is a process spawn and batching is how a many-shape
+check stays fast.
+
+## Analysis query
+
+An identity question asked through `ctx.analysis`: which **Binding** a
+name resolves to, and every **Reference** to it. `ctx.analysis.bindings(file)`
+returns the file's whole identity model in one answer — every binding
+with its declaration span and its references (positions in ctx.search's
+convention, plus read/write). The engine is optional (oxc-parser +
+eslint-scope behind the Engine seam's second adapter): checks declare
+the analysis they need on their CheckMeta (`needs`), narrow without it,
+and the report renders "narrowed" — a degraded run is visible, never
+silent. References answer by position, so analysis queries compose with
+rule queries: shapes from one engine, identities from the other.
 
 ## Engine
 
 The structural-search backend a DoctorCtx uses to answer ctx.search.
-ast-grep is the engine today; oxc is a candidate for TypeScript-heavy
-repos. Engine selection is invisible to doctor programs: one doctor
-program runs unchanged on any engine. One module owns the invocation
-(src/engine.ts); the search host sits on it, and the sdk asks the host —
-there is exactly one path, with no unconfined fallback.
+ast-grep is the engine today; the identity engine (ctx.analysis) is its
+second adapter — oxc-parser + eslint-scope, optional by design. Engine
+selection is invisible to doctor programs: one doctor program runs
+unchanged on any engine. One module owns each invocation
+(src/engine.ts, src/analysis.ts); the search and analysis hosts sit on
+them, and the sdk asks the hosts — there is exactly one path, with no
+unconfined fallback.
 
 ## Score
 
@@ -146,7 +169,11 @@ One seed plus the findings expected from running a doctor program against
 it. Expected findings match exactly on (rule, file, line), duplicates
 counted: a missing expected finding is a recall failure; an unexpected
 finding is a precision failure. The rule in an expectation is part of the
-match — a wrong-check finding at the right line fails the gate.
+match — a wrong-check finding at the right line fails the gate. A fixture
+also declares its analysis mode (D20 Stage 2): "on" (default) pins the
+full-power path and skips with a named notice where the engine is not
+installed; "off" forces the degraded path, whose expectations may
+legitimately differ.
 
 ## Counter-fixture
 

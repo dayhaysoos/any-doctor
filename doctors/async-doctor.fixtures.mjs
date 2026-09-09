@@ -113,7 +113,15 @@ export const fixtures = [
     ]
   },
   {
-    "name": "per-element for-of awaits are not recognized — flagged (declared blind spot)",
+    "name": "per-element for-of consumption is recognized — not flagged",
+    "seed": {
+      "src/for-of-on.ts": "export async function work(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  for (const p of jobs) {\n    await p\n  }\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "per-element for-of awaits are not recognized — flagged (degraded mode)",
+    "analysis": "off",
     "seed": {
       "src/for-of.ts": "export async function work(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  for (const job of jobs) {\n    await job\n  }\n}"
     },
@@ -121,6 +129,126 @@ export const fixtures = [
       {
         "rule": "unawaited-async-map",
         "file": "src/for-of.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "an inline for-of over the mapped array with awaited elements is not flagged",
+    "seed": {
+      "src/for-of-inline.ts": "export async function work(ids: string[]) {\n  for (const p of ids.map(async id => load(id))) {\n    await p\n  }\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "a same-named binding in another scope cannot silence this one",
+    "seed": {
+      "src/shadow.ts": "export function main(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  return jobs.length\n}\n\nfunction other(otherIds: string[]) {\n  const jobs = otherIds.map(async x => save(x))\n  return Promise.all(jobs)\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/shadow.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "same-name consumption silences both bindings (degraded mode)",
+    "analysis": "off",
+    "seed": {
+      "src/shadow-off.ts": "export function main(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  return jobs.length\n}\n\nfunction other(otherIds: string[]) {\n  const jobs = otherIds.map(async x => save(x))\n  return Promise.all(jobs)\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "a never-reassigned let binding is checked like a const — flagged",
+    "seed": {
+      "src/let-never.ts": "export function work(ids: string[]) {\n  let jobs = ids.map(async id => load(id))\n  return jobs.length\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/let-never.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "a reassigned binding is inconclusive and skipped",
+    "seed": {
+      "src/let-reassigned.ts": "export function work(ids: string[], fresh: string[]) {\n  let jobs = ids.map(async id => load(id))\n  jobs = fresh.map(async x => save(x))\n  return jobs.length\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "degraded mode still flags the plain dropped binding",
+    "analysis": "off",
+    "seed": {
+      "src/off-a.ts": "export function work(ids: string[]) {\n  const results = ids.map(async id => load(id))\n  return results.length\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/off-a.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "degraded mode still sees next-line combiner consumption",
+    "analysis": "off",
+    "seed": {
+      "src/off-b.ts": "export async function work(ids: string[]) {\n  const results = ids.map(async id => load(id))\n  return Promise.all(results)\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "degraded mode still flags the bare discarded statement",
+    "analysis": "off",
+    "seed": {
+      "src/off-bare.ts": "export function warm(ids: string[]) {\n  ids.map(async id => prime(id));\n  return ids.length;\n}\n"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/off-bare.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "degraded mode still flags await directly on the mapped array",
+    "analysis": "off",
+    "seed": {
+      "src/off-await-array.ts": "export async function warm(ids: string[]) {\n  await ids.map(async id => prime(id));\n  return ids.length;\n}\n"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/off-await-array.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "degraded mode still sees same-line consumption after the declaration",
+    "analysis": "off",
+    "seed": {
+      "src/off-one-line.ts": "export const saveAll = (items: string[]) => { const jobs = items.map(async item => save(item)); return Promise.all(jobs); };"
+    },
+    "expected": []
+  },
+  {
+    "name": "degraded mode still flags the optional-chained bound map",
+    "analysis": "off",
+    "seed": {
+      "src/off-opt-bound.ts": "export function work(ids?: string[]) {\n  const jobs = ids?.map(async id => load(id))\n  return jobs?.length ?? 0\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/off-opt-bound.ts",
         "line": 2
       }
     ]
@@ -210,6 +338,39 @@ export const fixtures = [
         "line": 2
       }
     ]
+  },
+  {
+    "name": "an async-function callback in a dropped binding is flagged",
+    "seed": {
+      "src/fn-bound.ts": "export function work(ids: string[]) {\n  const jobs = ids.map(async function (id) { return load(id); });\n  return jobs.length;\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/fn-bound.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "a bare async-function map statement is flagged",
+    "seed": {
+      "src/fn-bare.ts": "export function warm(ids: string[]) {\n  ids.map(async function named(id) { prime(id); });\n  return ids.length;\n}"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "src/fn-bare.ts",
+        "line": 2
+      }
+    ]
+  },
+  {
+    "name": "an async-function map consumed by a combiner is not flagged",
+    "seed": {
+      "src/fn-consumed.ts": "export async function work(ids: string[]) {\n  const jobs = ids.map(async function named(id) { return load(id); });\n  return Promise.all(jobs);\n}"
+    },
+    "expected": []
   },
   {
     "name": "reports an assigned timeout without cleanup",

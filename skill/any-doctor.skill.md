@@ -64,6 +64,18 @@ export const fixtures = [
   respects the same test-path exclusion — `--include-tests` includes them)
 - `ctx.search.rule(query, language?)` → same Match shape — a composite
   structural question: `{ pattern, inside: { pattern, stopBy? } }` (see below)
+- `ctx.search.rules(queries, language?)` → same Match shape plus
+  `ruleId` — MANY named rules in ONE engine invocation:
+  `[{ id, pattern, inside? }, ...]`. Prefer this whenever you have more
+  than one question: every ctx.search call is a process spawn, so a
+  check with five shapes costs five spawns — or one.
+- `ctx.analysis.available` → boolean: is the identity engine installed?
+  (optional — checks that use it must narrow without it, below)
+- `ctx.analysis.bindings(file)` → the file's identity model: every binding
+  `{ name, kind, line, column, endLine, endColumn, references }`, each
+  reference `{ line, column, endLine, endColumn, write }` in the same
+  position convention as Match. One call per file; throws loudly if
+  unavailable.
 - `ctx.report.finding({ rule, file, line, column?, message?, severity? })`
 
 Zero dependencies, zero imports — a doctor is one self-contained file;
@@ -102,7 +114,43 @@ Three traps — the interface guards the last one, the first two are yours:
 
 Queries are validated before anything runs: unknown keys are refused
 with the allowed list (and a typo suggestion), so a misspelled `inside`
-fails loudly instead of matching nothing.
+fails loudly instead of matching nothing. Named-rule batches carry the
+same curation (unique non-empty ids — every match returns tagged with
+the id that found it).
+
+## Analysis queries — identities, composed with shapes by position
+
+When the question is "which variable is this, and where is it REALLY
+used," ask the identity engine — never match names by text:
+
+```js
+if (ctx.analysis.available) {
+  const model = ctx.analysis.bindings(file);            // one call per file
+  const binding = model.bindings.find((b) => /* span contains your Match */);
+  const reads = binding.references.filter((r) => !r.write);
+  // decide consumption by position: is a read inside a combiner call's span?
+}
+```
+
+The composing pattern (this is the whole trick): find **shapes** with a
+rule query, find **identities** with an analysis query, and join them by
+position — both use 1-based lines and 0-based columns with exclusive
+ends, so containment is `start <= ref < end` comparing (line, column)
+pairs left to right: a reference is inside a match when it is not before
+the match's start and not at-or-after its end.
+
+Three rules of the degradation contract:
+
+- **Declare it**: a check that uses analysis puts `needs: ["bindings"]`
+  on its CheckMeta — that data is what renders "narrowed" in reports
+  when the engine is absent.
+- **Narrow honestly**: guard with `ctx.analysis.available` and fall back
+  to your weaker path; a clean degraded run says "narrowed," never
+  "clean" silently.
+- **Pin both paths**: fixtures carry `analysis: "on"` (default — skips
+  with a notice where the engine isn't installed) or `analysis: "off"`
+  (forces the degraded path; expectations may legitimately differ — pin
+  them).
 
 ## One doctor, many checks
 
