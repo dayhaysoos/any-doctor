@@ -1,4 +1,4 @@
-import { brokenDoctors, BrokenDoctor, DiscoveredDoctor, discoverDoctors, resolveDoctorPath, unsafeSlugs, scopeLabel } from "./discover.js";
+import { brokenDoctors, BrokenDoctor, discoverDoctors, resolveDoctorPath, unsafeSlugs, scopeLabel } from "./discover.js";
 import { canRunTui, TtyEnv } from "./tty.js";
 import { pickItemOn } from "./picker.js";
 

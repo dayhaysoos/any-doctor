@@ -21,6 +21,9 @@ type Status = typeof analysisStatus;
 // the same unchanged file answers from memory.
 const modelCache = new Map<string, { mtimeMs: number; size: number; file: AnalysisFile }>();
 
+// Test seam: the model cache is keyed by mtime+size for the process
+// lifetime; tests bust it between cases. Invisible to slop-doctor's
+// default run (test-file consumers are the documented narrowing).
 export function clearAnalysisCache(): void {
   modelCache.clear();
 }

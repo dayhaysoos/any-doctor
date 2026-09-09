@@ -203,10 +203,13 @@ test("main: bare run partitions the cohort — healthy run, unsafe skipped and n
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cli-cohort-"));
   fs.mkdirSync(path.join(root, "doctors"));
   fs.mkdirSync(path.join(root, "src"));
-  fs.writeFileSync(path.join(root, "src", "a.ts"), "const a = 1;\n");
+  // Slop-free seed (slop-doctor joined the pack and correctly flagged the
+  // old `const a = 1` as an unread local, deduping good's finding away):
+  // index.ts is entry-exempt, and `a` is read by the export.
+  fs.writeFileSync(path.join(root, "src", "index.ts"), "const a = 1;\nexport const b = a;\n");
   fs.writeFileSync(path.join(root, "doctors", "good.mjs"), [
     "export const meta = { id: 'good', description: 'g', severity: 'info' }",
-    "export async function doctor(ctx) { ctx.report.finding({ file: 'src/a.ts', line: 1 }) }",
+    "export async function doctor(ctx) { ctx.report.finding({ file: 'src/index.ts', line: 1 }) }",
   ].join("\n"));
   fs.writeFileSync(path.join(root, "doctors", "evil.mjs"), [
     'import fs from "node:fs";',

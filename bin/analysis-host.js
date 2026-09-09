@@ -6,6 +6,9 @@ import { searchBase, withinBase } from "./search-host.js";
 // the lifetime is the any-doctor invocation; across a cohort's doctors
 // the same unchanged file answers from memory.
 const modelCache = new Map();
+// Test seam: the model cache is keyed by mtime+size for the process
+// lifetime; tests bust it between cases. Invisible to slop-doctor's
+// default run (test-file consumers are the documented narrowing).
 export function clearAnalysisCache() {
     modelCache.clear();
 }
