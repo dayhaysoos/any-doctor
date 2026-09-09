@@ -55,10 +55,12 @@ export const fixtures = [
 
 - `ctx.files.list(exts?)` → relative paths (default .ts/.tsx/.js/.jsx/.mjs; test-named code files and `test|tests|__tests__/` directories are excluded by default — `--include-tests` scans them; in verify sandboxes test-named seeds are always visible: fixtures are the doctor's own world)
 - `ctx.files.read(rel)` → file contents
-- `ctx.files.readMasked(rel)` → contents with comments and strings blanked,
-  offsets and length preserved — the one masking implementation; a position
-  in the masked text addresses the same char in the source. Never carry a
-  private masking copy.
+- `ctx.files.readMasked(rel)` → contents with comments, strings, AND regex
+  literals blanked, offsets and length preserved — the one masking
+  implementation; a position in the masked text addresses the same char in
+  the source. Regex literals are masked because they may contain quote
+  characters — an unmasked `/["']/ ` opens a phantom string that swallows
+  every line after it. Never carry a private masking copy.
 - `ctx.search.pattern(pattern, language?)` → `[{ file, line, column, text, endLine?, endColumn?, captures? }]`
   (ast-grep pattern syntax, e.g. `"fetch($URL)"`; requires ast-grep installed;
   respects the same test-path exclusion — `--include-tests` includes them)
@@ -152,6 +154,48 @@ Three rules of the degradation contract:
   (forces the degraded path; expectations may legitimately differ — pin
   them).
 
+### The identity model's sharp edges (learned the hard way — do not relearn)
+
+The engine resolves VALUE positions via scope analysis. Its reference
+semantics have four edges that break naive predicates:
+
+- **The declarator is itself a write reference.** `const x = 1` gives `x`
+  one write reference inside its own declaration span; an unused import's
+  specifier likewise. NEVER test `references.length > 0` for "used."
+- **Loop variables declare over the whole loop.** For `for (const g of xs)`,
+  every `g` reference in the body sits inside the declaration span — so
+  span-containment alone reads a heavily-used loop variable as unread.
+- The correct "used" predicate for both edges — a binding is USED when
+  anything READS it, or writes it beyond its own declaration:
+
+  ```js
+  const isUsed = (b) =>
+    b.references.some((r) => !r.write) ||
+    b.references.some((r) => !refInsideDecl(r, b));
+  ```
+
+- **Type positions never become references.** `import { Foo }` used only as
+  a type annotation has zero references but is legitimate. Guard with a
+  whole-word occurrence count over the MASKED source (type annotations
+  survive masking; comments and strings do not): if the name occurs beyond
+  its declaration, skip — precision first.
+- **Exports are statement-scoped, not line-scoped.** `export const A = 1,\n
+  B = 2` (wrapped, type-annotated: `export const C: Record<string, number>
+  = {...}`) exports EVERY declarator up to the terminating `;`. Match the
+  statement over masked text with
+  `/export\s+(?:const|let|var)\s+([^;]+);/` and pull each identifier
+  before its `=`.
+- **`import * as NS` members are consumers**: `NS.NAME` anywhere in another
+  file consumes `NAME` — collect namespace imports and match member access.
+- **Dynamically-consumed files are entry points**: doctor programs
+  (`doctors/`), `bin/`, `scripts/`, and entry-shaped names (cli, main,
+  index, server, app, mod) are loaded by import-machinery no static scan
+  sees — exempt them from dead-export checks entirely.
+- **Test files are invisible to the default scan** (they are excluded), so
+  a binding consumed only by tests looks dead. Declare it in blindSpots and
+  point users at `--include-tests`. `.d.ts` files declare types, not
+  behavior — skip them.
+
 ## One doctor, many checks
 
 If the intent covers several related patterns (an SDK migration with
@@ -183,7 +227,11 @@ own `severity` only for exceptions.
 ## Hard workflow
 
 1. Write both files.
-2. Run: `any-doctor verify doctors/<slug>.mjs` (or `node bin/cli.js verify doctors/<slug>.mjs`).
+2. Run: `any-doctor verify doctors/<slug>.mjs` (or `node bin/cli.js verify doctors/<slug>.mjs`,
+   or with no install at all: `npx any-doctor@latest verify doctors/<slug>.mjs`).
+   The per-fixture `missing`/`unexpected` lines are your error list — treat
+   them like compiler diagnostics and iterate; verify exits non-zero while
+   any fixture fails, so the loop is CI-shaped from the first minute.
 3. ALL fixtures must pass. Iterate until green — a failed fixture is the
    system telling you your rule or your expectations are wrong; fix the rule,
    or fix the expectation if the expectation itself was wrong.
@@ -218,6 +266,21 @@ own `severity` only for exceptions.
   syntax allows.
 - Findings are locations. Wording lives in `meta.description`; use
   per-finding `message` only when one violation needs its own explanation.
+- **Fixture seeds are tiny worlds with their own physics.** A seed file
+  that exports a symbol nobody consumes will trip any dead-export-style
+  check you (or a sibling doctor) ships — including on the incidental
+  helper your OTHER fixture tests. Give every exported seed symbol a
+  consumer: an `src/index.ts` that imports and calls things (index is
+  entry-shaped, exempt from dead-export) is the standard pattern.
+- **Seeds must be clean relative to your own checks.** A seed carrying
+  `const a = 1` (unread) gets flagged by an unread-local check, and if
+  that finding lands on the same (rule-adjacent) file:line as the finding
+  you meant to test, dedupe hides yours and the expectation reads as
+  broken for the wrong reason. Write seeds your own doctor would call
+  clean — except where testing that rule.
+- **Same-line multi-rule findings each need their own expected entry**
+  (exact multiset on rule:file:line — two rules firing at one location are
+  two expectations).
 
 ## Authoring for the report
 
