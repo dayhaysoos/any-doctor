@@ -79,3 +79,25 @@ test("analyzeBindings: reassignment appears as a write reference outside the dec
   const reassign = writes.find((w) => w.line === 2);
   assert.ok(reassign, "reassignment is a write at line 2");
 });
+
+test("analyzeBindings: JSX references, type positions, exported and excluded facts", async () => {
+  const { analyzeBindings } = await import("../bin/analysis.js");
+  const jsx = analyzeBindings("a.tsx", 'import { Button } from "./ui";\nexport default function Demo() { return <div><Button /></div>; }');
+  assert.ok(jsx.ok);
+  const button = jsx.file.bindings.find((b) => b.name === "Button");
+  assert.ok(button && button.references.length > 0, "JSX usage is a reference");
+  assert.equal(jsx.file.bindings.find((b) => b.name === "Demo")?.exported, true, "export default marks the function exported");
+
+  const typed = analyzeBindings("b.ts", 'import { Props } from "./t";\nexport function X(p: Props) { return 1; }');
+  assert.ok(typed.file.bindings.find((b) => b.name === "Props")?.references.length > 0, "type-position usage is a reference");
+
+  const excluded = analyzeBindings("c.ts", "const { secret: _secret, ...safe } = value;\nexport const y = safe;");
+  assert.equal(excluded.file.bindings.find((b) => b.name === "_secret")?.excluded, true, "object-rest exclusion is marked");
+  assert.equal(excluded.file.bindings.find((b) => b.name === "y")?.exported, true);
+
+  const destructured = analyzeBindings("d.ts", "const client = makeClient();\nexport const { signOut } = client;");
+  assert.equal(destructured.file.bindings.find((b) => b.name === "signOut")?.exported, true, "destructured export is exported");
+
+  const semicolonType = analyzeBindings("e.ts", 'export const status: { label: string; } = { label: "ready" };');
+  assert.equal(semicolonType.file.bindings.find((b) => b.name === "status")?.exported, true, "semicolon inside a type annotation does not end the export statement");
+});

@@ -15,8 +15,13 @@
 // ctx. First-party host code has no such constraint, so there is exactly
 // one copy, here.
 // A `/` opens a regex literal (not division) after these characters or
-// after these keywords; anywhere else it divides.
-const REGEX_PRECEDER_CHARS = "=([{,;:!&|?+-*%^~<>";
+// after these keywords; anywhere else it divides. `<` and `>` are
+// deliberately absent: a `/` right after `<` is a JSX CLOSING TAG
+// (`</Link>`), and treating it as a regex opener phantom-masks the rest
+// of the component — the 0.0.4 false-positive mechanism. Comparison
+// operators before a regex (`a < /re/.test(x)`) are vanishingly rare
+// next to JSX.
+const REGEX_PRECEDER_CHARS = "=([{,;:!&|?+-*%^~";
 const REGEX_PRECEDER_WORDS = new Set([
     "return", "typeof", "instanceof", "in", "of", "case", "delete", "void",
     "throw", "new", "do", "else", "yield", "await",

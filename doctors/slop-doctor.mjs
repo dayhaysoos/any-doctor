@@ -17,10 +17,10 @@ export const meta = {
   checks: [
     {
       id: "identical-helper-body-in-two-modules",
-      description: "The same function body maintained in two or more modules.",
-      severity: "warning",
-      impact: "Two copies of one contract drift independently: the next edit fixes one and silently leaves the other behind. This is the single most actioned pattern in the corpus it came from - 16 findings across 14 PRs, every one fixed.",
-      why: "Generated code copies what worked instead of importing it, and nothing in review tooling notices two implementations of the same name. The copies are born identical, which is exactly what makes their later divergence invisible.",
+      description: "A function body identical (literals included) to one in another module - a consolidation suggestion, not a proven defect.",
+      severity: "info",
+      impact: "Two copies of one contract drift independently: the next edit fixes one and silently leaves the other behind. In the corpus this came from, reviewers raised it 16 times across 14 PRs and every finding was actioned - but duplication alone establishes maintenance risk, not a bug.",
+      why: "Generated code copies what worked instead of importing it. The bodies are identical including literal values, which is what makes later divergence invisible - but intentional copies exist, so this is a review suggestion.",
       fix: "Consolidate into one shared module and import it on both sides - or, if the domains must stay separate, make the separation explicit in the name and a comment saying why they differ.",
     },
     {
@@ -49,19 +49,19 @@ export const meta = {
     },
     {
       id: "export-without-any-consumer",
-      description: "A named export no file imports and no code references.",
-      severity: "warning",
-      impact: "Dead public surface: code that looks load-bearing, is maintained, reviewed, and shipped - but has no caller anywhere. The corpus caught this 5 times across 4 PRs.",
-      why: "Generated code over-exports ('might be useful'), and nothing in the toolchain reports an export with zero consumers. Unlike an unused local, it survives every cleanup pass because it looks deliberate.",
-      fix: "Delete it - or consume it. If it is a genuine public API entry point, say so in a comment and exempt it deliberately.",
+      description: "A named export with no consumer found - a deletion candidate, pending the blind spots below.",
+      severity: "info",
+      impact: "Likely dead public surface: code that looks load-bearing, is maintained, reviewed, and shipped - but no consumer was found. The corpus caught this 5 times across 4 PRs.",
+      why: "Generated code over-exports ('might be useful'), and nothing in the toolchain reports an export with zero consumers. Dynamic consumers are detected heuristically - see blind spots - so this is a candidate, not a verdict.",
+      fix: "Verify against the blind spots, then delete it - or consume it. If it is a genuine public API entry point, say so in a comment and exempt it deliberately.",
       needs: ["bindings"],
     },
     {
       id: "named-import-without-reference",
-      description: "A named import whose binding is never referenced in its module.",
+      description: "A named import with zero references (value, JSX, and type positions all resolve) and no textual trace.",
       severity: "warning",
       impact: "Dead dependency surface: the import suggests usage the module does not have, and removing the last real import from a module can change its initialization order. 5 findings across 3 PRs.",
-      why: "Imports accumulate during generation and refactoring; TypeScript only reports these with noUnusedLocals enabled, which most repos never turn on.",
+      why: "Imports accumulate during generation and refactoring; TypeScript only reports these with noUnusedLocals enabled, which most repos never turn on. The identity engine resolves JSX and type-position references, and a whole-word occurrence guard backstops what no resolver sees - a finding means BOTH layers found nothing.",
       fix: "Remove the specifier (keep the import statement if other specifiers remain or the module has side effects).",
       needs: ["bindings"],
     },
@@ -94,7 +94,8 @@ export async function doctor(ctx) {
   const readFile = (file) => {
     let entry = byFile.get(file);
     if (entry === undefined) {
-      entry = { masked: ctx.files.readMasked(file) };
+      const raw = ctx.files.read(file);
+      entry = { raw, masked: ctx.files.readMasked(file) };
       byFile.set(file, entry);
     }
     return entry;
@@ -105,7 +106,8 @@ export async function doctor(ctx) {
   for (const file of files) {
     if (/\.fixtures\.mjs$/.test(file)) continue;
     const lines = readFile(file).masked.split("\n");
-    collectHelperBodies(helperBodies, file, lines);
+    const rawLines = ctx.files.read(file).split("\n");
+    collectHelperBodies(helperBodies, file, lines, rawLines);
     checkHostnameGuess(ctx, file, lines);
     checkPrefixOverlappingSubstrings(ctx, file, lines);
     checkBooleanCollapse(ctx, file, lines);
@@ -115,7 +117,7 @@ export async function doctor(ctx) {
 
   // --- pass 2: identity checks (narrow to silence without the engine) ---
   if (!ctx.analysis.available) return;
-  const importedNames = collectImportedNames(files, readFile);
+  const index = collectImportedNames(files, readFile);
   for (const file of files) {
     if (/\.fixtures\.mjs$/.test(file)) continue;
     let model;
@@ -125,7 +127,7 @@ export async function doctor(ctx) {
       continue; // unparsable for the identity engine: not this doctor's finding
     }
     const lines = readFile(file).masked.split("\n");
-    checkDeadExports(ctx, file, lines, model, importedNames, files);
+    checkDeadExports(ctx, file, lines, model, index);
     checkUnusedImports(ctx, file, lines, model);
     checkUnreadLocals(ctx, file, lines, model);
   }
@@ -138,10 +140,20 @@ export async function doctor(ctx) {
 // intentional duplication.
 const HELPER_SKIP = /(^|\/)(doctors|bin|dist|build)\//;
 
-function collectHelperBodies(map, file, lines) {
+// Bodies compare with LITERAL VALUES PRESERVED (readMasked blanks string
+// and regex literals, so `replace(/\\s+/g, "-")` and `replace(/\\s+/g, "_")`
+// normalized identical — the 0.0.4 counterexample). Comments are dropped by
+// consulting the masked twin: a line that is all spaces there contributed
+// no code. Whitespace is still squashed so formatting cannot hide a twin.
+function collectHelperBodies(map, file, lines, rawLines) {
   if (HELPER_SKIP.test(file)) return;
   for (const span of functionSpans(lines)) {
-    const body = lines.slice(span.bodyStart, span.end + 1).join(" ").replace(/\s+/g, "");
+    const bodyLines = [];
+    for (let i = span.bodyStart; i <= span.end; i++) {
+      if (lines[i].trim() === "") continue; // comment or blank in masked
+      bodyLines.push(rawLines[i]);
+    }
+    const body = bodyLines.join(" ").replace(/\s+/g, "");
     if (body.length < 60) continue; // trivial bodies are not a contract
     const sites = map.get(body) ?? [];
     sites.push({ file, line: span.line, name: span.name });
@@ -154,7 +166,13 @@ function reportIdenticalHelpers(ctx, map) {
     const distinctFiles = new Set(sites.map(s => s.file));
     if (distinctFiles.size < 2) continue;
     for (const site of sites) {
-      ctx.report.finding({ rule: "identical-helper-body-in-two-modules", file: site.file, line: site.line });
+      const twins = sites.filter(s => s.file !== site.file).map(s => s.file);
+      ctx.report.finding({
+        rule: "identical-helper-body-in-two-modules",
+        file: site.file,
+        line: site.line,
+        message: "identical body also in: " + twins.join(", "),
+      });
     }
   }
 }
@@ -186,13 +204,20 @@ function functionSpans(lines) {
 const ENV_TOKENS = /localhost|127\.0\.0\.1|staging|\.?prod\b|\.?dev\b|vercel\.app|netlify\.app/i;
 const HOSTISH = /host|origin|url|endpoint|backend|apibase/i; // substrings: camelCase receivers like backendUrl carry no word boundaries
 
+// Only ROUTING is claimed: the branch must assign or return a URL-ish
+// constant (LOCAL_URL, PROD_URL, API_ORIGIN...). A throw guard (`if
+// (!url.startsWith("http://localhost:")) throw`) is enforcement, not
+// routing - exempt.
 function checkHostnameGuess(ctx, file, lines) {
+  const rawLines = ctx.files.read(file).split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (!line.includes(".includes(") && !line.includes(".startsWith(")) continue;
     if (!HOSTISH.test(line)) continue;
-    // The literal lives in the raw line (masking blanks strings).
-    const rawLine = ctx.files.read(file).split("\n")[i];
+    const rawLine = rawLines[i];
+    if (/\bthrow\b/.test(line)) continue; // a guard, not a route
+    if (!/\breturn\s+\w*(?:URL|ORIGIN|BASE|ENDPOINT)\w*/.test(line)
+      && !/\w*(?:URL|ORIGIN|BASE|ENDPOINT)\w*\s*=/.test(line)) continue;
     if (/\.(?:includes|startsWith)\(\s*["'][^"']*["']/.test(rawLine) && ENV_TOKENS.test(rawLine)) {
       ctx.report.finding({ rule: "environment-guessed-from-hostname-substring", file, line: i + 1 });
     }
@@ -258,14 +283,21 @@ function checkUnanchoredAbbreviation(ctx, file, lines) {
 // dynamic import no static analysis can see.
 const ENTRY_FILE = /(^|\/)(bin|scripts|doctors)\//;
 const ENTRY_NAME = /^(cli|main|index|server|app|mod)\.[cm]?[jt]sx?$/;
+// Generated output: mirrors of source by construction, not authored code.
+const GENERATED_FILE = /(^|\/)(__generated__|generated|\.gen)\/|\.generated\.[cm]?[jt]sx?$/;
 
 function isEntryFile(file) {
-  return ENTRY_FILE.test(file) || ENTRY_NAME.test(file.split("/").pop() ?? "");
+  return ENTRY_FILE.test(file) || ENTRY_NAME.test(file.split("/").pop() ?? "") || GENERATED_FILE.test(file);
 }
 
+// The consumer index: which names any file imports, which modules are
+// dynamically imported (their exports have consumers we cannot name), and
+// namespace-member usage. Built once over the whole scan; deciding what is
+// dead is the check's job, collecting consumers is the index's job.
 function collectImportedNames(files, readFile) {
   const names = new Set();
   const namespaces = []; // { ns, text } - members consumed via NS.NAME
+  const dynamicModules = []; // resolved-ish specifiers from import("./x")
   for (const file of files) {
     if (/\.fixtures\.mjs$/.test(file)) continue;
     const masked = readFile(file).masked;
@@ -279,51 +311,57 @@ function collectImportedNames(files, readFile) {
     for (const m of masked.matchAll(/import\s*\*\s+as\s+([A-Za-z_$][\w$]*)/g)) {
       namespaces.push({ ns: m[1], text: masked });
     }
+    // `await import("./widget")` - the module's whole export surface has
+    // consumers even though no named import exists. Specifiers are read
+    // from RAW source: masking blanks string literals, which would erase
+    // the very path being imported.
+    const raw = readFile(file).raw;
+    for (const m of raw.matchAll(/import\s*\(\s*["']([^"']+)["']\s*\)/g)) {
+      dynamicModules.push({ from: file, specifier: m[1] });
+    }
   }
-  return (name) => {
-    if (names.has(name)) return true;
-    return namespaces.some(({ ns, text }) =>
-      new RegExp(`\\b${escapeRe(ns)}\\s*\\.\\s*${escapeRe(name)}\\b`).test(text));
+  return {
+    importsName: (name) => {
+      if (names.has(name)) return true;
+      return namespaces.some(({ ns, text }) =>
+        new RegExp(`\\b${escapeRe(ns)}\\s*\\.\\s*${escapeRe(name)}\\b`).test(text));
+    },
+    dynamicallyImports: (file) => {
+      // Match a dynamic specifier to this file: same basename stem, or the
+      // specifier resolves inside this file's directory neighborhood.
+      const stem = file.replace(/\.[cm]?[jt]sx?$/, "").split("/").pop();
+      const dir = file.split("/").slice(0, -1).join("/");
+      return dynamicModules.some(({ from, specifier }) => {
+        if (from === file) return false;
+        const specStem = specifier.replace(/\.[cm]?[jt]sx?$/, "").split("/").pop();
+        if (specStem !== stem) return false;
+        // "./x" or "../dir/x" style relative specifier plausibly hits this file.
+        return specifier.startsWith(".") || specifier.includes("/" + dir + "/");
+      });
+    },
   };
 }
 
-function exportedNames(lines) {
-  const names = new Set();
-  const text = lines.join("\n");
-  // Function and class exports name one binding each.
-  for (const m of text.matchAll(/export\s+(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)/g)) names.add(m[1]);
-  for (const m of text.matchAll(/export\s+class\s+([A-Za-z_$][\w$]*)/g)) names.add(m[1]);
-  // Multi-declarator exports (`export const A = 1,\n  B = 2`) export EVERY
-  // declarator in the statement - matched to the terminating semicolon so
-  // wrapped lines count; masked strings are spaces, so no false captures.
-  for (const m of text.matchAll(/export\s+(?:const|let|var)\s+([^;]+);/g)) {
-    // The identifier may carry a type annotation before its `=`.
-    for (const d of m[1].matchAll(/([A-Za-z_$][\w$]*)\s*(?::[^=;]+)?=/g)) names.add(d[1]);
-  }
-  for (const m of text.matchAll(/export\s*\{([^}]*)\}/g)) {
-    for (const part of m[1].split(",")) {
-      const local = part.split(/\s+as\s+/)[0].trim().replace(/^\s*type\s+/, "");
-      if (local && local !== "default") names.add(local);
-    }
-  }
-  return names;
-}
-
-function checkDeadExports(ctx, file, lines, model, importedNames, files) {
+function checkDeadExports(ctx, file, lines, model, index) {
   if (isEntryFile(file) || file.endsWith(".d.ts")) return;
   const fileText = lines.join("\n");
-  const inModule = new Map(model.bindings.map(b => [b.name, b]));
-  for (const name of exportedNames(lines)) {
-    // Re-exported imports (`export { x } from`) are not this check's finding.
-    const binding = inModule.get(name);
-    if (!binding) continue;
+  for (const binding of model.bindings) {
+    // The engine computes exportedness from the export AST - every
+    // declarator, destructured pattern, and specifier, no text matching.
+    if (!binding.exported) continue;
     if (isUsed(binding)) continue; // used locally
-    if (importedNames(name)) continue; // consumed somewhere, from anywhere
-    // Whole-word occurrence beyond its own declaration (type positions,
-    // dynamic use) masks the finding - precision first.
-    const occurrences = fileText.split(new RegExp(`\\b${escapeRe(name)}\\b`)).length - 1;
+    if (index.importsName(binding.name)) continue; // consumed somewhere, from anywhere
+    if (index.dynamicallyImports(file)) continue; // import("./this-file") consumes the surface
+    // Whole-word occurrence beyond its own declaration masks the finding -
+    // precision first (string-built references, reflection).
+    const occurrences = fileText.split(new RegExp(`\\b${escapeRe(binding.name)}\\b`)).length - 1;
     if (occurrences > 1) continue;
-    ctx.report.finding({ rule: "export-without-any-consumer", file, line: binding.line });
+    ctx.report.finding({
+      rule: "export-without-any-consumer",
+      file,
+      line: binding.line,
+      message: "candidate: no consumer found for " + binding.name,
+    });
   }
 }
 
@@ -347,8 +385,10 @@ function checkUnusedImports(ctx, file, lines, model) {
   for (const b of model.bindings) {
     if (b.kind !== "ImportBinding") continue;
     if (isUsed(b)) continue;
-    // A name occurring anywhere else (type position, JSX, comments) is not
-    // a finding - only a specifier with no trace at all is dead.
+    // Belt and braces: the engine resolves JSX and type positions, and the
+    // whole-word occurrence guard catches what no resolver sees
+    // (string-built references, reflection). A name with no reference AND
+    // no textual trace is dead; anything less is UNKNOWN, not unused.
     const occurrences = fileText.split(new RegExp(`\\b${escapeRe(b.name)}\\b`)).length - 1;
     if (occurrences > 1) continue;
     ctx.report.finding({ rule: "named-import-without-reference", file, line: b.line });
@@ -357,11 +397,16 @@ function checkUnusedImports(ctx, file, lines, model) {
 
 function checkUnreadLocals(ctx, file, lines, model) {
   const fileText = lines.join("\n");
-  const exportedSet = exportedNames(lines);
   for (const b of model.bindings) {
     if (b.kind !== "Variable") continue;
     if (isUsed(b)) continue;
-    if (exportedSet.has(b.name)) continue;
+    // The engine marks the object-rest exclusion idiom - unreadness is
+    // the point there, not a defect.
+    if (b.excluded) continue;
+    if (b.exported) continue;
+    // The underscore convention for intentionally-unused destructured
+    // names (_secret) is opt-out by spelling.
+    if (b.name.startsWith("_")) continue;
     const occurrences = fileText.split(new RegExp(`\\b${escapeRe(b.name)}\\b`)).length - 1;
     if (occurrences > 1) continue;
     // Conservative side-effect exemption: any initializer containing a

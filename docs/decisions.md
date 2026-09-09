@@ -677,6 +677,75 @@ skill teaches the rule (many questions → one batch) beside the op.
 
 ---
 
+## D21 — The semantic repair: claims may not exceed the analysis, and the analysis now sees TypeScript
+
+**Date:** 2026-09-09
+
+**Context:** Two external audits of slop-doctor on a real 630-file
+TypeScript/TSX codebase found systematic false positives (264 findings;
+roughly one in ten real). The mechanisms: the identity engine
+(oxc-parser + eslint-scope) did not resolve JSX references or type
+positions, so JSX-used imports read as unused; the masker treated the
+slash in JSX closing tags (`</Link>`) as a regex opener, phantom-masking
+subsequent code and defeating even the textual backstop; the duplicate
+check compared masked bodies, erasing the literal values that
+distinguish implementations; export detection was regex over text and
+broke on semicolons inside type annotations; the object-rest exclusion
+idiom (`const { secret: _s, ...safe } = x`) was flagged as unread; QA
+throw-guards were described as environment routing. The deepest
+finding: fixtures validate examples, not reliability — historical
+review evidence proves a problem occurs, not that a detector's pattern
+recognizes it.
+
+**Decision:** Claims may not exceed the analysis, and the analysis was
+ upgraded until the claims were cheap:
+
+- **The scope layer is @typescript-eslint/scope-manager** (replacing
+  eslint-scope over the same oxc AST): JSX references and type-position
+  references now RESOLVE. Two language facts are computed from the AST
+  and carried on every binding — `exported` (every declarator,
+  destructured pattern, and specifier under an export statement; no
+  text matching) and `excluded` (the object-rest omission idiom).
+  Doctors consume facts; they never re-derive them with regexes.
+- **The masker no longer treats a slash after `<` as a regex opener**
+  (JSX closing tags are not regexes; comparison-before-regex is
+  vanishingly rare next to JSX).
+- **The duplicate check compares bodies with literal values preserved**
+  (comments dropped via the masked twin) — `replace(/\\s+/g, "-")` and
+  `replace(/\\s+/g, "_")` are different implementations. Severity
+  demoted to info: duplication establishes maintenance risk, not a bug;
+  each finding names its counterpart files.
+- **Dead exports are candidates, not verdicts** (info): the consumer
+  index collects named imports, namespace members, and DYNAMIC import
+  specifiers (read from raw source — masking blanks path strings);
+  generated files (`.gen.`, `__generated__/`, `generated/`) are
+  exempt; the finding message says "candidate".
+- **The hostname check claims routing only when routing is proven** —
+  the branch must assign or return a URL-shaped constant; throw guards
+  are enforcement, not routing.
+- **The reviewer's seven counterexamples are frozen fixtures** (29
+  total) and engine/masker regression tests pin the facts.
+- **prepublishOnly runs the full suite**, not just the build: the
+  fixture gates are the registry's promise, so they fire before every
+  publish.
+- **The skill's authoring guidance was rewritten**: the regex-export
+  and occurrence-count workarounds are gone, replaced by the engine-
+  facts law and the unknown-is-not-unused rule — newly generated
+  doctors must not reproduce 0.0.4's failure modes.
+
+**Consequences:** On the audit codebase: 264 findings → 169; unused
+imports 51 → 1 (a generated file, now exempt), unread bindings 37 → 0,
+hostname 4 → 0; every audit-confirmed false positive cleared and every
+audit-confirmed real finding (two dead prompt builders, the duplicated
+schema helper family) still reported. Remaining honest noise: dead
+export candidates in repos whose consumers are string-built or
+test-only (blind spots declare both). The deeper process rule stands
+for every future doctor: measure per-rule precision on real unfamiliar
+repositories before shipping warning severity — examples passing is
+not precision.
+
+---
+
 ## Open questions
 
 - Opt-in metrics/score API (parked, D19): count doctors run and findings
