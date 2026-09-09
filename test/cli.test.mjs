@@ -437,3 +437,42 @@ test("gate: --format json survives a pipe at payload sizes past 64KB", async () 
     fs.rmSync(doctorDir, { recursive: true, force: true });
   }
 });
+
+test("main: an extensionless bare slug resolves a scoped doctor and still takes a target dir", async (t) => {
+  const logs = silentConsole(t);
+  const cwd = process.cwd();
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-bare-slug-"));
+  fs.mkdirSync(path.join(root, "src"));
+  fs.writeFileSync(path.join(root, "src", "index.ts"), "const a = 1;\nexport const b = a;\n");
+  process.chdir(root);
+  try {
+    const code = await cli.main(["run", "slop-doctor", "src"]);
+    assert.equal(code, 0, "bundled slop-doctor resolved by bare slug, scanned the target");
+    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n");
+    assert.match(out, /Any Doctor — 1 doctor/, "exactly one doctor ran (a clean report never names it)");
+  } finally {
+    process.chdir(cwd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("main: a bare token that is a directory stays the target, not a slug", async (t) => {
+  const logs = silentConsole(t);
+  const cwd = process.cwd();
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-bare-dir-"));
+  fs.mkdirSync(path.join(root, "build"));
+  fs.writeFileSync(path.join(root, "build", "index.ts"), "export const b = 1;\n");
+  process.chdir(root);
+  try {
+    // Non-TTY: no selector; no doctors discovered in this scratch root →
+    // the failure names the target resolution, proving `build` was treated
+    // as a directory rather than hijacked as a slug.
+    const code = await cli.main(["run", "build"]);
+    assert.equal(code, 1);
+    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n");
+    assert.match(out, /no doctors discovered|build/);
+  } finally {
+    process.chdir(cwd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

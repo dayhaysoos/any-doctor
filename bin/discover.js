@@ -100,10 +100,15 @@ export function resolveDoctorPath(arg, cwd, opts) {
             (_a = opts === null || opts === void 0 ? void 0 : opts.globalDir) !== null && _a !== void 0 ? _a : globalDoctorsDir(),
             (_b = opts === null || opts === void 0 ? void 0 : opts.bundledDir) !== null && _b !== void 0 ? _b : bundledDoctorsDir(),
         ].filter((d) => Boolean(d));
+        // A bare slug names the doctor, not the file: try it verbatim (for
+        // callers who typed the extension) and then the doctor extensions,
+        // canonical .mjs first.
         for (const dir of scopes) {
-            const candidate = path.join(dir, base);
-            if (fs.existsSync(candidate))
-                return candidate;
+            for (const suffix of ["", ".mjs", ".cjs", ".js"]) {
+                const candidate = path.join(dir, base + suffix);
+                if (fs.existsSync(candidate))
+                    return candidate;
+            }
         }
         const direct = path.resolve(cwd, arg);
         if (fs.existsSync(direct))

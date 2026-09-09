@@ -116,9 +116,14 @@ export function resolveDoctorPath(arg: string, cwd: string, opts?: { globalDir?:
       opts?.globalDir ?? globalDoctorsDir(),
       opts?.bundledDir ?? bundledDoctorsDir(),
     ].filter((d): d is string => Boolean(d));
+    // A bare slug names the doctor, not the file: try it verbatim (for
+    // callers who typed the extension) and then the doctor extensions,
+    // canonical .mjs first.
     for (const dir of scopes) {
-      const candidate = path.join(dir, base);
-      if (fs.existsSync(candidate)) return candidate;
+      for (const suffix of ["", ".mjs", ".cjs", ".js"]) {
+        const candidate = path.join(dir, base + suffix);
+        if (fs.existsSync(candidate)) return candidate;
+      }
     }
     const direct = path.resolve(cwd, arg);
     if (fs.existsSync(direct)) return direct;

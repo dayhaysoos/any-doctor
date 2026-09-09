@@ -10,7 +10,7 @@ import { DiffResult, runDiff } from "./diff.js";
 import { deriveSummary } from "./summary.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
-import { brokenDoctors, BrokenDoctor, discoverDoctors, DiscoveredDoctor, globalDoctorsDir, unsafeSlugs, scopeLabel } from "./discover.js";
+import { brokenDoctors, BrokenDoctor, discoverDoctors, DiscoveredDoctor, globalDoctorsDir, resolveDoctorPath, unsafeSlugs, scopeLabel } from "./discover.js";
 import { causeSummaryLine, describeRunnerError, isRunnerError, verifyDoctor } from "./runner.js";
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor, Selection } from "./select.js";
@@ -125,6 +125,15 @@ interface ParsedArgs {
   flagError?: string;
 }
 
+// An extensionless bare token is a doctor slug ONLY when it resolves in a
+// scope (repo, global, bundled) - never merely because it looks like one,
+// so `run src` still means the target directory unless a doctors/src.mjs
+// exists somewhere. Scope precedence is resolveDoctorPath's law.
+function isBareDoctorSlug(arg: string): boolean {
+  if (path.basename(arg) !== arg || path.isAbsolute(arg)) return false;
+  return resolveDoctorPath(arg, process.cwd()) !== null;
+}
+
 function parseArgs(args: string[]): ParsedArgs {
   const out: ParsedArgs = { targetDir: path.resolve("."), all: false, global: false, includeTests: false, format: "report", failOn: "none" };
   let targetDirSet = false;
@@ -147,7 +156,7 @@ function parseArgs(args: string[]): ParsedArgs {
         i += 1;
       }
     }
-    else if (out.doctorPath === undefined && DOCTOR_FILE_RE.test(a)) out.doctorPath = a;
+    else if (out.doctorPath === undefined && (DOCTOR_FILE_RE.test(a) || isBareDoctorSlug(a))) out.doctorPath = a;
     else if (!targetDirSet) {
       out.targetDir = path.resolve(a);
       targetDirSet = true;
