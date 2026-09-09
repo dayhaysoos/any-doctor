@@ -1,4 +1,4 @@
-import { ExpectedFinding, ReportGroup, Severity, VerifyRunResult } from "./contract.js";
+import { ExpectedFinding, ReportGroup, VerifyRunResult } from "./contract.js";
 import { SEVERITY_ORDER } from "./summary.js";
 import { DEFAULT_EXTS } from "./sdk.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
