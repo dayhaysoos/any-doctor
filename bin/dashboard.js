@@ -7,7 +7,8 @@ import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, ORANGE, RESET, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
-import { dedupeGroups, unsafeSkipLine } from "./report.js";
+import { unsafeSkipLine } from "./report.js";
+import { deriveSummary } from "./summary.js";
 const SPLIT_MIN_COLS = 100;
 const TOKEN_RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^'\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|await|async|try|catch|finally|import|export|from|new|class|extends|throw|typeof|instanceof|in|of|do|switch|case|break|continue|default|yield)\b|\b(\d+(?:\.\d+)?)\b/g;
 export function highlightCode(line, useColor) {
@@ -591,11 +592,11 @@ export async function runDashboardOn(env, input, deps = {}) {
     if (!tty.canRunTui(env))
         return;
     const useColor = input.useColor;
-    // One RunOutcome, one story on every surface: the tree AND the score
-    // consume the same deduplicated groups the report renders — counts and
-    // score can never disagree between surfaces.
-    const { groups: deduped } = dedupeGroups(input.outcome.groups);
-    const tree = buildTree(buildItems(deduped), input.outcome.fileCount);
+    // One RunOutcome, one story on every surface: the tree AND the report
+    // render the same Summary — the derivation lives in summary.ts, so
+    // counts and score can never disagree between surfaces.
+    const summary = deriveSummary(input.outcome);
+    const tree = buildTree(buildItems(summary.groups), input.outcome.fileCount);
     const expanded = initialExpanded(tree);
     const readKeys = new Set();
     let notice;

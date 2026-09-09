@@ -43,6 +43,20 @@ them, it never joins the fold. Skips are a discovery fact, so the
 command layer, which owns discovery, patches `skippedUnsafe` onto the
 outcome.
 
+## Summary
+
+The derived view of a RunOutcome — everything a surface renders,
+computed once: the deduplicated severity-ordered groups, the total and
+hidden-duplicate counts, the Score and its header lines, the severity
+counts and category rollup, each group's check buckets, the narrowed
+check ids, and the empty-scan flag. One derivation, N adapters: the
+report string and the dashboard tree render it today, and the CI
+chapter's JSON output will serialize it rather than re-deriving. Pure —
+deriving twice from one RunOutcome yields one Summary; rendering
+(colors, prose, trees) belongs to the adapters, never to the
+derivation. The facts a gate needs (`--fail-on` severity counts,
+baseline-diffable shapes) live here as data, not inside rendering.
+
 ## Confinement
 
 The layered policy that makes a doctor program safe to execute. A doctor is
