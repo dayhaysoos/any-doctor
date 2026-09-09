@@ -101,8 +101,8 @@ export const fixtures = [
       "src/env.ts": [
         'const LOCAL_URL = "http://localhost:3000";',
         'const PROD_URL = "https://app.example.com";',
-        "export function resolveAppUrl(backendUrl: string): string {",
-        '  if (backendUrl.includes("localhost")) return LOCAL_URL;',
+        "export function resolveAppUrl(apiOrigin: string): string {",
+        '  if (apiOrigin.includes("localhost")) return LOCAL_URL;',
         "  return PROD_URL;",
         "}",
       ].join("\n"),
