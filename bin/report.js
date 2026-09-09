@@ -1,7 +1,7 @@
-import { narrowedCheckIds, resolveFinding } from "./contract.js";
+import { SEVERITY_ORDER } from "./summary.js";
 import { DEFAULT_EXTS } from "./sdk.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
-import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
+import { deriveSummary } from "./summary.js";
 // All doctors scan the same target, so the cohort's file count is any
 // doctor's count; the max is the honest pick when one crashed early. The
 // policy lives here, beside the RunOutcome field it fills and the Score
@@ -36,79 +36,23 @@ export function emptyScanLine() {
 export function unsafeRefusalLine(name, capabilities) {
     return `${name} could be malicious (${capabilities.join(", ")}) — not running it.`;
 }
-const SEVERITY_ORDER = ["error", "warning", "info"];
-function groupSeverity(g) {
-    var _a;
-    const explicit = g.findings.find(f => f.severity);
-    return (_a = (explicit ? findingSeverity(g, explicit) : undefined)) !== null && _a !== void 0 ? _a : g.meta.severity;
-}
-function expandChecks(g) {
-    var _a;
-    const buckets = new Map();
-    for (const f of g.findings) {
-        const j = resolveFinding(g.meta, f);
-        if (!buckets.has(j.checkKey)) {
-            buckets.set(j.checkKey, {
-                ruleId: (_a = f.rule) !== null && _a !== void 0 ? _a : null,
-                heading: j.description,
-                severity: j.declaredSeverity,
-                findings: [],
-            });
-        }
-        buckets.get(j.checkKey).findings.push(f);
-    }
-    return [...buckets.values()];
-}
-export function dedupeGroups(groups) {
-    // A site claimed by one doctor is hidden when ANOTHER doctor claims it
-    // too (same location, different doctor — one display copy). A second
-    // check from the SAME doctor at the same site is a different diagnosis
-    // of one line (filter-table-scan and unbounded-collect on one chain)
-    // and survives — the check tree exists to show each check's own story.
-    const owner = new Map();
-    const key = (f) => `${f.file}:${f.line}`;
-    const ordered = [...groups].sort((a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
-    const out = [];
-    let hidden = 0;
-    for (const g of ordered) {
-        if (g.findings.length === 0) {
-            out.push(g);
-            continue;
-        }
-        const kept = [];
-        for (const f of g.findings) {
-            const k = key(f);
-            const heldBy = owner.get(k);
-            if (heldBy === undefined) {
-                owner.set(k, g.meta.id);
-                kept.push(f);
-            }
-            else if (heldBy !== g.meta.id) {
-                hidden++;
-            }
-            else {
-                kept.push(f);
-            }
-        }
-        if (kept.length > 0)
-            out.push({ ...g, findings: kept });
-    }
-    return { groups: out, hidden };
-}
+// The report is an adapter over the Summary: the derivation (dedupe,
+// score, rollups, check buckets, narrowed ids) lives in summary.ts,
+// shared with the dashboard and the future JSON surface — rendering
+// here means prose and color, nothing else.
 export function renderReport(input, useColor) {
     const c = colorizer(useColor);
     const lines = [];
-    const { groups, hidden } = dedupeGroups(input.groups);
-    const total = groups.reduce((n, g) => n + g.findings.length, 0);
-    const sr = computeScore(groups, input.fileCount);
-    const header = scoreHeaderLines(sr);
+    const summary = deriveSummary(input);
+    const { groups, total, hidden } = summary;
+    const sr = summary.score;
     lines.push(`✔ Scanned ${input.fileCount} files in ${input.durationMs}ms`);
     lines.push("");
     const doctorWord = groups.length === 1 ? "doctor" : "doctors";
     lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
-    lines.push(c(header.scoreLine, BOLD + scoreHeaderTone(sr)));
-    if (header.cleanLine) {
-        lines.push(c(header.cleanLine, DIM));
+    lines.push(c(summary.header.scoreLine, BOLD + scoreHeaderTone(sr)));
+    if (summary.header.cleanLine) {
+        lines.push(c(summary.header.cleanLine, DIM));
     }
     if (input.skippedUnsafe !== undefined && input.skippedUnsafe.length > 0) {
         lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
@@ -119,17 +63,17 @@ export function renderReport(input, useColor) {
     // notices still render (visible, never silent). (Findings over a
     // zero count are still possible — a doctor reporting files it read
     // outside the default extensions — and fall through to render.)
-    if (input.fileCount === 0 && total === 0) {
+    if (summary.emptyScan) {
         // "Every doctor crashed" is claimable only when no doctor produced
         // a group at all; a mixed cohort over an empty target still gets
         // the sources story (the crashes are already named above).
         if (input.crashed.length > 0 && groups.length === 0) {
-            lines.push(c(`\u26a0 nothing to check — every doctor crashed before completing a scan (${input.crashed.join(", ")}; details above)`, YELLOW));
+            lines.push(c(`\u26a0 nothing to check — every doctor crashed before completing a scan (${input.crashed.map(cr => cr.id).join(", ")}; details above)`, YELLOW));
         }
         else {
             lines.push(c(`\u26a0 ${emptyScanLine()}`, YELLOW));
         }
-        pushNarrowedNotices(lines, groups, input.analysisAvailable, c);
+        pushNarrowedNotices(lines, summary, c);
         return lines.join("\n");
     }
     if (total === 0) {
@@ -143,21 +87,16 @@ export function renderReport(input, useColor) {
         // A clean degraded run must never read as a full-power clean — the
         // narrowed notice renders here too, exactly as it does under
         // findings (D20 Stage 2's own words).
-        pushNarrowedNotices(lines, groups, input.analysisAvailable, c);
+        pushNarrowedNotices(lines, summary, c);
         return lines.join("\n");
     }
-    const bySeverity = { error: 0, warning: 0, info: 0 };
-    for (const g of groups) {
-        for (const f of g.findings)
-            bySeverity[findingSeverity(g, f)]++;
-    }
     const rollup = SEVERITY_ORDER
-        .filter(s => bySeverity[s] > 0)
-        .map(s => c(`${bySeverity[s]} ${s}`, SEVERITY_COLOR[s]))
+        .filter(s => summary.severityCounts[s] > 0)
+        .map(s => c(`${summary.severityCounts[s]} ${s}`, SEVERITY_COLOR[s]))
         .join(", ");
     lines.push("");
     lines.push(`${c(`${total} finding${total === 1 ? "" : "s"}`, BOLD)}  ${c(`(${rollup})`, DIM)}`);
-    for (const { category, counts } of categoryRollup(groups)) {
+    for (const { category, counts } of summary.categories) {
         const catParts = SEVERITY_ORDER.filter(s => counts[s] > 0).map(s => c(`${counts[s]} ${s}`, SEVERITY_COLOR[s]));
         if (catParts.length > 0) {
             const cap = category.charAt(0).toUpperCase() + category.slice(1);
@@ -165,9 +104,11 @@ export function renderReport(input, useColor) {
         }
     }
     lines.push("");
-    // dedupeGroups already orders by severity; sorting again would duplicate it.
-    for (const g of groups) {
-        for (const bucket of expandChecks(g)) {
+    // The summary's groups are already severity-ordered; sorting again
+    // would duplicate it.
+    for (const gc of summary.groupChecks) {
+        const g = gc.group;
+        for (const bucket of gc.checks) {
             const n = bucket.findings.length;
             lines.push(`${c(GLYPH[bucket.severity], SEVERITY_COLOR[bucket.severity])} ${c(bucket.heading, n > 1 ? BOLD : "")}${n > 1 ? c(` ×${n}`, SEVERITY_COLOR[bucket.severity]) : ""}`);
             lines.push(`  ${c(bucket.ruleId ? `${g.meta.id}/${bucket.ruleId}` : g.meta.id, DIM)}`);
@@ -184,9 +125,8 @@ export function renderReport(input, useColor) {
         // analysis needs but ran without the engine say so — including checks
         // with zero findings, where a narrowed clean must never read as a
         // full-power clean.
-        const narrowedIds = input.analysisAvailable === false ? narrowedCheckIds(g.meta) : [];
-        if (narrowedIds.length > 0) {
-            lines.push(`  ${c(narrowedLine(narrowedIds), YELLOW)}`);
+        if (gc.narrowedIds.length > 0) {
+            lines.push(`  ${c(narrowedLine(gc.narrowedIds), YELLOW)}`);
             lines.push("");
         }
         if (g.findings.length > 0 && g.meta.blindSpots && g.meta.blindSpots.length > 0) {
@@ -212,12 +152,10 @@ function narrowedLine(checkIds) {
 // Degradation honesty survives every outcome shape: a run without the
 // analysis engine says so whether it ended clean, with findings, or —
 // over an empty scan — with nothing checked at all (visible, never
-// silent).
-function pushNarrowedNotices(lines, groups, analysisAvailable, c) {
-    if (analysisAvailable !== false)
-        return;
-    const notices = groups
-        .map((g) => narrowedCheckIds(g.meta))
+// silent). The narrowed ids arrive as Summary data.
+function pushNarrowedNotices(lines, summary, c) {
+    const notices = summary.groupChecks
+        .map((gc) => gc.narrowedIds)
         .filter((ids) => ids.length > 0);
     if (notices.length > 0) {
         lines.push("");

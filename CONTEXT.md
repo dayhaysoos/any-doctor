@@ -19,13 +19,43 @@ results can vary across engine upgrades.
 
 ## RunOutcome
 
-One scan invocation's batch of results, assembled once and rendered by the
-report and the dashboard alike: the ReportGroups that ran, the doctor ids
-that crashed (data, named), the slugs Confinement skipped, the doctor
+One scan invocation's batch of results, assembled once by the Cohort and
+rendered by the report and the dashboard alike: the ReportGroups that
+ran, the doctors that crashed (data — each named, with the full error
+detail riding along), the slugs Confinement skipped, the doctor
 id → program path map for re-run commands, and the target's file count and
 the batch's wall-clock duration — one defined meaning per field. A run also
 records whether the identity engine could power it
 (`analysisAvailable`) — the data behind "narrowed" rendering.
+
+## Cohort
+
+The module that turns chosen doctor programs plus a target into one
+RunOutcome — a single doctor is a cohort of one, so the single-path and
+batch commands share one semantics. The command layer chooses the
+doctors (a path, the picker, --all) and picks the surface (report or
+dashboard); everything from first spawn to last settle lives behind one
+call: the runner's bounded pool, the crash fold (a crash is data — id
+plus full error detail, never a throw), the process-wide analysis fold,
+the per-doctor paths, the file-count policy, and the timing. Progress
+events (settle order) are the only side channel — the live line renders
+them, it never joins the fold. Skips are a discovery fact, so the
+command layer, which owns discovery, patches `skippedUnsafe` onto the
+outcome.
+
+## Summary
+
+The derived view of a RunOutcome — everything a surface renders,
+computed once: the deduplicated severity-ordered groups, the total and
+hidden-duplicate counts, the Score and its header lines, the severity
+counts and category rollup, each group's check buckets, the narrowed
+check ids, and the empty-scan flag. One derivation, N adapters: the
+report string and the dashboard tree render it today, and the CI
+chapter's JSON output will serialize it rather than re-deriving. Pure —
+deriving twice from one RunOutcome yields one Summary; rendering
+(colors, prose, trees) belongs to the adapters, never to the
+derivation. The facts a gate needs (`--fail-on` severity counts,
+baseline-diffable shapes) live here as data, not inside rendering.
 
 ## Confinement
 

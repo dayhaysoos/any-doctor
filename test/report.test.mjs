@@ -102,7 +102,10 @@ test("renderReport: an all-crashed cohort blames the crashes, not the sources", 
   const out = renderReport({
     ...input,
     fileCount: 0,
-    crashed: ["boom-a", "boom-b"],
+    crashed: [
+      { id: "boom-a", detail: "doctor crashed:\nkaboom-a" },
+      { id: "boom-b", detail: "doctor crashed:\nkaboom-b" },
+    ],
     groups: [],
   }, false);
   assert.match(out, /every doctor crashed before completing a scan \(boom-a, boom-b; details above\)/);
@@ -116,7 +119,7 @@ test("renderReport: a mixed cohort over an empty target keeps the sources story"
   const out = renderReport({
     ...input,
     fileCount: 0,
-    crashed: ["boom"],
+    crashed: [{ id: "boom", detail: "doctor crashed:\nkaboom" }],
     groups: [{ ...input.groups[0], findings: [] }],
   }, false);
   assert.match(out, /Any Doctor — 1 doctor/);

@@ -8,7 +8,8 @@ import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 
 import { BOLD, colorizer, DIM, GLYPH, GREEN, ORANGE, RESET, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
-import { dedupeGroups, RunOutcome, unsafeSkipLine } from "./report.js";
+import { RunOutcome, unsafeSkipLine } from "./report.js";
+import { deriveSummary } from "./summary.js";
 
 const SPLIT_MIN_COLS = 100;
 
@@ -728,11 +729,11 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
   if (!tty.canRunTui(env)) return;
 
   const useColor = input.useColor;
-  // One RunOutcome, one story on every surface: the tree AND the score
-  // consume the same deduplicated groups the report renders — counts and
-  // score can never disagree between surfaces.
-  const { groups: deduped } = dedupeGroups(input.outcome.groups);
-  const tree = buildTree(buildItems(deduped), input.outcome.fileCount);
+  // One RunOutcome, one story on every surface: the tree AND the report
+  // render the same Summary — the derivation lives in summary.ts, so
+  // counts and score can never disagree between surfaces.
+  const summary = deriveSummary(input.outcome);
+  const tree = buildTree(buildItems(summary.groups), input.outcome.fileCount);
   const expanded = initialExpanded(tree);
   const readKeys = new Set<string>();
   let notice: string | undefined;
