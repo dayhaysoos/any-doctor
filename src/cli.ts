@@ -2,12 +2,13 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-import { DOCTOR_FILE_RE, RunResult, ReportGroup, Finding } from "./contract.js";
-import { cohortFileCount, renderReport, renderVerifyResult, RunOutcome, unsafeSkipLine } from "./report.js";
+import { DOCTOR_FILE_RE } from "./contract.js";
+import { renderReport, renderVerifyResult, RunOutcome, unsafeSkipLine } from "./report.js";
+import { runCohort } from "./cohort.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
 import { brokenDoctors, BrokenDoctor, discoverDoctors, DiscoveredDoctor, globalDoctorsDir, unsafeSlugs, scopeLabel } from "./discover.js";
-import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, runDoctorCohort, RunnerError, RunOptions, verifyDoctor } from "./runner.js";
+import { causeSummaryLine, describeRunnerError, isRunnerError, verifyDoctor } from "./runner.js";
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor, Selection } from "./select.js";
 import { pickItemsOn } from "./picker.js";
@@ -55,9 +56,10 @@ class ExitCode extends Error {
   }
 }
 
-// The one place the command layer crosses the Runner seam: a failure here is
-// a failure of the whole command, so it renders and aborts. Exit policy
-// lives in this layer, never in the Runner.
+// Verify's crossing of the Runner seam: a failure there is a failure of
+// the whole command, so it renders and aborts. (Run mode crosses the
+// seam through the Cohort, whose crashes ride the RunOutcome as data.)
+// Exit policy lives in this layer, never in the Runner.
 async function runOrReport<T>(work: Promise<T>): Promise<T> {
   try {
     return await work;
@@ -128,12 +130,6 @@ function parseArgs(args: string[]): ParsedArgs {
   return out;
 }
 
-interface Scan {
-  group: ReportGroup;
-  fileCount: number;
-  analysisAvailable: boolean;
-}
-
 // Discovery and the gate's partition, computed once per command — pure
 // compute; rendering (broken warnings, skip notes) belongs to the callers,
 // matching select.ts's compute/render split.
@@ -143,15 +139,6 @@ async function gatherDoctors(): Promise<{ valid: DiscoveredDoctor[]; skippedUnsa
     valid: all.filter(d => d.meta !== null),
     skippedUnsafe: unsafeSlugs(all),
     broken: brokenDoctors(all),
-  };
-}
-
-async function scanOnce(options: RunOptions): Promise<Scan> {
-  const result = await runOrReport(runDoctor(options));
-  return {
-    group: { programName: path.basename(options.programPath), meta: result.meta, findings: result.findings },
-    fileCount: result.fileCount,
-    analysisAvailable: result.capabilities?.analysis ?? false,
   };
 }
 
@@ -209,10 +196,12 @@ async function cmdRun(args: string[]): Promise<number> {
     return 1;
   }
 
-  // One RunOutcome for both modes — a doctor path targets one doctor;
-  // --all and the no-argument default run every discovered doctor (a crash
-  // is data — named, and it fails the command).
-  let outcome: RunOutcome;
+  // The command layer chooses the doctors — a path targets one, --all
+  // and the no-argument default run the discovery cohort (a crash is
+  // data — named, and it fails the command) — then hands them to the
+  // Cohort, which owns everything from first spawn to last settle.
+  let doctors: { id: string; programPath: string }[];
+  let skippedUnsafe: string[];
 
   if (parsed.doctorPath) {
     const sel = await selectDoctor(parsed.doctorPath, {
@@ -222,33 +211,17 @@ async function cmdRun(args: string[]): Promise<number> {
     });
     const selection = selectionOutcome(sel);
     if ("exit" in selection) return selection.exit;
-    const runStarted = Date.now();
-    // The live line: while the child runs, a spinner instead of frozen
-    // silence. total 0 — there is no "0 of 1" to count up to; the label
-    // and elapsed time carry the whole story.
-    const spin = runSpinner(`scanning with ${path.basename(selection.doctorPath, ".mjs")}`, 0);
-    let scan;
-    try {
-      scan = await scanOnce({ programPath: selection.doctorPath, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
-    } finally {
-      spin?.stop();
-    }
-    outcome = {
-      groups: [scan.group],
-      crashed: [],
-      skippedUnsafe: [],
-      doctorPaths: new Map([[scan.group.meta.id, selection.doctorPath]]),
-      fileCount: scan.fileCount,
-      durationMs: Date.now() - runStarted,
-      targetDir: parsed.targetDir,
-      analysisAvailable: scan.analysisAvailable,
-    };
+    // A path-selected doctor has no discovery id until it runs; the
+    // basename names it — the same name the spinner and the crash
+    // report use.
+    doctors = [{ id: path.basename(selection.doctorPath, ".mjs"), programPath: selection.doctorPath }];
+    skippedUnsafe = [];
   } else {
     const cohort = await gatherDoctors();
     warnBrokenDoctors(cohort.broken);
     if (cohortUnusable(cohort)) return 1;
-    let doctors = cohort.valid;
-    const skippedUnsafe = cohort.skippedUnsafe;
+    let valid = cohort.valid;
+    skippedUnsafe = cohort.skippedUnsafe;
     // The cold start is opt-in: the selector opens with nothing
     // pre-selected, space selects, a selects every filtered row, and
     // Enter runs the selection — narrowing to one doctor is one space,
@@ -258,34 +231,33 @@ async function cmdRun(args: string[]): Promise<number> {
     const selEnv = processTtyEnv();
     const selCols = process.stdout.columns ?? 0;
     if (!parsed.all && canRunTui(selEnv) && !process.env.ANY_DOCTOR_HEADLESS && (selCols === 0 || selCols >= 60)) {
-      const chosen = await pickItemsOn(selEnv, doctors.map(d => ({
+      const chosen = await pickItemsOn(selEnv, valid.map(d => ({
         id: d.meta!.id,
         label: d.meta!.id,
         sub: [scopeLabel(d.scope), d.meta!.description].filter(Boolean).join(" · "),
       })), useColor());
       if (chosen === null) return 0; // esc — nothing ran, nothing to report
       const keep = new Set(chosen.map(it => it.id));
-      doctors = doctors.filter(d => keep.has(d.meta!.id));
+      valid = valid.filter(d => keep.has(d.meta!.id));
     }
-    const runStarted = Date.now();
-    const groups: ReportGroup[] = [];
-    const crashed: string[] = [];
-    const doctorPaths = new Map<string, string>();
-    // The cohort runs through the runner's bounded pool (see
-    // runDoctorCohort) — order preserved, a crash stays data, and the
-    // per-crash line is the same one a single-doctor run prints. While
-    // it runs, the live line ticks per settle with the doctor's own
-    // duration. stop() sits in finally: even a defect that rejects the
-    // batch must not leave a hidden cursor behind.
-    const spin = runSpinner("running doctors", doctors.length);
-    let done = 0;
-    let runs;
-    try {
-      runs = await runDoctorCohort(doctors.map(d => ({
-        programPath: d.path,
-        targetDir: parsed.targetDir,
-        includeTests: parsed.includeTests,
-      })), spin
+    doctors = valid.map(d => ({ id: d.meta!.id, programPath: d.path }));
+  }
+
+  // The live line: while the cohort's children run, a spinner instead
+  // of frozen silence. A cohort of one shows no counts — the label and
+  // elapsed time carry the whole story. stop() sits in finally: even a
+  // defect that rejects the batch must not leave a hidden cursor
+  // behind.
+  const spin = runSpinner(
+    doctors.length === 1 ? `scanning with ${doctors[0].id}` : "running doctors",
+    doctors.length === 1 ? 0 : doctors.length,
+  );
+  let done = 0;
+  let ran;
+  try {
+    ran = await runCohort(
+      { doctors, targetDir: parsed.targetDir, includeTests: parsed.includeTests },
+      spin
         ? (p) => {
           done += 1;
           // A healthy settle carries its own duration; a crash carries
@@ -294,37 +266,16 @@ async function cmdRun(args: string[]): Promise<number> {
           const who = path.basename(p.programPath, ".mjs");
           spin.update({ done, note: p.ok ? `${who} ${formatMs(p.durationMs)}` : `${who} ✗` });
         }
-        : undefined);
-    } finally {
-      spin?.stop();
-    }
-    const fileCounts: number[] = [];
-    let analysisAvailable: boolean | undefined;
-    for (const [i, run] of runs.entries()) {
-      const id = doctors[i].meta!.id;
-      const programPath = doctors[i].path;
-      if (!run.ok) {
-        crashed.push(id);
-        fail(describeRunnerError(run.cause));
-        continue;
-      }
-      fileCounts.push(run.result.fileCount);
-      // Process-wide capability: any run's answer is every run's answer.
-      analysisAvailable ??= run.result.capabilities?.analysis;
-      doctorPaths.set(id, programPath);
-      groups.push({ programName: path.basename(programPath), meta: run.result.meta, findings: run.result.findings });
-    }
-    outcome = {
-      groups,
-      crashed,
-      skippedUnsafe,
-      doctorPaths,
-      fileCount: cohortFileCount(fileCounts),
-      durationMs: Date.now() - runStarted,
-      targetDir: parsed.targetDir,
-      analysisAvailable: analysisAvailable ?? false,
-    };
+        : undefined,
+    );
+  } finally {
+    spin?.stop();
   }
+  // Crash detail prints before any surface: "details above" in the
+  // report's every-crashed line stays true, and the dashboard's own
+  // rendering (findings and skips, not crashes) stays clean.
+  for (const c of ran.crashed) fail(c.detail);
+  const outcome: RunOutcome = { ...ran, skippedUnsafe };
 
   const env = processTtyEnv();
   const ttyCols = process.stdout.columns ?? 0;
@@ -336,7 +287,7 @@ async function cmdRun(args: string[]): Promise<number> {
   if (!interactive) {
     console.log(renderReport(outcome, useColor()));
     if (outcome.crashed.length > 0) {
-      for (const id of outcome.crashed) fail("doctor crashed (results above are partial): " + id);
+      for (const c of outcome.crashed) fail("doctor crashed (results above are partial): " + c.id);
       return 1;
     }
     return outcome.skippedUnsafe.length > 0 ? 1 : 0;
@@ -347,7 +298,7 @@ async function cmdRun(args: string[]): Promise<number> {
   // Interactive runs always show what did run: skips and crashes cost the
   // exit code, never the results. Crashes are named before the dashboard
   // paints — the dashboard itself renders findings and skips, not crashes.
-  for (const id of outcome.crashed) fail("doctor crashed (results above are partial): " + id);
+  for (const c of outcome.crashed) fail("doctor crashed (results above are partial): " + c.id);
   await runDashboard({ outcome, invoker, useColor: useColor() });
   return outcome.crashed.length > 0 || outcome.skippedUnsafe.length > 0 ? 1 : 0;
 }

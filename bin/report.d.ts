@@ -1,7 +1,11 @@
 import { ReportGroup, VerifyRunResult } from "./contract.js";
+export interface CrashedDoctor {
+    id: string;
+    detail: string;
+}
 export interface RunOutcome {
     groups: ReportGroup[];
-    crashed: string[];
+    crashed: CrashedDoctor[];
     skippedUnsafe: string[];
     doctorPaths: ReadonlyMap<string, string>;
     fileCount: number;

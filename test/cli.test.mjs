@@ -31,10 +31,25 @@ test("main: run with doctor path exits 0 and prints a report", async (t) => {
   assert.ok(logs.mock.callCount() >= 1, "report was printed");
 });
 
-test("main: run with a missing doctor exits 1", async (t) => {
-  silentConsole(t);
-  const code = await cli.main(["run", "nope.mjs", TARGET]);
-  assert.equal(code, 1);
+test("main: run with a crashing doctor exits 1 — crash as data, the report still renders", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-cli-crash-"));
+  try {
+    const doctor = path.join(dir, "boom.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'boom', description: 'x', severity: 'info' }",
+      "export async function doctor(ctx) { throw new Error('kaboom') }",
+    ].join("\n"));
+    const err = t.mock.method(console, "error", () => {});
+    const log = t.mock.method(console, "log", () => {});
+    const code = await cli.main(["run", doctor, TARGET]);
+    assert.equal(code, 1);
+    const errs = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    const logs = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.match(errs, /kaboom/, "the crash detail prints");
+    assert.match(logs, /every doctor crashed before completing a scan \(boom;/, "a single crashed doctor is a cohort of one — its outcome renders");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("main: run against a nonexistent target refuses in one line, no loader stack", async (t) => {

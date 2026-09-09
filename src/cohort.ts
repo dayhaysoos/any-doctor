@@ -1,0 +1,74 @@
+import * as path from "path";
+import { ReportGroup } from "./contract.js";
+import { cohortFileCount, RunOutcome } from "./report.js";
+import { CohortProgress, describeRunnerError, runDoctorCohort } from "./runner.js";
+
+// The Cohort: doctor programs + target → RunOutcome, in one deep module.
+// A single doctor is a cohort of one — the command layer chooses the
+// doctors (path, picker, --all) and picks the surface (report or
+// dashboard); everything from first spawn to last settle lives here: the
+// bounded pool, the crash fold, the process-wide analysis fold, the
+// per-doctor paths, the file-count policy, and the timing. Progress
+// events are the only side channel — presentation renders them, it never
+// joins this fold.
+//
+// The crash fold is the module's contract with the CI chapter: a crash
+// is data (id + the full describeRunnerError rendering ride the
+// outcome), never a throw — a machine consumer reads failures from the
+// RunOutcome, not from which promise rejected.
+
+export interface CohortDoctor {
+  // The discovery id (or, for a path-selected doctor, the program's
+  // basename) — the name a crash is reported under when the run itself
+  // produced no meta.
+  id: string;
+  programPath: string;
+}
+
+export interface CohortSpec {
+  doctors: readonly CohortDoctor[];
+  targetDir: string;
+  includeTests: boolean;
+}
+
+export async function runCohort(spec: CohortSpec, onProgress?: (p: CohortProgress) => void): Promise<RunOutcome> {
+  const runStarted = Date.now();
+  // runDoctorCohort preserves options order; the fold pairs runs with
+  // their doctor by index.
+  const runs = await runDoctorCohort(spec.doctors.map(d => ({
+    programPath: d.programPath,
+    targetDir: spec.targetDir,
+    includeTests: spec.includeTests,
+  })), onProgress);
+
+  const groups: ReportGroup[] = [];
+  const crashed: RunOutcome["crashed"] = [];
+  const doctorPaths = new Map<string, string>();
+  const fileCounts: number[] = [];
+  let analysisAvailable: boolean | undefined;
+  for (const [i, run] of runs.entries()) {
+    const doctor = spec.doctors[i];
+    if (!run.ok) {
+      crashed.push({ id: doctor.id, detail: describeRunnerError(run.cause) });
+      continue;
+    }
+    fileCounts.push(run.result.fileCount);
+    // Process-wide capability: any run's answer is every run's answer.
+    analysisAvailable ??= run.result.capabilities?.analysis;
+    doctorPaths.set(run.result.meta.id, doctor.programPath);
+    groups.push({ programName: path.basename(doctor.programPath), meta: run.result.meta, findings: run.result.findings });
+  }
+
+  return {
+    groups,
+    crashed,
+    // Skips are a discovery fact, not a run fact — the command layer,
+    // which owns discovery, patches this field onto the outcome.
+    skippedUnsafe: [],
+    doctorPaths,
+    fileCount: cohortFileCount(fileCounts),
+    durationMs: Date.now() - runStarted,
+    targetDir: spec.targetDir,
+    analysisAvailable: analysisAvailable ?? false,
+  };
+}

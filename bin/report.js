@@ -124,7 +124,7 @@ export function renderReport(input, useColor) {
         // a group at all; a mixed cohort over an empty target still gets
         // the sources story (the crashes are already named above).
         if (input.crashed.length > 0 && groups.length === 0) {
-            lines.push(c(`\u26a0 nothing to check — every doctor crashed before completing a scan (${input.crashed.join(", ")}; details above)`, YELLOW));
+            lines.push(c(`\u26a0 nothing to check — every doctor crashed before completing a scan (${input.crashed.map(c => c.id).join(", ")}; details above)`, YELLOW));
         }
         else {
             lines.push(c(`\u26a0 ${emptyScanLine()}`, YELLOW));

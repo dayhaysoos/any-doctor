@@ -3,14 +3,26 @@ import { DEFAULT_EXTS } from "./sdk.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
 
+// One doctor whose run crashed: a crash is data. The id is the
+// discovery id (or the program's basename when selected by path); the
+// detail is the full describeRunnerError rendering, carried so any
+// surface — report, dashboard, or a future machine consumer — can name
+// the failure without re-deriving it.
+export interface CrashedDoctor {
+  id: string;
+  detail: string;
+}
+
 // One scan invocation's batch of results — assembled once, consumed by the
 // report, the dashboard, and any future surface. One defined meaning per
-// field: the two cmdRun branches cannot drift because there is one type.
+// field: the command layer cannot drift because there is one type, and
+// one module (the Cohort) assembles it.
 export interface RunOutcome {
   // The ReportGroups that ran — one per doctor that produced results.
   groups: ReportGroup[];
-  // Doctor ids whose run crashed: data, named, results above are partial.
-  crashed: string[];
+  // Doctors whose runs crashed: data, named with full detail, results
+  // above are partial.
+  crashed: CrashedDoctor[];
   // Slugs Confinement refused to run — they ride along as the skip note.
   skippedUnsafe: string[];
   // Doctor id → program path, for composing re-run commands.
@@ -19,7 +31,7 @@ export interface RunOutcome {
   // counts) — the Score's denominator (D19).
   fileCount: number;
   // Wall-clock of the doctor batch: first spawn to last completion,
-  // discovery and selection excluded. Both branches, one meaning.
+  // discovery and selection excluded — measured once, by the Cohort.
   durationMs: number;
   // The scanned target, for composing re-run commands.
   targetDir: string;
@@ -165,7 +177,7 @@ export function renderReport(input: RunOutcome, useColor: boolean): string {
     // a group at all; a mixed cohort over an empty target still gets
     // the sources story (the crashes are already named above).
     if (input.crashed.length > 0 && groups.length === 0) {
-      lines.push(c(`\u26a0 nothing to check — every doctor crashed before completing a scan (${input.crashed.join(", ")}; details above)`, YELLOW));
+      lines.push(c(`\u26a0 nothing to check — every doctor crashed before completing a scan (${input.crashed.map(c => c.id).join(", ")}; details above)`, YELLOW));
     } else {
       lines.push(c(`\u26a0 ${emptyScanLine()}`, YELLOW));
     }
