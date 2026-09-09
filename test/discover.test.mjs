@@ -170,3 +170,17 @@ test("resolveDoctorPath: a bare slug resolves from the bundled pack last", async
   assert.equal(resolveDoctorPath("convex-doctor.mjs", cwd, { globalDir, bundledDir }), path.join(bundledDir, "convex-doctor.mjs"), "bundled catches it");
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test("resolveDoctorPath: an extensionless bare slug resolves a scoped doctor (.mjs canonical)", async () => {
+  const { resolveDoctorPath } = await import("../bin/discover.js");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-slug-ext-"));
+  const bundledDir = path.join(root, "pack");
+  fs.mkdirSync(bundledDir, { recursive: true });
+  fs.writeFileSync(path.join(bundledDir, "slop-doctor.mjs"), "export const meta = {}");
+  const cwd = path.join(root, "target");
+  fs.mkdirSync(cwd, { recursive: true });
+  assert.equal(resolveDoctorPath("slop-doctor", cwd, { bundledDir }), path.join(bundledDir, "slop-doctor.mjs"));
+  assert.equal(resolveDoctorPath("slop-doctor.mjs", cwd, { bundledDir }), path.join(bundledDir, "slop-doctor.mjs"));
+  assert.equal(resolveDoctorPath("no-such-doctor", cwd, { bundledDir }), null, "unknown slug stays null");
+  fs.rmSync(root, { recursive: true, force: true });
+});
