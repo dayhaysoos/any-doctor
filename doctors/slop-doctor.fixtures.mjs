@@ -10,25 +10,21 @@ export const fixtures = [
     name: "flags the same function body maintained in two modules",
     seed: {
       "src/slug-a.ts": [
-        "export function generateSlug(name: string): string {",
-        "  return name",
-        "    .toLowerCase()",
-        '    .replace(/[^a-z0-9]+/g, "-")',
-        '    .replace(/^-|-$/g, "");',
+        "export function slugifyTitle(name: string): string {",
+        "  const parts = name.toLowerCase().split(/[^a-z0-9]+/);",
+        '  return parts.filter(Boolean).join("-");',
         "}",
       ].join("\n"),
       "src/slug-b.ts": [
         "// Local copy for the settings pane",
-        "export function generateSlug(name: string): string {",
-        "  return name",
-        "    .toLowerCase()",
-        '    .replace(/[^a-z0-9]+/g, "-")',
-        '    .replace(/^-|-$/g, "");',
+        "export function slugifyTitle(name: string): string {",
+        "  const parts = name.toLowerCase().split(/[^a-z0-9]+/);",
+        '  return parts.filter(Boolean).join("-");',
         "}",
       ].join("\n"),
       "src/index.ts": consumes([
-        'import { generateSlug as slugA } from "./slug-a";',
-        'import { generateSlug as slugB } from "./slug-b";',
+        'import { slugifyTitle as slugA } from "./slug-a";',
+        'import { slugifyTitle as slugB } from "./slug-b";',
         "export function run(name: string) { return slugA(name) + slugB(name); }",
       ]),
     },
@@ -41,18 +37,18 @@ export const fixtures = [
     name: "accepts same-named helpers with different bodies",
     seed: {
       "src/slug-a.ts": [
-        "export function generateSlug(name: string): string {",
+        "export function slugifyTitle(name: string): string {",
         '  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-");',
         "}",
       ].join("\n"),
       "src/slug-b.ts": [
-        "export function generateSlug(title: string): string {",
+        "export function slugifyTitle(title: string): string {",
         '  return title.trim().split(/\\s+/).join("-").toLowerCase();',
         "}",
       ].join("\n"),
       "src/index.ts": consumes([
-        'import { generateSlug as slugA } from "./slug-a";',
-        'import { generateSlug as slugB } from "./slug-b";',
+        'import { slugifyTitle as slugA } from "./slug-a";',
+        'import { slugifyTitle as slugB } from "./slug-b";',
         "export function run(name: string) { return slugA(name) + slugB(name); }",
       ]),
     },
@@ -142,8 +138,8 @@ export const fixtures = [
       "src/relocation.ts": [
         "export function normalize(rawInput: boolean | undefined, detected: boolean) {",
         "  const raw = rawInput ?? detected;",
-        '  const status: "offered" | "not_offered" | "not_mentioned" =',
-        '    raw === true ? "offered" : "not_mentioned";',
+        '  const status: "active" | "dormant" | "unmarked" =',
+        '    raw === true ? "active" : "unmarked";',
         "  return status;",
         "}",
       ].join("\n"),
@@ -160,7 +156,7 @@ export const fixtures = [
       "src/relocation.ts": [
         "export function normalize(rawInput: boolean | undefined, detected: boolean) {",
         "  const raw = rawInput ?? detected;",
-        '  const status: "offered" | "not_offered" | "not_mentioned" =',
+        '  const status: "active" | "dormant" | "unmarked" =',
         '    typeof rawInput === "boolean" ? (raw ? "offered" : "not_offered") : "not_mentioned";',
         "  return status;",
         "}",
@@ -248,7 +244,7 @@ export const fixtures = [
     name: "flags an exported helper no file imports or references",
     seed: {
       "src/billing.ts": [
-        "export function getPaidTiersForAudience(audience: string) {",
+        "export function listActiveTiers(audience: string) {",
         '  return ["basic", "pro"];',
         "}",
       ].join("\n"),
@@ -262,13 +258,13 @@ export const fixtures = [
     name: "accepts an exported helper imported by another module",
     seed: {
       "src/billing.ts": [
-        "export function getPaidTiersForAudience(audience: string) {",
+        "export function listActiveTiers(audience: string) {",
         '  return ["basic", "pro"];',
         "}",
       ].join("\n"),
       "src/index.ts": consumes([
-        'import { getPaidTiersForAudience } from "./billing";',
-        "export function run() { return getPaidTiersForAudience(\"pro\"); }",
+        'import { listActiveTiers } from "./billing";',
+        "export function run() { return listActiveTiers(\"pro\"); }",
       ]),
     },
     expected: [],
@@ -277,10 +273,10 @@ export const fixtures = [
     name: "accepts an exported helper used within its own module",
     seed: {
       "src/billing.ts": [
-        "export function getPaidTiersForAudience(audience: string) {",
+        "export function listActiveTiers(audience: string) {",
         '  return ["basic", "pro"];',
         "}",
-        "const defaultTiers = getPaidTiersForAudience(\"pro\");",
+        "const defaultTiers = listActiveTiers(\"pro\");",
         "export function run() { return defaultTiers; }",
       ].join("\n"),
       "src/index.ts": consumes([
@@ -305,7 +301,7 @@ export const fixtures = [
     name: "without the identity engine the check narrows to silence",
     seed: {
       "src/billing.ts": [
-        "export function getPaidTiersForAudience(audience: string) {",
+        "export function listActiveTiers(audience: string) {",
         '  return ["basic", "pro"];',
         "}",
       ].join("\n"),
@@ -319,13 +315,13 @@ export const fixtures = [
     name: "flags a named import never referenced in its module",
     seed: {
       "src/ingestion.ts": [
-        'import { hashExtensionToken, verifyToken } from "./tokens";',
+        'import { hashApiToken, verifyToken } from "./tokens";',
         "export function verify(token: string): boolean {",
         "  return verifyToken(token);",
         "}",
       ].join("\n"),
       "src/tokens.ts": [
-        "export function hashExtensionToken(t: string) { return t; }",
+        "export function hashApiToken(t: string) { return t; }",
         "export function verifyToken(t: string) { return true; }",
       ].join("\n"),
       "src/index.ts": consumes([
@@ -339,14 +335,14 @@ export const fixtures = [
     name: "accepts imports used in value or type positions",
     seed: {
       "src/ingestion.ts": [
-        'import { TokenRecord, hashExtensionToken } from "./tokens";',
+        'import { TokenRecord, hashApiToken } from "./tokens";',
         "export function handle(record: TokenRecord) {",
-        "  return hashExtensionToken(record.token);",
+        "  return hashApiToken(record.token);",
         "}",
       ].join("\n"),
       "src/tokens.ts": [
         "export interface TokenRecord { token: string }",
-        "export function hashExtensionToken(t: string) { return t; }",
+        "export function hashApiToken(t: string) { return t; }",
       ].join("\n"),
       "src/index.ts": consumes([
         'import { handle } from "./ingestion";',
@@ -359,11 +355,11 @@ export const fixtures = [
     name: "without the identity engine unused imports narrow to silence",
     seed: {
       "src/ingestion.ts": [
-        'import { hashExtensionToken } from "./tokens";',
+        'import { hashApiToken } from "./tokens";',
         "export function verify() { return true; }",
       ].join("\n"),
       "src/tokens.ts": [
-        "export function hashExtensionToken(t: string) { return t; }",
+        "export function hashApiToken(t: string) { return t; }",
       ].join("\n"),
     },
     expected: [],
