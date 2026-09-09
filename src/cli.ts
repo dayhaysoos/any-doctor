@@ -186,9 +186,10 @@ function unusableTargetReason(targetDir: string): string | null {
 
 // The live line's one gate: interactive TTYs get a spinner, headless and
 // piped output stay byte-clean — the same gate family as the picker, in
-// the one place both run paths share (D15's "one defined meaning" as a
-// function instead of a copy-pasted condition). Exported for the gate's
-// pin: a non-TTY stdio pair must construct nothing.
+// the one place both run paths share ("one defined meaning," as the
+// glossary puts it, as a function instead of a copy-pasted condition).
+// Exported for the gate's pin: a non-TTY stdio pair must construct
+// nothing.
 export function runSpinner(label: string, total: number): SpinnerHandle | null {
   const env = processTtyEnv();
   return canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS

@@ -16,8 +16,9 @@ export function gradeColor(score) {
 // doctor's row: an empty scan warns yellow (a vacuous 100 must not buy
 // the Excellent-green), everything else follows its grade. Takes the
 // score result itself so no caller re-derives the empty-scan policy
-// (D19: render the strings, never re-compose them). Structurally typed
-// so palette needs no import from score.
+// (D19: render the strings, never re-compose them). Param is
+// structurally typed: palette's score imports stay value-level
+// (gradeFor, isEmptyScan) — no type dependency rides along.
 export function scoreHeaderTone(score) {
     return isEmptyScan(score) ? YELLOW : gradeColor(score.score);
 }
