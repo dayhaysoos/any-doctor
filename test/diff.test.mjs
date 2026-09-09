@@ -152,7 +152,7 @@ test("diff: unresolvable refs and non-repo targets refuse honestly", { skip: git
     const nogit = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-nogit-"));
     try {
       fs.writeFileSync(path.join(nogit, "x.ts"), "const BAD = 1\n");
-      await assert.rejects(() => runDiff(specOf(nogit, doctor), "main", []), /must live inside a git repository/);
+      await assert.rejects(() => runDiff(specOf(nogit, doctor), "main", []), /--base failed: .*not a git repository/s);
     } finally {
       fs.rmSync(nogit, { recursive: true, force: true });
     }

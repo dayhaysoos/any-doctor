@@ -217,8 +217,9 @@ test("main: bare run partitions the cohort — healthy run, unsafe skipped and n
   const cwd = process.cwd();
   process.chdir(root);
   try {
+    const errs = t.mock.method(console, "error", () => {});
     const code = await cli.main(["run", "--all"]);
-    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).concat(errs.mock.calls.flatMap(c => c.arguments.map(String))).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
     assert.equal(code, 1, "an unsafe skip fails the run");
     assert.match(out, /skipping broken doctor broken —/);
     assert.doesNotMatch(out, /skipping broken doctor (good|evil)/, "healthy and unsafe doctors are never 'broken'");
@@ -242,8 +243,9 @@ test("main: only-unsafe discovery names them as skipped, never as broken", async
   const cwd = process.cwd();
   process.chdir(root);
   try {
+    const errs = t.mock.method(console, "error", () => {});
     const code = await cli.main(["verify"]);
-    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    const out = logs.mock.calls.concat(errs.mock.calls).flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
     assert.equal(code, 1);
     assert.match(out, /1 doctor could be malicious — skipped: evil/);
     assert.doesNotMatch(out, /broken: evil/, "unsafe is not 'broken' on any surface");
@@ -259,8 +261,9 @@ test("demo repo: healthy doctors verify fixture-green, gate props are skipped an
   const cwd = process.cwd();
   process.chdir(demo);
   try {
+    const errs = t.mock.method(console, "error", () => {});
     const code = await cli.main(["verify", "--all"]);
-    const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    const out = logs.mock.calls.concat(errs.mock.calls).flatMap(c => c.arguments.map(String)).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
     assert.equal(code, 1, "the two malicious doctors fail the command");
     assert.match(out, /2 doctors could be malicious — skipped: bad, evil/);
     assert.match(out, /todo-doctor/);
@@ -372,4 +375,22 @@ test("gate: json output stays parseable when a doctor crashes — detail on stde
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+
+test("gate: a dangling --base refuses — never silently full mode", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--base"]), 1);
+  assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /--base needs a value \(a git ref, e\.g\. --base main\)/);
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--base", "--all"]), 1, "a flag-shaped value is not a ref");
+});
+
+test("gate: verify refuses the run-only gate flags", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  assert.equal(await cli.main(["verify", DOCTOR, "--fail-on", "error"]), 1);
+  assert.equal(await cli.main(["verify", DOCTOR, "--format", "json"]), 1);
+  assert.equal(await cli.main(["verify", DOCTOR, "--base", "main"]), 1);
+  assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /run-only flags/);
 });

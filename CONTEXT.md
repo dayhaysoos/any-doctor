@@ -50,8 +50,8 @@ computed once: the deduplicated severity-ordered groups, the total and
 hidden-duplicate counts, the Score and its header lines, the severity
 counts and category rollup, each group's check buckets, the narrowed
 check ids, and the empty-scan flag. One derivation, N adapters: the
-report string and the dashboard tree render it today, and the CI
-chapter's JSON output will serialize it rather than re-deriving. Pure —
+report string, the dashboard tree, and the JSON surface render it —
+never re-deriving. Pure —
 deriving twice from one RunOutcome yields one Summary; rendering
 (colors, prose, trees) belongs to the adapters, never to the
 derivation. The facts a gate needs (`--fail-on` severity counts,
@@ -73,7 +73,9 @@ sets compare through the verify gate's own rule-aware multiset, and the
 bar counts added findings only; a change is not blamed for the debt it
 was born into. A partial base never gates: any base-scan crash aborts
 the run loudly (exit 1, no report, no JSON), because a baseline
-missing findings would dress pre-existing debt up as "added". Machine
+missing findings would dress pre-existing debt up as "added" — and a
+crashed HEAD doctor skips the diff for the same reason: its findings
+are absent, and absence must never read as "resolved". Machine
 output rides `--format json` — one schema-tagged object on stdout,
 diagnostics on stderr.
 

@@ -25,7 +25,9 @@ function ok(msg) {
     console.log(GREEN + msg + RESET);
 }
 function warn(msg) {
-    console.log(YELLOW + msg + RESET);
+    // Warnings are diagnostics, not output: stderr keeps stdout parseable
+    // for --format json (standard CLI practice besides).
+    console.error(YELLOW + msg + RESET);
 }
 function dim(msg) {
     return DIM + msg + RESET;
@@ -114,12 +116,24 @@ function parseArgs(args) {
             out.global = true;
         else if (a === "--include-tests")
             out.includeTests = true;
-        else if (a === "--fail-on")
-            out.failOn = args[++i];
-        else if (a === "--format")
-            out.format = args[++i];
-        else if (a === "--base")
-            out.base = args[++i];
+        else if (a === "--fail-on" || a === "--format" || a === "--base") {
+            // A value flag without a usable value is a refusal, not a silent
+            // default: a dangling --base must never quietly mean "full mode".
+            const v = args[i + 1];
+            if (v === undefined || v.startsWith("--")) {
+                out.flagError = `${a} needs a value`
+                    + (a === "--base" ? " (a git ref, e.g. --base main)" : a === "--fail-on" ? " (none, error, warning, or info)" : " (report or json)");
+            }
+            else {
+                if (a === "--fail-on")
+                    out.failOn = v;
+                else if (a === "--format")
+                    out.format = v;
+                else
+                    out.base = v;
+                i += 1;
+            }
+        }
         else if (out.doctorPath === undefined && DOCTOR_FILE_RE.test(a))
             out.doctorPath = a;
         else if (!targetDirSet) {
@@ -185,11 +199,41 @@ export function runSpinner(label, total) {
         ? startSpinner(env.stdout, { label, total })
         : null;
 }
+// The one TUI-suppression gate, shared by the picker and the dashboard:
+// --all is batch mode, --format json is a machine surface (frames on
+// stdout would break parsing), headless/piped never paint. Before this
+// lived as two hand-copied conditions — they had already diverged.
+function wantsTui(parsed) {
+    var _a;
+    const env = processTtyEnv();
+    const cols = (_a = process.stdout.columns) !== null && _a !== void 0 ? _a : 0;
+    return !parsed.all && parsed.format !== "json"
+        && canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS && (cols === 0 || cols >= 60);
+}
+// The exit law, once: crashes always fail (their lines name what's
+// partial), the gate's bar judges findings, skips fail quietly. Each
+// surface calls this where its timing wants the lines printed.
+function exitAfterSurface(outcome, gate) {
+    var _a;
+    if (outcome.crashed.length > 0) {
+        for (const c of outcome.crashed)
+            fail(`doctor crashed (results above are partial): ${c.id}`);
+        return 1;
+    }
+    if (gate.fails) {
+        fail((_a = gate.reason) !== null && _a !== void 0 ? _a : "gate failed");
+        return 1;
+    }
+    return outcome.skippedUnsafe.length > 0 ? 1 : 0;
+}
 async function cmdRun(args) {
-    var _a, _b;
     const parsed = parseArgs(args);
     if (parsed.global) {
         fail("--global is a generate-only flag");
+        return 1;
+    }
+    if (parsed.flagError !== undefined) {
+        fail(parsed.flagError);
         return 1;
     }
     if (!isFailOn(parsed.failOn)) {
@@ -244,10 +288,8 @@ async function cmdRun(args) {
         // not nine deselects (D15 amendment 2026-09-08 — the pack outgrew
         // the no-picker flow).
         // --all, headless, and non-TTY never see a prompt.
-        const selEnv = processTtyEnv();
-        const selCols = (_a = process.stdout.columns) !== null && _a !== void 0 ? _a : 0;
-        if (!parsed.all && canRunTui(selEnv) && !process.env.ANY_DOCTOR_HEADLESS && (selCols === 0 || selCols >= 60)) {
-            const chosen = await pickItemsOn(selEnv, valid.map(d => ({
+        if (wantsTui(parsed)) {
+            const chosen = await pickItemsOn(processTtyEnv(), valid.map(d => ({
                 id: d.meta.id,
                 label: d.meta.id,
                 sub: [scopeLabel(d.scope), d.meta.description].filter(Boolean).join(" · "),
@@ -266,7 +308,12 @@ async function cmdRun(args) {
     // the crash report.
     const spec = { doctors, targetDir: parsed.targetDir, includeTests: parsed.includeTests };
     const idOf = new Map(doctors.map(d => [d.programPath, d.id]));
-    const spin = runSpinner(explicitSingle ? `scanning with ${doctors[0].id}` : "running doctors", explicitSingle ? 0 : doctors.length);
+    // JSON mode paints nothing on stdout — not even the live line. The
+    // picker and dashboard get the same refusal from wantsTui; the
+    // spinner's gate is here.
+    const spin = parsed.format === "json"
+        ? null
+        : runSpinner(explicitSingle ? `scanning with ${doctors[0].id}` : "running doctors", explicitSingle ? 0 : doctors.length);
     let done = 0;
     let ran;
     try {
@@ -292,12 +339,12 @@ async function cmdRun(args) {
         fail(c.detail);
     const outcome = { ...ran, skippedUnsafe };
     const summary = deriveSummary(outcome);
-    // Diff mode exists iff --base was passed: the same cohort against the
-    // merge base's tree, compared through the verify gate's multiset. A
-    // partial base aborts loudly — no report, no JSON, never a gate on
-    // guesses.
+    // Diff mode exists iff --base was passed AND the HEAD scan is whole:
+    // a crashed HEAD doctor contributes no findings, so its base findings
+    // would surface as "resolved" — the same dishonesty as a partial
+    // base, on the other side. The crash already fails the run.
     let diff;
-    if (parsed.base !== undefined) {
+    if (parsed.base !== undefined && outcome.crashed.length === 0) {
         try {
             diff = await runDiff(spec, parsed.base, summary.groups);
         }
@@ -310,57 +357,29 @@ async function cmdRun(args) {
     // and skips always fail, diff mode judges only what the change
     // ADDED.
     const gate = gateVerdict(parsed.failOn, diff !== undefined ? countsOfSeverities(diff.added.map(a => a.severity)) : summary.severityCounts, diff !== undefined ? "diff" : "full");
-    const env = processTtyEnv();
-    const ttyCols = (_b = process.stdout.columns) !== null && _b !== void 0 ? _b : 0;
     // Report-vs-dashboard policy: --all is the batch/report mode; JSON is
     // a machine surface and never opens a TUI; otherwise a real terminal
     // with room and no headless override gets the tree.
-    const interactive = !parsed.all && parsed.format !== "json"
-        && canRunTui(env) && !process.env.ANY_DOCTOR_HEADLESS && (ttyCols === 0 || ttyCols >= 60);
+    const interactive = wantsTui(parsed);
     // The machine surface: exactly one JSON object on stdout, diagnostics
     // on stderr, the gate verdict data not prose.
     if (parsed.format === "json") {
         console.log(renderJson(outcome, summary, gate, diff));
-        if (outcome.crashed.length > 0) {
-            for (const c of outcome.crashed)
-                fail("doctor crashed (results above are partial): " + c.id);
-            return 1;
-        }
-        if (gate.fails) {
-            fail(gate.reason);
-            return 1;
-        }
-        return outcome.skippedUnsafe.length > 0 ? 1 : 0;
+        return exitAfterSurface(outcome, gate);
     }
     if (!interactive) {
         console.log(renderReport(outcome, useColor(), diff !== undefined
             ? { base: diff.base, added: diff.added.length, resolved: diff.resolved.length }
             : undefined));
-        if (outcome.crashed.length > 0) {
-            for (const c of outcome.crashed)
-                fail("doctor crashed (results above are partial): " + c.id);
-            return 1;
-        }
-        if (gate.fails) {
-            fail(gate.reason);
-            return 1;
-        }
-        return outcome.skippedUnsafe.length > 0 ? 1 : 0;
+        return exitAfterSurface(outcome, gate);
     }
     const invoker = process.argv[1] ? `node "${fs.realpathSync(process.argv[1])}"` : "any-doctor";
-    // Interactive runs always show what did run: skips and crashes cost the
-    // exit code, never the results. Crashes are named before the dashboard
-    // paints — the dashboard itself renders findings and skips, not
-    // crashes — and the dashboard ignores diff mode: it is the review
-    // experience, not the gate.
-    for (const c of outcome.crashed)
-        fail("doctor crashed (results above are partial): " + c.id);
+    // Crashes are named before the dashboard paints — the dashboard itself
+    // renders findings and skips, not crashes — and the dashboard ignores
+    // diff mode: it is the review experience, not the gate.
+    const code = exitAfterSurface(outcome, gate);
     await runDashboard({ outcome, invoker, useColor: useColor() });
-    if (gate.fails) {
-        fail(gate.reason);
-        return 1;
-    }
-    return outcome.crashed.length > 0 || outcome.skippedUnsafe.length > 0 ? 1 : 0;
+    return code;
 }
 async function cmdVerify(args) {
     const parsed = parseArgs(args);
@@ -370,6 +389,14 @@ async function cmdVerify(args) {
     }
     if (parsed.includeTests) {
         warn("--include-tests applies to run only — verify always scans everything its fixtures seed");
+    }
+    if (parsed.flagError !== undefined) {
+        fail(parsed.flagError);
+        return 1;
+    }
+    if (parsed.failOn !== "none" || parsed.format !== "report" || parsed.base !== undefined) {
+        fail("--fail-on, --format, and --base are run-only flags — the fixture gate is the doctor's own verdict");
+        return 1;
     }
     if (parsed.all) {
         const cohort = await gatherDoctors();

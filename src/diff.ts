@@ -35,13 +35,16 @@ export interface DiffResult {
   resolved: ExpectedFinding[];
 }
 
-function git(args: string[], cwd: string): { ok: true; out: string } | { ok: false; error: string } {
+// Raw causes, no flag prefixes: the caller attaches the context and the
+// remedy that actually matches (a missing binary wants "install git";
+// a not-a-repo exit wants git's own stderr, which already says so).
+function git(args: string[], cwd: string): { ok: true; out: string } | { ok: false; cause: string } {
   const r = spawnSync("git", args, { cwd, encoding: "utf8" });
   if (r.error) {
-    return { ok: false, error: "--base requires git on PATH (install git, or diff manually)" };
+    return { ok: false, cause: "git is not on PATH — --base needs it (install git, or diff manually)" };
   }
   if (r.status !== 0) {
-    return { ok: false, error: "git " + args.join(" ") + " failed: " + String(r.stderr).trim() };
+    return { ok: false, cause: "git " + args.slice(0, 2).join(" ") + " failed: " + String(r.stderr).trim() };
   }
   return { ok: true, out: String(r.stdout).trim() };
 }
@@ -82,7 +85,7 @@ function joinAdded(unexpected: ExpectedFinding[], headGroups: ReportGroup[]): Ad
 export async function runDiff(spec: CohortSpec, baseRef: string, headGroups: ReportGroup[]): Promise<DiffResult> {
   const repoRootR = git(["rev-parse", "--show-toplevel"], spec.targetDir);
   if (!repoRootR.ok) {
-    throw new Error("--base failed: " + repoRootR.error + " — the target must live inside a git repository");
+    throw new Error("--base failed: " + repoRootR.cause);
   }
   const repoRoot = repoRootR.out;
   // git reports the realpath (/private/var on macOS) while callers may
@@ -94,7 +97,7 @@ export async function runDiff(spec: CohortSpec, baseRef: string, headGroups: Rep
   }
   const baseShaR = git(["merge-base", baseRef, "HEAD"], repoRoot);
   if (!baseShaR.ok) {
-    throw new Error("--base failed to resolve: " + baseShaR.error);
+    throw new Error(`--base failed to resolve "${baseRef}": ` + baseShaR.cause);
   }
   const baseSha = baseShaR.out;
 
@@ -102,7 +105,7 @@ export async function runDiff(spec: CohortSpec, baseRef: string, headGroups: Rep
   try {
     const addR = git(["worktree", "add", "--detach", worktree, baseSha], repoRoot);
     if (!addR.ok) {
-      throw new Error("--base failed to materialize the base tree: " + addR.error);
+      throw new Error("--base failed to materialize the base tree: " + addR.cause);
     }
     // A subpath that doesn't exist at the base is a directory HEAD
     // invented — its base findings are honestly empty, not a failure.
