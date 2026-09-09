@@ -6,18 +6,18 @@ export const meta = {
   blindSpots: [
     "Queries: the schema is never cross-referenced - a .filter() on a table the doctor cannot see indexed is still flagged only at the query site; withIndex is trusted to name a real index.",
     "Subscriptions: useQuery is flagged at the call site without resolving the referenced function, so a paginated cursor returned from a helper is not recognized.",
-    "Clock: only direct Date.now()/Math.random() calls participating in arithmetic or a comparison are findings - stored values are safe and unflagged; calls behind wrappers are not seen, and elapsed time measured entirely through stored values (const t2 = Date.now(); ... t2 - t1) is invisible.",
+    "Clock: only direct Date.now()/Math.random() calls participating in arithmetic or a comparison are findings - stored values are safe and unflagged; actions run outside the transaction with a live clock and are exempt. Calls behind wrappers are not seen, and elapsed time measured entirely through stored values is invisible.",
     "Chains split across multiple statements (const q = ctx.db.query(t); q.filter(...)) are not tracked - only single-statement chains.",
     "index-without-range exempts chains ending in .take()/.first()/.unique() (the terminator bounds the read); an unnarrowed index consumed by .collect() on a split statement is not seen.",
     "unbounded-collect cannot tell a provably small table from a growing one: collect on a known-small table without an index is still flagged.",
     "index-filter-combo fires on every withIndex+filter chain; whether the filtered remainder is large enough to matter is a judgement the doctor cannot make.",
     "presence-patch recognizes the canonical field names (lastSeen, heartbeat, pingAt, ...); frequently-patched documents under other names are not seen, and write frequency itself is invisible.",
     "Validators: only the object-config form is inspected (the span between the opening brace and the handler keyword); customQuery/customMutation wrappers and config objects assembled by helpers are not recognized.",
-    "Server runs: only a literal api. reference directly after ctx.run* is caught - an aliased import of the public function tree is not.",
+    "Server runs: only a literal api. reference directly after ctx.run* is caught, as a review candidate - the namespace alone does not establish an authorization flaw.",
     "Function bodies are located by brace counting from the definition line; work delegated to helpers outside that span is invisible to the context checks.",
     'Node runtime: "use node" is recognized only as the file\'s first statement.',
-    "Loops: only for/while bodies are scanned; recursion and per-item callbacks (.map(async ...)) hide the same one-transaction-per-item pattern.",
-    "Spread patches: every spread inside .patch()/.replace() is flagged, including deliberate {...allowed} whitelists.",
+    "Loops: only for/while bodies are scanned, as batching review candidates - deliberate retry loops (OCC with backoff) share the shape.",
+    "Spread patches: every spread inside .patch()/.replace() is a review candidate (info) - the spread is visible, field ownership is not.",
     "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source.",
   ],
   checks: [
@@ -50,7 +50,7 @@ export const meta = {
       description: "Date.now() or Math.random() used for measuring or branching inside a Convex transaction function.",
       severity: "warning",
       impact: "The value is snapshotted per transaction: elapsed-time math inside one mutation always sees zero, and repeated calls return the same value - timeouts, jitter, and expiry logic silently misbehave.",
-      why: "Convex executes query/mutation bodies deterministically within a transaction: Date.now() is pinned to the transaction's start and Math.random() is seeded from it. Both are safe to store but wrong for measuring or branching - so only arithmetic and comparisons are findings; stored values are not.",
+      why: "Convex executes query/mutation bodies deterministically within a transaction: Date.now() is pinned to the transaction's start and Math.random() is a seeded sequence (different values per call, not one repeated value). Both are safe to store but wrong for measuring or branching; actions run outside the transaction with a live clock and are exempt.",
       fix: "Pass timestamps/randomness in as arguments from the client or an action (where they are genuinely live), or rely on _creationTime for ordering.",
     },
     {
@@ -87,18 +87,18 @@ export const meta = {
     },
     {
       id: "public-api-in-server-call",
-      description: "A server-side ctx.runQuery/runMutation/runAction references its target through the public api namespace.",
-      severity: "warning",
+      description: "A server-side run call referencing the public api namespace - a review candidate; namespace alone does not establish an authorization flaw.",
+      severity: "info",
       impact: "Everything reachable through api is callable by any client that can reach the deployment. A server-only workflow invoked via api is an exposed surface that clients can call directly, with any arguments the validators accept.",
       why: "internal.* is the server-to-server namespace: the same functions, unreachable from clients. A run* call that names api.* is either exposing a function by mistake or announcing it should be internal.",
       fix: "Define the target as internalQuery/internalMutation/internalAction and reference it as internal.module.function in the run* call.",
     },
     {
       id: "write-in-query",
-      description: "A write or scheduler/run call inside a query.",
+      description: "A write, scheduler, or mutation/action call inside a query.",
       severity: "warning",
-      impact: "Queries are read-only transactions - the write methods do not exist on a query's context, so the function fails on its first real call rather than at deploy time.",
-      why: "A query body runs inside a deterministic read transaction: its context carries db reads, auth and storage, nothing else. Writes and scheduling belong in a mutation.",
+      impact: "Queries are read-only transactions - the write methods do not exist on a query's context, so the function fails on its first real call rather than at deploy time. ctx.runQuery IS allowed (same read snapshot); only mutations, actions, and scheduling are forbidden.",
+      why: "A query body runs inside a deterministic read transaction: its context carries db reads, auth and storage, runQuery, nothing else. Writes and scheduling belong in a mutation.",
       fix: "Move the write into a mutation the client or an action invokes; if the read and the write must be atomic, the whole operation is a mutation that reads first.",
     },
     {
@@ -127,16 +127,16 @@ export const meta = {
     },
     {
       id: "sequential-run-in-loop",
-      description: "ctx.runQuery/runMutation/runAction awaited inside a for/while loop.",
-      severity: "warning",
+      description: "A run call awaited inside a for/while loop - a batching review candidate; deliberate retry loops (OCC with backoff) share this shape.",
+      severity: "info",
       impact: "N iterations become N separate transactions, each with its own round trip and commit - a 1000-item backfill is 1000 sequential transactions, and the caller's timeout budget pays for all of them.",
       why: "Each run* call is a complete transaction of its own. A loop of awaited runs is the slowest possible batch; the batching guidance is to do the work inside one mutation instead.",
       fix: "Pass the ids to a mutation that loops internally over ctx.db writes - one transaction - or chunk the loop into bounded batches of run* calls.",
     },
     {
       id: "spread-into-patch",
-      description: "ctx.db.patch/replace called with a spread (...args) of a client-controlled object.",
-      severity: "warning",
+      description: "ctx.db.patch/replace called with a spread - a review candidate; presence alone does not prove client-controlled fields.",
+      severity: "info",
       impact: "Every field the client included gets written: the validators constrain the mutation's args, but the spread forwards them all, so fields the mutation never named (ownership, role, timestamps) become client-writable.",
       why: "patch merges whatever object it is given. Spreading args into it delegates field selection to the caller - the opposite of what a validated mutation is for.",
       fix: "Name the fields: ctx.db.patch(args.id, { title: args.title }) - build the patch object server-side from explicitly validated values.",
@@ -154,6 +154,7 @@ export async function doctor(ctx) {
     const lines = masked.split("\n");
     const rawLines = source.split("\n");
 
+    const reportedChains = new Set();
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (line.includes(".patch(") || line.includes(".replace(")) {
@@ -165,37 +166,54 @@ export async function doctor(ctx) {
       const chain = statementAt(lines, i);
       if (!chain.includes("ctx.db.query(") && !chain.includes("db.query(")) continue;
 
+
+      // One finding per RULE per query chain: a multi-line chain visits
+      // several trigger lines but is one operation (the audit's
+      // rateLimiter.ts 73/74/75 triple was one collect) - but different
+      // rules on the same chain are different diagnoses.
+      const once = (rule) => {
+        const key = rule + "@" + chain;
+        if (reportedChains.has(key)) return;
+        reportedChains.add(key);
+        ctx.report.finding({ rule, file, line: i + 1 });
+      };
       const hasWithIndex = chain.includes(".withIndex(");
       const hasFilter = chain.includes(".filter(");
-      if (hasFilter && hasWithIndex) {
-        // The diagnosis belongs to the filter step: report when the visited
-        // line is the .filter( line, not the chain's withIndex line.
-        if (line.includes(".filter(")) {
-          ctx.report.finding({ rule: "index-filter-combo", file, line: i + 1 });
-        }
-      } else if (hasFilter && !hasWithIndex) {
-        ctx.report.finding({ rule: "filter-table-scan", file, line: i + 1 });
-      } else if (hasWithIndex && !hasRangeExpression(chain) && !isBoundedRead(chain)) {
-        ctx.report.finding({ rule: "index-without-range", file, line: i + 1 });
-      }
-      if (chain.includes(".collect(")
+      // One finding per chain, the MOST SPECIFIC one: the scan/range
+      // diagnoses carry the actual fix (add an index, bound the range),
+      // which subsumes the generic unbounded-collect. The audit's
+      // rateLimiter triple (73/74/75) was one operation.
+      if (hasFilter && !hasWithIndex) {
+        once("filter-table-scan");
+      } else if (hasWithIndex && !hasRangeExpression(lines, i) && !isBoundedRead(chain)) {
+        once("index-without-range");
+      } else if (hasFilter && hasWithIndex && line.includes(".filter(")) {
+        once("index-filter-combo");
+      } else if (chain.includes(".collect(")
         && !chain.includes(".take(")
         && !chain.includes(".paginate(")
-        && !(hasWithIndex && hasRangeExpression(chain))) {
-        ctx.report.finding({ rule: "unbounded-collect", file, line: i + 1 });
+        && !(hasWithIndex && hasRangeExpression(lines, i))) {
+        once("unbounded-collect");
       }
     }
 
     checkSubscriptions(ctx, file, masked);
 
-    const spans = functionSpans(lines);
-    checkClock(ctx, file, lines, spans);
-    checkValidators(ctx, file, lines, spans);
-    checkContextMisuse(ctx, file, lines, spans);
-    checkServerRuns(ctx, file, lines);
-    checkUnawaited(ctx, file, lines);
-    checkSequentialRuns(ctx, file, lines);
-    checkNodeRuntime(ctx, file, rawLines, lines);
+    // Server-side checks apply where Convex is imported (convex/server,
+    // _generated/server): chrome.tabs.query in an extension file is not a
+    // Convex function - the audit's missing-validator false positives.
+    // Client checks (useQuery) and chain checks (ctx.db.query implies
+    // Convex) are not gated.
+    if (/from\s+["'][^"']*(?:convex\/|_generated\/server)["']/.test(source)) {
+      const spans = functionSpans(lines);
+      checkClock(ctx, file, lines, spans);
+      checkValidators(ctx, file, lines, spans);
+      checkContextMisuse(ctx, file, lines, spans);
+      checkServerRuns(ctx, file, lines);
+      checkUnawaited(ctx, file, lines);
+      checkSequentialRuns(ctx, file, lines);
+      checkNodeRuntime(ctx, file, rawLines, lines);
+    }
   }
 }
 
@@ -220,18 +238,21 @@ function statementEnds(line) {
 }
 
 // withIndex("by_x") or withIndex("by_x", q => q.eq(...)) - the range is the
-// second argument; detect it by finding an eq/gt/gtQuiet/lt/ltQuiet/range
-// call within the withIndex argument span.
-function hasRangeExpression(chain) {
-  const idx = chain.indexOf(".withIndex(");
+// second argument. The span is matched against a look-AHEAD window joined
+// from the withIndex line: callback bodies contain internal semicolons that
+// terminate statement reconstruction, and a truncated statement makes
+// matchingParen fail - the audit's five "index without range" false
+// positives all had real eq/gte/lt bounds inside multi-line callbacks.
+function hasRangeExpression(lines, lineIndex) {
+  const window = lines.slice(Math.max(0, lineIndex - 6), lineIndex + 15).join(" ").replace(/\s+/g, " ");
+  const idx = window.indexOf(".withIndex(");
   if (idx === -1) return false;
-  const open = chain.indexOf("(", idx);
-  const close = matchingParen(chain, open);
-  if (close === -1) return false;
-  const args = chain.slice(open + 1, close);
-  // No second argument at all: withIndex("by_x") or withIndex("by_x")
+  const open = window.indexOf("(", idx);
+  const close = matchingParen(window, open);
+  if (close === -1) return true; // unparseable span: UNKNOWN, not unbounded
+  const args = window.slice(open + 1, close);
   if (args.trim().length > 0 && !args.includes(",")) return false;
-  return /\bq\s*\.\s*(eq|neq|gt|gtQuiet|lt|ltQuiet|range)\s*\(/.test(args);
+  return /\bq\s*\.\s*(?:eq|neq|gt|gtQuiet|lt|ltQuiet|range)\s*\(/.test(args);
 }
 
 // take/first/unique stop the scan: an un-narrowed index read bounded by a
@@ -352,6 +373,10 @@ function clockIsMeasuringOrBranching(line) {
 
 function checkClock(ctx, file, lines, spans) {
   for (const span of spans) {
+    // The transaction clock restriction applies to queries and mutations -
+    // actions run outside the transaction and may read live time (the
+    // audit's 27 false positives were internalAction bodies).
+    if (span.kind === "action") continue;
     for (let i = span.start + 1; i <= span.end; i++) {
       if (clockIsMeasuringOrBranching(lines[i])) {
         ctx.report.finding({
@@ -411,7 +436,9 @@ function matchingBrace(text, open) {
 const CTX_DB_WRITE = /\bctx\s*\.\s*db\s*\.\s*(?:insert|patch|replace|delete)\s*\(/;
 const CTX_DB_ANY = /\bctx\s*\.\s*db\s*\./;
 const CTX_SCHEDULER = /\bctx\s*\.\s*scheduler\s*\./;
-const CTX_RUN = /\bctx\s*\.\s*run(?:Query|Mutation|Action)\s*\(/;
+// Queries may call ctx.runQuery (same read snapshot, per the QueryCtx
+// docs) - only mutations, actions, and scheduling cross the line.
+const CTX_RUN = /\bctx\s*\.\s*run(?:Mutation|Action)\s*\(/;
 
 function checkContextMisuse(ctx, file, lines, spans) {
   for (const span of spans) {
@@ -444,15 +471,41 @@ function checkServerRuns(ctx, file, lines) {
 
 // --- unawaited ctx call ----------------------------------------------------------
 
-// Only lines that BEGIN with the bare call are flagged: anything awaited,
-// returned, assigned or wrapped in another expression is left alone. The
-// statement span is consulted solely to spot deliberate .then( chaining.
+// Only lines that BEGIN with the bare call are flagged - but a bare line
+// is still CONSUMED when its enclosing expression is a combiner or an
+// awaited assignment: `await Promise.all([ ctx.db.patch(...) ])` and
+// array-push-then-Promise.all are the audit's 80+36 false positives. The
+// context walk looks back to the statement's start and forward across
+// array/call closings for the promise combiners.
 const BARE_CTX_LINE = /^ctx\s*\.\s*(?:db\s*\.\s*(?:insert|patch|replace|delete|get|query)\s*\(|scheduler\s*\.\s*\w+\s*\(|run(?:Query|Mutation|Action)\s*\()/;
+const COMBINER = /Promise\s*\.\s*(?:all|allSettled|race|any)\s*\(|\.then\s*\(|\.catch\s*\(|\.finally\s*\(|Effect\s*\.\s*runPromise/;
+
+function callIsConsumed(lines, i) {
+  if (COMBINER.test(lines[i]) || /\breturn\b|\bawait\b/.test(lines[i])) return true;
+  for (let j = i - 1; j >= Math.max(0, i - 10); j--) {
+    const t = lines[j];
+    if (COMBINER.test(t)) return true;
+    if (/=\s*\[?\s*$/.test(t)) return true; // array literal or promise assignment
+    if (/[;}!]\s*$/.test(t)) break; // left the statement
+  }
+  for (let j = i + 1; j <= Math.min(lines.length - 1, i + 12); j++) {
+    const t = lines[j];
+    if (COMBINER.test(t)) return true;
+    // `];` closes the array - the Promise.all over it may be the next
+    // statement, so cross exactly one semicolon boundary.
+    if (/;\s*$/.test(t)) {
+      const next = lines[j + 1] ?? "";
+      if (/^\s*(?:await\s+)?Promise|]\s*$/.test(t) && !COMBINER.test(next)) continue;
+      break;
+    }
+  }
+  return false;
+}
 
 function checkUnawaited(ctx, file, lines) {
   for (let i = 0; i < lines.length; i++) {
     if (!BARE_CTX_LINE.test(lines[i].trim())) continue;
-    if (statementAt(lines, i).includes(".then(")) continue;
+    if (callIsConsumed(lines, i)) continue;
     ctx.report.finding({ rule: "unawaited-convex-call", file, line: i + 1 });
   }
 }
@@ -493,7 +546,12 @@ function checkSequentialRuns(ctx, file, lines) {
 const NODE_FORBIDDEN = /=\s*(?:internalQuery|internalMutation|query|mutation)\s*\(\s*(?:\([^)]*\)\s*=>|function\b|\{)/;
 
 function checkNodeRuntime(ctx, file, rawLines, lines) {
-  const first = rawLines.find((l) => l.trim().length > 0);
+  // The directive must be the first STATEMENT - imports may precede it, so
+  // skip import lines when looking for it.
+  const first = rawLines.find((l) => {
+    const t = l.trim();
+    return t.length > 0 && !t.startsWith("import ") && !t.startsWith("//");
+  });
   if (!first || !/^['"]use node['"]\s*;/.test(first.trim())) return;
   for (let i = 0; i < lines.length; i++) {
     if (NODE_FORBIDDEN.test(lines[i])) {
