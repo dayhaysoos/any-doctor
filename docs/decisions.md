@@ -746,6 +746,65 @@ not precision.
 
 ---
 
+## D22 — convex-doctor: the same law, applied to the second doctor
+
+**Date:** 2026-09-09
+
+**Context:** The external audit of convex-doctor on the same 630-file
+codebase found 387 findings with at least 118 false positives: 80
+"unawaited" calls that were members of awaited Promise.all arrays (the
+check had no consumption context at all); 27 transaction-clock warnings
+inside actions, where the deterministic-clock restriction does not
+apply; all 5 "index without range" findings had real bounds inside
+multi-line callbacks whose internal semicolons truncated statement
+reconstruction; all 4 "write in query" findings were ctx.runQuery,
+which QueryCtx supports (a wrong platform premise, not a parsing bug);
+both missing-validator findings were chrome.tabs.query — a browser API
+mistaken for a Convex function because function recognition was
+namespace-blind.
+
+**Decision:** D21's law — claims may not exceed the analysis — applied
+check by check:
+
+- **Consumption context before "unawaited":** a bare ctx call line is
+  exempt when its statement context contains a promise combiner
+  (Promise.all/allSettled/race/any, .then/.catch/.finally,
+  Effect.runPromise) or a promise/array assignment, walking back to the
+  statement start and forward across one array-close boundary.
+- **Function kinds are facts:** function spans carry their kind; the
+  clock check skips actions (live clock, no restriction). The Math.random
+  wording is corrected — a seeded sequence, not one repeated value.
+- **Platform premise fixed:** ctx.runQuery is legal inside queries (same
+  read snapshot); only mutations, actions, and scheduling are flagged.
+- **Server-side checks are import-gated:** files must import from
+  convex/server or _generated/server — chrome.tabs.query is not a Convex
+  function. Client checks (useQuery) and chain checks (ctx.db.query
+  implies Convex) stay ungated.
+- **Range detection reads a look-ahead/look-behind window** joined with
+  single spaces (squashing to nothing glued `return q.eq(` into
+  `returnq.eq(` and destroyed the word boundary): unparseable spans are
+  UNKNOWN, not unbounded.
+- **One finding per chain, the most specific one:** filter-table-scan >
+  index-without-range > index-filter-combo, with the generic
+  unbounded-collect only when no specific diagnosis applies — the
+  audit's rateLimiter 73/74/75 triple is now one finding whose fix
+  (bound the index) is the reviewer's own recommendation.
+- **Severity honesty:** spread-into-patch, public-api-in-server-call,
+  and sequential-run-in-loop are info review candidates — presence is
+  visible, consequence is not. The seven audit counterexample shapes
+  are frozen fixtures (49 total).
+
+**Consequences:** On the audit codebase: 387 findings to 233; unawaited
+116 to 17, clock 48 to 21, index-without-range 5 to 2 (both true
+positives the reviewer's own fixes confirm), write-in-query 4 to 0,
+missing-validator 2 to 0; every audited false-positive site cleared and
+every audited real finding (rateLimiter, the billing lifecycle scans)
+kept. The remaining large groups are declared-info review candidates
+(subscriptions 108, spreads 28, public-api 24) whose blind spots say
+plainly what they cannot establish.
+
+---
+
 ## Open questions
 
 - Opt-in metrics/score API (parked, D19): count doctors run and findings
