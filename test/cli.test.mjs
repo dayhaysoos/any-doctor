@@ -111,7 +111,7 @@ test("main: verify wrong-rule finding at the right line fails the gate, naming t
   const doctor = path.join(dir, "two-checks.mjs");
   fs.writeFileSync(doctor, [
     "export const meta = { id: 'two-checks', description: 'x', severity: 'info',",
-    "  checks: [{ id: 'check-a', description: 'a' }, { id: 'check-b', description: 'b' }] }",
+    "  checks: [{ id: 'check-a', description: 'a', claim: 'shape a', lookalikes: ['not a'] }, { id: 'check-b', description: 'b', claim: 'shape b', lookalikes: ['not b'] }] }",
     "export async function doctor(ctx) { ctx.report.finding({ rule: 'check-b', file: 'a.ts', line: 1 }) }",
   ].join("\n"));
   fs.writeFileSync(path.join(dir, "two-checks.fixtures.mjs"),

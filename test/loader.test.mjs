@@ -105,7 +105,7 @@ test("seed path traversal becomes a named failing fixture, siblings still run", 
   assert.equal(r.status, 0);
   const frame = r.stdout.split("\n").find(l => l.startsWith(SENTINEL));
   const parsed = JSON.parse(frame.slice(SENTINEL.length));
-  assert.equal(parsed.results.length, 2);
+  assert.equal(parsed.results.length, 3); // + shared innocent corpus
   const trav = parsed.results.find(x => x.name === "traveller");
   assert.equal(trav.ok, false);
   assert.match(trav.error, /escapes the sandbox/);
@@ -151,7 +151,7 @@ test("run mode excludes test files from ctx.files.list by default", async () => 
   const doctorDir = tmpRoot();
   const lister = path.join(doctorDir, "lister.mjs");
   fs.writeFileSync(lister, [
-    "export const meta = { id: 'lister', description: 'lists files', severity: 'info' }",
+    "export const meta = { id: 'lister', description: 'lists files', severity: 'info', checks: [{ id: 'listed', description: 'lists', claim: 'a file is listed', lookalikes: ['nothing'] }] }",
     "export async function doctor(ctx) {",
     "  for (const f of ctx.files.list()) {",
     "    ctx.report.finding({ rule: 'listed', file: f, line: 1 });",
@@ -177,7 +177,7 @@ test("run mode --include-tests lists test files", async () => {
   const doctorDir = tmpRoot();
   const lister = path.join(doctorDir, "lister.mjs");
   fs.writeFileSync(lister, [
-    "export const meta = { id: 'lister', description: 'lists files', severity: 'info' }",
+    "export const meta = { id: 'lister', description: 'lists files', severity: 'info', checks: [{ id: 'listed', description: 'lists', claim: 'a file is listed', lookalikes: ['nothing'] }] }",
     "export async function doctor(ctx) {",
     "  for (const f of ctx.files.list()) {",
     "    ctx.report.finding({ rule: 'listed', file: f, line: 1 });",
@@ -190,4 +190,41 @@ test("run mode --include-tests lists test files", async () => {
   const parsed = JSON.parse(line.slice(SENTINEL.length));
   const files = parsed.findings.map(f => f.file).sort();
   assert.deepEqual(files, ["src/app.test.ts", "src/app.ts", "tests/helper.ts"]);
+});
+
+test("verify refuses a check without a claim — the contract is the gate", async () => {
+  const root = tmpRoot();
+  const doctor = path.join(root, "claimless.mjs");
+  fs.writeFileSync(doctor, [
+    "export const meta = { id: 'claimless', description: 'x', severity: 'info',",
+    "  checks: [{ id: 'vague', description: 'bad code detected' }] }",
+    "export async function doctor(ctx) {}",
+  ].join("\n"));
+  fs.writeFileSync(path.join(root, "claimless.fixtures.mjs"), "export const fixtures = []");
+  try {
+    const r = await runLoader([doctor, "--verify", path.join(root, "claimless.fixtures.mjs")]);
+    assert.equal(r.status, 3, "contract violation exits 3");
+    assert.match(r.stderr, /claim is required/);
+    assert.match(r.stderr, /observable condition/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("verify refuses a needs-declaring check without onUnknown", async () => {
+  const root = tmpRoot();
+  const doctor = path.join(root, "no-unknown.mjs");
+  fs.writeFileSync(doctor, [
+    "export const meta = { id: 'no-unknown', description: 'x', severity: 'info',",
+    "  checks: [{ id: 'needsy', description: 'd', claim: 'c', lookalikes: ['l'], needs: ['bindings'] }] }",
+    "export async function doctor(ctx) {}",
+  ].join("\n"));
+  fs.writeFileSync(path.join(root, "no-unknown.fixtures.mjs"), "export const fixtures = []");
+  try {
+    const r = await runLoader([doctor, "--verify", path.join(root, "no-unknown.fixtures.mjs")]);
+    assert.equal(r.status, 3);
+    assert.match(r.stderr, /onUnknown is required/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });

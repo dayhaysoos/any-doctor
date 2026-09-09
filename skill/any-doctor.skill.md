@@ -257,6 +257,36 @@ own `severity` only for exceptions.
    and iterate until the attack wave is green too.
 5. Report: id, what it detects, declared blind spots, fixture count.
 
+## The claim contract (verify refuses without it)
+
+Every declared check states three things before verify will certify it:
+
+```js
+{
+  id: "<check-id>",
+  claim: "<one sentence: the OBSERVABLE condition detected, not the consequence>",
+  lookalikes: ["<innocent shape that must stay silent>", "..."],
+  onUnknown: "narrow",   // required only when needs is declared
+  // ... description, severity, impact, why, fix as before
+}
+```
+
+- **claim** is the testable statement. "This expression discards a
+  promise" is a claim. "This asynchronous code is unsafe" is not — it is
+  a consequence masquerading as an observation. If you cannot write the
+  claim as something the code's shape alone establishes, the check is a
+  review candidate at info severity, not a warning.
+- **lookalikes** name the innocent shapes (these are corpus candidates —
+  the shared innocent corpus grows from them).
+- **onUnknown** declares what happens when the analysis the check needs
+  is unavailable: `"narrow"` (the report says narrowed) or `"skip"`
+  (silent, declared in blindSpots).
+
+Verify also runs every doctor against the **shared innocent corpus**
+(`fixtures/innocent/` — files that look guilty but aren't, grown from
+the audit counterexamples). A finding there is a false positive by
+definition, whoever wrote the check.
+
 ## Fixture discipline
 
 - Matching is exact multiset on (rule, file, line): each expected finding

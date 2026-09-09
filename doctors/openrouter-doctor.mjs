@@ -18,6 +18,8 @@ export const meta = {
       impact: "After headers commit, OpenRouter keeps the status at 200 and delivers failures as SSE events — the docs note the error chunk 'can be the first and only event'. A loop that only reads delta.content records a silent empty reply as success.",
       why: "OpenRouter's stream protocol puts errors inside the 200-OK body: a top-level error field on the chunk, with choices[0].finish_reason === \"error\". Neither the HTTP status nor the types say anything is wrong.",
       fix: "Check each chunk: `if (chunk.error ?? parsed.choices?.[0]?.finish_reason === \"error\") throw new Error(chunk.error?.message)` before reading delta.content.",
+      claim: "A file consuming OpenRouter stream deltas with no error-shape check anywhere in the file.",
+      lookalikes: ["error handling living in a different file"],
     },
     {
       id: "sse-comment-parse-crash",
@@ -26,6 +28,8 @@ export const meta = {
       impact: "OpenRouter sends `: OPENROUTER PROCESSING` comment lines while routing; the docs warn hand parsers must skip them. A loop that JSON.parses every data-bearing line crashes mid-generation.",
       why: "SSE keep-alive comments start with `:` and are legal on any stream, but OpenRouter sends them as a matter of course during provider routing — a naive `split(\"\\n\")` + JSON.parse loop meets one on the first slow request.",
       fix: "Skip comment lines before parsing: `if (line.startsWith(\":\")) continue;` — or use an SDK stream helper that handles SSE framing.",
+      claim: "A hand-rolled SSE loop that does not skip colon-prefixed comment lines.",
+      lookalikes: ["SDK stream helpers handling SSE framing"],
     },
     {
       id: "missing-abort-signal",
@@ -34,6 +38,8 @@ export const meta = {
       impact: "For non-streaming requests and several providers (Bedrock, Groq, Google, Mistral, Replicate, …) the docs are explicit: aborting without a signal means 'the model will continue processing and you will be billed for the complete response'.",
       why: "Cancellation stops processing and billing only when the connection is actually aborted. No signal, no abort — the user who navigates away still pays for the full completion.",
       fix: "Thread an AbortController through: `fetch(url, { ..., signal: controller.signal })`, and abort it on cancellation, navigation, or timeout.",
+      claim: "An OpenRouter fetch (same-line marker) with no AbortSignal.",
+      lookalikes: ["multi-line fetch with the URL on the next line"],
     },
     {
       id: "retry-after-ignored",
@@ -42,6 +48,8 @@ export const meta = {
       impact: "429 and 503 responses carry Retry-After, and raw fetch gets no SDK backoff — immediate retries thundering-herd into the same limit and can exhaust the daily caps on :free variants (20 RPM / 50–1000 RPD).",
       why: "The official SDKs honor Retry-After automatically; hand-rolled catch-and-retry loops don't. The header is the only backoff signal a raw fetch client receives.",
       fix: "Read the header and wait: `const wait = Number(res.headers.get(\"retry-after\") ?? 1); await sleep(wait * 1000);` before retrying.",
+      claim: "A retry loop around an OpenRouter call that never reads Retry-After.",
+      lookalikes: ["SDK-managed backoff"],
     },
     {
       id: "hardcoded-dated-model-slug",
@@ -50,6 +58,8 @@ export const meta = {
       impact: "Model availability is separate from API versioning — the docs state models are added and removed by providers independently, and a removed slug starts returning 404s with zero code changes around it.",
       why: "OpenRouter maintains ~family-latest aliases and per-slug routing variants (:nitro, :floor, :free). A versioned slug is sometimes a deliberate reproducibility pin — this is advice to pin consciously, not a defect.",
       fix: "Prefer `~author/family-latest` aliases or read slugs from config; if the pin is deliberate, keep it and note why.",
+      claim: "A dated model slug hardcoded \u2014 advice to pin consciously, at info.",
+      lookalikes: ["~family-latest aliases", "slugs read from config"],
     },
   ],
 };

@@ -164,6 +164,19 @@ export interface Fixture {
   name: string;
   seed: Record<string, string>;
   expected: ExpectedFinding[];
+  // The claim contract (D23): a check states the OBSERVABLE condition it
+  // establishes, the innocent shapes that must stay silent, and - when it
+  // depends on the identity engine - what happens when the answer is
+  // unknown. Enforced at verify: a check without a claim cannot be
+  // certified, because eloquent impact prose is not a testable statement.
+  /** One sentence: the observable condition this check establishes. Not the
+   *  consequence ("this is unsafe") - the thing actually detected. */
+  claim?: string;
+  /** Innocent lookalike shapes that must remain silent (corpus candidates). */
+  lookalikes?: string[];
+  /** When analysis the check needs is unavailable: "narrow" (report says
+   *  narrowed) or "skip" (silent, declared in blindSpots). */
+  onUnknown?: "narrow" | "skip";
   /** Which analysis mode this fixture pins (D20 Stage 2): "on" (default)
    * runs with the identity engine — and skips with a named notice when it
    * is not installed in the environment; "off" forces the degraded path,

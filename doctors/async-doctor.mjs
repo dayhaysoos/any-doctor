@@ -19,6 +19,8 @@ export const meta = {
       impact: "Requests cannot be cancelled: navigating away, unmounting, or superseding leaves fetches running to completion.",
       why: "A fetch without a signal has no path to cancellation, so component-driven requests outlive the components that issued them.",
       fix: "Pass an AbortController's signal via the request options and abort it on cleanup or supersede.",
+      claim: "A fetch call whose options contain no signal.",
+      lookalikes: ["signal threaded through a variable the pattern cannot see"],
     },
     {
       id: "unawaited-async-map",
@@ -28,6 +30,9 @@ export const meta = {
       impact: "The async work starts but nothing waits for it: errors vanish silently and the results are lost mid-flight.",
       why: "Array.map returns a new array of promises. Without Promise.all or an await on the result, the async callbacks run fire-and-forget.",
       fix: "Wrap the mapped array in Promise.all and await it — or drop the async if the work should actually be sequential.",
+      claim: "A .map(async ...) result whose binding has no consuming reference (combiner, per-element await, or return) and no inline combiner at the call site.",
+      lookalikes: ["inline Promise.all around the map", "for-await over results", "results returned to the caller"],
+      onUnknown: "narrow",
     },
     {
       id: "uncleared-settimeout-in-effect",
@@ -36,6 +41,8 @@ export const meta = {
       impact: "The callback fires after the component is gone: state updates on unmounted components, work the user cancelled, and hard-to-trace bugs.",
       why: "Every timer started inside an effect must be cleared in that effect's cleanup; an uncleared setTimeout outlives the render that created it.",
       fix: "Assign the timer and return a cleanup that calls clearTimeout with the same identifier.",
+      claim: "A setTimeout inside a useEffect span with no clearTimeout of the same identifier in that effect.",
+      lookalikes: ["timers cleared in cleanup", "lookalike names outside effects"],
     },
   ],
 };

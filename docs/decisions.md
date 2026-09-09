@@ -682,8 +682,11 @@ skill teaches the rule (many questions → one batch) beside the op.
 **Date:** 2026-09-09
 
 **Context:** Two external audits of slop-doctor on a real 630-file
-TypeScript/TSX codebase found systematic false positives (264 findings;
-roughly one in ten real). The mechanisms: the identity engine
+TypeScript/TSX codebase found systematic false positives across specific
+identifiable classes (unused-import, unread-binding, and hostname checks
+each produced findings that were overwhelmingly or entirely wrong; the
+audits confirmed specific true findings in the dead-export and duplicate
+checks). The mechanisms: the identity engine
 (oxc-parser + eslint-scope) did not resolve JSX references or type
 positions, so JSX-used imports read as unused; the masker treated the
 slash in JSX closing tags (`</Link>`) as a regex opener, phantom-masking
@@ -802,6 +805,50 @@ every audited real finding (rateLimiter, the billing lifecycle scans)
 kept. The remaining large groups are declared-info review candidates
 (subscriptions 108, spreads 28, public-api 24) whose blind spots say
 plainly what they cannot establish.
+
+---
+
+## D23 — The claim contract and the shared innocent corpus: prevention as executable
+
+**Date:** 2026-09-09
+
+**Context:** D21 and D22 repaired the same disease twice: checks whose
+claims exceeded their analysis, validated by fixtures that tested
+examples rather than reliability. The external reviewers' deepest point:
+"fixtures validate examples, not general reliability" — and their
+strongest recommendation: "make the important requirements executable."
+
+**Decision:** Two mechanisms, both enforced by the verify gate:
+
+- **The claim contract.** Every declared check states `claim` (one
+  sentence: the observable condition detected, not the consequence),
+  `lookalikes` (innocent shapes that must stay silent — corpus
+  candidates), and `onUnknown` ("narrow" or "skip", required when the
+  check declares engine `needs`). Verify refuses to certify a doctor
+  whose checks lack these — exit 3 with guidance. "This asynchronous
+  code is unsafe" is not a claim; "this expression discards a promise"
+  is. The gate cannot prove reasoning is correct, but it can make
+  unstatable claims unshippable.
+
+- **The shared innocent corpus.** `fixtures/innocent/` holds files that
+  look guilty but aren't — the audit counterexamples as commons. Every
+  doctor's verify automatically runs against the corpus with
+  expected: []; a finding there is a false positive by definition,
+  whoever wrote the check. The corpus ships in the npm package and
+  grows with every audit's discoveries.
+
+All 41 checks across the five bundled doctors now carry contracts.
+The skill teaches the contract as a required section. The D21 wording
+was corrected: the audits measured class-level false-positive rates,
+not report-level precision — the decision log now says so.
+
+**Consequences:** A new doctor cannot be certified without stating what
+it establishes; a regression against any known-innocent shape fails the
+gate; and the corpus compounds — every future audit's counterexamples
+enlarge the commons. What this does NOT do: guarantee correctness on
+unfamiliar repos (the reviewers' caveat, adopted verbatim), or replace
+independent evaluation — the held-out set and per-check precision
+measurement remain the tier-2 process.
 
 ---
 
