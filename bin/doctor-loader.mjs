@@ -75,6 +75,7 @@ function materializeSeed(tmp, rel, content) {
     fs.writeFileSync(abs, content);
 }
 async function main() {
+    var _a;
     confineProcess();
     // The mode arrives as argv and is decoded exactly once, here, into a value.
     const decoded = contract.decodeLoaderArgs(process.argv.slice(2));
@@ -110,6 +111,30 @@ async function main() {
             if (!Array.isArray(fixtures)) {
                 console.error("fixture module must export `fixtures` (array) — got: " + Object.keys(fixturesMod).join(", "));
                 process.exit(3);
+            }
+            // The claim contract (D23): certification requires each declared
+            // check to state the observable condition it establishes, its
+            // innocent lookalikes, and - when it needs the identity engine -
+            // what happens on unknown. Prose impact is not a testable claim.
+            const checks = (_a = mod.meta) === null || _a === void 0 ? void 0 : _a.checks;
+            if (Array.isArray(checks)) {
+                const problems = [];
+                for (const c of checks) {
+                    if (typeof c.claim !== "string" || c.claim.trim().length === 0) {
+                        problems.push(`check "${String(c.id)}": claim is required — one sentence, the observable condition detected, not the consequence`);
+                    }
+                    if (!Array.isArray(c.lookalikes) || c.lookalikes.length === 0) {
+                        problems.push(`check "${String(c.id)}": lookalikes is required — at least one innocent shape that must stay silent`);
+                    }
+                    if (Array.isArray(c.needs) && c.needs.length > 0
+                        && (c.onUnknown !== "narrow" && c.onUnknown !== "skip")) {
+                        problems.push(`check "${String(c.id)}": onUnknown is required when needs is declared — "narrow" or "skip"`);
+                    }
+                }
+                if (problems.length > 0) {
+                    console.error("claim contract violations:\n  " + problems.join("\n  "));
+                    process.exit(3);
+                }
             }
             const results = [];
             // Only a doctor whose checks declare analysis needs can have
@@ -156,6 +181,45 @@ async function main() {
                 finally {
                     setAnalysisDisabled(false);
                     fs.rmSync(tmp, { recursive: true, force: true });
+                }
+            }
+            // The shared innocent corpus (D23): files that look guilty but
+            // aren't — the audit counterexamples as commons. Every doctor runs
+            // against them with expected: []; a finding here is a false positive
+            // by definition, whoever wrote the check.
+            const innocentDir = fs.realpathSync(new URL("../fixtures/innocent", import.meta.url));
+            if (fs.existsSync(innocentDir)) {
+                const seed = {};
+                const collect = (dir, prefix) => {
+                    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                        const abs = path.join(dir, entry.name);
+                        const rel = prefix ? prefix + "/" + entry.name : entry.name;
+                        if (entry.isDirectory())
+                            collect(abs, rel);
+                        else
+                            seed[rel] = fs.readFileSync(abs, "utf8");
+                    }
+                };
+                collect(innocentDir, "");
+                try {
+                    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-verify-innocent-"));
+                    try {
+                        for (const [rel, content] of Object.entries(seed))
+                            materializeSeed(tmp, rel, content);
+                        const result = await runOnce(tmp, mod, { includeTests: true });
+                        const diff = contract.compareFindings([], result.findings);
+                        results.push({
+                            name: "shared innocent corpus (" + Object.keys(seed).length + " files)",
+                            ok: diff.missing.length === 0 && diff.unexpected.length === 0,
+                            ...diff,
+                        });
+                    }
+                    finally {
+                        fs.rmSync(tmp, { recursive: true, force: true });
+                    }
+                }
+                catch (e) {
+                    results.push({ name: "shared innocent corpus", ok: false, missing: [], unexpected: [], error: e instanceof Error ? e.message : String(e) });
                 }
             }
             process.stdout.write("\n" + contract.RESULT_SENTINEL + JSON.stringify({

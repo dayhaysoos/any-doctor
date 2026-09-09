@@ -22,6 +22,8 @@ export const meta = {
       impact: "Two copies of one contract drift independently: the next edit fixes one and silently leaves the other behind. In the corpus this came from, reviewers raised it 16 times across 14 PRs and every finding was actioned - but duplication alone establishes maintenance risk, not a bug.",
       why: "Generated code copies what worked instead of importing it. The bodies are identical including literal values, which is what makes later divergence invisible - but intentional copies exist, so this is a review suggestion.",
       fix: "Consolidate into one shared module and import it on both sides - or, if the domains must stay separate, make the separation explicit in the name and a comment saying why they differ.",
+      claim: "A function body byte-identical (literals included, comments dropped) to one in another module.",
+      lookalikes: ["intentional domain-separated copies", "trivial bodies under 60 chars", "doctor programs and build artifacts (exempt)"],
     },
     {
       id: "environment-guessed-from-hostname-substring",
@@ -30,6 +32,8 @@ export const meta = {
       impact: "Every deployment host the substring does not anticipate falls through to the fallback environment - production traffic silently using local/dev settings, or vice versa. The corpus caught this 8 times across 2 PRs.",
       why: "Guessing environment from `host.includes(\"staging\")` encodes a naming convention as a behavior switch; opaque custom domains and renamed deployments break the guess with no error anywhere.",
       fix: "Read the environment from configuration (an explicit env var or build-time constant) and treat unknown values as errors, with the hostname heuristic at most a last-resort default.",
+      claim: "A hostname substring test whose branch assigns or returns a URL-shaped constant.",
+      lookalikes: ["QA guards that throw", "config that reads an explicit env var first"],
     },
     {
       id: "boolean-collapsed-into-three-state",
@@ -38,6 +42,8 @@ export const meta = {
       impact: "false from 'not detected' and false from 'explicitly refused' become the same state - downstream logic treats unknown as negative, 8 findings across 4 PRs in the corpus.",
       why: "`x ?? detect()` yields boolean | undefined, but `x === true ? A : B` maps both false and undefined to B. The three-state union was written knowing the difference; the collapse forgets it.",
       fix: "Branch on the actual three states: `typeof x === \"boolean\" ? (x ? A : B) : C` - or model the source as an explicit tri-state from the start.",
+      claim: "A ?? -defaulted boolean later branched with `=== true ?` to two outcomes.",
+      lookalikes: ["typeof-guarded three-state branches", "booleans with no nullish default"],
     },
     {
       id: "prefix-overlapping-substring-match",
@@ -46,6 +52,8 @@ export const meta = {
       impact: "`includes(\"referral\") || includes(\"refer\")` also matches 'reference', 'referee', 'preferred' - the classifier accepts unrelated words and the stem list grows by accretion. 5 findings across 5 PRs.",
       why: "The shorter stem subsumes the longer one entirely and both subsume words nobody meant. Substring matching has no word boundary, so every added stem widens the net silently.",
       fix: "Match whole tokens: split the text and compare exact membership, or use a word-bounded regex (\\breferral\\b) - one explicit list, no accidental vocabulary.",
+      claim: "An OR-chain of substring tests whose literals overlap by prefix.",
+      lookalikes: ["non-overlapping literals", "word-bounded regexes"],
     },
     {
       id: "export-without-any-consumer",
@@ -55,6 +63,9 @@ export const meta = {
       why: "Generated code over-exports ('might be useful'), and nothing in the toolchain reports an export with zero consumers. Dynamic consumers are detected heuristically - see blind spots - so this is a candidate, not a verdict.",
       fix: "Verify against the blind spots, then delete it - or consume it. If it is a genuine public API entry point, say so in a comment and exempt it deliberately.",
       needs: ["bindings"],
+      claim: "An exported binding with zero in-file references, no import of its name anywhere, no dynamic-import consumer, in a non-entry file.",
+      lookalikes: ["entry-point files", "test-only consumers (--include-tests)", "namespace member usage", "string-built references"],
+      onUnknown: "narrow",
     },
     {
       id: "named-import-without-reference",
@@ -64,6 +75,9 @@ export const meta = {
       why: "Imports accumulate during generation and refactoring; TypeScript only reports these with noUnusedLocals enabled, which most repos never turn on. The identity engine resolves JSX and type-position references, and a whole-word occurrence guard backstops what no resolver sees - a finding means BOTH layers found nothing.",
       fix: "Remove the specifier (keep the import statement if other specifiers remain or the module has side effects).",
       needs: ["bindings"],
+      claim: "A named import with zero references (value, JSX, and type positions all resolve) and no whole-word trace in the file.",
+      lookalikes: ["type-position usage", "JSX usage", "string-built references"],
+      onUnknown: "narrow",
     },
     {
       id: "unread-local-binding",
@@ -73,6 +87,9 @@ export const meta = {
       why: "Bindings created for a plan the code abandoned. Side-effecting initializers are deliberately exempt (the call may matter even when the value does not).",
       fix: "Delete the binding; if its initializer has side effects, keep the expression and drop the assignment.",
       needs: ["bindings"],
+      claim: "A non-exported, non-excluded, non-underscore local binding never read in its file, with a side-effect-free initializer.",
+      lookalikes: ["object-rest exclusions", "side-effecting initializers", "underscore-prefixed names", "exported bindings"],
+      onUnknown: "narrow",
     },
     {
       id: "unanchored-abbreviation-regex",
@@ -81,6 +98,8 @@ export const meta = {
       impact: "/ai/i matches 'said', 'wait', 'chair' - an abbreviation filter that accepts common words wholesale. 4 findings across 4 PRs.",
       why: "Short stems need boundaries; without them the regex is a substring test wearing a regex costume, and case-insensitivity widens it further.",
       fix: "Anchor it: /\\bai\\b/i - or match against whole tokens after splitting.",
+      claim: "A 2-5 letter case-insensitive regex without anchors or word boundaries used with .test()/.match().",
+      lookalikes: ["word-bounded patterns", "patterns six letters or longer"],
     },
   ],
 };

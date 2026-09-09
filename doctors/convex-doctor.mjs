@@ -28,6 +28,8 @@ export const meta = {
       impact: "Convex bills and measures performance by documents read: a .filter() chain scans the whole table on every call, so a query that is fast at demo scale degrades linearly with data and can hit function limits in production.",
       why: ".filter() runs after documents are read - it cannot reduce reads. Only an index range (.withIndex with q.eq/q.gt/...) restricts how many documents the query touches.",
       fix: "Define an index covering the filtered fields in schema.ts and use .withIndex(\"by_field\", q => q.eq(\"field\", value)) instead of .filter().",
+      claim: "A ctx.db.query chain using .filter() with no .withIndex() anywhere in the chain.",
+      lookalikes: ["chains with withIndex", "non-Convex array filters (import-gated)"],
     },
     {
       id: "index-without-range",
@@ -36,6 +38,8 @@ export const meta = {
       impact: "The index is selected but never narrowed: every document is read via the index in full order, which costs the same as a table scan while looking optimized. Chains ending in .take()/.first()/.unique() are exempt - the terminator bounds the read.",
       why: "withIndex(\"by_x\") with no second argument (or a callback that never calls q.eq/q.gt/q.lt/q.range) leaves the read range unbounded - the docs call this out as a scan in disguise. A terminator (take/first/unique) stops the scan early, so only unbounded consumers are findings.",
       fix: "Pass a range expression: .withIndex(\"by_x\", q => q.eq(\"x\", value)) - or bound the chain with .take(n) when recent-items ordering is the intent.",
+      claim: "A .withIndex() whose argument span contains no q.eq/neq/gt/lt/range call, in a chain not bounded by take/first/unique.",
+      lookalikes: ["multi-line callbacks with real bounds", "take/first/unique terminators"],
     },
     {
       id: "unbounded-subscription",
@@ -44,6 +48,8 @@ export const meta = {
       impact: "Every document re-syncs to the client on any change to the table; as the table grows, the subscription's payload and re-render cost grow without bound.",
       why: "useQuery keeps the result live. Without .paginate() on the query side or usePaginatedQuery on the client side, the subscription reads and ships the entire table. Info severity: the referenced query may be bounded in ways the call site cannot show.",
       fix: "Use .paginate(opts) in the query and usePaginatedQuery on the client; or bound the result with .withIndex(...).order(\"desc\").take(n) when the table is provably small.",
+      claim: "A useQuery call in a file with no usePaginatedQuery \u2014 the backend query's actual shape is never resolved.",
+      lookalikes: ["paginated subscriptions", "queries returning one object or null (invisible to the call site)"],
     },
     {
       id: "nondeterministic-clock-in-transaction",
@@ -52,6 +58,8 @@ export const meta = {
       impact: "The value is snapshotted per transaction: elapsed-time math inside one mutation always sees zero, and repeated calls return the same value - timeouts, jitter, and expiry logic silently misbehave.",
       why: "Convex executes query/mutation bodies deterministically within a transaction: Date.now() is pinned to the transaction's start and Math.random() is a seeded sequence (different values per call, not one repeated value). Both are safe to store but wrong for measuring or branching; actions run outside the transaction with a live clock and are exempt.",
       fix: "Pass timestamps/randomness in as arguments from the client or an action (where they are genuinely live), or rely on _creationTime for ordering.",
+      claim: "Date.now()/Math.random() in arithmetic or comparison inside a query or mutation span (actions exempt).",
+      lookalikes: ["clock use in actions", "stored timestamps", "clock passed in as an argument"],
     },
     {
       id: "unbounded-collect",
@@ -60,9 +68,13 @@ export const meta = {
       impact: "Unbounded reads grow with the table and eventually hit Convex's per-transaction document read limit - the query works at demo scale and fails in production.",
       why: "Convex has no query planner: reads follow the chain exactly as written. The scaling guide is explicit that every .collect() must be provably small or index-narrowed (stack.convex.dev/queries-that-scale).",
       fix: 'Bound the chain - .take(50) for recent-items UIs, .paginate(args.paginationOpts) for incremental loading - or narrow it with .withIndex("by_field", q => q.eq(...)).',
+      claim: "A .collect() on a chain with no take, no paginate, and no bounding index range.",
+      lookalikes: ["collect bounded by an index range", "collect bounded by take"],
     },
     {
       id: "index-filter-combo",
+      claim: "A range-narrowed .withIndex() followed by .filter() on the same chain.",
+      lookalikes: ["multi-field indexes serving both bounds"],
       description: ".withIndex() narrowed, then .filter() on the same chain - a multi-field index candidate.",
       severity: "warning",
       impact: "The index range still reads every document the filter then discards; when the discarded slice is large, the query pays for it on every call.",
@@ -76,6 +88,8 @@ export const meta = {
       impact: "Convex re-runs every subscribed query that read the document. A 10-second heartbeat on a widely-read user document invalidates those queries continuously - including queries that never touch the field.",
       why: "Frequently-updated fields on widely-referenced documents cause fan-out invalidation; the scaling guide's fix is document segmentation, not smarter queries.",
       fix: 'Split presence into its own table (heartbeats) and patch that; patch the parent document only on meaningful transitions (online to offline).',
+      claim: "A canonical presence field (lastSeen/heartbeat/...) patched onto a document.",
+      lookalikes: ["presence segmented into its own table"],
     },
     {
       id: "missing-args-validator",
@@ -84,6 +98,8 @@ export const meta = {
       impact: "Args arrive unvalidated and untyped: any payload the client sends is accepted at runtime, and the handler's args parameter is any instead of the inferred literal type - typos surface later as undefined fields instead of immediately as validation errors.",
       why: "Validators are the contract: Convex checks every call against args at runtime and generates the handler's TypeScript types from the same definition. A function without args gets neither the check nor the types.",
       fix: "Declare the shape: export const create = mutation({ args: { body: v.string() }, handler: ... }) - an explicit args: {} for no-arg functions keeps the contract visible.",
+      claim: "A Convex function span (import-gated) with no args key in its config.",
+      lookalikes: ["chrome.tabs.query and other namespaced APIs", "explicit args: {}"],
     },
     {
       id: "public-api-in-server-call",
@@ -92,6 +108,8 @@ export const meta = {
       impact: "Everything reachable through api is callable by any client that can reach the deployment. A server-only workflow invoked via api is an exposed surface that clients can call directly, with any arguments the validators accept.",
       why: "internal.* is the server-to-server namespace: the same functions, unreachable from clients. A run* call that names api.* is either exposing a function by mistake or announcing it should be internal.",
       fix: "Define the target as internalQuery/internalMutation/internalAction and reference it as internal.module.function in the run* call.",
+      claim: "A ctx.run* referencing api.* rather than internal.*.",
+      lookalikes: ["functions legitimately consumed by both client and server"],
     },
     {
       id: "write-in-query",
@@ -100,6 +118,8 @@ export const meta = {
       impact: "Queries are read-only transactions - the write methods do not exist on a query's context, so the function fails on its first real call rather than at deploy time. ctx.runQuery IS allowed (same read snapshot); only mutations, actions, and scheduling are forbidden.",
       why: "A query body runs inside a deterministic read transaction: its context carries db reads, auth and storage, runQuery, nothing else. Writes and scheduling belong in a mutation.",
       fix: "Move the write into a mutation the client or an action invokes; if the read and the write must be atomic, the whole operation is a mutation that reads first.",
+      claim: "A write, scheduler, or mutation/action call inside a query span (runQuery is legal).",
+      lookalikes: ["ctx.runQuery inside queries"],
     },
     {
       id: "db-in-action",
@@ -108,6 +128,8 @@ export const meta = {
       impact: "Actions have no db on their context - the call throws at runtime, usually on the first request that reaches that path.",
       why: "Actions run outside the transaction: their context offers runQuery/runMutation/runAction, scheduler, storage and auth. Database access goes through a function the action invokes.",
       fix: "Replace ctx.db.<x> with await ctx.runQuery(...) for reads or await ctx.runMutation(...) for writes.",
+      claim: "ctx.db usage inside an action span.",
+      lookalikes: ["ctx.runQuery/runMutation from actions"],
     },
     {
       id: "unawaited-convex-call",
@@ -116,6 +138,8 @@ export const meta = {
       impact: "The function can return before the write settles: the write may not land, and its ordering against later reads is undefined - the bug presents as intermittently missing data.",
       why: "Every ctx method (db, scheduler, run*) is async. Inside a transaction the await is what folds the step into the transaction; a floating promise races the function's return against the write.",
       fix: "await the call (or return it). If the value is genuinely unneeded, await it anyway inside the transaction, or move the work to an action.",
+      claim: "A bare ctx.* call line with no promise combiner or assignment in its statement window.",
+      lookalikes: ["Promise.all members", "array-push-then-await", "assigned promises consumed later"],
     },
     {
       id: "node-runtime-transaction",
@@ -124,6 +148,8 @@ export const meta = {
       impact: "Deploy fails: queries and mutations must run in Convex's deterministic runtime, which is what makes their transaction guarantees replayable.",
       why: '"use node" opts the file into the Node runtime, which only actions can use. Queries and mutations must be deterministic so re-execution produces identical results.',
       fix: "Split the file: keep the query/mutation in the default runtime and move the Node-dependent work into an action it schedules.",
+      claim: "A query or mutation defined in a file whose first statement after imports is \"use node\".",
+      lookalikes: ["actions in use-node files"],
     },
     {
       id: "sequential-run-in-loop",
@@ -132,6 +158,8 @@ export const meta = {
       impact: "N iterations become N separate transactions, each with its own round trip and commit - a 1000-item backfill is 1000 sequential transactions, and the caller's timeout budget pays for all of them.",
       why: "Each run* call is a complete transaction of its own. A loop of awaited runs is the slowest possible batch; the batching guidance is to do the work inside one mutation instead.",
       fix: "Pass the ids to a mutation that loops internally over ctx.db writes - one transaction - or chunk the loop into bounded batches of run* calls.",
+      claim: "A ctx.run* awaited inside a for/while body.",
+      lookalikes: ["deliberate OCC retry loops with backoff"],
     },
     {
       id: "spread-into-patch",
@@ -140,6 +168,8 @@ export const meta = {
       impact: "Every field the client included gets written: the validators constrain the mutation's args, but the spread forwards them all, so fields the mutation never named (ownership, role, timestamps) become client-writable.",
       why: "patch merges whatever object it is given. Spreading args into it delegates field selection to the caller - the opposite of what a validated mutation is for.",
       fix: "Name the fields: ctx.db.patch(args.id, { title: args.title }) - build the patch object server-side from explicitly validated values.",
+      claim: "A spread inside .patch()/.replace() \u2014 a review candidate; field ownership is not traced.",
+      lookalikes: ["validated server-built objects spread deliberately"],
     },
   ],
 };
