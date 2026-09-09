@@ -303,7 +303,7 @@ function checkUnanchoredAbbreviation(ctx, file, lines) {
 const ENTRY_FILE = /(^|\/)(bin|scripts|doctors)\//;
 const ENTRY_NAME = /^(cli|main|index|server|app|mod)\.[cm]?[jt]sx?$/;
 // Generated output: mirrors of source by construction, not authored code.
-const GENERATED_FILE = /(^|\/)(__generated__|generated|\.gen)\/|\.generated\.[cm]?[jt]sx?$/;
+const GENERATED_FILE = /(^|\/)(__generated__|generated)\/|\.(?:gen|generated)\.[cm]?[jt]sx?$/;
 
 function isEntryFile(file) {
   return ENTRY_FILE.test(file) || ENTRY_NAME.test(file.split("/").pop() ?? "") || GENERATED_FILE.test(file);
@@ -400,6 +400,9 @@ function refInsideDecl(r, b) {
 }
 
 function checkUnusedImports(ctx, file, lines, model) {
+  // Generated code (route trees, API clients) is machine-authored — its
+  // unused imports are the generator's, not the developer's.
+  if (GENERATED_FILE.test(file)) return;
   const fileText = lines.join("\n");
   for (const b of model.bindings) {
     if (b.kind !== "ImportBinding") continue;
