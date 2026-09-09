@@ -11,6 +11,7 @@ import { causeSummaryLine, describeRunnerError, isRunnerError, runDoctor, runDoc
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor } from "./select.js";
 import { pickItemsOn } from "./picker.js";
+import { startSpinner } from "./spinner.js";
 import { canRunTui, processTtyEnv } from "./tty.js";
 import { BOLD, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./palette.js";
 function fail(msg) {
@@ -172,7 +173,20 @@ async function cmdRun(args) {
         if ("exit" in selection)
             return selection.exit;
         const runStarted = Date.now();
-        const scan = await scanOnce({ programPath: selection.doctorPath, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
+        // The live line: while the child runs, a spinner instead of frozen
+        // silence — interactive TTYs only; headless and piped output stay
+        // byte-clean (same gate family as the picker).
+        const spinEnv = processTtyEnv();
+        const spin = canRunTui(spinEnv) && !process.env.ANY_DOCTOR_HEADLESS
+            ? startSpinner(spinEnv.stdout, { label: `scanning with ${path.basename(selection.doctorPath, ".mjs")}`, total: 1 })
+            : null;
+        let scan;
+        try {
+            scan = await scanOnce({ programPath: selection.doctorPath, targetDir: parsed.targetDir, includeTests: parsed.includeTests });
+        }
+        finally {
+            spin === null || spin === void 0 ? void 0 : spin.stop();
+        }
         outcome = {
             groups: [scan.group],
             crashed: [],
@@ -216,12 +230,25 @@ async function cmdRun(args) {
         const doctorPaths = new Map();
         // The cohort runs through the runner's bounded pool (see
         // runDoctorCohort) — order preserved, a crash stays data, and the
-        // per-crash line is the same one a single-doctor run prints.
+        // per-crash line is the same one a single-doctor run prints. While
+        // it runs, the live line ticks per completion — interactive TTYs
+        // only, same gate family as the picker.
+        const spinEnv = processTtyEnv();
+        const spin = canRunTui(spinEnv) && !process.env.ANY_DOCTOR_HEADLESS
+            ? startSpinner(spinEnv.stdout, { label: "running doctors", total: doctors.length })
+            : null;
+        let done = 0;
         const runs = await runDoctorCohort(doctors.map(d => ({
             programPath: d.path,
             targetDir: parsed.targetDir,
             includeTests: parsed.includeTests,
-        })));
+        })), spin
+            ? (p) => {
+                done += 1;
+                spin.update({ done, note: path.basename(p.programPath, ".mjs") + (p.ok ? "" : " ✗") });
+            }
+            : undefined);
+        spin === null || spin === void 0 ? void 0 : spin.stop();
         const fileCounts = [];
         let analysisAvailable;
         for (const [i, run] of runs.entries()) {

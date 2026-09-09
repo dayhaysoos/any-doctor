@@ -131,3 +131,18 @@ test("runDoctor: the result carries analysis capabilities (present in this repo)
   const r = await runDoctor({ programPath: DOCTOR, targetDir: TARGET });
   assert.deepEqual(r.capabilities, { analysis: true });
 });
+
+test("runDoctorCohort: onProgress fires once per doctor as they settle", async () => {
+  const { runDoctorCohort } = await import("../bin/runner.js");
+  const events = [];
+  const runs = await runDoctorCohort([
+    { programPath: DOCTOR, targetDir: TARGET },
+    { programPath: path.join(REPO, "doctors", "openrouter-doctor.mjs"), targetDir: TARGET },
+  ], (p) => events.push(p));
+  assert.equal(runs.length, 2);
+  assert.equal(events.length, 2, "one event per doctor");
+  assert.deepEqual(events.map((e) => e.index).sort(), [0, 1]);
+  assert.equal(events[0].total, 2);
+  assert.ok(events.every((e) => e.ok), "both doctors healthy on the sample app");
+  assert.ok(events.some((e) => e.durationMs >= 0), "durations reported");
+});
