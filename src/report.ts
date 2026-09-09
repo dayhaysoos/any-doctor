@@ -1,4 +1,5 @@
 import { DoctorMeta, ExpectedFinding, Finding, narrowedCheckIds, ReportGroup, resolveFinding, Severity, VerifyRunResult } from "./contract.js";
+import { DEFAULT_EXTS } from "./sdk.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
 
@@ -50,10 +51,12 @@ export function unsafeSkipLine(names: string[]): string {
 
 // The empty-scan warning's one copy: a run that scanned zero files must
 // never read as a clean pass — "No findings" over nothing checked is
-// the falsest green there is. It names what the walk looks for and what
-// it skips, so a wrong-directory or all-tests target explains itself.
+// the falsest green there is. The extension list is composed from the
+// walk's own DEFAULT_EXTS, so the prose cannot drift from what the walk
+// actually reads.
 export function emptyScanLine(): string {
-  return "nothing to check — no .ts, .tsx, .js, .jsx, or .mjs sources found (node_modules, hidden dirs, and test paths are skipped; --include-tests opts back in)";
+  const exts = DEFAULT_EXTS.join(", ").replace(/, ([^,]*)$/, ", or $1");
+  return `nothing to check — no ${exts} sources found (node_modules, hidden dirs, and test paths are skipped; --include-tests opts back in)`;
 }
 
 // The refusal for a doctor you explicitly asked to run: the file, its

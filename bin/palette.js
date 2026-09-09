@@ -1,4 +1,4 @@
-import { gradeFor } from "./score.js";
+import { gradeFor, isEmptyScan } from "./score.js";
 // The severity palette: one home for how findings are glyphed and colored
 // across the picker, report, and dashboard. Grade colors derive from
 // score.ts's bands — nothing shadows them here.
@@ -19,5 +19,5 @@ export function gradeColor(score) {
 // (D19: render the strings, never re-compose them). Structurally typed
 // so palette needs no import from score.
 export function scoreHeaderTone(score) {
-    return score.filesTotal === 0 ? YELLOW : gradeColor(score.score);
+    return isEmptyScan(score) ? YELLOW : gradeColor(score.score);
 }

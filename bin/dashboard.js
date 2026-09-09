@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { resolveFinding, runCommandFor } from "./contract.js";
-import { scoreFromFileHealth, scoreHeaderLines } from "./score.js";
+import { isEmptyScan, scoreFromFileHealth, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, visibleWidth } from "./tty.js";
@@ -310,7 +310,7 @@ export function buildListRows(tree, useColor, selectedRow, readKeys, expanded) {
             const isOpen = open.has(d.doctorId);
             // The row's score rides the header's tone policy — n/a in yellow
             // over an empty denominator, never a green vacuous 100.
-            const scoreBit = c("· " + (summary.score.filesTotal === 0 ? "n/a" : summary.score.score), scoreHeaderTone(summary.score));
+            const scoreBit = c("· " + (isEmptyScan(summary.score) ? "n/a" : summary.score.score), scoreHeaderTone(summary.score));
             rows.push({
                 kind: "section",
                 text: `${selectedRow === rowIndex ? c("›", BOLD) : " "}${c(isOpen ? "▾" : "▸", DIM)} ${c(GLYPH[summary.worst], SEVERITY_COLOR[summary.worst])} ${c(summary.doctorId, BOLD)} ${c("×" + summary.count, DIM)} ${scoreBit}`,

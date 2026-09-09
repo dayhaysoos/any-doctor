@@ -12,6 +12,9 @@ export declare function scoreFromFileHealth(perFile: {
     severity: Severity;
 }[], filesTotal: number): ScoreResult;
 export declare function computeScore(groups: ReportGroup[], filesTotal: number): ScoreResult;
+export declare function isEmptyScan(s: {
+    filesTotal: number;
+}): boolean;
 export interface ScoreHeader {
     scoreLine: string;
     cleanLine: string | null;

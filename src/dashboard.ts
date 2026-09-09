@@ -2,12 +2,12 @@ import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { Finding, JoinedFinding, ReportGroup, resolveFinding, runCommandFor, Severity } from "./contract.js";
-import { scoreFromFileHealth, ScoreResult, scoreHeaderLines } from "./score.js";
+import { isEmptyScan, scoreFromFileHealth, ScoreResult, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 
-import { BOLD, colorizer, DIM, GLYPH, gradeColor, GREEN, ORANGE, RESET, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
+import { BOLD, colorizer, DIM, GLYPH, GREEN, ORANGE, RESET, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { dedupeGroups, RunOutcome, unsafeSkipLine } from "./report.js";
 
 const SPLIT_MIN_COLS = 100;
@@ -410,7 +410,7 @@ export function buildListRows(
       // The row's score rides the header's tone policy — n/a in yellow
       // over an empty denominator, never a green vacuous 100.
       const scoreBit = c(
-        "· " + (summary.score.filesTotal === 0 ? "n/a" : summary.score.score),
+        "· " + (isEmptyScan(summary.score) ? "n/a" : summary.score.score),
         scoreHeaderTone(summary.score),
       );
       rows.push({

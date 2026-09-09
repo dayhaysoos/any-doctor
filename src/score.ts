@@ -54,6 +54,14 @@ export function computeScore(groups: ReportGroup[], filesTotal: number): ScoreRe
   );
 }
 
+// The empty-scan predicate's one home: every surface that decides
+// anything by "nothing was scanned" — the header composer, the tone in
+// palette, the dashboard's row — asks this, so the policy cannot drift
+// into a fifth inline `filesTotal === 0`.
+export function isEmptyScan(s: { filesTotal: number }): boolean {
+  return s.filesTotal === 0;
+}
+
 export interface ScoreHeader {
   scoreLine: string;
   cleanLine: string | null;
@@ -68,7 +76,7 @@ export interface ScoreHeader {
 // and so is any score claim: "100 — Excellent" over nothing checked is
 // a false green, so the header says n/a instead.
 export function scoreHeaderLines(s: ScoreResult): ScoreHeader {
-  if (s.filesTotal === 0) {
+  if (isEmptyScan(s)) {
     return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true };
   }
   return {
