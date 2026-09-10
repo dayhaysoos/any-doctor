@@ -4,7 +4,7 @@ export const meta = {
   severity: "warning",
   category: "convex",
   blindSpots: [
-    "Queries: syntactic ctx.db.query/db.query chains are inspected, including helpers; receiver types and schema/cardinality are not resolved. withIndex is trusted to name a real index.",
+    "Queries: syntactic ctx.db.query/db.query chains are inspected, including helpers; receiver types and schema/cardinality are not resolved. withIndex is trusted to name a real index. withSearchIndex chains are skipped entirely - search bounds are not modeled.",
     "Subscriptions: client useQuery calls are not diagnosed because backend result sizes are not resolved.",
     "Clock and discarded calls require analysis. Only inline handlers registered through imports from convex/server or _generated/server are resolved; custom wrappers and separately declared handlers are unknown. Clock checks exclude nested functions. Promise checks establish direct discards, not eventual settlement of stored, passed, chained, or returned promises.",
     "Chains split across multiple statements (const q = ctx.db.query(t); q.filter(...)) are not tracked - only single-statement chains.",
@@ -144,7 +144,7 @@ export const meta = {
       id: "unawaited-convex-call",
       description: "A known Promise-returning Convex context call is discarded as a standalone expression.",
       severity: "warning", needs: ["calls"], onUnknown: "skip", reportingUnit: "occurrence",
-      claim: "A direct discarded call to a context method of an import-resolved handler's context parameter - db or storage, reads included - resolved by binding identity.",
+      claim: "A direct discarded call to a context method of an import-resolved handler's context parameter - db or storage, reads included, scheduler and run* functions too - resolved by binding identity.",
       lookalikes: ["returned callbacks", "arguments to helpers", "stored promises", "query builders", "shadowed context bindings"],
       impact: "Discarding the promise can lose errors or leave work unfinished when the function returns.",
       why: "This call's result is an expression statement; nearby awaits do not receive it.",
@@ -527,7 +527,7 @@ function checkQueryChains(ctx, file, facts) {
       const callback = facts.functions.find(f => f.start === arg.start);
       if (!callback || callback.parameters[0] === null) continue; // unknown
       ranged = facts.calls.some(c => c.start >= arg.start && c.end <= arg.end
-        && c.target.binding === callback.parameters[0] && /^(eq|gt|gte|lt|lte)$/.test(method(c)));
+        && c.target.binding === callback.parameters[0] && /^(eq|neq|gt|gte|lt|lte|range)$/.test(method(c)));
     }
     let rule;
     if (filter && !index) rule = "filter-table-scan";
