@@ -150,42 +150,55 @@ export function extractEvidence(
   const staleLines: string[] = [];
   const contextUnavailableFiles: string[] = [];
 
-  const byFile = new Map<string, EvidenceInput[]>();
-  for (const f of findings) {
-    const rows = byFile.get(f.file) ?? [];
-    rows.push(f);
-    byFile.set(f.file, rows);
+  // Per-file facts computed once (one read, one parse), keyed by first
+  // appearance — untouched files cost nothing.
+  interface FileFacts {
+    lines: string[] | null;
+    spans: SpanInfo[] | null;
+    ids: Map<SpanInfo, string> | null;
   }
-
-  for (const [file, rows] of byFile) {
-    const source = readSource(file);
+  const fileFacts = new Map<string, FileFacts>();
+  for (const f of findings) {
+    if (fileFacts.has(f.file)) continue;
+    const source = readSource(f.file);
     if (source === null) {
-      unreadableFiles.push(file);
-      for (const f of rows) {
-        occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
-      }
+      unreadableFiles.push(f.file);
+      fileFacts.set(f.file, { lines: null, spans: null, ids: null });
       continue;
     }
-    const spans = spansFor(file, source);
-    if (spans === null) contextUnavailableFiles.push(file);
-    const ids = spans !== null ? contextIds(spans) : null;
-    const lines = source.split("\n");
-    for (const f of rows) {
-      const raw = lines[f.line - 1];
-      if (raw === undefined) {
-        staleLines.push(`${file}:${f.line}`);
-        occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
-        continue;
-      }
-      const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
-      const indent = line.length - line.trimStart().length;
-      occurrences.push({
-        ...f,
-        lineDigest: digestOf(normalizeLine(line)),
-        relColumn: f.column !== undefined ? Math.max(0, f.column - indent) : null,
-        contextId: ids !== null ? enclosingContext(spans!, ids, f.line, f.column ?? 0) : null,
-      });
+    const spans = spansFor(f.file, source);
+    if (spans === null) contextUnavailableFiles.push(f.file);
+    fileFacts.set(f.file, {
+      lines: source.split("\n"),
+      spans,
+      ids: spans !== null ? contextIds(spans) : null,
+    });
+  }
+
+  // Emission preserves the INPUT order exactly — callers zip the returned
+  // array with their findings by index, and a doctor's findings interleave
+  // files across checks, so any regrouping here would misattribute every
+  // comparison index.
+  for (const f of findings) {
+    const facts = fileFacts.get(f.file)!;
+    if (facts.lines === null) {
+      occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
+      continue;
     }
+    const raw = facts.lines[f.line - 1];
+    if (raw === undefined) {
+      staleLines.push(`${f.file}:${f.line}`);
+      occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
+      continue;
+    }
+    const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+    const indent = line.length - line.trimStart().length;
+    occurrences.push({
+      ...f,
+      lineDigest: digestOf(normalizeLine(line)),
+      relColumn: f.column !== undefined ? Math.max(0, f.column - indent) : null,
+      contextId: facts.ids !== null ? enclosingContext(facts.spans!, facts.ids, f.line, f.column ?? 0) : null,
+    });
   }
   return { occurrences, unreadableFiles, staleLines, contextUnavailableFiles };
 }

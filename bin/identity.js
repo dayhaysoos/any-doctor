@@ -89,47 +89,54 @@ function normalizeLine(raw) {
     return raw.replace(/\s+/g, " ").trim();
 }
 export function extractEvidence(findings, readSource, spansFor) {
-    var _a, _b;
+    var _a;
     const occurrences = [];
     const unreadableFiles = [];
     const staleLines = [];
     const contextUnavailableFiles = [];
-    const byFile = new Map();
+    const fileFacts = new Map();
     for (const f of findings) {
-        const rows = (_a = byFile.get(f.file)) !== null && _a !== void 0 ? _a : [];
-        rows.push(f);
-        byFile.set(f.file, rows);
-    }
-    for (const [file, rows] of byFile) {
-        const source = readSource(file);
+        if (fileFacts.has(f.file))
+            continue;
+        const source = readSource(f.file);
         if (source === null) {
-            unreadableFiles.push(file);
-            for (const f of rows) {
-                occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
-            }
+            unreadableFiles.push(f.file);
+            fileFacts.set(f.file, { lines: null, spans: null, ids: null });
             continue;
         }
-        const spans = spansFor(file, source);
+        const spans = spansFor(f.file, source);
         if (spans === null)
-            contextUnavailableFiles.push(file);
-        const ids = spans !== null ? contextIds(spans) : null;
-        const lines = source.split("\n");
-        for (const f of rows) {
-            const raw = lines[f.line - 1];
-            if (raw === undefined) {
-                staleLines.push(`${file}:${f.line}`);
-                occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
-                continue;
-            }
-            const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
-            const indent = line.length - line.trimStart().length;
-            occurrences.push({
-                ...f,
-                lineDigest: digestOf(normalizeLine(line)),
-                relColumn: f.column !== undefined ? Math.max(0, f.column - indent) : null,
-                contextId: ids !== null ? enclosingContext(spans, ids, f.line, (_b = f.column) !== null && _b !== void 0 ? _b : 0) : null,
-            });
+            contextUnavailableFiles.push(f.file);
+        fileFacts.set(f.file, {
+            lines: source.split("\n"),
+            spans,
+            ids: spans !== null ? contextIds(spans) : null,
+        });
+    }
+    // Emission preserves the INPUT order exactly — callers zip the returned
+    // array with their findings by index, and a doctor's findings interleave
+    // files across checks, so any regrouping here would misattribute every
+    // comparison index.
+    for (const f of findings) {
+        const facts = fileFacts.get(f.file);
+        if (facts.lines === null) {
+            occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
+            continue;
         }
+        const raw = facts.lines[f.line - 1];
+        if (raw === undefined) {
+            staleLines.push(`${f.file}:${f.line}`);
+            occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
+            continue;
+        }
+        const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+        const indent = line.length - line.trimStart().length;
+        occurrences.push({
+            ...f,
+            lineDigest: digestOf(normalizeLine(line)),
+            relColumn: f.column !== undefined ? Math.max(0, f.column - indent) : null,
+            contextId: facts.ids !== null ? enclosingContext(facts.spans, facts.ids, f.line, (_a = f.column) !== null && _a !== void 0 ? _a : 0) : null,
+        });
     }
     return { occurrences, unreadableFiles, staleLines, contextUnavailableFiles };
 }

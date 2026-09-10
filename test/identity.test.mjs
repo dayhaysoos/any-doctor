@@ -191,6 +191,31 @@ test("identity: an unreadable file is evidence-less and reported", () => {
   assert.equal(compareOccurrences(report.occurrences, report.occurrences).pairs.length, 0);
 });
 
+test("identity: evidence order parallels the input findings — interleaved files never regroup", () => {
+  // A doctor's findings interleave files across checks (all of rule A,
+  // then all of rule B); the evidence array must stay index-aligned with
+  // that input or every comparison index misattributes. Found on the real
+  // Sift smoke: the wrong occurrence was labeled added.
+  const files = { "a.ts": "const BAD = 1;\n", "b.ts": "const BAD = 1;\n\n\n\n\n\n\n\nconst BAD = 1;\n" };
+  const inputs = [
+    f(1, undefined, "d/ruleA", "a.ts"),
+    f(1, undefined, "d/ruleA", "b.ts"),
+    f(1, undefined, "d/ruleB", "a.ts"),
+    f(9, undefined, "d/ruleB", "b.ts"),
+  ];
+  const occ = extractEvidence(inputs, mem(files), noSpans).occurrences;
+  assert.deepEqual(
+    occ.map(o => `${o.checkKey.slice(2)}@${o.file}:${o.line}`),
+    ["ruleA@a.ts:1", "ruleA@b.ts:1", "ruleB@a.ts:1", "ruleB@b.ts:9"],
+    "occurrence i describes input finding i",
+  );
+  // The added index must name the genuinely new occurrence, not a shifted one.
+  const base = occ;
+  const head = extractEvidence(inputs.concat([f(1, undefined, "d/ruleB", "a.ts")]), mem(files), noSpans).occurrences;
+  const cmp = compareOccurrences(base, head);
+  assert.deepEqual(cmp.addedIndices, [4], "the new occurrence at index 4 is the added one");
+});
+
 test("identity: a file the engine cannot parse reports context unavailability", () => {
   const report = extractEvidence([f(1)], mem({ "x.ts": "const BAD = 1;\n" }), noSpans);
   assert.deepEqual(report.contextUnavailableFiles, ["x.ts"]);
