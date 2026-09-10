@@ -93,7 +93,7 @@ runs. There is no override in any mode.
 
 ## Finding
 
-One emitted finding: a location (file, line) plus optional per-finding
+One emitted finding: a location (file, line, optional zero-based column) plus optional per-finding
 message or severity override. "Issue" and "instance" are retired
 synonyms — Finding is the term in code, copy, and prompts. The
 doctor-level truth (id, description, default severity, blind spots)
@@ -167,9 +167,12 @@ scans doctors once carried privately (the audit truncation bugs lived in
 those approximations). The engine is optional (oxc-parser +
 eslint-scope behind the Engine seam's second adapter): checks declare
 the analysis they need on their CheckMeta (`needs` — vocabulary:
-"bindings", "spans"), narrow without it,
+"bindings", "spans", "calls"), narrow without it,
 and the report renders "narrowed" — a degraded run is visible, never
-silent. References answer by position, so analysis queries compose with
+silent. `ctx.analysis.calls(file)` provides immediate call use, receiver identity,
+inline callback registration, and linked call ranges. These are syntax facts;
+stored, passed, or returned is not a promise-settlement verdict. Parse/adapter
+errors fail the doctor run explicitly. References answer by position, so analysis queries compose with
 rule queries: shapes from one engine, identities from the other.
 
 ## Engine
@@ -197,7 +200,7 @@ count as the doctors scanned it (default extensions); findings naming
 files outside that count can push the raw value negative, so the result
 is floored into 0–100 — and floored, never rounded, so any finding costs
 at least one point. Findings duplicated across doctors at the same
-file:line are deduplicated before scoring — the first-sorted copy wins
+file:line:column are deduplicated before scoring — the first-sorted copy wins
 (groups sort by the first finding carrying an explicit severity
 override, else the doctor's declared default; equal-severity groups
 fall back to input order) and a hidden duplicate's severity does not
@@ -227,7 +230,7 @@ known input.
 ## Fixture
 
 One seed plus the findings expected from running a doctor program against
-it. Expected findings match exactly on (rule, file, line), duplicates
+it. Expected findings match on (rule, file, line, optional column), duplicates
 counted: a missing expected finding is a recall failure; an unexpected
 finding is a precision failure. The rule in an expectation is part of the
 match — a wrong-check finding at the right line fails the gate. A fixture
@@ -248,8 +251,8 @@ workflow's second pass; a doctor ships only after surviving its attack.
 Running a doctor program against its fixtures and diffing the findings.
 The trust gate: a doctor program is not considered working until verify
 passes. The policies that compose the gate — the claim contract, the
-per-fixture diff, the shared innocent corpus, the duplicate-location
-probe, the shared sensitivity corpus — live in one module, the
+per-fixture diff, the shared innocent corpus, per-check location
+coverage, the shared sensitivity corpus — live in one module, the
 Certification harness (`src/certify.ts`), behind one interface:
 `certify(mod, fixtures) -> result rows`. The doctor loader calls it once;
 prevention tiers land there, not in loader choreography.
@@ -287,3 +290,12 @@ marker; `generate` refreshes a copy it planted (the marker is the
 boundary) and never touches a copy without one. The generation prompt
 embeds the skill verbatim. Any Doctor equips agents with the skill;
 it never launches, deploys, or speaks for an agent.
+
+## Location coverage
+
+A certification result for one check's reporting unit. Occurrence-level
+warning/error checks need a passing, context-preserving fixture with two
+distinct locations of that check in one file. File/project checks need a
+positive witness. Unspecified legacy units and unavailable analysis are
+reported as not exercised, not counted as passing. Fixture expectations
+establish tested coverage, not general correctness or independence of labels.

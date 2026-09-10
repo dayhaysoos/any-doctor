@@ -1,0 +1,103 @@
+capabilities: reads via ctx only — no imports, no network, no writes, no subprocesses
+  ✔ flags .filter() with no .withIndex()
+  ✔ accepts .withIndex() with a range expression
+  ✔ bounded result after index filter is still an index review candidate
+  ✔ flags .withIndex() with no range expression
+  ✔ flags .withIndex(name, q => ...) whose callback never calls q.eq
+  ✔ accepts .withIndex() with q.gt range
+  ✔ accepts .withIndex() with no range when .take() bounds the read
+  ✔ accepts useQuery without assuming backend result size
+  ✔ accepts usePaginatedQuery
+  ✔ accepts subtraction of a historical timestamp argument
+  ✔ accepts seeded random branching
+  ✔ accepts expiration against a stored historical timestamp
+  ✔ accepts Date.now() in a plain (non-Convex) function
+  ✔ accepts Date.now() passed in as a mutation argument
+  ✔ ignores clock lookalikes inside comments and strings
+  ✔ accepts a stored timestamp (safe to store)
+  ✔ accepts a stored random value (safe to store)
+  ✔ unbounded-collect: whole-table collect with no bound
+  ✔ unbounded-collect: index range bounds the collect
+  ✔ unbounded-collect: take bounds the collect
+  ✔ index-filter-combo: withIndex narrowed then filtered
+  ✔ index-filter-combo: multi-field index serves both bounds
+  ✔ presence-patch: lastSeen patched onto a user document
+  ✔ presence-patch: segmented into its own table
+  ✔ missing-args-validator: flags a public mutation with no args config
+  ✔ missing-args-validator: accepts an explicit args object
+  ✔ missing-args-validator: flags internal functions too (validators carry the types)
+  ✔ public-api-in-server-call: flags ctx.runMutation pointing at the public api tree
+  ✔ public-api-in-server-call: accepts the internal namespace
+  ✔ write-in-query: flags an insert inside a query
+  ✔ write-in-query: accepts the same write in a mutation
+  ✔ db-in-action: flags ctx.db.get inside an action
+  ✔ db-in-action: accepts runQuery from an action
+  ✔ unawaited-convex-call: flags a bare ctx.db.patch statement
+  ✔ unawaited-convex-call: accepts the awaited form
+  ✔ unawaited-convex-call: accepts a returned ctx call
+  ✔ node-runtime-transaction: flags a query defined in a use-node file
+  ✔ node-runtime-transaction: accepts an action in a use-node file
+  ✔ sequential-run-in-loop: flags awaited runMutation inside a for loop
+  ✔ sequential-run-in-loop: accepts ctx.db writes looped inside one mutation
+  ✔ spread-into-patch: flags a client-controlled spread merged into patch
+  ✔ spread-into-patch: accepts explicitly named fields
+  ✔ audit: runAction members of an awaited Promise.all are consumed
+  ✔ audit: patch promises pushed to an array then awaited together
+  ✔ audit: clock math inside an internalAction is exempt (actions have a live clock)
+  ✔ audit: ctx.runQuery inside a query is legal (same read snapshot)
+  ✔ audit: a real range callback with internal statements bounds the read
+  ✔ audit: chrome.tabs.query is not a Convex function
+  ✔ audit: one multi-line chain is one unbounded-collect finding
+  ✔ independent control: bare patch must be reported
+  ✔ unrelated Promise.all must not consume an earlier patch
+  ✔ two identical discarded calls on one line are distinct occurrences
+  ✔ unrelated await before a discard is not consumption
+  ✔ wrapped returned callbacks and promise arguments are not direct discards
+  ✔ a callback block really discards its call
+  ✔ shadowed context and builder-only calls are not promise findings
+  ✔ transparent type assertion preserves a discarded call
+  ✔ disabled analysis does not guess at discarded calls
+  ✔ two transaction duration calculations are distinct occurrences
+  ✔ query clock reports reactivity for each direct read
+  ✔ mutation expiry cutoff and seeded randomness remain valid
+  ✔ actions have a live clock
+  ✔ shadowed Date and nested clocks do not imply query-time execution
+  ✔ mutable timestamp origin is unknown
+  ✔ disabled analysis does not infer query clock ownership
+  ✔ unrelated factory and shadowed imported factory are not Convex context
+  ✔ locations: filter-table-scan identical chains in separate functions
+  ✔ locations: index-without-range identical chains in separate functions
+  ✔ locations: unbounded-collect identical chains in separate functions
+  ✔ locations: index-filter-combo identical chains in separate functions
+  ✔ two whole-table reads on one line remain separate findings
+  ✔ a query builder without execution is not a scan
+  ✔ degraded query analysis abstains rather than guessing chains
+  ✔ locations: presence-patch-on-shared-document two separate statements
+  ✔ locations: write-in-query two separate statements
+  ✔ locations: db-in-action two separate statements
+  ✔ locations: public-api-in-server-call two separate statements
+  ✔ locations: spread-into-patch two separate statements
+  ✔ locations: sequential-run-in-loop two separate statements
+  ✔ locations: missing validators on two declarations
+  ✔ locations: two transaction declarations in Node runtime
+  ✔ shared innocent corpus (12 files)
+  ✔ location coverage: filter-table-scan
+  ✔ location coverage: index-without-range
+  ✔ location coverage: query-clock-reactivity
+  ✔ location coverage: transaction-clock-duration
+  ✔ location coverage: unbounded-collect
+  ✔ location coverage: index-filter-combo
+  ✔ location coverage: presence-patch-on-shared-document
+  ✔ location coverage: missing-args-validator
+  ✔ location coverage: public-api-in-server-call
+  ✔ location coverage: write-in-query
+  ✔ location coverage: db-in-action
+  ✔ location coverage: unawaited-convex-call
+  ✔ location coverage: node-runtime-transaction
+  ✔ location coverage: sequential-run-in-loop
+  ✔ location coverage: spread-into-patch
+  ✔ sensitivity: billing-triple
+  ✔ sensitivity: discard-with-unrelated-combiner
+  ✔ sensitivity: ratelimiter-unbounded-collect
+
+100/100 fixtures passed for convex-doctor

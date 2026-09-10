@@ -20,11 +20,17 @@ export const fixtures = [
     "expected": []
   },
   {
-    "name": "accepts .filter() chained AFTER .withIndex() (filter narrows the indexed read)",
+    "name": "bounded result after index filter is still an index review candidate",
     "seed": {
       "convex/messages.ts": "import { query, mutation, action, internalQuery, internalMutation, internalAction } from \"../_generated/server\";\nexport const recent = query({ args: { room: v.string() }, handler: async (ctx, { room }) => {\n  return await ctx.db.query(\"messages\")\n    .withIndex(\"by_room\", q => q.eq(\"room\", room))\n    .filter(q => q.eq(q.field(\"pinned\"), true))\n    .take(20);\n}});"
     },
-    "expected": []
+    "expected": [
+      {
+        "rule": "index-filter-combo",
+        "file": "convex/messages.ts",
+        "line": 5
+      }
+    ]
   },
   {
     "name": "flags .withIndex() with no range expression",
@@ -67,17 +73,11 @@ export const fixtures = [
     "expected": []
   },
   {
-    "name": "flags useQuery on a whole-table query",
+    "name": "accepts useQuery without assuming backend result size",
     "seed": {
       "src/App.tsx": "import { useQuery } from \"convex/react\";\nimport { api } from \"../convex/_generated/api\";\nexport function Messages() {\n  const messages = useQuery(api.messages.list);\n  return <ul>{messages?.map(m => <li key={m._id}>{m.body}</li>)}</ul>;\n}"
     },
-    "expected": [
-      {
-        "rule": "unbounded-subscription",
-        "file": "src/App.tsx",
-        "line": 4
-      }
-    ]
+    "expected": []
   },
   {
     "name": "accepts usePaginatedQuery",
@@ -87,43 +87,25 @@ export const fixtures = [
     "expected": []
   },
   {
-    "name": "flags elapsed-time math on Date.now() inside a mutation handler",
+    "name": "accepts subtraction of a historical timestamp argument",
     "seed": {
       "convex/timers.ts": "import { query, mutation, action, internalQuery, internalMutation, internalAction } from \"../_generated/server\";\nexport const touch = mutation({ args: { startedAt: v.number() }, handler: async (ctx, { startedAt }) => {\n  const elapsed = Date.now() - startedAt;\n  return elapsed;\n}});"
     },
-    "expected": [
-      {
-        "rule": "nondeterministic-clock-in-transaction",
-        "file": "convex/timers.ts",
-        "line": 3
-      }
-    ]
+    "expected": []
   },
   {
-    "name": "flags branching on Math.random() inside a query handler",
+    "name": "accepts seeded random branching",
     "seed": {
       "convex/roll.ts": "import { query, mutation, action, internalQuery, internalMutation, internalAction } from \"../_generated/server\";\nexport const sample = query({ args: {}, handler: async (ctx) => {\n  if (Math.random() < 0.5) return null;\n  return 1;\n}});"
     },
-    "expected": [
-      {
-        "rule": "nondeterministic-clock-in-transaction",
-        "file": "convex/roll.ts",
-        "line": 3
-      }
-    ]
+    "expected": []
   },
   {
-    "name": "flags elapsed-time math comparing two Date.now() calls in one transaction",
+    "name": "accepts expiration against a stored historical timestamp",
     "seed": {
       "convex/sessions.ts": "import { query, mutation, action, internalQuery, internalMutation, internalAction } from \"../_generated/server\";\nexport const expire = mutation({ args: {}, handler: async (ctx, s) => {\n  const elapsed = Date.now() - s.startedAt;\n  if (elapsed > 5000) await ctx.db.delete(s._id);\n}});"
     },
-    "expected": [
-      {
-        "rule": "nondeterministic-clock-in-transaction",
-        "file": "convex/sessions.ts",
-        "line": 3
-      }
-    ]
+    "expected": []
   },
   {
     "name": "accepts Date.now() in a plain (non-Convex) function",
@@ -459,6 +441,462 @@ export const fixtures = [
         "rule": "index-without-range",
         "file": "convex/rate.ts",
         "line": 7
+      }
+    ]
+  },
+  {
+    "name": "independent control: bare patch must be reported",
+    "seed": {
+      "convex/notes.ts": "import { query, mutation, action, internalQuery, internalMutation, internalAction } from \"../_generated/server\";\nexport const markSeen = mutation({\n  args: { id: v.id(\"notes\") },\n  handler: async (ctx, args) => {\n    ctx.db.patch(args.id, { seen: true });\n  },\n});"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-convex-call",
+        "file": "convex/notes.ts",
+        "line": 5
+      }
+    ]
+  },
+  {
+    "name": "unrelated Promise.all must not consume an earlier patch",
+    "seed": {
+      "convex/notes.ts": "import { query, mutation, action, internalQuery, internalMutation, internalAction } from \"../_generated/server\";\nexport const markSeen = mutation({\n  args: { id: v.id(\"notes\") },\n  handler: async (ctx, args) => {\n    ctx.db.patch(args.id, { seen: true });\n    const unrelated = 42;\n    await Promise.all([]);\n  },\n});"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-convex-call",
+        "file": "convex/notes.ts",
+        "line": 5
+      }
+    ]
+  },
+  {
+    "name": "two identical discarded calls on one line are distinct occurrences",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = change({args: {}, handler: async (context, args) => {\n  context.db.patch(args.id, {}); context.db.patch(args.id, {});\n}});"
+    },
+    "expected": [
+      {
+        "file": "convex/example.ts",
+        "rule": "unawaited-convex-call",
+        "line": 3,
+        "column": 2
+      },
+      {
+        "file": "convex/example.ts",
+        "rule": "unawaited-convex-call",
+        "line": 3,
+        "column": 33
+      }
+    ]
+  },
+  {
+    "name": "unrelated await before a discard is not consumption",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = change({args: {}, handler: async (context, args) => {\n  await Promise.all([]);\n  context.db.patch(args.id, {});\n}});"
+    },
+    "expected": [
+      {
+        "file": "convex/example.ts",
+        "rule": "unawaited-convex-call",
+        "line": 4,
+        "column": 2
+      }
+    ]
+  },
+  {
+    "name": "wrapped returned callbacks and promise arguments are not direct discards",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = change({args: {}, handler: async (context, args) => {\n  const adapters = {\n    authenticate: (token) =>\n      context.runQuery(internal.keys.authenticate, { token }),\n    list: (token, limit) =>\n      context.runQuery(internal.keys.list, { token, limit }),\n    record: (key) =>\n      context.runMutation(internal.keys.record, { key }),\n  };\n  await consume(context.runMutation(internal.keys.record, {}));\n  await Effect.runPromise(Effect.promise(() => context.runQuery(internal.keys.list, {})));\n  const tasks = [];\n  tasks.push(context.db.patch(args.id, {}));\n  await Promise.all(tasks);\n  return adapters;\n}});"
+    },
+    "expected": []
+  },
+  {
+    "name": "a callback block really discards its call",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = change({args: {}, handler: async (context, args) => {\n  const later = () => { context.db.patch(args.id, {}); };\n}});"
+    },
+    "expected": [
+      {
+        "file": "convex/example.ts",
+        "rule": "unawaited-convex-call",
+        "line": 3,
+        "column": 24
+      }
+    ]
+  },
+  {
+    "name": "shadowed context and builder-only calls are not promise findings",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = change({args: {}, handler: async (context, args) => {\n  function other(context) { context.db.patch(args.id, {}); }\n  context.db.query(\"notes\");\n  const saved = context.db.patch(args.id, {});\n  return saved;\n}});"
+    },
+    "expected": []
+  },
+  {
+    "name": "transparent type assertion preserves a discarded call",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = change({args: {}, handler: async (context, args) => {\n  (context.db.patch(args.id, {}) as Promise<void>);\n}});"
+    },
+    "expected": [
+      {
+        "file": "convex/example.ts",
+        "rule": "unawaited-convex-call",
+        "line": 3,
+        "column": 3
+      }
+    ]
+  },
+  {
+    "name": "disabled analysis does not guess at discarded calls",
+    "analysis": "off",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = change({args: {}, handler: async (context, args) => {\n  context.db.patch(args.id, {});\n}});"
+    },
+    "expected": []
+  },
+  {
+    "name": "two transaction duration calculations are distinct occurrences",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = change({args: {}, handler: async (context, args) => {\n  const start = Date.now();\n  const elapsed = Date.now() - start;\n  return Date.now() - start;\n}});"
+    },
+    "expected": [
+      {
+        "file": "convex/example.ts",
+        "rule": "transaction-clock-duration",
+        "line": 4,
+        "column": 18
+      },
+      {
+        "file": "convex/example.ts",
+        "rule": "transaction-clock-duration",
+        "line": 5,
+        "column": 9
+      }
+    ]
+  },
+  {
+    "name": "query clock reports reactivity for each direct read",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = query({args: {}, handler: async (context, args) => {\n  const now = Date.now();\n  return Date.now();\n}});"
+    },
+    "expected": [
+      {
+        "file": "convex/example.ts",
+        "rule": "query-clock-reactivity",
+        "line": 3,
+        "column": 14
+      },
+      {
+        "file": "convex/example.ts",
+        "rule": "query-clock-reactivity",
+        "line": 4,
+        "column": 9
+      }
+    ]
+  },
+  {
+    "name": "mutation expiry cutoff and seeded randomness remain valid",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = change({args: {}, handler: async (context, args) => {\n  const expires = Date.now() + 60_000;\n  const cutoff = Date.now() - 60_000;\n  if (args.expiresAt < Date.now()) return false;\n  return Math.random() < 0.5 ? expires : cutoff;\n}});"
+    },
+    "expected": []
+  },
+  {
+    "name": "actions have a live clock",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = action({args: {}, handler: async (context, args) => {\n  const start = Date.now();\n  return Date.now() - start;\n}});"
+    },
+    "expected": []
+  },
+  {
+    "name": "shadowed Date and nested clocks do not imply query-time execution",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = query({args: {}, handler: async (context, args) => {\n  const Date = { now: () => 7 };\n  const a = () => globalThis.Date.now();\n  return Date.now();\n}});"
+    },
+    "expected": []
+  },
+  {
+    "name": "mutable timestamp origin is unknown",
+    "analysis": "on",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = change({args: {}, handler: async (context, args) => {\n  let start = Date.now();\n  start = args.timestamp;\n  return Date.now() - start;\n}});"
+    },
+    "expected": []
+  },
+  {
+    "name": "disabled analysis does not infer query clock ownership",
+    "analysis": "off",
+    "seed": {
+      "convex/example.ts": "import { query, mutation as change, internalMutation, action } from \"./_generated/server\";\nexport const example = query({args: {}, handler: async (context, args) => {\n  return Date.now();\n}});"
+    },
+    "expected": []
+  },
+  {
+    "name": "unrelated factory and shadowed imported factory are not Convex context",
+    "seed": {
+      "convex/fake.ts": "import { mutation } from './_generated/server';\nfunction fake(mutation) {\n  return mutation({handler: async (ctx) => { ctx.db.patch(id, {}); }});\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "locations: filter-table-scan identical chains in separate functions",
+    "seed": {
+      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").filter(q => q.eq(q.field(\"active\"), true)).collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").filter(q => q.eq(q.field(\"active\"), true)).collect();\n}"
+    },
+    "expected": [
+      {
+        "rule": "filter-table-scan",
+        "file": "convex/locations.ts",
+        "line": 2
+      },
+      {
+        "rule": "filter-table-scan",
+        "file": "convex/locations.ts",
+        "line": 5
+      }
+    ]
+  },
+  {
+    "name": "locations: index-without-range identical chains in separate functions",
+    "seed": {
+      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\").collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\").collect();\n}"
+    },
+    "expected": [
+      {
+        "rule": "index-without-range",
+        "file": "convex/locations.ts",
+        "line": 2
+      },
+      {
+        "rule": "index-without-range",
+        "file": "convex/locations.ts",
+        "line": 5
+      }
+    ]
+  },
+  {
+    "name": "locations: unbounded-collect identical chains in separate functions",
+    "seed": {
+      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").collect();\n}"
+    },
+    "expected": [
+      {
+        "rule": "unbounded-collect",
+        "file": "convex/locations.ts",
+        "line": 2
+      },
+      {
+        "rule": "unbounded-collect",
+        "file": "convex/locations.ts",
+        "line": 5
+      }
+    ]
+  },
+  {
+    "name": "locations: index-filter-combo identical chains in separate functions",
+    "seed": {
+      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\", q => q.eq(\"active\", true)).filter(q => q.eq(q.field(\"name\"), \"a\")).collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\", q => q.eq(\"active\", true)).filter(q => q.eq(q.field(\"name\"), \"a\")).collect();\n}"
+    },
+    "expected": [
+      {
+        "rule": "index-filter-combo",
+        "file": "convex/locations.ts",
+        "line": 2
+      },
+      {
+        "rule": "index-filter-combo",
+        "file": "convex/locations.ts",
+        "line": 5
+      }
+    ]
+  },
+  {
+    "name": "two whole-table reads on one line remain separate findings",
+    "seed": {
+      "convex/locations.ts": "export async function first(ctx) { await ctx.db.query(\"a\").collect(); await ctx.db.query(\"a\").collect(); }"
+    },
+    "expected": [
+      {
+        "rule": "unbounded-collect",
+        "file": "convex/locations.ts",
+        "line": 1,
+        "column": 59
+      },
+      {
+        "rule": "unbounded-collect",
+        "file": "convex/locations.ts",
+        "line": 1,
+        "column": 94
+      }
+    ]
+  },
+  {
+    "name": "a query builder without execution is not a scan",
+    "seed": {
+      "convex/builder.ts": "export function prepare(ctx) { return ctx.db.query(\"notes\").filter(q => q.eq(q.field(\"x\"), 1)); }"
+    },
+    "expected": []
+  },
+  {
+    "name": "degraded query analysis abstains rather than guessing chains",
+    "analysis": "off",
+    "seed": {
+      "convex/builder.ts": "export async function all(ctx) { return await ctx.db.query(\"notes\").collect(); }"
+    },
+    "expected": []
+  },
+  {
+    "name": "locations: presence-patch-on-shared-document two separate statements",
+    "seed": {
+      "convex/twice.ts": "import { query, mutation, action } from \"./_generated/server\";\nexport const test = mutation({args: {}, handler: async (ctx, args) => {\n  await ctx.db.patch(id, {lastSeen: now});\n  await ctx.db.patch(id, {lastSeen: now});\n}});"
+    },
+    "expected": [
+      {
+        "rule": "presence-patch-on-shared-document",
+        "file": "convex/twice.ts",
+        "line": 3
+      },
+      {
+        "rule": "presence-patch-on-shared-document",
+        "file": "convex/twice.ts",
+        "line": 4
+      }
+    ]
+  },
+  {
+    "name": "locations: write-in-query two separate statements",
+    "seed": {
+      "convex/twice.ts": "import { query, mutation, action } from \"./_generated/server\";\nexport const test = query({args: {}, handler: async (ctx, args) => {\n  await ctx.db.insert(\"notes\", {text: \"hello\"});\n  await ctx.db.insert(\"notes\", {text: \"hello\"});\n}});"
+    },
+    "expected": [
+      {
+        "rule": "write-in-query",
+        "file": "convex/twice.ts",
+        "line": 3
+      },
+      {
+        "rule": "write-in-query",
+        "file": "convex/twice.ts",
+        "line": 4
+      }
+    ]
+  },
+  {
+    "name": "locations: db-in-action two separate statements",
+    "seed": {
+      "convex/twice.ts": "import { query, mutation, action } from \"./_generated/server\";\nexport const test = action({args: {}, handler: async (ctx, args) => {\n  await ctx.db.get(id);\n  await ctx.db.get(id);\n}});"
+    },
+    "expected": [
+      {
+        "rule": "db-in-action",
+        "file": "convex/twice.ts",
+        "line": 3
+      },
+      {
+        "rule": "db-in-action",
+        "file": "convex/twice.ts",
+        "line": 4
+      }
+    ]
+  },
+  {
+    "name": "locations: public-api-in-server-call two separate statements",
+    "seed": {
+      "convex/twice.ts": "import { query, mutation, action } from \"./_generated/server\";\nexport const test = action({args: {}, handler: async (ctx, args) => {\n  await ctx.runQuery(api.notes.list, {});\n  await ctx.runQuery(api.notes.list, {});\n}});"
+    },
+    "expected": [
+      {
+        "rule": "public-api-in-server-call",
+        "file": "convex/twice.ts",
+        "line": 3
+      },
+      {
+        "rule": "public-api-in-server-call",
+        "file": "convex/twice.ts",
+        "line": 4
+      }
+    ]
+  },
+  {
+    "name": "locations: spread-into-patch two separate statements",
+    "seed": {
+      "convex/twice.ts": "import { query, mutation, action } from \"./_generated/server\";\nexport const test = mutation({args: {}, handler: async (ctx, args) => {\n  await ctx.db.patch(id, {...args});\n  await ctx.db.patch(id, {...args});\n}});"
+    },
+    "expected": [
+      {
+        "rule": "spread-into-patch",
+        "file": "convex/twice.ts",
+        "line": 3
+      },
+      {
+        "rule": "spread-into-patch",
+        "file": "convex/twice.ts",
+        "line": 4
+      }
+    ]
+  },
+  {
+    "name": "locations: sequential-run-in-loop two separate statements",
+    "seed": {
+      "convex/twice.ts": "import { query, mutation, action } from \"./_generated/server\";\nexport const test = action({args: {}, handler: async (ctx, args) => {\n  for (const id of ids) { await ctx.runMutation(internal.notes.touch, {id}); }\n  for (const id of ids) { await ctx.runMutation(internal.notes.touch, {id}); }\n}});"
+    },
+    "expected": [
+      {
+        "rule": "sequential-run-in-loop",
+        "file": "convex/twice.ts",
+        "line": 3
+      },
+      {
+        "rule": "sequential-run-in-loop",
+        "file": "convex/twice.ts",
+        "line": 4
+      }
+    ]
+  },
+  {
+    "name": "locations: missing validators on two declarations",
+    "seed": {
+      "convex/twice.ts": "import { query, mutation, action } from \"./_generated/server\";\nexport const first = mutation({handler: async (ctx) => { return 1; }});\nexport const second = mutation({handler: async (ctx) => { return 2; }});"
+    },
+    "expected": [
+      {
+        "rule": "missing-args-validator",
+        "file": "convex/twice.ts",
+        "line": 2
+      },
+      {
+        "rule": "missing-args-validator",
+        "file": "convex/twice.ts",
+        "line": 3
+      }
+    ]
+  },
+  {
+    "name": "locations: two transaction declarations in Node runtime",
+    "seed": {
+      "convex/twice.ts": "\"use node\";\nimport { query } from \"./_generated/server\";\nexport const first = query({args: {}, handler: async (ctx) => 1});\nexport const second = query({args: {}, handler: async (ctx) => 2});"
+    },
+    "expected": [
+      {
+        "rule": "node-runtime-transaction",
+        "file": "convex/twice.ts",
+        "line": 3
+      },
+      {
+        "rule": "node-runtime-transaction",
+        "file": "convex/twice.ts",
+        "line": 4
       }
     ]
   }

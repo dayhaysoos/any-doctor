@@ -49,8 +49,8 @@ function git(args: string[], cwd: string): { ok: true; out: string } | { ok: fal
   return { ok: true, out: String(r.stdout).trim() };
 }
 
-function findingKey(rule: string | undefined, file: string, line: number): string {
-  return `${rule ?? ""}:${file}:${line}`;
+function findingKey(rule: string | undefined, file: string, line: number, column?: number): string {
+  return `${rule ?? ""}:${file}:${line}:${column ?? ""}`;
 }
 
 // Join each unexpected diff entry back to the rich HEAD finding it
@@ -60,18 +60,19 @@ function joinAdded(unexpected: ExpectedFinding[], headGroups: ReportGroup[]): Ad
   const byKey = new Map<string, { f: Finding; g: ReportGroup }[]>();
   for (const g of headGroups) {
     for (const f of g.findings) {
-      const q = byKey.get(findingKey(f.rule, f.file, f.line)) ?? [];
+      const q = byKey.get(findingKey(f.rule, f.file, f.line, f.column)) ?? [];
       q.push({ f, g });
-      byKey.set(findingKey(f.rule, f.file, f.line), q);
+      byKey.set(findingKey(f.rule, f.file, f.line, f.column), q);
     }
   }
   const out: AddedFinding[] = [];
   for (const u of unexpected) {
-    const pair = byKey.get(findingKey(u.rule, u.file, u.line))?.shift();
+    const pair = byKey.get(findingKey(u.rule, u.file, u.line, u.column))?.shift();
     if (pair === undefined) continue; // unreachable: the entry came from those findings
     out.push({
       doctorId: pair.g.meta.id,
       ...(pair.f.rule !== undefined ? { rule: pair.f.rule } : {}),
+      ...(pair.f.column !== undefined ? { column: pair.f.column } : {}),
       file: pair.f.file,
       line: pair.f.line,
       severity: resolveFinding(pair.g.meta, pair.f).severity,

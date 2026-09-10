@@ -1,5 +1,5 @@
-import { AnalysisFile, AnalysisSpans, Mode } from "./contract.js";
-import { analysisStatus, analyzeBindings, analyzeSpans } from "./analysis.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, Mode } from "./contract.js";
+import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls } from "./analysis.js";
 type Analyzer = typeof analyzeBindings;
 type SpansAnalyzer = typeof analyzeSpans;
 type Status = typeof analysisStatus;
@@ -17,7 +17,9 @@ export type AnalysisResponse = {
 } | {
     file: AnalysisSpans;
 } | {
+    file: AnalysisCalls;
+} | {
     error: string;
 };
-export declare function handleAnalysisRequest(req: AnalysisRequestBody, mode: Mode, analyzer?: Analyzer, status?: Status, spansAnalyzer?: SpansAnalyzer): AnalysisResponse;
+export declare function handleAnalysisRequest(req: AnalysisRequestBody, mode: Mode, analyzer?: Analyzer, status?: Status, spansAnalyzer?: SpansAnalyzer, callsAnalyzer?: typeof analyzeCalls): AnalysisResponse;
 export {};

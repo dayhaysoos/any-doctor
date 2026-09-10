@@ -31,7 +31,7 @@ function groupSeverity(g: ReportGroup): Severity {
 // and survives — the check tree exists to show each check's own story.
 function dedupeGroups(groups: ReportGroup[]): { groups: ReportGroup[]; hidden: number } {
   const owner = new Map<string, string>();
-  const key = (f: Finding): string => `${f.file}:${f.line}`;
+  const key = (f: Finding): string => `${f.file}:${f.line}:${f.column ?? ""}`;
   const ordered = [...groups].sort(
     (a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
   const out: ReportGroup[] = [];

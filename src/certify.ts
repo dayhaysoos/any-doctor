@@ -9,7 +9,7 @@ import * as contract from "./contract.js";
 // one interface — certify(mod, fixtures) -> results. The policies: the claim
 // contract (unstatable claims are unshippable), the per-fixture gate, the
 // shared innocent corpus (known-innocent shapes must stay silent), the
-// duplicate-location probe (a violation planted twice must be found twice),
+// per-check location coverage (explicit, context-preserving witnesses),
 // and the shared sensitivity corpus (confirmed-real patterns must be found).
 // The doctor loader owns Doctor-run choreography — decode, confine, frame —
 // and calls this module once; prevention tiers land here, not in its main().
@@ -65,6 +65,9 @@ export function validateClaimContract(mod: DoctorModule): void {
     if (!Array.isArray(c.lookalikes) || (c.lookalikes as unknown[]).length === 0) {
       problems.push(`check "${String(c.id)}": lookalikes is required — at least one innocent shape that must stay silent`);
     }
+    if (c.reportingUnit !== undefined && !["occurrence", "file", "project"].includes(String(c.reportingUnit))) {
+      problems.push(`check "${String(c.id)}": reportingUnit must be occurrence, file, or project`);
+    }
     if (Array.isArray(c.needs) && (c.needs as unknown[]).length > 0
       && (c.onUnknown !== "narrow" && c.onUnknown !== "skip")) {
       problems.push(`check "${String(c.id)}": onUnknown is required when needs is declared — "narrow" or "skip"`);
@@ -115,119 +118,6 @@ function collectSeed(dir: string, prefix: string, seed: Record<string, string>, 
     if (entry.isDirectory()) collectSeed(abs, rel, seed, skip);
     else if (entry.name !== skip) seed[rel] = fs.readFileSync(abs, "utf8");
   }
-}
-
-// The duplicate-location sensitivity probe (D24, hardened in the review
-// loop): a doctor's own flag-shaped fixture — the one with the most
-// expected findings concentrated in a single seeded file — is re-planted
-// at three locations:
-//
-//   1. the original file, untouched (every fact the fixture proved);
-//   2. a byte-identical twin module (the cross-file location — checks
-//      whose violation is inherently cross-module must fire at both);
-//   3. a pair file: the violation twice INSIDE one file, wrapped in two
-//      functions (the billing.ts shape — identical chains in separate
-//      functions of one module, collapsed to one finding by a dedup keyed
-//      on normalized statement text).
-//
-// The pair file's bodies are transformed (exports stripped, imports
-// hoisted) so the two in-file copies stay byte-identical TO EACH OTHER —
-// which is exactly what a text-keyed dedup collapses. Assertions, counting
-// only the rules the fixture expected at that file (unrelated rules cannot
-// inflate a floor):
-//
-//   - original and twin must each independently reproduce the fixture's
-//     expected count;
-//   - when the witness fixture itself seeded TWO OR MORE expected findings
-//     in the one file (proof the check reports per-violation, not one
-//     verdict per file — openrouter's "no error check anywhere in the
-//     file" is a legitimate file-scoped claim), the pair file must yield
-//     at least 2x that count — UNLESS it yields zero, which is exempt by
-//     design: the pair wrap strips exports and nests bodies in functions,
-//     which can remove the very context a check needs (an export-keyed
-//     check cannot fire inside the pair file). Less-than-double but
-//     nonzero is the collapse signature — N identical violations in one
-//     file reduced to a single finding. Doctors whose every fixture
-//     seeds at most one violation per file get twin+original policing
-//     only and the probe row says so; the skill tells authors to seed a
-//     two-violation fixture so the probe can police same-file dedup.
-function buildDuplicateLocationProbe(fixtures: Fixture[]): {
-  seed: Record<string, string>;
-  fixtureName: string;
-  analysisOff: boolean;
-  originalFile: string;
-  twinFile: string;
-  pairFile: string;
-  expectedCount: number;
-  rules: Set<string>;
-} | null {
-  // Witness selection: the flag-shaped fixture with the most expected
-  // findings in one seeded file — a 2-in-one-file witness catches per-file
-  // collapse directly; any 1-file witness still exercises the twin and
-  // pair locations.
-  let best: { fixture: Fixture; file: string; count: number } | null = null;
-  for (const fixture of fixtures) {
-    const perFile = new Map<string, number>();
-    for (const e of fixture.expected) perFile.set(e.file, (perFile.get(e.file) ?? 0) + 1);
-    for (const [file, count] of perFile) {
-      if (typeof fixture.seed[file] === "string" && (best === null || count > best.count)) {
-        best = { fixture, file, count };
-      }
-    }
-  }
-  if (best === null) return null;
-  const { fixture, file: originalFile, count: expectedCount } = best;
-  // Rule-less expectations (no `rule` field) can only be matched by
-  // rule-less findings — key those as "" so the count filter keeps them.
-  const rules = new Set(fixture.expected
-    .filter((e) => e.file === originalFile)
-    .map((e) => e.rule ?? ""));
-  const twinFile = "__probe_twin__/" + originalFile.split("/").pop();
-  const pairFile = "__probe_pair__/" + originalFile.split("/").pop();
-  if (typeof fixture.seed[twinFile] === "string" || typeof fixture.seed[pairFile] === "string") return null;
-  const pairContent = pairFileContent(fixture.seed[originalFile]);
-  if (pairContent === null) return null;
-  const seed = { ...fixture.seed, [twinFile]: fixture.seed[originalFile], [pairFile]: pairContent };
-  return {
-    seed,
-    fixtureName: fixture.name,
-    analysisOff: fixture.analysis === "off",
-    originalFile,
-    twinFile,
-    pairFile,
-    expectedCount,
-    rules,
-  };
-}
-
-// The in-file pair: the original content twice, each copy wrapped in a
-// function (module-level declarations cannot repeat, and both copies get
-// the identical transform so they stay byte-equal to each other).
-function pairFileContent(original: string): string | null {
-  const lines = original.split("\n").filter((l) =>
-    !/^\s*import\b/.test(l) && !/^\s*export\s*\{/.test(l)
-    && !/^\s*export\s+type\s*\{/.test(l) && !/^\s*export\s+\*\s*from/.test(l)
-  );
-  const body = lines.map((l) => l
-    .replace(/^(\s*)export default (?=(?:async\s+)?(?:function|class)\b)/, "$1")
-    .replace(/^(\s*)export default /, "$1const __probeDefault = ")
-    .replace(/^(\s*)export (?=(?:async\s+)?(?:function|class|const|let|var|type|interface|enum|abstract|declare)\b)/, "$1"),
-  ).join("\n");
-  if (body.trim().length === 0) return null;
-  const imports = original.split("\n").filter((l) => /^\s*import\b/.test(l)).join("\n");
-  return [
-    imports,
-    imports ? "" : null,
-    "// any-doctor duplicate-location probe — copy 1",
-    "function __anyDoctorProbeA() {",
-    body,
-    "}",
-    "// copy 2 — same violation, different location, same file",
-    "function __anyDoctorProbeB() {",
-    body,
-    "}",
-    "",
-  ].filter((l) => l !== null).join("\n");
 }
 
 // The certification entry point: every policy, in gate order, as result
@@ -294,39 +184,39 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
       results.push(errorRow("shared innocent corpus", e));
     }
   }
-  // The duplicate-location sensitivity probe (D24).
-  const probe = buildDuplicateLocationProbe(fixtures);
-  if (probe !== null) {
-    const name = `duplicate-location sensitivity (from "${probe.fixtureName}")` + (probe.expectedCount < 2
-      ? " — no two-in-one-file witness: same-file collapse unpolicied"
-      : "");
-    if (await skipFor(!probe.analysisOff)) {
+  // Explicit, context-preserving witnesses per check replace source rewriting.
+  // One sibling's fixture cannot establish another check's location coverage.
+  for (const check of (mod.meta as DoctorMeta).checks ?? []) {
+    const name = `location coverage: ${check.id}`;
+    if (!check.reportingUnit) {
+      results.push({ ...okRow(name), skipped: "reporting unit undeclared — location coverage not exercised" });
+      continue;
+    }
+    if (check.needs?.length && await skipFor(true)) {
       results.push(skipRow(name));
-    } else {
-      try {
-        setAnalysisDisabled(probe.analysisOff);
-        const findings = await inSandbox(probe.seed, (tmp) => runOnce(tmp, mod, { includeTests: true }))
-          .then((r) => r.findings);
-        const at = (file: string): number =>
-          findings.filter((f) => f.file === file && probe.rules.has(f.rule ?? "")).length;
-        const problems: string[] = [];
-        if (at(probe.originalFile) < probe.expectedCount) {
-          problems.push(`the untouched original no longer produces its ${probe.expectedCount} finding(s) — got ${at(probe.originalFile)}`);
-        }
-        if (at(probe.twinFile) < probe.expectedCount) {
-          problems.push(`the byte-identical twin module produces ${at(probe.twinFile)} finding(s) where ${probe.expectedCount} expected — a dedup keyed on statement text collapses distinct violations sharing a body`);
-        }
-        if (probe.expectedCount >= 2 && at(probe.pairFile) > 0 && at(probe.pairFile) < probe.expectedCount * 2) {
-          problems.push(`the same violation planted twice in ONE file yields ${at(probe.pairFile)} finding(s) — the collapse signature (N identical violations reduced to one; the billing.ts bug class)`);
-        }
-        results.push(problems.length === 0
-          ? okRow(name)
-          : { ...errorRow(name, problems.join("; ")), missing: [], unexpected: [] });
-      } catch (e) {
-        results.push(errorRow(name, e));
-      } finally {
-        setAnalysisDisabled(false);
+      continue;
+    }
+    const witness = fixtures.find((fixture, index) => {
+      if (!results[index]?.ok || results[index]?.skipped || (check.needs?.length && fixture.analysis === "off")) return false;
+      const hits = fixture.expected.filter(f => f.rule === check.id);
+      if (check.reportingUnit !== "occurrence") return hits.length > 0;
+      const files = new Map<string, Map<number, Set<number | undefined>>>();
+      for (const hit of hits) {
+        const lines = files.get(hit.file) ?? new Map<number, Set<number | undefined>>();
+        const columns = lines.get(hit.line) ?? new Set<number | undefined>();
+        columns.add(hit.column); lines.set(hit.line, columns); files.set(hit.file, lines);
       }
+      // A line-only expectation overlaps every column on that line.
+      return [...files.values()].some(lines => [...lines.values()]
+        .reduce((count, columns) => count + (columns.has(undefined) ? 1 : columns.size), 0) >= 2);
+    });
+    if (witness) results.push(okRow(name));
+    else {
+      const reason = check.reportingUnit === "occurrence"
+        ? "requires a passing fixture with two distinct locations of this check in one file"
+        : "requires a passing positive fixture for this check";
+      const severity = check.severity ?? (mod.meta as DoctorMeta).severity;
+      results.push(severity === "info" ? { ...okRow(name), skipped: reason } : errorRow(name, reason));
     }
   }
   // The sensitivity corpus (D24): the innocent corpus's complement —

@@ -1024,6 +1024,26 @@ D26.
 
 ---
 
+## D28 — Call facts and explicit per-check coverage
+
+The 0.0.7 audit found that lexical proximity could both report a consumed promise
+and suppress a genuinely discarded one. `ctx.analysis.calls(file)` now provides
+immediate usage, scoped receiver identity, handler registration facts, and direct
+clock differences. Convex policy consumes those facts and abstains outside its
+supported shapes. Query chains use linked call locations rather than text keys.
+Generic subscription and mutation nondeterminism claims have been retired.
+
+This supersedes D24's automatic duplicate-location rewriting. Certification now
+uses explicit context-preserving witnesses per check and declared reporting unit.
+An occurrence warning/error without two distinct same-file locations fails;
+legacy undeclared coverage and unavailable engines are visibly not exercised.
+Optional columns distinguish same-line occurrences throughout the report pipeline.
+
+This is a bounded repair, not whole-program promise verification. See
+[doctor reliability](doctor-reliability.md) for release evidence and known limits.
+
+---
+
 ## Open questions
 
 - Opt-in metrics/score API (parked, D19): count doctors run and findings

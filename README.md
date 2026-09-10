@@ -45,11 +45,12 @@ Non-terminals and CI never see a prompt — output is stable and pipeable
 | **openrouter-doctor** | OpenRouter discipline: stream errors surfaced, keep-alives skipped, cancellations that stop billing | 5 |
 | **async-doctor** | Async and concurrency: dropped promise results, uncleared timers, fetch hygiene | 3 |
 
-Every check ships with fixtures proving both directions — it fires on the
-shapes it claims (recall) and stays silent on innocent lookalikes
-(precision). 144 fixtures across the pack, run by `verify` as an exact
-multiset on `rule:file:line`. slop-doctor's checks were born from 1,368
-Bugbot findings across 182 reviewed PRs — every check carries its evidence.
+Checks ship positive and innocent-lookalike fixtures. `verify` compares an
+exact multiset of rule/file/line and optional column, then runs shared innocent
+and sensitivity corpora. Convex checks also declare per-check location coverage;
+legacy undeclared coverage is reported as not exercised. Passing fixtures show
+agreement on those cases, not a general accuracy guarantee. See
+[the reliability protocol](docs/doctor-reliability.md).
 
 ## Write your own
 

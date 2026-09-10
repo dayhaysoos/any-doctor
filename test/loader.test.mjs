@@ -105,7 +105,7 @@ test("seed path traversal becomes a named failing fixture, siblings still run", 
   assert.equal(r.status, 0);
   const frame = r.stdout.split("\n").find(l => l.startsWith(SENTINEL));
   const parsed = JSON.parse(frame.slice(SENTINEL.length));
-  assert.equal(parsed.results.length, 4); // + shared innocent corpus + duplicate-location probe
+  assert.equal(parsed.results.length, 3); // two fixtures plus the shared innocent corpus; no declared checks
   const trav = parsed.results.find(x => x.name === "traveller");
   assert.equal(trav.ok, false);
   assert.match(trav.error, /escapes the sandbox/);
@@ -229,12 +229,12 @@ test("verify refuses a needs-declaring check without onUnknown", async () => {
   }
 });
 
-test("duplicate-location probe passes a doctor that reports per violation", async () => {
+test("explicit location witness passes through the confined loader", async () => {
   const root = tmpRoot();
   const doctor = path.join(root, "perSite.mjs");
   fs.writeFileSync(doctor, [
     "export const meta = { id: 'perSite', description: 'flags TODO comments', severity: 'info',",
-    "  checks: [{ id: 'todo', description: 'TODO found', claim: 'a TODO comment is present', lookalikes: ['the word todorok'] }] }",
+    "  checks: [{ id: 'todo', description: 'TODO found', claim: 'a TODO comment is present', lookalikes: ['the word todorok'], reportingUnit: 'occurrence', severity: 'warning' }] }",
     "export async function doctor(ctx) {",
     "  for (const f of ctx.files.list()) {",
     "    const lines = ctx.files.read(f).split('\\n');",
@@ -244,7 +244,7 @@ test("duplicate-location probe passes a doctor that reports per violation", asyn
   ].join("\n"));
   fs.writeFileSync(path.join(root, "perSite.fixtures.mjs"), [
     "export const fixtures = [",
-    "  { name: 'flagged', seed: { 'src/a.ts': 'const a = 1; // TODO fix\\n' }, expected: [{ rule: 'todo', file: 'src/a.ts', line: 1 }] },",
+    "  { name: 'flagged', seed: { 'src/a.ts': '// TODO fix\\n// TODO fix\\n' }, expected: [{ rule: 'todo', file: 'src/a.ts', line: 1 }, { rule: 'todo', file: 'src/a.ts', line: 2 }] },",
     "];",
   ].join("\n"));
   try {
@@ -252,7 +252,7 @@ test("duplicate-location probe passes a doctor that reports per violation", asyn
     assert.equal(r.status, 0);
     const frame = r.stdout.split("\n").find(l => l.startsWith(SENTINEL));
     const parsed = JSON.parse(frame.slice(SENTINEL.length));
-    const probe = parsed.results.find(x => x.name.startsWith("duplicate-location sensitivity"));
+    const probe = parsed.results.find(x => x.name === "location coverage: todo");
     assert.ok(probe, "probe row present");
     assert.equal(probe.ok, true);
   } finally {
@@ -260,12 +260,12 @@ test("duplicate-location probe passes a doctor that reports per violation", asyn
   }
 });
 
-test("duplicate-location probe fails a doctor that dedups by statement text", async () => {
+test("explicit location witness exposes text dedup through the confined loader", async () => {
   const root = tmpRoot();
   const doctor = path.join(root, "deduping.mjs");
   fs.writeFileSync(doctor, [
     "export const meta = { id: 'deduping', description: 'flags TODO comments, once per unique text', severity: 'info',",
-    "  checks: [{ id: 'todo', description: 'TODO found', claim: 'a TODO comment is present', lookalikes: ['the word todorok'] }] }",
+    "  checks: [{ id: 'todo', description: 'TODO found', claim: 'a TODO comment is present', lookalikes: ['the word todorok'], reportingUnit: 'occurrence', severity: 'warning' }] }",
     "export async function doctor(ctx) {",
     "  const seen = new Set();",
     "  for (const f of ctx.files.list()) {",
@@ -279,7 +279,7 @@ test("duplicate-location probe fails a doctor that dedups by statement text", as
   ].join("\n"));
   fs.writeFileSync(path.join(root, "deduping.fixtures.mjs"), [
     "export const fixtures = [",
-    "  { name: 'flagged', seed: { 'src/a.ts': 'const a = 1; // TODO fix\\n' }, expected: [{ rule: 'todo', file: 'src/a.ts', line: 1 }] },",
+    "  { name: 'flagged', seed: { 'src/a.ts': '// TODO fix\\n// TODO fix\\n' }, expected: [{ rule: 'todo', file: 'src/a.ts', line: 1 }, { rule: 'todo', file: 'src/a.ts', line: 2 }] },",
     "];",
   ].join("\n"));
   try {
@@ -287,10 +287,10 @@ test("duplicate-location probe fails a doctor that dedups by statement text", as
     assert.equal(r.status, 0);
     const frame = r.stdout.split("\n").find(l => l.startsWith(SENTINEL));
     const parsed = JSON.parse(frame.slice(SENTINEL.length));
-    const probe = parsed.results.find(x => x.name.startsWith("duplicate-location sensitivity"));
+    const probe = parsed.results.find(x => x.name === "location coverage: todo");
     assert.ok(probe);
     assert.equal(probe.ok, false);
-    assert.match(probe.error, /dedup keyed on statement text|different locations/);
+    assert.match(probe.error, /two distinct locations/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

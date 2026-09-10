@@ -1,0 +1,583 @@
+{
+  "schema": 1,
+  "tool": "any-doctor",
+  "target": "/Users/nickdejesus/Code/sift-skills",
+  "fileCount": 630,
+  "durationMs": 2808,
+  "score": {
+    "score": 97,
+    "grade": "Excellent",
+    "filesClean": 580,
+    "filesTotal": 630
+  },
+  "counts": {
+    "error": 0,
+    "warning": 46,
+    "info": 61,
+    "total": 107,
+    "hiddenDuplicates": 0
+  },
+  "analysisAvailable": true,
+  "emptyScan": false,
+  "groups": [
+    {
+      "doctor": "convex-doctor",
+      "checks": [
+        {
+          "rule": "public-api-in-server-call",
+          "heading": "A server-side run call referencing the public api namespace - a review candidate; namespace alone does not establish an authorization flaw.",
+          "severity": "info",
+          "findings": [
+            {
+              "file": "convex/analysis/extractJobStructure.ts",
+              "line": 444
+            },
+            {
+              "file": "convex/analysis/index.ts",
+              "line": 100
+            },
+            {
+              "file": "convex/analysis/queueTest.ts",
+              "line": 60
+            },
+            {
+              "file": "convex/analysis/validateDiscriminatoryContent.ts",
+              "line": 275
+            },
+            {
+              "file": "convex/billingActions.ts",
+              "line": 73
+            },
+            {
+              "file": "convex/billingActions.ts",
+              "line": 96
+            },
+            {
+              "file": "convex/chat.ts",
+              "line": 1957
+            },
+            {
+              "file": "convex/contact.ts",
+              "line": 53
+            },
+            {
+              "file": "convex/contact.ts",
+              "line": 74
+            },
+            {
+              "file": "convex/devApplicationFileUploadQa.ts",
+              "line": 357
+            },
+            {
+              "file": "convex/devApplicationFileUploadQa.ts",
+              "line": 512
+            },
+            {
+              "file": "convex/evals/runner.ts",
+              "line": 422
+            },
+            {
+              "file": "convex/job_wizard_ai.ts",
+              "line": 490
+            },
+            {
+              "file": "convex/job_wizard_ai.ts",
+              "line": 495
+            },
+            {
+              "file": "convex/job_wizard_ai.ts",
+              "line": 718
+            },
+            {
+              "file": "convex/job_wizard_ai.ts",
+              "line": 723
+            },
+            {
+              "file": "convex/jobsActions.ts",
+              "line": 62
+            },
+            {
+              "file": "convex/jobsActions.ts",
+              "line": 115
+            },
+            {
+              "file": "convex/jobsActions.ts",
+              "line": 216
+            },
+            {
+              "file": "convex/jobsActions.ts",
+              "line": 292
+            },
+            {
+              "file": "convex/support.ts",
+              "line": 248
+            },
+            {
+              "file": "convex/support.ts",
+              "line": 272
+            },
+            {
+              "file": "convex/support.ts",
+              "line": 284
+            },
+            {
+              "file": "convex/support.ts",
+              "line": 297
+            }
+          ]
+        },
+        {
+          "rule": "spread-into-patch",
+          "heading": "ctx.db.patch/replace called with a spread - a review candidate; presence alone does not prove client-controlled fields.",
+          "severity": "info",
+          "findings": [
+            {
+              "file": "convex/analysis/internal.ts",
+              "line": 302
+            },
+            {
+              "file": "convex/analysis/internal.ts",
+              "line": 376
+            },
+            {
+              "file": "convex/analysis/internal.ts",
+              "line": 515
+            },
+            {
+              "file": "convex/analysis/internal.ts",
+              "line": 604
+            },
+            {
+              "file": "convex/analysis/internal.ts",
+              "line": 659
+            },
+            {
+              "file": "convex/analysis/internal.ts",
+              "line": 702
+            },
+            {
+              "file": "convex/analysis/internal.ts",
+              "line": 754
+            },
+            {
+              "file": "convex/analysis/verificationInternal.ts",
+              "line": 79
+            },
+            {
+              "file": "convex/applicationFileRetention.ts",
+              "line": 1684
+            },
+            {
+              "file": "convex/applicationFileRetention.ts",
+              "line": 1743
+            },
+            {
+              "file": "convex/chat.ts",
+              "line": 1852
+            },
+            {
+              "file": "convex/chatConversationState.ts",
+              "line": 321
+            },
+            {
+              "file": "convex/conversionReconciliation.ts",
+              "line": 372
+            },
+            {
+              "file": "convex/dashboardMetricsReconciliation.ts",
+              "line": 557
+            },
+            {
+              "file": "convex/dashboardMetricsReconciliation.ts",
+              "line": 964
+            },
+            {
+              "file": "convex/devRecruiterChatQa.ts",
+              "line": 1678
+            },
+            {
+              "file": "convex/interviewFeedback.ts",
+              "line": 907
+            },
+            {
+              "file": "convex/migrations/backfillApplicationOrgIds.ts",
+              "line": 84
+            },
+            {
+              "file": "convex/migrations/backfillGeneratedJDModel.ts",
+              "line": 23
+            },
+            {
+              "file": "convex/migrations/removeSeverityFromGaps.ts",
+              "line": 105
+            },
+            {
+              "file": "convex/orgJobDefaults.ts",
+              "line": 371
+            },
+            {
+              "file": "convex/orgJobDefaults.ts",
+              "line": 401
+            },
+            {
+              "file": "convex/orgJobDefaults.ts",
+              "line": 462
+            },
+            {
+              "file": "convex/orgJobDefaults.ts",
+              "line": 661
+            },
+            {
+              "file": "convex/recruiterChatMessages.ts",
+              "line": 301
+            },
+            {
+              "file": "convex/shareLinks.ts",
+              "line": 928
+            },
+            {
+              "file": "convex/stageSummaries.ts",
+              "line": 337
+            },
+            {
+              "file": "convex/teamInvites.ts",
+              "line": 545
+            }
+          ]
+        },
+        {
+          "rule": "query-clock-reactivity",
+          "heading": "Date.now() in a query can produce stale time-dependent results and reduce cache reuse.",
+          "severity": "warning",
+          "findings": [
+            {
+              "file": "convex/analysis/queue.ts",
+              "line": 559,
+              "column": 16
+            },
+            {
+              "file": "convex/applications.ts",
+              "line": 1500,
+              "column": 8
+            },
+            {
+              "file": "convex/applications.ts",
+              "line": 1696,
+              "column": 8
+            },
+            {
+              "file": "convex/billing.ts",
+              "line": 1151,
+              "column": 16
+            },
+            {
+              "file": "convex/candidateRecruiterNotes.ts",
+              "line": 109,
+              "column": 38
+            },
+            {
+              "file": "convex/chat.ts",
+              "line": 1447,
+              "column": 16
+            },
+            {
+              "file": "convex/chatConversationState.ts",
+              "line": 351,
+              "column": 33
+            },
+            {
+              "file": "convex/chatConversationState.ts",
+              "line": 356,
+              "column": 10
+            },
+            {
+              "file": "convex/chatSearchHydration.ts",
+              "line": 281,
+              "column": 16
+            },
+            {
+              "file": "convex/evals/results.ts",
+              "line": 558,
+              "column": 23
+            },
+            {
+              "file": "convex/jobApplicantExports.ts",
+              "line": 157,
+              "column": 8
+            },
+            {
+              "file": "convex/shareLinks.ts",
+              "line": 475,
+              "column": 16
+            },
+            {
+              "file": "convex/shareLinks.ts",
+              "line": 1078,
+              "column": 13
+            },
+            {
+              "file": "convex/support.ts",
+              "line": 214,
+              "column": 8
+            },
+            {
+              "file": "convex/teamInvites.ts",
+              "line": 639,
+              "column": 16
+            },
+            {
+              "file": "convex/teamInvites.ts",
+              "line": 684,
+              "column": 22
+            },
+            {
+              "file": "convex/teamInvites.ts",
+              "line": 727,
+              "column": 8
+            },
+            {
+              "file": "convex/tokenUsage.ts",
+              "line": 1189,
+              "column": 6
+            },
+            {
+              "file": "convex/tokenUsage.ts",
+              "line": 1394,
+              "column": 18
+            }
+          ]
+        },
+        {
+          "rule": "sequential-run-in-loop",
+          "heading": "A run call awaited inside a for/while loop - a batching review candidate; deliberate retry loops (OCC with backoff) share this shape.",
+          "severity": "info",
+          "findings": [
+            {
+              "file": "convex/analysis/queueActions.ts",
+              "line": 115
+            },
+            {
+              "file": "convex/analysis/queueActions.ts",
+              "line": 341
+            },
+            {
+              "file": "convex/analysis/runCore.ts",
+              "line": 192
+            },
+            {
+              "file": "convex/analysis/runCore.ts",
+              "line": 218
+            },
+            {
+              "file": "convex/lib/tokenUsageRetry.ts",
+              "line": 50
+            },
+            {
+              "file": "convex/stagingDurableApplicationIntakeQa.ts",
+              "line": 973
+            },
+            {
+              "file": "convex/stagingDurableApplicationIntakeQa.ts",
+              "line": 995
+            },
+            {
+              "file": "convex/talentPoolAssignments.ts",
+              "line": 613
+            },
+            {
+              "file": "convex/talentPoolAssignments.ts",
+              "line": 623
+            }
+          ]
+        },
+        {
+          "rule": "index-filter-combo",
+          "heading": ".withIndex() narrowed, then .filter() on the same chain - a multi-field index candidate.",
+          "severity": "warning",
+          "findings": [
+            {
+              "file": "convex/billing.ts",
+              "line": 1128,
+              "column": 7
+            },
+            {
+              "file": "convex/evals/results.ts",
+              "line": 177,
+              "column": 7
+            },
+            {
+              "file": "convex/orgMemberships.ts",
+              "line": 51,
+              "column": 7
+            },
+            {
+              "file": "convex/orgMemberships.ts",
+              "line": 123,
+              "column": 7
+            },
+            {
+              "file": "convex/orgMemberships.ts",
+              "line": 360,
+              "column": 7
+            },
+            {
+              "file": "convex/teamInvites.ts",
+              "line": 235,
+              "column": 7
+            },
+            {
+              "file": "convex/tokenUsage.ts",
+              "line": 457,
+              "column": 7
+            },
+            {
+              "file": "convex/tokenUsage.ts",
+              "line": 467,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "rule": "unbounded-collect",
+          "heading": ".collect() on a query chain with no take, no paginate, and no index range bounding it.",
+          "severity": "warning",
+          "findings": [
+            {
+              "file": "convex/billing.ts",
+              "line": 1154,
+              "column": 59
+            },
+            {
+              "file": "convex/billing.ts",
+              "line": 1189,
+              "column": 59
+            },
+            {
+              "file": "convex/billing.ts",
+              "line": 1214,
+              "column": 59
+            },
+            {
+              "file": "convex/devMembershipTools.ts",
+              "line": 355,
+              "column": 60
+            },
+            {
+              "file": "convex/migrations/backfillBillingAccounts.ts",
+              "line": 8,
+              "column": 40
+            },
+            {
+              "file": "convex/migrations/backfillBillingCatalogFields.ts",
+              "line": 77,
+              "column": 59
+            },
+            {
+              "file": "convex/migrations/backfillGeneratedJDModel.ts",
+              "line": 15,
+              "column": 44
+            },
+            {
+              "file": "convex/migrations/backfillRoleDefiningRequirements.ts",
+              "line": 14,
+              "column": 44
+            },
+            {
+              "file": "convex/migrations/backfillTeamRoles.ts",
+              "line": 18,
+              "column": 44
+            },
+            {
+              "file": "convex/migrations/backfillTeamRoles.ts",
+              "line": 38,
+              "column": 61
+            },
+            {
+              "file": "convex/migrations/backfillTeamRoles.ts",
+              "line": 58,
+              "column": 44
+            },
+            {
+              "file": "convex/migrations/backfillTeamRoles.ts",
+              "line": 59,
+              "column": 61
+            },
+            {
+              "file": "convex/migrations/removeSeverityFromGaps.ts",
+              "line": 48,
+              "column": 60
+            },
+            {
+              "file": "convex/migrations/removeSeverityFromGaps.ts",
+              "line": 129,
+              "column": 60
+            },
+            {
+              "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+              "line": 199,
+              "column": 60
+            }
+          ]
+        },
+        {
+          "rule": "filter-table-scan",
+          "heading": "A database filter without an index may scan many documents to find matching results.",
+          "severity": "warning",
+          "findings": [
+            {
+              "file": "convex/billing.ts",
+              "line": 2049,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "rule": "index-without-range",
+          "heading": "An index without a range feeds an unbounded consumer.",
+          "severity": "warning",
+          "findings": [
+            {
+              "file": "convex/lib/rateLimiter.ts",
+              "line": 73,
+              "column": 7
+            },
+            {
+              "file": "convex/orgs.ts",
+              "line": 1001,
+              "column": 9
+            },
+            {
+              "file": "convex/orgs.ts",
+              "line": 1006,
+              "column": 9
+            }
+          ]
+        }
+      ],
+      "blindSpots": [
+        "Queries: syntactic ctx.db.query/db.query chains are inspected, including helpers; receiver types and schema/cardinality are not resolved. withIndex is trusted to name a real index.",
+        "Subscriptions: client useQuery calls are not diagnosed because backend result sizes are not resolved.",
+        "Clock and discarded calls require analysis. Only inline handlers registered through imports from convex/server or _generated/server are resolved; custom wrappers and separately declared handlers are unknown. Clock checks exclude nested functions. Promise checks establish direct discards, not eventual settlement of stored, passed, chained, or returned promises.",
+        "Chains split across multiple statements (const q = ctx.db.query(t); q.filter(...)) are not tracked - only single-statement chains.",
+        "Query chains require AST call facts. A take/first/unique terminator limits results, not necessarily reads when a filter rejects documents. Split statements and unresolved index callbacks are not followed; index ranges do not prove small cardinality.",
+        "unbounded-collect cannot tell a provably small table from a growing one: collect on a known-small table without an index is still flagged.",
+        "index-filter-combo fires on every withIndex+filter chain; whether the filtered remainder is large enough to matter is a judgement the doctor cannot make.",
+        "presence-patch recognizes the canonical field names (lastSeen, heartbeat, pingAt, ...); frequently-patched documents under other names are not seen, and write frequency itself is invisible.",
+        "Validators: only the object-config form is inspected (the span between the opening brace and the handler keyword); customQuery/customMutation wrappers and config objects assembled by helpers are not recognized.",
+        "Server runs: only a literal api. reference directly after ctx.run* is caught, as a review candidate - the namespace alone does not establish an authorization flaw.",
+        "Function bodies are located by brace counting from the definition line; work delegated to helpers outside that span is invisible to the context checks.",
+        "Node runtime: \"use node\" is recognized only as the file's first statement.",
+        "Loops: only for/while bodies are scanned, as batching review candidates - deliberate retry loops (OCC with backoff) share the shape.",
+        "Spread patches: every spread inside .patch()/.replace() is a review candidate (info) - the spread is visible, field ownership is not.",
+        "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source."
+      ]
+    }
+  ],
+  "crashed": [],
+  "skippedUnsafe": [],
+  "gate": {
+    "failOn": "none",
+    "mode": "full",
+    "fails": false
+  }
+}

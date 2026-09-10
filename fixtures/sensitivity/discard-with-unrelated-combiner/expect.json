@@ -1,0 +1,13 @@
+{
+  "name": "discarded patch with unrelated Promise.all",
+  "source": "Independent 0.0.7 audit: a nearby unrelated combiner suppressed a real discarded patch",
+  "expect": {
+    "convex-doctor": [
+      {
+        "rule": "unawaited-convex-call",
+        "file": "convex/notes.ts",
+        "line": 5
+      }
+    ]
+  }
+}

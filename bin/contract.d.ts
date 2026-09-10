@@ -10,6 +10,16 @@ export interface CheckMeta {
      * narrows and says so in the report (D20's honest degradation). v1
      * vocabulary: ["bindings"], ["spans"]. */
     needs?: string[];
+    /** One sentence: the observable condition this check establishes. Not the
+     *  consequence ("this is unsafe") - the thing actually detected. */
+    claim?: string;
+    /** Innocent lookalike shapes that must remain silent (corpus candidates). */
+    lookalikes?: string[];
+    /** When analysis the check needs is unavailable: "narrow" (report says
+     *  narrowed) or "skip" (silent, declared in blindSpots). */
+    onUnknown?: "narrow" | "skip";
+    /** Unit counted by certification; occurrence checks require a two-location witness. */
+    reportingUnit?: "occurrence" | "file" | "project";
 }
 export interface DoctorMeta {
     id: string;
@@ -101,6 +111,56 @@ export interface AnalysisSpans {
     file: string;
     spans: SpanInfo[];
 }
+/** Generic syntax facts. Offsets are UTF-16, ends exclusive; no framework policy. */
+export interface SourceRange {
+    start: number;
+    end: number;
+    line: number;
+    column: number;
+    endLine: number;
+    endColumn: number;
+}
+export interface CallTarget {
+    root: string | null;
+    members: string[];
+    /** Declaration identifier offset, null for an unresolved/global receiver. */
+    binding: number | null;
+    source?: string;
+    importedName?: string;
+    reassigned?: boolean;
+}
+export interface CallInfo extends SourceRange {
+    target: CallTarget;
+    usage: "discarded" | "awaited" | "returned" | "stored" | "passed" | "unknown";
+    functionStart: number | null;
+    resultBinding?: number;
+    /** Exclusive end offset of a call used as this call's receiver. */
+    receiverCall?: number;
+    memberRange?: SourceRange;
+    arguments: SourceRange[];
+}
+export interface FunctionInfo extends SourceRange {
+    parameters: (number | null)[];
+    registration?: {
+        target: CallTarget;
+        property: string | null;
+        argument: number;
+    };
+}
+export interface OperandInfo {
+    call?: number;
+    binding?: number;
+}
+export interface AnalysisCalls {
+    file: string;
+    calls: CallInfo[];
+    functions: FunctionInfo[];
+    differences: (SourceRange & {
+        functionStart: number | null;
+        left: OperandInfo;
+        right: OperandInfo;
+    })[];
+}
 export interface DoctorCtx {
     root: string;
     files: {
@@ -128,6 +188,8 @@ export interface DoctorCtx {
          * arrows, classes) with decl-name, asyncness, and extent — an AST
          * fact, not a brace-count. Throws loudly when unavailable. */
         spans(file: string): AnalysisSpans;
+        /** Calls, immediate uses, callback registrations and subtraction operands. */
+        calls(file: string): AnalysisCalls;
     };
     report: {
         finding(f: Finding): void;
@@ -137,19 +199,13 @@ export interface ExpectedFinding {
     rule?: string;
     file: string;
     line: number;
+    /** Omitted columns preserve legacy line-only expectations. */
+    column?: number;
 }
 export interface Fixture {
     name: string;
     seed: Record<string, string>;
     expected: ExpectedFinding[];
-    /** One sentence: the observable condition this check establishes. Not the
-     *  consequence ("this is unsafe") - the thing actually detected. */
-    claim?: string;
-    /** Innocent lookalike shapes that must remain silent (corpus candidates). */
-    lookalikes?: string[];
-    /** When analysis the check needs is unavailable: "narrow" (report says
-     *  narrowed) or "skip" (silent, declared in blindSpots). */
-    onUnknown?: "narrow" | "skip";
     /** Which analysis mode this fixture pins (D20 Stage 2): "on" (default)
      * runs with the identity engine — and skips with a named notice when it
      * is not installed in the environment; "off" forces the degraded path,

@@ -11,6 +11,21 @@ export interface CheckMeta {
    * narrows and says so in the report (D20's honest degradation). v1
    * vocabulary: ["bindings"], ["spans"]. */
   needs?: string[];
+  // The claim contract (D23): a check states the OBSERVABLE condition it
+  // establishes, the innocent shapes that must stay silent, and - when it
+  // depends on the identity engine - what happens when the answer is
+  // unknown. Enforced at verify: a check without a claim cannot be
+  // certified, because eloquent impact prose is not a testable statement.
+  /** One sentence: the observable condition this check establishes. Not the
+   *  consequence ("this is unsafe") - the thing actually detected. */
+  claim?: string;
+  /** Innocent lookalike shapes that must remain silent (corpus candidates). */
+  lookalikes?: string[];
+  /** When analysis the check needs is unavailable: "narrow" (report says
+   *  narrowed) or "skip" (silent, declared in blindSpots). */
+  onUnknown?: "narrow" | "skip";
+  /** Unit counted by certification; occurrence checks require a two-location witness. */
+  reportingUnit?: "occurrence" | "file" | "project";
 }
 
 export interface DoctorMeta {
@@ -141,6 +156,42 @@ export interface AnalysisSpans {
   spans: SpanInfo[];
 }
 
+/** Generic syntax facts. Offsets are UTF-16, ends exclusive; no framework policy. */
+export interface SourceRange {
+  start: number; end: number;
+  line: number; column: number; endLine: number; endColumn: number;
+}
+export interface CallTarget {
+  root: string | null;
+  members: string[];
+  /** Declaration identifier offset, null for an unresolved/global receiver. */
+  binding: number | null;
+  source?: string;
+  importedName?: string;
+  reassigned?: boolean;
+}
+export interface CallInfo extends SourceRange {
+  target: CallTarget;
+  usage: "discarded" | "awaited" | "returned" | "stored" | "passed" | "unknown";
+  functionStart: number | null;
+  resultBinding?: number;
+  /** Exclusive end offset of a call used as this call's receiver. */
+  receiverCall?: number;
+  memberRange?: SourceRange;
+  arguments: SourceRange[];
+}
+export interface FunctionInfo extends SourceRange {
+  parameters: (number | null)[];
+  registration?: { target: CallTarget; property: string | null; argument: number };
+}
+export interface OperandInfo { call?: number; binding?: number }
+export interface AnalysisCalls {
+  file: string;
+  calls: CallInfo[];
+  functions: FunctionInfo[];
+  differences: (SourceRange & { functionStart: number | null; left: OperandInfo; right: OperandInfo })[];
+}
+
 export interface DoctorCtx {
   root: string;
   files: {
@@ -172,6 +223,8 @@ export interface DoctorCtx {
      * arrows, classes) with decl-name, asyncness, and extent — an AST
      * fact, not a brace-count. Throws loudly when unavailable. */
     spans(file: string): AnalysisSpans;
+    /** Calls, immediate uses, callback registrations and subtraction operands. */
+    calls(file: string): AnalysisCalls;
   };
   report: {
     finding(f: Finding): void;
@@ -182,25 +235,14 @@ export interface ExpectedFinding {
   rule?: string;
   file: string;
   line: number;
+  /** Omitted columns preserve legacy line-only expectations. */
+  column?: number;
 }
 
 export interface Fixture {
   name: string;
   seed: Record<string, string>;
   expected: ExpectedFinding[];
-  // The claim contract (D23): a check states the OBSERVABLE condition it
-  // establishes, the innocent shapes that must stay silent, and - when it
-  // depends on the identity engine - what happens when the answer is
-  // unknown. Enforced at verify: a check without a claim cannot be
-  // certified, because eloquent impact prose is not a testable statement.
-  /** One sentence: the observable condition this check establishes. Not the
-   *  consequence ("this is unsafe") - the thing actually detected. */
-  claim?: string;
-  /** Innocent lookalike shapes that must remain silent (corpus candidates). */
-  lookalikes?: string[];
-  /** When analysis the check needs is unavailable: "narrow" (report says
-   *  narrowed) or "skip" (silent, declared in blindSpots). */
-  onUnknown?: "narrow" | "skip";
   /** Which analysis mode this fixture pins (D20 Stage 2): "on" (default)
    * runs with the identity engine — and skips with a named notice when it
    * is not installed in the environment; "off" forces the degraded path,
@@ -350,33 +392,26 @@ export function runCommandFor(doctorPath: string, root: string, invoker = "any-d
 // A finding or expectation without a rule keys on "" — rule-less expected
 // matches rule-less findings only.
 export function compareFindings(expected: ExpectedFinding[], actual: Finding[]): FixtureDiff {
-  const key = (f: ExpectedFinding): string => `${f.rule ?? ""}:${f.file}:${f.line}`;
-  const asDiffEntry = (f: ExpectedFinding): ExpectedFinding =>
-    f.rule === undefined ? { file: f.file, line: f.line } : { rule: f.rule, file: f.file, line: f.line };
-
-  // Expectations are a consumption budget per key: each matching actual
-  // satisfies one, further actuals are unexpected, unsatisfied
-  // expectations are missing.
-  const budget = new Map<string, number>();
-  for (const e of expected) budget.set(key(e), (budget.get(key(e)) ?? 0) + 1);
-
-  const satisfied = new Map<string, number>();
+  const key = (f: ExpectedFinding): string => JSON.stringify([f.rule ?? "", f.file, f.line]);
+  const entry = (f: ExpectedFinding): ExpectedFinding => ({
+    ...(f.rule === undefined ? {} : { rule: f.rule }), file: f.file, line: f.line,
+    ...(f.column === undefined ? {} : { column: f.column }),
+  });
+  const budget = new Map<string, { expected: ExpectedFinding; used: boolean }[]>();
+  for (const e of expected) {
+    const rows = budget.get(key(e)) ?? [];
+    rows.push({ expected: e, used: false }); budget.set(key(e), rows);
+  }
   const unexpected: ExpectedFinding[] = [];
   for (const a of actual) {
-    const k = key(a);
-    const n = satisfied.get(k) ?? 0;
-    if (n < (budget.get(k) ?? 0)) satisfied.set(k, n + 1);
-    else unexpected.push(asDiffEntry(a));
+    const rows = budget.get(key(a)) ?? [];
+    // Consume exact columns before legacy wildcard expectations.
+    const match = rows.find(r => !r.used && r.expected.column !== undefined && r.expected.column === a.column)
+      ?? rows.find(r => !r.used && r.expected.column === undefined);
+    if (match) match.used = true;
+    else unexpected.push(entry(a));
   }
-
-  const missing: ExpectedFinding[] = [];
-  const matchedExpectations = new Map<string, number>();
-  for (const e of expected) {
-    const k = key(e);
-    const n = matchedExpectations.get(k) ?? 0;
-    if (n < (satisfied.get(k) ?? 0)) matchedExpectations.set(k, n + 1);
-    else missing.push(asDiffEntry(e));
-  }
+  const missing = [...budget.values()].flatMap(rows => rows.filter(r => !r.used).map(r => entry(r.expected)));
   return { missing, unexpected };
 }
 

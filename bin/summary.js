@@ -27,7 +27,7 @@ function groupSeverity(g) {
 // and survives — the check tree exists to show each check's own story.
 function dedupeGroups(groups) {
     const owner = new Map();
-    const key = (f) => `${f.file}:${f.line}`;
+    const key = (f) => { var _a; return `${f.file}:${f.line}:${(_a = f.column) !== null && _a !== void 0 ? _a : ""}`; };
     const ordered = [...groups].sort((a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
     const out = [];
     let hidden = 0;

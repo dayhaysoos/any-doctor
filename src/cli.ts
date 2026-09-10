@@ -484,7 +484,7 @@ async function cmdVerify(args: string[]): Promise<number> {
   const passed = result.results.filter((x) => x.ok && x.skipped === undefined).length;
   console.log(dim(
     `${passed}/${result.results.length} fixtures passed for ${result.meta.id}`
-    + (skipped > 0 ? ` — ${skipped} skipped (analysis engine unavailable)` : ""),
+    + (skipped > 0 ? ` — ${skipped} not exercised (see reasons above)` : ""),
   ));
   return failures > 0 ? 1 : 0;
 }

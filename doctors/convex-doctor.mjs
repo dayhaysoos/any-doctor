@@ -1,14 +1,14 @@
 export const meta = {
   id: "convex-doctor",
-  description: "Convex discipline: indexed reads, bounded collects, bounded subscriptions, deterministic transactions, validated args, awaited writes, honest runtime boundaries.",
+  description: "Convex discipline: indexed reads, bounded collects, query clocks, discarded promises, validated args, awaited writes, honest runtime boundaries.",
   severity: "warning",
   category: "convex",
   blindSpots: [
-    "Queries: the schema is never cross-referenced - a .filter() on a table the doctor cannot see indexed is still flagged only at the query site; withIndex is trusted to name a real index.",
-    "Subscriptions: useQuery is flagged at the call site without resolving the referenced function, so a paginated cursor returned from a helper is not recognized.",
-    "Clock: only direct Date.now()/Math.random() calls participating in arithmetic or a comparison are findings - stored values are safe and unflagged; actions run outside the transaction with a live clock and are exempt. Calls behind wrappers are not seen, and elapsed time measured entirely through stored values is invisible.",
+    "Queries: syntactic ctx.db.query/db.query chains are inspected, including helpers; receiver types and schema/cardinality are not resolved. withIndex is trusted to name a real index.",
+    "Subscriptions: client useQuery calls are not diagnosed because backend result sizes are not resolved.",
+    "Clock and discarded calls require analysis. Only inline handlers registered through imports from convex/server or _generated/server are resolved; custom wrappers and separately declared handlers are unknown. Clock checks exclude nested functions. Promise checks establish direct discards, not eventual settlement of stored, passed, chained, or returned promises.",
     "Chains split across multiple statements (const q = ctx.db.query(t); q.filter(...)) are not tracked - only single-statement chains.",
-    "index-without-range exempts chains ending in .take()/.first()/.unique() (the terminator bounds the read); an unnarrowed index consumed by .collect() on a split statement is not seen.",
+    "Query chains require AST call facts. A take/first/unique terminator limits results, not necessarily reads when a filter rejects documents. Split statements and unresolved index callbacks are not followed; index ranges do not prove small cardinality.",
     "unbounded-collect cannot tell a provably small table from a growing one: collect on a known-small table without an index is still flagged.",
     "index-filter-combo fires on every withIndex+filter chain; whether the filtered remainder is large enough to matter is a judgement the doctor cannot make.",
     "presence-patch recognizes the canonical field names (lastSeen, heartbeat, pingAt, ...); frequently-patched documents under other names are not seen, and write frequency itself is invisible.",
@@ -23,9 +23,10 @@ export const meta = {
   checks: [
     {
       id: "filter-table-scan",
-      description: ".filter() query without .withIndex() reads every document in the table.",
+      needs: ["calls"], onUnknown: "skip", reportingUnit: "occurrence",
+      description: "A database filter without an index may scan many documents to find matching results.",
       severity: "warning",
-      impact: "Convex bills and measures performance by documents read: a .filter() chain scans the whole table on every call, so a query that is fast at demo scale degrades linearly with data and can hit function limits in production.",
+      impact: "Without an index restriction, finding matching results may read many table documents. Cost grows with the scanned candidate set, even when few results are returned.",
       why: ".filter() runs after documents are read - it cannot reduce reads. Only an index range (.withIndex with q.eq/q.gt/...) restricts how many documents the query touches.",
       fix: "Define an index covering the filtered fields in schema.ts and use .withIndex(\"by_field\", q => q.eq(\"field\", value)) instead of .filter().",
       claim: "A ctx.db.query chain using .filter() with no .withIndex() anywhere in the chain.",
@@ -33,36 +34,38 @@ export const meta = {
     },
     {
       id: "index-without-range",
-      description: ".withIndex() with no range expression still scans the whole table through the index.",
+      needs: ["calls"], onUnknown: "skip", reportingUnit: "occurrence",
+      description: "An index without a range feeds an unbounded consumer.",
       severity: "warning",
-      impact: "The index is selected but never narrowed: every document is read via the index in full order, which costs the same as a table scan while looking optimized. Chains ending in .take()/.first()/.unique() are exempt - the terminator bounds the read.",
-      why: "withIndex(\"by_x\") with no second argument (or a callback that never calls q.eq/q.gt/q.lt/q.range) leaves the read range unbounded - the docs call this out as a scan in disguise. A terminator (take/first/unique) stops the scan early, so only unbounded consumers are findings.",
+      impact: "The index does not restrict the candidate set. An unbounded collect can grow with the table; filters may read many candidates before returning a few results.",
+      why: "Choosing index order does not narrow its range. This check reports unbounded consumers; filtered bounded-result consumers remain index review candidates.",
       fix: "Pass a range expression: .withIndex(\"by_x\", q => q.eq(\"x\", value)) - or bound the chain with .take(n) when recent-items ordering is the intent.",
-      claim: "A .withIndex() whose argument span contains no q.eq/neq/gt/lt/range call, in a chain not bounded by take/first/unique.",
+      claim: "A ctx.db.query/db.query chain with an index but no observed range restriction, ending in collect without a bounded-result terminator.",
       lookalikes: ["multi-line callbacks with real bounds", "take/first/unique terminators"],
     },
     {
-      id: "unbounded-subscription",
-      description: "useQuery subscribes to a whole table with no pagination.",
-      severity: "info",
-      impact: "Every document re-syncs to the client on any change to the table; as the table grows, the subscription's payload and re-render cost grow without bound.",
-      why: "useQuery keeps the result live. Without .paginate() on the query side or usePaginatedQuery on the client side, the subscription reads and ships the entire table. Info severity: the referenced query may be bounded in ways the call site cannot show.",
-      fix: "Use .paginate(opts) in the query and usePaginatedQuery on the client; or bound the result with .withIndex(...).order(\"desc\").take(n) when the table is provably small.",
-      claim: "A useQuery call in a file with no usePaginatedQuery \u2014 the backend query's actual shape is never resolved.",
-      lookalikes: ["paginated subscriptions", "queries returning one object or null (invisible to the call site)"],
+      id: "query-clock-reactivity",
+      description: "Date.now() in a query can produce stale time-dependent results and reduce cache reuse.",
+      severity: "warning", needs: ["calls"], onUnknown: "skip", reportingUnit: "occurrence",
+      claim: "A global Date.now() call directly inside an import-resolved Convex query handler.",
+      lookalikes: ["mutation expiry timestamps", "action clocks", "shadowed Date", "nested or unresolved helper functions"],
+      impact: "Time passing does not itself rerun a subscribed query; time-dependent results may become stale and cache reuse can suffer.",
+      why: "Convex query reactivity follows database changes, not the wall clock.",
+      fix: "Use a scheduled state transition where appropriate, or an explicit coarse-grained time argument. See docs.convex.dev/understanding/best-practices/#dont-use-datenow-in-queries.",
     },
     {
-      id: "nondeterministic-clock-in-transaction",
-      description: "Date.now() or Math.random() used for measuring or branching inside a Convex transaction function.",
-      severity: "warning",
-      impact: "The value is snapshotted per transaction: elapsed-time math inside one mutation always sees zero, and repeated calls return the same value - timeouts, jitter, and expiry logic silently misbehave.",
-      why: "Convex executes query/mutation bodies deterministically within a transaction: Date.now() is pinned to the transaction's start and Math.random() is a seeded sequence (different values per call, not one repeated value). Both are safe to store but wrong for measuring or branching; actions run outside the transaction with a live clock and are exempt.",
-      fix: "Pass timestamps/randomness in as arguments from the client or an action (where they are genuinely live), or rely on _creationTime for ordering.",
-      claim: "Date.now()/Math.random() in arithmetic or comparison inside a query or mutation span (actions exempt).",
-      lookalikes: ["clock use in actions", "stored timestamps", "clock passed in as an argument"],
+      id: "transaction-clock-duration",
+      description: "Subtracting two Date.now() readings in one transaction produces zero elapsed time.",
+      severity: "warning", needs: ["calls"], onUnknown: "skip", reportingUnit: "occurrence",
+      claim: "A subtraction of two global Date.now() calls, or immutable direct aliases, in the same inline query/mutation handler.",
+      lookalikes: ["historical timestamps or expiry cutoffs", "action duration measurement", "random branching", "reassigned timestamps"],
+      impact: "The transaction clock is fixed at function start, so this calculation cannot measure work duration.",
+      why: "Both operands read the same transaction-start timestamp. Math.random is a seeded sequence and is not diagnosed.",
+      fix: "Measure wall-clock duration outside the transaction; preserve server-authoritative expiration checks.",
     },
     {
       id: "unbounded-collect",
+      needs: ["calls"], onUnknown: "skip", reportingUnit: "occurrence",
       description: ".collect() on a query chain with no take, no paginate, and no index range bounding it.",
       severity: "warning",
       impact: "Unbounded reads grow with the table and eventually hit Convex's per-transaction document read limit - the query works at demo scale and fails in production.",
@@ -73,6 +76,7 @@ export const meta = {
     },
     {
       id: "index-filter-combo",
+      needs: ["calls"], onUnknown: "skip", reportingUnit: "occurrence",
       claim: "A range-narrowed .withIndex() followed by .filter() on the same chain.",
       lookalikes: ["multi-field indexes serving both bounds"],
       description: ".withIndex() narrowed, then .filter() on the same chain - a multi-field index candidate.",
@@ -83,6 +87,7 @@ export const meta = {
     },
     {
       id: "presence-patch-on-shared-document",
+      reportingUnit: "occurrence",
       description: "A presence field (lastSeen/heartbeat-shaped) patched onto a document.",
       severity: "warning",
       impact: "Convex re-runs every subscribed query that read the document. A 10-second heartbeat on a widely-read user document invalidates those queries continuously - including queries that never touch the field.",
@@ -93,6 +98,7 @@ export const meta = {
     },
     {
       id: "missing-args-validator",
+      reportingUnit: "occurrence",
       description: "A query/mutation/action defined without argument validators.",
       severity: "warning",
       impact: "Args arrive unvalidated and untyped: any payload the client sends is accepted at runtime, and the handler's args parameter is any instead of the inferred literal type - typos surface later as undefined fields instead of immediately as validation errors.",
@@ -103,6 +109,7 @@ export const meta = {
     },
     {
       id: "public-api-in-server-call",
+      reportingUnit: "occurrence",
       description: "A server-side run call referencing the public api namespace - a review candidate; namespace alone does not establish an authorization flaw.",
       severity: "info",
       impact: "Everything reachable through api is callable by any client that can reach the deployment. A server-only workflow invoked via api is an exposed surface that clients can call directly, with any arguments the validators accept.",
@@ -113,6 +120,7 @@ export const meta = {
     },
     {
       id: "write-in-query",
+      reportingUnit: "occurrence",
       description: "A write, scheduler, or mutation/action call inside a query.",
       severity: "warning",
       impact: "Queries are read-only transactions - the write methods do not exist on a query's context, so the function fails on its first real call rather than at deploy time. ctx.runQuery IS allowed (same read snapshot); only mutations, actions, and scheduling are forbidden.",
@@ -123,6 +131,7 @@ export const meta = {
     },
     {
       id: "db-in-action",
+      reportingUnit: "occurrence",
       description: "ctx.db used inside an action.",
       severity: "warning",
       impact: "Actions have no db on their context - the call throws at runtime, usually on the first request that reaches that path.",
@@ -133,16 +142,17 @@ export const meta = {
     },
     {
       id: "unawaited-convex-call",
-      description: "A promise-returning ctx call used as a bare statement - never awaited.",
-      severity: "warning",
-      impact: "The function can return before the write settles: the write may not land, and its ordering against later reads is undefined - the bug presents as intermittently missing data.",
-      why: "Every ctx method (db, scheduler, run*) is async. Inside a transaction the await is what folds the step into the transaction; a floating promise races the function's return against the write.",
-      fix: "await the call (or return it). If the value is genuinely unneeded, await it anyway inside the transaction, or move the work to an action.",
-      claim: "A bare ctx.* call line with no promise combiner or assignment in its statement window.",
-      lookalikes: ["Promise.all members", "array-push-then-await", "assigned promises consumed later"],
+      description: "A known Promise-returning Convex context call is discarded as a standalone expression.",
+      severity: "warning", needs: ["calls"], onUnknown: "skip", reportingUnit: "occurrence",
+      claim: "A direct discarded call to an async method of an import-resolved handler context, resolved by binding identity.",
+      lookalikes: ["returned callbacks", "arguments to helpers", "stored promises", "query builders", "shadowed context bindings"],
+      impact: "Discarding the promise can lose errors or leave work unfinished when the function returns.",
+      why: "This call's result is an expression statement; nearby awaits do not receive it.",
+      fix: "Await or return this promise. For broader flow checks use typescript-eslint/no-floating-promises.",
     },
     {
       id: "node-runtime-transaction",
+      reportingUnit: "occurrence",
       description: 'A query or mutation defined in a "use node" file.',
       severity: "warning",
       impact: "Deploy fails: queries and mutations must run in Convex's deterministic runtime, which is what makes their transaction guarantees replayable.",
@@ -153,6 +163,7 @@ export const meta = {
     },
     {
       id: "sequential-run-in-loop",
+      reportingUnit: "occurrence",
       description: "A run call awaited inside a for/while loop - a batching review candidate; deliberate retry loops (OCC with backoff) share this shape.",
       severity: "info",
       impact: "N iterations become N separate transactions, each with its own round trip and commit - a 1000-item backfill is 1000 sequential transactions, and the caller's timeout budget pays for all of them.",
@@ -163,6 +174,7 @@ export const meta = {
     },
     {
       id: "spread-into-patch",
+      reportingUnit: "occurrence",
       description: "ctx.db.patch/replace called with a spread - a review candidate; presence alone does not prove client-controlled fields.",
       severity: "info",
       impact: "Every field the client included gets written: the validators constrain the mutation's args, but the spread forwards them all, so fields the mutation never named (ownership, role, timestamps) become client-writable.",
@@ -184,55 +196,19 @@ export async function doctor(ctx) {
     const lines = masked.split("\n");
     const rawLines = source.split("\n");
 
-    const reportedChains = new Set();
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.includes(".patch(") || line.includes(".replace(")) {
+      if (lines[i].includes(".patch(") || lines[i].includes(".replace(")) {
         const stmt = statementAt(lines, i);
         checkPresencePatch(ctx, file, i, stmt);
         checkSpreadPatch(ctx, file, i, stmt);
       }
-      if (!line.includes(".filter(") && !line.includes(".withIndex(") && !line.includes(".collect(")) continue;
-      const chain = statementAt(lines, i);
-      if (!chain.includes("ctx.db.query(") && !chain.includes("db.query(")) continue;
-
-
-      // One finding per RULE per query chain: a multi-line chain visits
-      // several trigger lines but is one operation (the audit's
-      // rateLimiter.ts 73/74/75 triple was one collect) - but different
-      // rules on the same chain are different diagnoses.
-      // Dedup key is rule + chain-start-line: multi-line chains visited
-      // at several trigger lines are ONE finding, but the same chain text
-      // in a different function has a different start line and is a
-      // separate finding — the audit's billing.ts triple.
-      const chainStart = statementStartLine(lines, i);
-      const once = (rule) => {
-        const key = rule + "@" + file + ":" + chainStart;
-        if (reportedChains.has(key)) return;
-        reportedChains.add(key);
-        ctx.report.finding({ rule, file, line: i + 1 });
-      };
-      const hasWithIndex = chain.includes(".withIndex(");
-      const hasFilter = chain.includes(".filter(");
-      // One finding per chain, the MOST SPECIFIC one: the scan/range
-      // diagnoses carry the actual fix (add an index, bound the range),
-      // which subsumes the generic unbounded-collect. The audit's
-      // rateLimiter triple (73/74/75) was one operation.
-      if (hasFilter && !hasWithIndex) {
-        once("filter-table-scan");
-      } else if (hasWithIndex && !hasRangeExpression(lines, i) && !isBoundedRead(chain)) {
-        once("index-without-range");
-      } else if (hasFilter && hasWithIndex && line.includes(".filter(")) {
-        once("index-filter-combo");
-      } else if (chain.includes(".collect(")
-        && !chain.includes(".take(")
-        && !chain.includes(".paginate(")
-        && !(hasWithIndex && hasRangeExpression(lines, i))) {
-        once("unbounded-collect");
-      }
     }
 
-    checkSubscriptions(ctx, file, masked);
+    if (ctx.analysis.available) {
+      const facts = ctx.analysis.calls(file);
+      checkCallFacts(ctx, file, facts);
+      checkQueryChains(ctx, file, facts);
+    }
 
     // Server-side checks apply where Convex is imported (convex/server,
     // _generated/server): chrome.tabs.query in an extension file is not a
@@ -241,11 +217,9 @@ export async function doctor(ctx) {
     // Convex) are not gated.
     if (/from\s+["'][^"']*(?:convex\/|_generated\/server)["']/.test(source)) {
       const spans = functionSpans(lines);
-      checkClock(ctx, file, lines, spans);
       checkValidators(ctx, file, lines, spans);
       checkContextMisuse(ctx, file, lines, spans);
       checkServerRuns(ctx, file, lines);
-      checkUnawaited(ctx, file, lines);
       checkSequentialRuns(ctx, file, lines);
       checkNodeRuntime(ctx, file, rawLines, lines);
     }
@@ -265,15 +239,6 @@ function statementAt(lines, i) {
   return lines.slice(start, end + 1).join(" ").replace(/\s+/g, "");
 }
 
-// The line where the statement containing line i begins — the chain's
-// origin. Multi-line chains visited at several trigger lines share it,
-// but the same chain in a different function does not.
-function statementStartLine(lines, i) {
-  let start = i;
-  while (start > 0 && !statementEnds(lines[start - 1])) start--;
-  return start;
-}
-
 function statementEnds(line) {
   const bare = line.trim();
   if (bare.startsWith("//") || bare.startsWith("*") || bare.startsWith("/*")) return true;
@@ -287,36 +252,6 @@ function statementEnds(line) {
 // terminate statement reconstruction, and a truncated statement makes
 // matchingParen fail - the audit's five "index without range" false
 // positives all had real eq/gte/lt bounds inside multi-line callbacks.
-function hasRangeExpression(lines, lineIndex) {
-  const window = lines.slice(Math.max(0, lineIndex - 6), lineIndex + 15).join(" ").replace(/\s+/g, " ");
-  const idx = window.indexOf(".withIndex(");
-  if (idx === -1) return false;
-  const open = window.indexOf("(", idx);
-  const close = matchingParen(window, open);
-  if (close === -1) return true; // unparseable span: UNKNOWN, not unbounded
-  const args = window.slice(open + 1, close);
-  if (args.trim().length > 0 && !args.includes(",")) return false;
-  return /\bq\s*\.\s*(?:eq|neq|gt|gtQuiet|lt|ltQuiet|range)\s*\(/.test(args);
-}
-
-// take/first/unique stop the scan: an un-narrowed index read bounded by a
-// terminator costs at most the terminator's count, not the table.
-function isBoundedRead(chain) {
-  return chain.includes(".take(") || chain.includes(".first(") || chain.includes(".unique(");
-}
-
-function matchingParen(text, open) {
-  let depth = 0;
-  for (let i = open; i < text.length; i++) {
-    if (text[i] === "(") depth++;
-    if (text[i] === ")") {
-      depth--;
-      if (depth === 0) return i;
-    }
-  }
-  return -1;
-}
-
 // --- presence patch check --------------------------------------------------
 
 // The heartbeat shape: a presence field patched onto a document that other
@@ -339,23 +274,6 @@ const SPREAD_PATCH = /\.(?:patch|replace)\s*\([^)]*\.\.\./;
 function checkSpreadPatch(ctx, file, lineIndex, stmt) {
   if (SPREAD_PATCH.test(stmt)) {
     ctx.report.finding({ rule: "spread-into-patch", file, line: lineIndex + 1 });
-  }
-}
-
-// --- subscription check ----------------------------------------------------
-
-function checkSubscriptions(ctx, file, masked) {
-  const lines = masked.split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    if (!/useQuery\s*\(/.test(lines[i])) continue;
-    // A paginated sibling anywhere in the statement opts out.
-    const chain = statementAt(lines, i);
-    if (chain.includes("usePaginatedQuery")) continue;
-    ctx.report.finding({
-      rule: "unbounded-subscription",
-      file,
-      line: i + 1,
-    });
   }
 }
 
@@ -394,47 +312,6 @@ function functionSpans(lines) {
   }
   if (cur) spans.push(cur);
   return spans;
-}
-
-// --- clock/random check ------------------------------------------------------
-
-// Stored clock values are safe (the why says so): only calls that measure
-// (arithmetic on the result) or branch (compare it) misbehave under the
-// pinned transaction clock. The operator immediately before or after the
-// call decides.
-const CLOCK_CALL = /\b(?:Date\s*\.\s*now|Math\s*\.\s*random)\s*\(\s*\)/;
-
-function clockIsMeasuringOrBranching(line) {
-  const m = CLOCK_CALL.exec(line);
-  if (!m) return false;
-  const before = line.slice(0, m.index).trimEnd();
-  const after = line.slice(m.index + m[0].length).trimStart();
-  // Date.now() + N sets a future timestamp (expiration, TTL) — that is
-  // legitimate clock reading, not elapsed-time measurement. Only
-  // subtraction (X - Date.now(), Date.now() - X) measures elapsed time,
-  // and only comparisons branch on the pinned value.
-  return /^[-*/%]/.test(after)
-    || /^(?:===|!==|==|!=|>=|<=|>|<)/.test(after)
-    || /[-*/%]$/.test(before)
-    || /(?:===|!==|==|!=|>=|<=|>|<)$/.test(before);
-}
-
-function checkClock(ctx, file, lines, spans) {
-  for (const span of spans) {
-    // The transaction clock restriction applies to queries and mutations -
-    // actions run outside the transaction and may read live time (the
-    // audit's 27 false positives were internalAction bodies).
-    if (span.kind === "action") continue;
-    for (let i = span.start + 1; i <= span.end; i++) {
-      if (clockIsMeasuringOrBranching(lines[i])) {
-        ctx.report.finding({
-          rule: "nondeterministic-clock-in-transaction",
-          file,
-          line: i + 1,
-        });
-      }
-    }
-  }
 }
 
 // --- args validator check ------------------------------------------------------
@@ -517,48 +394,6 @@ function checkServerRuns(ctx, file, lines) {
   }
 }
 
-// --- unawaited ctx call ----------------------------------------------------------
-
-// Only lines that BEGIN with the bare call are flagged - but a bare line
-// is still CONSUMED when its enclosing expression is a combiner or an
-// awaited assignment: `await Promise.all([ ctx.db.patch(...) ])` and
-// array-push-then-Promise.all are the audit's 80+36 false positives. The
-// context walk looks back to the statement's start and forward across
-// array/call closings for the promise combiners.
-const BARE_CTX_LINE = /^ctx\s*\.\s*(?:db\s*\.\s*(?:insert|patch|replace|delete|get|query)\s*\(|scheduler\s*\.\s*\w+\s*\(|run(?:Query|Mutation|Action)\s*\()/;
-const COMBINER = /Promise\s*\.\s*(?:all|allSettled|race|any)\s*\(|\.then\s*\(|\.catch\s*\(|\.finally\s*\(|Effect\s*\.\s*(?:runPromise|promise)/;
-
-function callIsConsumed(lines, i) {
-  if (COMBINER.test(lines[i]) || /\breturn\b|\bawait\b/.test(lines[i])) return true;
-  for (let j = i - 1; j >= Math.max(0, i - 10); j--) {
-    const t = lines[j];
-    if (COMBINER.test(t)) return true;
-    if (/=\s*\[?\s*$/.test(t)) return true; // array literal or promise assignment
-    if (/\.push\s*\(/.test(t) || /\.push\s*$/.test(t)) return true; // push target
-    if (/[;}!]\s*$/.test(t)) break; // left the statement
-  }
-  // Forward walk: broad — an array of promise pushes is consumed by a
-  // Promise.all that may follow after several more pushes and closes.
-  let semicolons = 0;
-  for (let j = i + 1; j <= Math.min(lines.length - 1, i + 25); j++) {
-    const t = lines[j];
-    if (COMBINER.test(t)) return true;
-    if (/;\s*$/.test(t)) {
-      semicolons++;
-      if (semicolons > 2) break;
-    }
-  }
-  return false;
-}
-
-function checkUnawaited(ctx, file, lines) {
-  for (let i = 0; i < lines.length; i++) {
-    if (!BARE_CTX_LINE.test(lines[i].trim())) continue;
-    if (callIsConsumed(lines, i)) continue;
-    ctx.report.finding({ rule: "unawaited-convex-call", file, line: i + 1 });
-  }
-}
-
 // --- sequential run in loop --------------------------------------------------------
 
 // The loop body is brace-tracked from the for/while line; the first run*
@@ -622,3 +457,86 @@ function squash(text) {
 }
 
 
+
+// Framework policy over generic AST relationships. Passing/storing a promise
+// is outside this direct-discard claim, not proof of eventual consumption.
+function registeredKind(fn) {
+  const reg = fn.registration;
+  if (!reg || reg.argument !== 0 || (reg.property !== "handler" && reg.property !== null)) return null;
+  const t = reg.target;
+  if (!/(?:^|\/)(?:_generated\/server|convex\/server)(?:\.[cm]?[jt]s)?$/.test(t.source ?? "")) return null;
+  const name = t.importedName === "*" && t.members.length === 1 ? t.members[0]
+    : t.members.length === 0 ? t.importedName : null;
+  if (!/^(?:internal)?(?:Query|Mutation|Action)$/.test(name ?? "") && !/^(?:query|mutation|action|httpAction)$/.test(name ?? "")) return null;
+  return name.replace(/^internal/, "").toLowerCase();
+}
+
+function checkCallFacts(ctx, file, facts) {
+  const handlers = new Map(facts.functions.map(fn => [fn.start, { fn, kind: registeredKind(fn) }]));
+  const contexts = new Set([...handlers.values()].filter(h => h.kind && h.fn.parameters[0] !== null).map(h => h.fn.parameters[0]));
+  const clocks = new Map();
+  const clockBindings = new Map();
+  for (const call of facts.calls) {
+    const t = call.target;
+    const member = t.members.join(".");
+    if (call.usage === "discarded" && !t.reassigned && contexts.has(t.binding)
+      && /^(?:db\.(?:insert|patch|replace|delete|get)|scheduler\.(?:runAfter|runAt|cancel)|run(?:Query|Mutation|Action)|storage\.(?:get|store|delete|generateUploadUrl|getUrl))$/.test(member)) {
+      ctx.report.finding({ rule: "unawaited-convex-call", file, line: call.line, column: call.column });
+    }
+    if (t.root !== "Date" || t.binding !== null || member !== "now") continue;
+    const kind = handlers.get(call.functionStart)?.kind;
+    if (kind !== "query" && kind !== "mutation") continue;
+    clocks.set(call.start, call);
+    if (call.resultBinding !== undefined) clockBindings.set(call.resultBinding, call);
+    if (kind === "query") ctx.report.finding({ rule: "query-clock-reactivity", file, line: call.line, column: call.column });
+  }
+  for (const diff of facts.differences) {
+    const get = operand => operand.call !== undefined ? clocks.get(operand.call) : clockBindings.get(operand.binding);
+    const left = get(diff.left), right = get(diff.right);
+    if (left && right && left.functionStart === diff.functionStart && right.functionStart === diff.functionStart) {
+      ctx.report.finding({ rule: "transaction-clock-duration", file, line: diff.line, column: diff.column });
+    }
+  }
+}
+
+// Each linked call chain is visited once; source ranges distinguish identical
+// operations, including separate operations on the same line.
+function checkQueryChains(ctx, file, facts) {
+  const byEnd = new Map(facts.calls.map(c => [c.end, c]));
+  const inner = call => byEnd.get(call.receiverCall);
+  const receivers = new Set(facts.calls.map(inner).filter(Boolean));
+  for (const terminal of facts.calls) {
+    if (receivers.has(terminal)) continue;
+    const steps = [];
+    let step = terminal;
+    while (step) { steps.unshift(step); step = step.receiverCall === undefined ? null : inner(step); }
+    const base = steps[0];
+    if (!((base.target.root === "ctx" && base.target.members.join(".") === "db.query")
+      || (base.target.root === "db" && base.target.members.join(".") === "query"))) continue;
+    const method = c => c.target.members.at(-1);
+    const index = steps.find(c => method(c) === "withIndex");
+    const filter = steps.find(c => method(c) === "filter");
+    if (steps.some(c => method(c) === "withSearchIndex")) continue;
+    const collect = steps.find(c => method(c) === "collect");
+    const bounded = steps.some(c => ["take", "first", "unique", "paginate"].includes(method(c)));
+    // A builder alone does not read anything.
+    if (!collect && !bounded) continue;
+    let ranged = false;
+    if (index && index.arguments.length > 1) {
+      const arg = index.arguments[1];
+      const callback = facts.functions.find(f => f.start === arg.start);
+      if (!callback || callback.parameters[0] === null) continue; // unknown
+      ranged = facts.calls.some(c => c.start >= arg.start && c.end <= arg.end
+        && c.target.binding === callback.parameters[0] && /^(eq|gt|gte|lt|lte)$/.test(method(c)));
+    }
+    let rule;
+    if (filter && !index) rule = "filter-table-scan";
+    else if (index && !ranged && !bounded) rule = "index-without-range";
+    else if (index && filter) rule = "index-filter-combo";
+    else if (collect && !bounded && !ranged) rule = "unbounded-collect";
+    if (!rule) continue;
+    const trigger = rule === "index-filter-combo" ? filter : steps.find(c => ["withIndex", "filter", "collect"].includes(method(c)));
+    const location = trigger.memberRange ?? trigger;
+    ctx.report.finding({ rule, file, line: location.line, column: location.column });
+  }
+}
