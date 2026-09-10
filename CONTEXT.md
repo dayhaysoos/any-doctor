@@ -242,7 +242,12 @@ workflow's second pass; a doctor ships only after surviving its attack.
 
 Running a doctor program against its fixtures and diffing the findings.
 The trust gate: a doctor program is not considered working until verify
-passes.
+passes. The policies that compose the gate — the claim contract, the
+per-fixture diff, the shared innocent corpus, the duplicate-location
+probe, the shared sensitivity corpus — live in one module, the
+Certification harness (`src/certify.ts`), behind one interface:
+`certify(mod, fixtures) -> result rows`. The doctor loader calls it once;
+prevention tiers land there, not in loader choreography.
 
 ## Runner
 
