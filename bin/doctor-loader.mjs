@@ -66,6 +66,40 @@ function runOnce(root, mod, opts) {
         findings: getFindings(),
     }));
 }
+// The duplicate-location sensitivity probe (D23 tier 2): a doctor's own
+// flag-shaped fixture — one with expected findings — is re-planted with
+// the same violation at a SECOND location: a byte-identical twin module
+// of the flagged file. No text is transformed (stripping exports or
+// wrapping bodies would change what text-keyed checks see), so both
+// locations carry exactly the violation the fixture proved. A dedup
+// keyed on normalized statement text — the billing.ts bug, three
+// identical chains collapsed to one finding — cannot produce findings
+// at both locations and fails here, deterministically, before any audit.
+// The assertion is a FLOOR (at least 2× the expected count across the
+// two locations), not equality: checks that flag duplication itself may
+// honestly report the twin, and over-reporting is compareFindings'
+// jurisdiction in the per-fixture gate, not this probe's.
+function buildDuplicateLocationProbe(fixture) {
+    var _a;
+    const perFile = new Map();
+    for (const e of fixture.expected)
+        perFile.set(e.file, ((_a = perFile.get(e.file)) !== null && _a !== void 0 ? _a : 0) + 1);
+    let probeFile = null;
+    let expectedCount = 0;
+    for (const [file, n] of perFile) {
+        if (n > expectedCount && typeof fixture.seed[file] === "string") {
+            probeFile = file;
+            expectedCount = n;
+        }
+    }
+    if (probeFile === null)
+        return null;
+    const twinFile = "__probe_twin__/" + probeFile.split("/").pop();
+    if (typeof fixture.seed[twinFile] === "string")
+        return null;
+    const seed = { ...fixture.seed, [twinFile]: fixture.seed[probeFile] };
+    return { seed, locations: [probeFile, twinFile], expectedCount };
+}
 function materializeSeed(tmp, rel, content) {
     const abs = path.resolve(tmp, rel);
     if (abs !== tmp && !abs.startsWith(tmp + path.sep)) {
@@ -75,7 +109,7 @@ function materializeSeed(tmp, rel, content) {
     fs.writeFileSync(abs, content);
 }
 async function main() {
-    var _a;
+    var _a, _b;
     confineProcess();
     // The mode arrives as argv and is decoded exactly once, here, into a value.
     const decoded = contract.decodeLoaderArgs(process.argv.slice(2));
@@ -220,6 +254,121 @@ async function main() {
                 }
                 catch (e) {
                     results.push({ name: "shared innocent corpus", ok: false, missing: [], unexpected: [], error: e instanceof Error ? e.message : String(e) });
+                }
+            }
+            // The duplicate-location sensitivity probe (D23 tier 2): plant the
+            // doctor's own flagged shape twice at different locations in one
+            // file and demand the finding count at least double — a dedup keyed
+            // on statement text collapses the pair and fails here.
+            {
+                const flagShaped = fixtures.find((f) => f.expected.length > 0);
+                if (flagShaped !== undefined) {
+                    const probe = buildDuplicateLocationProbe(flagShaped);
+                    if (probe !== null) {
+                        const name = `duplicate-location sensitivity (from "${flagShaped.name}")`;
+                        if (declaresNeeds && flagShaped.analysis !== "off" && analysisAvailable === false) {
+                            results.push({ name, ok: true, missing: [], unexpected: [], skipped: "analysis engine unavailable — pins the analysis-on path" });
+                        }
+                        else
+                            try {
+                                setAnalysisDisabled(flagShaped.analysis === "off");
+                                const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-verify-dup-"));
+                                try {
+                                    for (const [rel, content] of Object.entries(probe.seed))
+                                        materializeSeed(tmp, rel, content);
+                                    const result = await runOnce(tmp, mod, { includeTests: true });
+                                    const atLocations = result.findings
+                                        .filter((f) => probe.locations.includes(f.file));
+                                    const ok = atLocations.length >= probe.expectedCount * 2;
+                                    results.push({
+                                        name,
+                                        ok,
+                                        missing: ok ? [] : Array.from({ length: probe.expectedCount * 2 - atLocations.length }, () => ({ file: probe.locations[0], line: 1 })),
+                                        unexpected: [],
+                                        error: ok ? undefined : `planted the same violation twice at different locations (${probe.locations.join(", ")}) but got ${atLocations.length} finding(s) — ${probe.expectedCount} x2 expected. A dedup keyed on statement text collapses distinct violations sharing a body.`,
+                                    });
+                                }
+                                finally {
+                                    fs.rmSync(tmp, { recursive: true, force: true });
+                                }
+                            }
+                            catch (e) {
+                                results.push({ name, ok: false, missing: [], unexpected: [], error: e instanceof Error ? e.message : String(e) });
+                            }
+                            finally {
+                                setAnalysisDisabled(false);
+                            }
+                    }
+                }
+            }
+            // The sensitivity corpus (D23 tier 2): the innocent corpus's
+            // complement — confirmed-real patterns from the audits, patterns
+            // that MUST produce findings. Each case directory carries its seed
+            // files plus an expect.json mapping doctor id -> expected findings;
+            // a doctor only runs the cases it has stakes in.
+            {
+                const sensDir = fs.realpathSync(new URL("../fixtures/sensitivity", import.meta.url));
+                if (fs.existsSync(sensDir)) {
+                    for (const entry of fs.readdirSync(sensDir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+                        if (!entry.isDirectory())
+                            continue;
+                        const caseDir = path.join(sensDir, entry.name);
+                        const expectPath = path.join(caseDir, "expect.json");
+                        if (!fs.existsSync(expectPath))
+                            continue;
+                        const name = `sensitivity: ${entry.name}`;
+                        let manifest;
+                        try {
+                            manifest = JSON.parse(fs.readFileSync(expectPath, "utf8"));
+                        }
+                        catch (e) {
+                            results.push({ name, ok: false, missing: [], unexpected: [], error: "unreadable expect.json: " + (e instanceof Error ? e.message : String(e)) });
+                            continue;
+                        }
+                        const expected = (_b = manifest === null || manifest === void 0 ? void 0 : manifest.expect) === null || _b === void 0 ? void 0 : _b[String(mod.meta.id)];
+                        if (!Array.isArray(expected))
+                            continue;
+                        try {
+                            const seed = {};
+                            const collect = (dir, prefix) => {
+                                for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+                                    const abs = path.join(dir, e.name);
+                                    const rel = prefix ? prefix + "/" + e.name : e.name;
+                                    if (e.isDirectory())
+                                        collect(abs, rel);
+                                    else if (e.name !== "expect.json")
+                                        seed[rel] = fs.readFileSync(abs, "utf8");
+                                }
+                            };
+                            collect(caseDir, "");
+                            const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-verify-sens-"));
+                            try {
+                                for (const [rel, content] of Object.entries(seed))
+                                    materializeSeed(tmp, rel, content);
+                                if (declaresNeeds && analysisAvailable === undefined)
+                                    analysisAvailable = probeAnalysisAvailable(tmp);
+                                if (declaresNeeds && analysisAvailable === false) {
+                                    results.push({
+                                        name,
+                                        ok: true,
+                                        missing: [],
+                                        unexpected: [],
+                                        skipped: "analysis engine unavailable — pins the analysis-on path",
+                                    });
+                                    continue;
+                                }
+                                const result = await runOnce(tmp, mod, { includeTests: true });
+                                const diff = contract.compareFindings(expected, result.findings);
+                                results.push({ name, ok: diff.missing.length === 0 && diff.unexpected.length === 0, ...diff });
+                            }
+                            finally {
+                                fs.rmSync(tmp, { recursive: true, force: true });
+                            }
+                        }
+                        catch (e) {
+                            results.push({ name, ok: false, missing: [], unexpected: [], error: e instanceof Error ? e.message : String(e) });
+                        }
+                    }
                 }
             }
             process.stdout.write("\n" + contract.RESULT_SENTINEL + JSON.stringify({

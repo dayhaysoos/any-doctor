@@ -10,15 +10,23 @@ A third audit round on convex-doctor 0.0.6 found three remaining issues (push-th
 
 ## What to build next (from the advisor's recommendation, prioritized)
 
-### 1. Duplicate-location framework test (highest certainty)
+### 1. Duplicate-location framework test — DONE (D24)
 
-The billing.ts bug: three identical query chains in separate functions, one finding — because the dedup keyed on normalized statement text. Fixed by keying on chain-start line. But the NEXT agent's doctor could reintroduce it with a different dedup scheme.
+Shipped in the loader's verify branch: every verify takes the doctor's
+first flag-shaped fixture, plants the violation at a second location
+(a byte-identical twin module, `__probe_twin__/<name>` — transform-free
+by design; an earlier transform-based shape broke cross-module identity
+checks), and demands the count across both locations at least double.
+Floor, not equality — over-reporting stays compareFindings' job.
 
-**Build:** in the loader's verify branch, after the innocent corpus, automatically generate a sensitivity test: take one of the doctor's own flag-shaped fixtures, plant the same violation seed TWICE at different locations in one file, assert exactly two findings. A dedup bug fails deterministically before any audit.
+### 2. Sensitivity corpus — DONE (D24)
 
-### 2. Sensitivity corpus (`fixtures/sensitivity/`)
-
-The innocent corpus catches false positives. It has no complement for false negatives — patterns that MUST produce findings. Build `fixtures/sensitivity/` with confirmed-real patterns from the audits (the rateLimiter unbounded collect, the billing triple, the dead prompt builders), each carrying expected findings. Verify runs it like a normal fixture set.
+`fixtures/sensitivity/`: case dirs of seed files + `expect.json` mapping
+doctor id → expected findings; doctors only run cases they have stakes
+in. Seeded with the three audit patterns: ratelimiter-unbounded-collect,
+billing-triple (three findings at three chain-start lines — the dedup
+regression frozen as data), dead-prompt-builders. Plus `test-stake`, a
+synthetic case exercising the mechanism for the loader tests.
 
 ### 3. Release diff (`any-doctor diff-scan`)
 

@@ -1,0 +1,11 @@
+{
+  "name": "billing triple — three identical chains, three findings",
+  "source": "D22 convex-doctor audit — billing.ts had three identical query chains in separate functions; a dedup keyed on normalized statement text collapsed them to one. All three chain starts must be reported.",
+  "expect": {
+    "convex-doctor": [
+      { "rule": "index-without-range", "file": "billing.ts", "line": 10 },
+      { "rule": "index-without-range", "file": "billing.ts", "line": 19 },
+      { "rule": "index-without-range", "file": "billing.ts", "line": 28 }
+    ]
+  }
+}

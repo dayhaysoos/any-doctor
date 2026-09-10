@@ -852,6 +852,58 @@ measurement remain the tier-2 process.
 
 ---
 
+## D24 — Sensitivity as executable: the duplicate-location probe and the sensitivity corpus
+
+**Date:** 2026-09-09
+
+**Context:** D23's innocent corpus catches false positives but has no
+complement for false negatives — patterns that MUST produce findings.
+The advisor's two highest-certainty recommendations: a framework test
+for the dedup disease class (the billing.ts bug: three identical
+query chains in separate functions, one finding, because dedup keyed on
+normalized statement text — the next agent's doctor could reintroduce it
+with a different scheme), and a sensitivity corpus of confirmed-real
+audit patterns.
+
+**Decision:** Two mechanisms, both in the loader's verify branch after
+the innocent corpus:
+
+- **The duplicate-location sensitivity probe.** Every verify takes the
+  doctor's first flag-shaped fixture (non-empty `expected`), plants the
+  same violation at a second location — a byte-identical twin module of
+  the flagged file, `__probe_twin__/<name>` — and demands the finding
+  count across the two locations at least DOUBLE the fixture's expected
+  count for that file. No text is transformed (an earlier shape wrapped
+  the body in functions and stripped exports; that changes what
+  text-keyed checks see and broke cross-module identity checks — the
+  twin is transform-free by design). The assertion is a floor, not
+  equality: checks that flag duplication itself may honestly report the
+  twin, and over-reporting remains compareFindings' jurisdiction.
+  Same-file collapse is still caught: a doctor that collapses the
+  billing triple to one finding per file reports 2 across the pair
+  where 2× the expected count is demanded.
+- **The shared sensitivity corpus.** `fixtures/sensitivity/` — case
+  directories of seed files plus an `expect.json` mapping doctor id to
+  expected findings. A doctor only runs the cases it has stakes in
+  (no row at all otherwise). Seeded with the three audit-confirmed
+  patterns: the rateLimiter unbounded index collect (one finding, fix:
+  bound the index), the billing triple (three identical chains, three
+  findings at three chain-start lines — the dedup regression frozen as
+  data), and the dead prompt builders (two consumerless exports).
+  Grows with every audit's confirmed-real findings, like the innocent
+  corpus grows with its counterexamples.
+
+**Consequences:** A text-keyed dedup scheme fails verify before any
+audit; a regression that silences a known-real pattern fails verify by
+name. The corpus ships in the npm package (`fixtures` is already in
+`files`). Doctors whose checks declare analysis needs skip the
+analysis-on paths honestly when the engine is absent, same as ordinary
+fixtures. What this does NOT do: measure precision on unfamiliar repos
+(the held-out set remains tier-2 process), or replace the per-fixture
+gate — the probe and corpus are reliability floors beneath it.
+
+---
+
 ## Open questions
 
 - Opt-in metrics/score API (parked, D19): count doctors run and findings

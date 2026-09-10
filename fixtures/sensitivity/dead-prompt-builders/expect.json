@@ -1,0 +1,10 @@
+{
+  "name": "dead prompt builders",
+  "source": "D21 slop-doctor audit — two exported prompt builders with no consumer anywhere; audit-confirmed real findings",
+  "expect": {
+    "slop-doctor": [
+      { "rule": "export-without-any-consumer", "file": "prompts.ts", "line": 3 },
+      { "rule": "export-without-any-consumer", "file": "prompts.ts", "line": 9 }
+    ]
+  }
+}
