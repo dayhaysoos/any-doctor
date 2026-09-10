@@ -1,3 +1,14 @@
+// The default walk's extensions — the empty-scan warning names them in
+// prose; composing from the array is what keeps the copy honest the day
+// this list changes.
+export const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
+// All doctors scan the same target, so the cohort's file count is any
+// doctor's count; the max is the honest pick when one crashed early. The
+// policy lives here, beside the RunOutcome field it fills and the Score
+// that divides by it.
+export function cohortFileCount(counts) {
+    return counts.reduce((m, n) => Math.max(m, n), 0);
+}
 export const PROTOCOL_VERSION = 1;
 export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 // ctx.search host protocol: doctor children cannot spawn (permission

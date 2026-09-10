@@ -1,54 +1,13 @@
-import { ExpectedFinding, ReportGroup, VerifyRunResult } from "./contract.js";
+import { DEFAULT_EXTS, ExpectedFinding, ReportGroup, RunOutcome, VerifyRunResult } from "./contract.js";
 import { SEVERITY_ORDER, deriveSummary, RunSummary } from "./summary.js";
-import { DEFAULT_EXTS } from "./sdk.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import type { DiffResult } from "./diff.js";
 import type { GateVerdict } from "./gate.js";
 
-// One doctor whose run crashed: a crash is data. The id is the
-// discovery id (or the program's file name without .mjs when selected
-// by path); the detail is the full describeRunnerError rendering,
-// carried so any surface — report, dashboard, or a future machine
-// consumer — can name the failure without re-deriving it.
-export interface CrashedDoctor {
-  id: string;
-  detail: string;
-}
-
-// One scan invocation's batch of results — assembled once, consumed by the
-// report, the dashboard, and any future surface. One defined meaning per
-// field: the command layer cannot drift because there is one type, and
-// one module (the Cohort) assembles it.
-export interface RunOutcome {
-  // The ReportGroups that ran — one per doctor that produced results.
-  groups: ReportGroup[];
-  // Doctors whose runs crashed: data, named with full detail, results
-  // above are partial.
-  crashed: CrashedDoctor[];
-  // Slugs Confinement refused to run — they ride along as the skip note.
-  skippedUnsafe: string[];
-  // Doctor id → program path, for composing re-run commands.
-  doctorPaths: ReadonlyMap<string, string>;
-  // The scanned target's file count (cohortFileCount of the doctors'
-  // counts) — the Score's denominator (D19).
-  fileCount: number;
-  // Wall-clock of the doctor batch: first spawn to last completion,
-  // discovery and selection excluded — measured once, by the Cohort.
-  durationMs: number;
-  // The scanned target, for composing re-run commands.
-  targetDir: string;
-  /** Could the identity engine power this run? (D20 Stage 2) — checks
-   * that declared `needs` render "narrowed" when false. */
-  analysisAvailable?: boolean;
-}
-
-// All doctors scan the same target, so the cohort's file count is any
-// doctor's count; the max is the honest pick when one crashed early. The
-// policy lives here, beside the RunOutcome field it fills and the Score
-// that divides by it.
-export function cohortFileCount(counts: number[]): number {
-  return counts.reduce((m, n) => Math.max(m, n), 0);
-}
+// The batch record and its crash fold moved to contract.ts — the single
+// home for shared shapes — so the Cohort, the Summary, and the dashboard
+// no longer depend on the rendering adapter for their central types.
+export type { CrashedDoctor } from "./contract.js";
 
 // The one place the skip-note copy lives; report, dashboard, and the CLI
 // all render this sentence so the story is identical everywhere. The count

@@ -8,7 +8,8 @@ import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 
 import { BOLD, colorizer, DIM, GLYPH, GREEN, ORANGE, RESET, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
-import { RunOutcome, unsafeSkipLine } from "./report.js";
+import { RunOutcome } from "./contract.js";
+import { unsafeSkipLine } from "./report.js";
 import { deriveSummary } from "./summary.js";
 
 const SPLIT_MIN_COLS = 100;

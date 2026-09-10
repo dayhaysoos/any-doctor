@@ -1,13 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DoctorCtx, Finding, isTestPath, Match, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, Finding, isTestPath, Match, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 import { EngineQuery, RawSgCapture, RawSgMatch } from "./engine.js";
-
-// The default walk's extensions — exported because the empty-scan
-// warning names them in prose; composing from the array is what keeps
-// the copy honest the day this list changes.
-export const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 
 // The verify harness forces the degraded path per fixture (fixture
 // `analysis: "off"`): the loader flips this switch before running that

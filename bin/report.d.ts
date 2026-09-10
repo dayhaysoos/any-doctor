@@ -1,24 +1,8 @@
-import { ReportGroup, VerifyRunResult } from "./contract.js";
+import { RunOutcome, VerifyRunResult } from "./contract.js";
 import { RunSummary } from "./summary.js";
 import type { DiffResult } from "./diff.js";
 import type { GateVerdict } from "./gate.js";
-export interface CrashedDoctor {
-    id: string;
-    detail: string;
-}
-export interface RunOutcome {
-    groups: ReportGroup[];
-    crashed: CrashedDoctor[];
-    skippedUnsafe: string[];
-    doctorPaths: ReadonlyMap<string, string>;
-    fileCount: number;
-    durationMs: number;
-    targetDir: string;
-    /** Could the identity engine power this run? (D20 Stage 2) — checks
-     * that declared `needs` render "narrowed" when false. */
-    analysisAvailable?: boolean;
-}
-export declare function cohortFileCount(counts: number[]): number;
+export type { CrashedDoctor } from "./contract.js";
 export declare function unsafeSkipLine(names: string[]): string;
 export declare function emptyScanLine(): string;
 export declare function unsafeRefusalLine(name: string, capabilities: readonly string[]): string;

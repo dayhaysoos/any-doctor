@@ -1,7 +1,7 @@
 import { Finding, JoinedFinding, ReportGroup, Severity } from "./contract.js";
 import { ScoreResult } from "./score.js";
 import { TtyStdin, TtyStdout } from "./tty.js";
-import { RunOutcome } from "./report.js";
+import { RunOutcome } from "./contract.js";
 export declare function highlightCode(line: string, useColor: boolean): string;
 export type SiteFinding = {
     readKey: string;

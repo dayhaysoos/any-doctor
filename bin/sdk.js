@@ -1,11 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
-import { isTestPath, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
+import { DEFAULT_EXTS, isTestPath, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
 import { maskNonCode } from "./mask.js";
-// The default walk's extensions — exported because the empty-scan
-// warning names them in prose; composing from the array is what keeps
-// the copy honest the day this list changes.
-export const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 // The verify harness forces the degraded path per fixture (fixture
 // `analysis: "off"`): the loader flips this switch before running that
 // fixture's sandbox, and every ctx in the child answers accordingly.

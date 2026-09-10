@@ -34,6 +34,24 @@ export interface ReportGroup {
     meta: DoctorMeta;
     findings: Finding[];
 }
+export declare const DEFAULT_EXTS: string[];
+export interface CrashedDoctor {
+    id: string;
+    detail: string;
+}
+export interface RunOutcome {
+    groups: ReportGroup[];
+    crashed: CrashedDoctor[];
+    skippedUnsafe: string[];
+    doctorPaths: ReadonlyMap<string, string>;
+    fileCount: number;
+    durationMs: number;
+    targetDir: string;
+    /** Could the identity engine power this run? (D20 Stage 2) — checks
+     * that declared `needs` render "narrowed" when false. */
+    analysisAvailable?: boolean;
+}
+export declare function cohortFileCount(counts: number[]): number;
 export interface Finding {
     rule?: string;
     file: string;

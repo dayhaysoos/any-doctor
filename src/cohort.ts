@@ -1,6 +1,5 @@
 import * as path from "path";
-import { ReportGroup } from "./contract.js";
-import { cohortFileCount, RunOutcome } from "./report.js";
+import { cohortFileCount, ReportGroup, RunOutcome } from "./contract.js";
 import { CohortProgress, describeRunnerError, runDoctorCohort } from "./runner.js";
 
 // The Cohort: doctor programs + target → RunOutcome, in one deep module.

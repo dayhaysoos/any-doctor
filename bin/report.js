@@ -1,13 +1,6 @@
+import { DEFAULT_EXTS } from "./contract.js";
 import { SEVERITY_ORDER, deriveSummary } from "./summary.js";
-import { DEFAULT_EXTS } from "./sdk.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
-// All doctors scan the same target, so the cohort's file count is any
-// doctor's count; the max is the honest pick when one crashed early. The
-// policy lives here, beside the RunOutcome field it fills and the Score
-// that divides by it.
-export function cohortFileCount(counts) {
-    return counts.reduce((m, n) => Math.max(m, n), 0);
-}
 // The one place the skip-note copy lives; report, dashboard, and the CLI
 // all render this sentence so the story is identical everywhere. The count
 // is always the true total; only the name list caps — three names, then

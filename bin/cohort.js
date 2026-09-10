@@ -1,5 +1,5 @@
 import * as path from "path";
-import { cohortFileCount } from "./report.js";
+import { cohortFileCount } from "./contract.js";
 import { describeRunnerError, runDoctorCohort } from "./runner.js";
 export async function runCohort(spec, onProgress) {
     var _a;

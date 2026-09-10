@@ -1,4 +1,4 @@
-import { RunOutcome } from "./report.js";
+import { RunOutcome } from "./contract.js";
 import { CohortProgress } from "./runner.js";
 export interface CohortDoctor {
     id: string;

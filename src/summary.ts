@@ -1,5 +1,4 @@
-import { Finding, narrowedCheckIds, ReportGroup, resolveFinding, Severity } from "./contract.js";
-import type { RunOutcome } from "./report.js";
+import { Finding, narrowedCheckIds, ReportGroup, resolveFinding, RunOutcome, Severity } from "./contract.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines, ScoreHeader, ScoreResult } from "./score.js";
 
 // The Summary: the one derivation from a RunOutcome to everything its
