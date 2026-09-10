@@ -315,7 +315,7 @@ async function cmdRun(args) {
     // rejects the batch must not leave a hidden cursor behind. Settle
     // notes name doctors by the spec's ids — one naming rule, shared with
     // the crash report.
-    const spec = { doctors, targetDir: parsed.targetDir, includeTests: parsed.includeTests };
+    const spec = { doctors, targetDir: parsed.targetDir, includeTests: parsed.includeTests, skippedUnsafe };
     const idOf = new Map(doctors.map(d => [d.programPath, d.id]));
     // JSON mode paints nothing on stdout — not even the live line. The
     // picker and dashboard get the same refusal from wantsTui; the
@@ -346,7 +346,7 @@ async function cmdRun(args) {
     // rendering (findings and skips, not crashes) stays clean.
     for (const c of ran.crashed)
         fail(c.detail);
-    const outcome = { ...ran, skippedUnsafe };
+    const outcome = ran; // complete as returned — skips rode in with the spec
     const summary = deriveSummary(outcome);
     // Diff mode exists iff --base was passed AND the HEAD scan is whole:
     // a crashed HEAD doctor contributes no findings, so its base findings

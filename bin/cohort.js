@@ -31,9 +31,7 @@ export async function runCohort(spec, onProgress) {
     return {
         groups,
         crashed,
-        // Skips are a discovery fact, not a run fact — the command layer,
-        // which owns discovery, patches this field onto the outcome.
-        skippedUnsafe: [],
+        skippedUnsafe: spec.skippedUnsafe ? [...spec.skippedUnsafe] : [],
         doctorPaths,
         fileCount: cohortFileCount(fileCounts),
         durationMs: Date.now() - runStarted,
