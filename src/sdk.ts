@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, Capture, DoctorCtx, Finding, isTestPath, Match, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, Capture, DoctorCtx, Finding, isTestPath, Match, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 import { EngineQuery, RawSgCapture, RawSgMatch } from "./engine.js";
 
@@ -117,7 +117,19 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
         }
         const r = runAnalysis({ kind: "bindings", file }, root);
         if (r.file === undefined) throw new Error(r.error ?? "ctx.analysis failed");
-        return r.file;
+        return r.file as AnalysisFile;
+      },
+
+      spans(file: string): AnalysisSpans {
+        if (analysisForcedOff || !this.available) {
+          throw new Error(
+            "ctx.analysis.spans requires the analysis engine and it is unavailable"
+            + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.",
+          );
+        }
+        const r = runAnalysis({ kind: "spans", file }, root);
+        if (r.file === undefined) throw new Error(r.error ?? "ctx.analysis failed");
+        return r.file as AnalysisSpans;
       },
     },
 
@@ -287,11 +299,11 @@ function runSearch(query: EngineQuery, language: "TypeScript" | "JavaScript", ro
 interface AnalysisResponse {
   available?: boolean;
   reason?: string;
-  file?: AnalysisFile;
+  file?: AnalysisFile | AnalysisSpans;
   error?: string;
 }
 
-function runAnalysis(body: { kind: "available" } | { kind: "bindings"; file: string }, root: string): AnalysisResponse {
+function runAnalysis(body: { kind: "available" } | { kind: "bindings"; file: string } | { kind: "spans"; file: string }, root: string): AnalysisResponse {
   let response: AnalysisResponse;
   try {
     fs.writeSync(3, SEARCH_REQUEST + JSON.stringify({ op: "analysis", ...body, root }) + "\n");

@@ -936,6 +936,46 @@ and is the next deliberate staging.
 
 ---
 
+## D26 — The text-surgery seam, stage one: one masker, and spans as an AST fact
+
+**Date:** 2026-09-10
+
+**Context:** The architecture review's second candidate: the doctors'
+private text-processing copies disagreed in exactly the ways the audits
+exploited (maskNonCode ×3, brace-counting span scanners ×4, delimiter
+matchers ×6, statement walkers ×3). D20 deferred the bulk migration on
+named triggers; the D21/D22 audit bugs in that layer fired the trigger
+twice. A shared importable module stays forbidden (single-file law +
+import guard), which is what makes ctx the seam.
+
+**Decision — two stages shipped, bulk migration still on triggers:**
+
+- **The masker migration (completing D20 Stage 1).** The three private
+  maskNonCode copies (convex, effect-v4, openrouter) are deleted;
+  ctx.files.readMasked is the one masking implementation for every
+  bundled doctor. Behavior upgrade, not a rewrite: readMasked is
+  regex-literal aware (D21) where the private copies blanked only
+  comments and strings. All fixture gates + corpora green unchanged.
+- **`ctx.analysis.spans(file)` (a new analysis kind).** Every
+  function-like span — functions, methods, arrows, classes, with name,
+  asyncness, and extent — computed from the AST the engine already
+  parses, cached beside the bindings models (mtime+size, its own cache).
+  The `needs` vocabulary gains "spans". Pilot: slop-doctor's duplicate
+  check now consumes AST spans at full power and keeps its brace-counting
+  scan as the declared degraded path (needs: ["spans"], onUnknown:
+  "narrow"), pinned by an analysis:"off" fixture — the D20 pattern of
+  primitives + pilots, bulk migration deferred until the remaining
+  consumers' triggers fire (convex's kind-carrying spans and the
+  statement-boundary walkers are the named next customers).
+
+**Consequences:** A brace-counting bug class (semicolons in multi-line
+callbacks, braces in strings) is fixed once behind an interface with
+engine-level regression tests, instead of re-made per doctor. The
+doctors' remaining private helpers are the declared-degradation
+scaffolding D20 predicted would migrate, not grow.
+
+---
+
 ## Open questions
 
 - Opt-in metrics/score API (parked, D19): count doctors run and findings

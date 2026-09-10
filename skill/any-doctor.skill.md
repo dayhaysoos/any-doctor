@@ -78,6 +78,12 @@ export const fixtures = [
   reference `{ line, column, endLine, endColumn, write }` in the same
   position convention as Match. One call per file; throws loudly if
   unavailable.
+- `ctx.analysis.spans(file)` → every function-like span as an AST fact:
+  `{ kind: "function"|"function-expression"|"method"|"arrow"|"class",
+  name, async, line, column, endLine, endColumn }`. Never hand-roll
+  brace-counting span scans — semicolons in multi-line callbacks and
+  braces in strings truncate them (two audit bug classes). Degrade like
+  bindings: declare `needs: ["spans"]`, narrow without the engine.
 - `ctx.report.finding({ rule, file, line, column?, message?, severity? })`
 
 Zero dependencies, zero imports — a doctor is one self-contained file;

@@ -24,6 +24,8 @@ export const meta = {
       fix: "Consolidate into one shared module and import it on both sides - or, if the domains must stay separate, make the separation explicit in the name and a comment saying why they differ.",
       claim: "A function body byte-identical (literals included, comments dropped) to one in another module.",
       lookalikes: ["intentional domain-separated copies", "trivial bodies under 60 chars", "doctor programs and build artifacts (exempt)"],
+      needs: ["spans"],
+      onUnknown: "narrow",
     },
     {
       id: "environment-guessed-from-hostname-substring",
@@ -125,8 +127,8 @@ export async function doctor(ctx) {
   for (const file of files) {
     if (/\.fixtures\.mjs$/.test(file)) continue;
     const lines = readFile(file).masked.split("\n");
-    const rawLines = ctx.files.read(file).split("\n");
-    collectHelperBodies(helperBodies, file, lines, rawLines);
+    const rawLines = readFile(file).raw.split("\n");
+    collectHelperBodies(helperBodies, file, helperSpans(ctx, file, lines), lines, rawLines);
     checkHostnameGuess(ctx, file, lines);
     checkPrefixOverlappingSubstrings(ctx, file, lines);
     checkBooleanCollapse(ctx, file, lines);
@@ -164,9 +166,28 @@ const HELPER_SKIP = /(^|\/)(doctors|bin|dist|build)\//;
 // normalized identical — the 0.0.4 counterexample). Comments are dropped by
 // consulting the masked twin: a line that is all spaces there contributed
 // no code. Whitespace is still squashed so formatting cannot hide a twin.
-function collectHelperBodies(map, file, lines, rawLines) {
+// Function spans at full power are an AST fact (ctx.analysis.spans): the
+// parser already knows where every function begins and ends, so semicolons
+// in multi-line callbacks and braces in strings cannot truncate a span.
+// The old brace-counting scan stays as the declared degraded path -
+// pinned by an analysis:"off" fixture - and narrows honestly without the
+// engine (needs: ["spans"], onUnknown: "narrow").
+function helperSpans(ctx, file, lines) {
+  if (ctx.analysis.available) {
+    try {
+      return ctx.analysis.spans(file).spans
+        .filter(s => (s.kind === "function" || s.kind === "function-expression") && s.name)
+        .map(s => ({ name: s.name, line: s.line, bodyStart: s.line - 1, end: s.endLine - 1 }));
+    } catch {
+      // unparsable for the engine: the text scan sees what it can
+    }
+  }
+  return functionSpans(lines);
+}
+
+function collectHelperBodies(map, file, spans, lines, rawLines) {
   if (HELPER_SKIP.test(file)) return;
-  for (const span of functionSpans(lines)) {
+  for (const span of spans) {
     const bodyLines = [];
     for (let i = span.bodyStart; i <= span.end; i++) {
       if (lines[i].trim() === "") continue; // comment or blank in masked

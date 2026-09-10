@@ -34,6 +34,35 @@ export const fixtures = [
     ],
   },
   {
+    // Pins the duplicate check's degraded path (D26): without the engine,
+    // spans come from the brace-counting scan - same twins, same findings.
+    name: "degraded: twins still found without the analysis engine",
+    analysis: "off",
+    seed: {
+      "src/trim-a.ts": [
+        "export function trimForDisplay(value: string): string {",
+        "  const collapsed = value.replace(/\\s+/g, \" \");",
+        '  return collapsed.trim().slice(0, 120);',
+        "}",
+      ].join("\n"),
+      "src/trim-b.ts": [
+        "export function trimForDisplay(value: string): string {",
+        "  const collapsed = value.replace(/\\s+/g, \" \");",
+        '  return collapsed.trim().slice(0, 120);',
+        "}",
+      ].join("\n"),
+      "src/index.ts": consumes([
+        'import { trimForDisplay as trimA } from "./trim-a";',
+        'import { trimForDisplay as trimB } from "./trim-b";',
+        "export function show(v: string) { return trimA(v) + trimB(v); }",
+      ]),
+    },
+    expected: [
+      { rule: "identical-helper-body-in-two-modules", file: "src/trim-a.ts", line: 1 },
+      { rule: "identical-helper-body-in-two-modules", file: "src/trim-b.ts", line: 1 },
+    ],
+  },
+  {
     name: "accepts same-named helpers with different bodies",
     seed: {
       "src/slug-a.ts": [

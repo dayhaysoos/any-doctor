@@ -20,6 +20,89 @@ export function analysisStatus() {
     const stack = loadStack();
     return stack.error !== undefined ? { available: false, reason: stack.error } : { available: true };
 }
+// One file in, every function-like span out (D26): an AST fact answering
+// what the doctors' private brace-counting copies could only approximate.
+// Semicolons inside multi-line callbacks, strings containing braces, JSX —
+// none of it can truncate a span that the parser already knows. Named
+// declarations carry their id; arrows and anonymous expressions carry null.
+export function analyzeSpans(file, source) {
+    const stack = loadStack();
+    if (stack.error !== undefined)
+        return { ok: false, error: stack.error };
+    let program;
+    try {
+        program = stack.parseSync(file, source, { sourceType: "module" }).program;
+    }
+    catch (e) {
+        return { ok: false, error: `analysis failed to parse ${file}: ${e instanceof Error ? e.message : String(e)}` };
+    }
+    const pos = positioner(source);
+    const spans = [];
+    const visit = (node) => {
+        if (!node || typeof node !== "object")
+            return;
+        const n = node;
+        let span = null;
+        if (n.type === "FunctionDeclaration" || n.type === "TSDeclareFunction") {
+            span = spanOf(n, "function", idName(n.id));
+        }
+        else if (n.type === "FunctionExpression") {
+            span = spanOf(n, "function-expression", idName(n.id));
+        }
+        else if (n.type === "ArrowFunctionExpression") {
+            span = spanOf(n, "arrow", null);
+        }
+        else if (n.type === "ClassDeclaration" || n.type === "ClassExpression") {
+            span = spanOf(n, "class", idName(n.id));
+        }
+        else if (n.type === "MethodDefinition" || n.type === "TSAbstractMethodDefinition") {
+            span = spanOf(n.value, "method", propertyName(n.key));
+        }
+        if (span !== null)
+            spans.push(span);
+        for (const key of Object.keys(n)) {
+            if (key === "range" || key === "start" || key === "end")
+                continue;
+            const v = n[key];
+            if (Array.isArray(v)) {
+                for (const child of v)
+                    if (isNode(child))
+                        visit(child);
+            }
+            else if (isNode(v))
+                visit(v);
+        }
+    };
+    visit(program);
+    return { ok: true, file: { file, spans } };
+    function spanOf(n, kind, name) {
+        if (typeof n.start !== "number" || typeof n.end !== "number")
+            return null;
+        return {
+            kind,
+            name,
+            async: n.async === true,
+            line: pos.line(n.start),
+            column: pos.column(n.start),
+            endLine: pos.line(n.end),
+            endColumn: pos.column(n.end),
+        };
+    }
+}
+function idName(id) {
+    return id && typeof id.name === "string" ? id.name : null;
+}
+function propertyName(key) {
+    const k = key;
+    if (k && typeof k.name === "string")
+        return k.name;
+    if (k && typeof k.value === "string")
+        return k.value; // computed / literal keys
+    return null;
+}
+function isNode(v) {
+    return Boolean(v) && typeof v === "object" && typeof v.type === "string";
+}
 // One file in, one identity model out: every binding (declarations,
 // parameters, imports) with the span of its declaring node and every
 // reference to it, read or write. Type-position identifiers never become

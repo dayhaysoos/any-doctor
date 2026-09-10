@@ -160,9 +160,14 @@ An identity question asked through `ctx.analysis`: which **Binding** a
 name resolves to, and every **Reference** to it. `ctx.analysis.bindings(file)`
 returns the file's whole identity model in one answer — every binding
 with its declaration span and its references (positions in ctx.search's
-convention, plus read/write). The engine is optional (oxc-parser +
+convention, plus read/write). `ctx.analysis.spans(file)` (D26) returns
+every function-like **Span** — functions, methods, arrows, classes with
+name, asyncness, and extent — as an AST fact, replacing the brace-counting
+scans doctors once carried privately (the audit truncation bugs lived in
+those approximations). The engine is optional (oxc-parser +
 eslint-scope behind the Engine seam's second adapter): checks declare
-the analysis they need on their CheckMeta (`needs`), narrow without it,
+the analysis they need on their CheckMeta (`needs` — vocabulary:
+"bindings", "spans"), narrow without it,
 and the report renders "narrowed" — a degraded run is visible, never
 silent. References answer by position, so analysis queries compose with
 rule queries: shapes from one engine, identities from the other.

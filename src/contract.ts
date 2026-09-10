@@ -9,7 +9,7 @@ export interface CheckMeta {
   fix?: string;
   /** Analysis capabilities this check uses at full power; without them it
    * narrows and says so in the report (D20's honest degradation). v1
-   * vocabulary: ["bindings"]. */
+   * vocabulary: ["bindings"], ["spans"]. */
   needs?: string[];
 }
 
@@ -121,6 +121,26 @@ export interface AnalysisFile {
   bindings: BindingInfo[];
 }
 
+// One function-like span, an AST fact (D26): where every function, method,
+// arrow, and class begins and ends — the brace-counting copies the doctors
+// carried could only approximate this, and the approximation is where the
+// audit truncation bugs lived. Lines 1-based, columns 0-based, ctx.search's
+// convention. `name` is null for anonymous arrows and expressions.
+export interface SpanInfo {
+  kind: "function" | "function-expression" | "method" | "arrow" | "class";
+  name: string | null;
+  async: boolean;
+  line: number;
+  column: number;
+  endLine: number;
+  endColumn: number;
+}
+
+export interface AnalysisSpans {
+  file: string;
+  spans: SpanInfo[];
+}
+
 export interface DoctorCtx {
   root: string;
   files: {
@@ -148,6 +168,10 @@ export interface DoctorCtx {
      * declaration span and all references (positions + read/write).
      * Throws loudly when unavailable — check `available` first. */
     bindings(file: string): AnalysisFile;
+    /** One file in, every function-like span out (functions, methods,
+     * arrows, classes) with decl-name, asyncness, and extent — an AST
+     * fact, not a brace-count. Throws loudly when unavailable. */
+    spans(file: string): AnalysisSpans;
   };
   report: {
     finding(f: Finding): void;
