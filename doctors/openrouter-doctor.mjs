@@ -72,7 +72,7 @@ export async function doctor(ctx) {
     const raw = await ctx.files.read(file);
     if (!/openrouter/i.test(raw)) continue;
     const rawLines = raw.split("\n");
-    const masked = maskNonCode(raw);
+    const masked = ctx.files.readMasked(file);
     const lines = masked.split("\n");
 
     checkMidstreamErrors(ctx, file, lines);
@@ -173,49 +173,4 @@ function statementEnds(line) {
   return /;\s*(\/\/.*)?$/.test(bare);
 }
 
-// Shared masking (comments and strings blanked, code shape kept) — copied
-// in by design: the single-file law forbids importing it.
-function maskNonCode(source) {
-  const chars = source.split("");
-  let index = 0;
 
-  while (index < source.length) {
-    const char = source[index];
-    const next = source[index + 1];
-
-    if (char === "/" && next === "/") {
-      const end = source.indexOf("\n", index + 2);
-      const stop = end === -1 ? source.length : end;
-      for (let cursor = index; cursor < stop; cursor += 1) chars[cursor] = " ";
-      index = stop;
-    } else if (char === "/" && next === "*") {
-      const end = source.indexOf("*/", index + 2);
-      const stop = end === -1 ? source.length : end + 2;
-      for (let cursor = index; cursor < stop; cursor += 1) {
-        if (chars[cursor] !== "\n") chars[cursor] = " ";
-      }
-      index = stop;
-    } else if (char === "'" || char === '"' || char === "`") {
-      const quote = char;
-      let cursor = index + 1;
-      while (cursor < source.length) {
-        if (source[cursor] === "\\") {
-          cursor += 2;
-        } else if (source[cursor] === quote) {
-          cursor += 1;
-          break;
-        } else {
-          cursor += 1;
-        }
-      }
-      for (let position = index; position < cursor; position += 1) {
-        if (chars[position] !== "\n") chars[position] = " ";
-      }
-      index = cursor;
-    } else {
-      index += 1;
-    }
-  }
-
-  return chars.join("");
-}
