@@ -976,6 +976,32 @@ scaffolding D20 predicted would migrate, not grow.
 
 ---
 
+## D27 — Architecture review disposition: the cohort was already deep
+
+**Date:** 2026-09-10
+
+**Context:** The review's third candidate proposed deepening — or
+deleting — the cohort layer, whose interface was reported as re-exporting
+both sides (runner types, report types, its own progress shape).
+
+**Decision:** On inspection against the current source, the module is
+already the deep version: one function (`runCohort`), a small interface
+(CohortSpec + a progress callback), owning the bounded pool, the crash
+fold, the capability fold, the file-count policy, and the timing; no
+type re-exports; the command layer composes discovery and rendering
+around it. Deleting it would push the fold back into an already-large
+cli.ts — the deletion test says keep. The one real wart was fixed:
+`skippedUnsafe` no longer ships as a placeholder the caller must patch
+onto the result — the discovery fact rides in with the spec, and the
+outcome is complete as returned (pinned by a cohort test).
+
+**Consequences:** Future reviews should not re-suggest this; the
+remaining card-2 staging (convex's kind-carrying spans, the
+statement-boundary walkers) is the open architecture work, recorded in
+D26.
+
+---
+
 ## Open questions
 
 - Opt-in metrics/score API (parked, D19): count doctors run and findings

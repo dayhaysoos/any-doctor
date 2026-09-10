@@ -92,3 +92,13 @@ test("runCohort: an empty cohort is an honest empty outcome, not a throw", async
   assert.equal(outcome.fileCount, 0);
   assert.equal(outcome.analysisAvailable, false);
 });
+
+test("runCohort: discovery skips ride in with the spec — the outcome is complete as returned", async () => {
+  const outcome = await runCohort({
+    doctors: [],
+    targetDir: TARGET,
+    includeTests: false,
+    skippedUnsafe: ["/tmp/evil.mjs"],
+  });
+  assert.deepEqual(outcome.skippedUnsafe, ["/tmp/evil.mjs"]);
+});

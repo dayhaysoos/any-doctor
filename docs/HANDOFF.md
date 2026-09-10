@@ -32,9 +32,16 @@ synthetic case exercising the mechanism for the loader tests.
 
 Run the current version against a target, then compare with the previous version's scan (stored via `--format json` output). Classify each delta: disappearing FP = progress; disappearing real finding = regression. Gate releases on the classification.
 
-### 4. Architecture pass
+### 4. Architecture pass — DONE (D25–D27)
 
-The last one was before the slop-doctor build. Since then: the loader grew the claim contract + innocent corpus; the analysis adapter was rebuilt on @typescript-eslint/scope-manager; the masker changed regex semantics; five doctors went through multiple generations. Run the improve-codebase-architecture skill. Predicted findings: the loader is accreting (contract + corpus + fixtures = three verify-mode policies wanting one seam); doctors still carry private text-processing (convex-doctor doesn't use ctx.analysis at all).
+The Certification harness extraction (D25) shipped first; then card 2 in
+two stages (D26): the three private maskNonCode copies deleted
+(readMasked is the one masker) and `ctx.analysis.spans(file)` added —
+function spans as an AST fact, piloted in slop-doctor's duplicate check
+with the brace-counting scan kept as the declared degraded path. Card 3
+(cohort) needed no deepening — already deep, one interface wart fixed
+(D27). Remaining named work: convex's kind-carrying spans and the
+statement-boundary walkers migrate on their triggers (D26).
 
 ## Key facts
 

@@ -29,6 +29,10 @@ export interface CohortSpec {
   doctors: readonly CohortDoctor[];
   targetDir: string;
   includeTests: boolean;
+  // Skips are a discovery fact, not a run fact: the command layer, which
+  // owns discovery, hands them in with the spec so the outcome it gets
+  // back is complete — no post-hoc patching of a placeholder field.
+  skippedUnsafe?: readonly string[];
 }
 
 export async function runCohort(spec: CohortSpec, onProgress?: (p: CohortProgress) => void): Promise<RunOutcome> {
@@ -62,9 +66,7 @@ export async function runCohort(spec: CohortSpec, onProgress?: (p: CohortProgres
   return {
     groups,
     crashed,
-    // Skips are a discovery fact, not a run fact — the command layer,
-    // which owns discovery, patches this field onto the outcome.
-    skippedUnsafe: [],
+    skippedUnsafe: spec.skippedUnsafe ? [...spec.skippedUnsafe] : [],
     doctorPaths,
     fileCount: cohortFileCount(fileCounts),
     durationMs: Date.now() - runStarted,
