@@ -76,10 +76,11 @@ clipboard notice live here; the tree's shape and the prompt copy do not.
 ## Doctor tree
 
 The dashboard's view-model: DoctorGroup → checks → SiteFinding, computed
-once from the Summary's deduped groups (src/doctor-tree.ts) and ordered
-for triage — worst severity first, then finding count, then name. Every
-consumer (the list rows, the detail pane, the task prompts) flattens or
-reads the one tree without rebuilding it. A SiteFinding's readKey
+once from the Summary's per-doctor check buckets (src/doctor-tree.ts —
+the tree joins and orders, it never re-groups) and ordered for triage —
+worst severity first, then finding count, then name. Every consumer (the
+list rows, the detail pane, the task prompts) flattens or reads the one
+tree without rebuilding it. A SiteFinding's readKey
 (`checkKey@file:line`) is the within-run identity the read state keys on.
 
 ## Task prompt
