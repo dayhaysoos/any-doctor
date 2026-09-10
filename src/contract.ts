@@ -435,14 +435,15 @@ export function isTestPath(relativePath: string): boolean {
 
 // The read-containment laws, one home each. withinDir is the strict
 // form — the path IS the directory or lies beneath it — and is what a
-// repo root, a sandbox dir, or an evidence read enforces. withinBase
-// adds the mkdtemp anchor form for verify's sandbox PREFIX (any
-// any-doctor-verify-* dir qualifies), which only the channel hosts use.
-// Private copies are how the `..`-resolution subtlety gets forgotten
-// (resolve() collapses it; a raw prefix check would let
-// /target/../../etc through). Fusing the two forms would WIDEN strict
-// roots whose path happens to end in "-" — found in review; kept apart
-// on purpose.
+// repo root, a sandbox dir, an evidence read, or a per-file check
+// enforces. withinBase guards BASES, which the channel hosts derive per
+// mode: a run's target directory, or verify's mkdtemp sandbox PREFIX
+// (any any-doctor-verify-* dir qualifies — hence the anchored form for
+// dash-suffixed bases). Private copies are how the `..`-resolution
+// subtlety gets forgotten (resolve() collapses it; a raw prefix check
+// would let /target/../../etc through). Fusing the two forms would WIDEN
+// strict roots whose path happens to end in "-" — found in review; kept
+// apart on purpose.
 export function withinDir(p: string, dir: string): boolean {
   return p === dir || p.startsWith(dir + path.sep);
 }

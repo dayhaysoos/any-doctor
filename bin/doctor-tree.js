@@ -22,8 +22,12 @@ export const FINDINGS_PER_CHECK = 50;
 export function buildTree(groupChecks, filesTotal) {
     // One GroupChecks entry is one doctor's deduped findings, already
     // bucketed per check by the Summary — the tree joins and orders, it
-    // never re-groups.
-    const doctors = groupChecks.map((gc) => {
+    // never re-groups. A doctor with ZERO findings contributes no node:
+    // its bucket list is empty, and every consumer (rows, detail, prompts)
+    // indexes d.checks[0] — the report shows clean doctors its own way.
+    const doctors = groupChecks
+        .filter((gc) => gc.checks.length > 0)
+        .map((gc) => {
         const entries = gc.checks.map((bucket) => {
             const items = bucket.findings
                 .map((f) => siteOf(gc.group.meta, f))

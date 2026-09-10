@@ -147,7 +147,7 @@ test("runDashboard: ctrl-c exits the loop like q", async () => {
 test("runDashboard: enter on an empty findings list draws instead of crashing", async () => {
   const stdin = new FakeStdin();
   const stdout = new FakeStdout();
-  const done = runDashboardOn({ stdin, stdout }, { ...dashInput(), groups: [{ ...groups[0], findings: [] }] }, copyAlways);
+  const done = runDashboardOn({ stdin, stdout }, dashInput([{ ...groups[0], findings: [] }]), copyAlways);
   stdin.send("\r");
   assert.doesNotMatch(stdout.frames[stdout.frames.length - 1], /DASHBOARD RENDER ERROR/);
   stdin.send("q");
@@ -653,4 +653,12 @@ test("dashboard header: a doctor over zero scanned files reports n/a, not Excell
   assert.match(frame, /a  Score: n\/a — no files scanned/);
   assert.match(frame, /1 finding · 0 files · 114ms/);
   assert.ok(!frame.includes("Excellent"), "an empty scan claims no grade");
+});
+
+test("tree: a doctor with zero findings contributes no node — clean cohorts render, never crash", async () => {
+  const { buildTree } = await import("../bin/doctor-tree.js");
+  const clean = { programName: "clean.mjs", meta: { id: "clean-doctor", description: "x", severity: "warning" }, findings: [] };
+  assert.deepEqual(buildTree(gcOf([clean]), 10), [], "the empty-bucket group is filtered before any checks[0] deref");
+  const mixed = buildTree(gcOf([groups[0], clean]), 10);
+  assert.deepEqual(mixed.map(d => d.doctorId), ["stripe-doctor"], "the clean doctor is simply absent");
 });

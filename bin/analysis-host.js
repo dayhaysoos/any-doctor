@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { searchBase, withinBase } from "./contract.js";
+import { searchBase, withinBase, withinDir } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls } from "./analysis.js";
 // One cache per host process. The host lives in the runner process, so
 // the lifetime is the any-doctor invocation; across a cohort's doctors
@@ -31,7 +31,7 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
             return { error: `ctx.analysis.${req.kind} needs a "file" path` };
         }
         const abs = path.resolve(root, req.file);
-        if (!withinBase(abs, root)) {
+        if (!withinDir(abs, root)) {
             return { error: `ctx.analysis failed: file is outside the search root: ${req.file}` };
         }
         if (req.kind === "bindings") {
