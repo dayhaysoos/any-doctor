@@ -77,13 +77,15 @@ infrastructure failure is not a finding and must never paint a run
 green. Diff mode (`--base <ref>`) judges only what a change ADDED: the
 same cohort scans the merge base of the ref and HEAD (a stateless
 baseline — nothing committed, nothing stale), the two deduped finding
-sets compare through the verify gate's own rule-aware multiset, and the
+sets compare through the identity layer (movement-aware — a finding
+that moved with its code is Continuing; `compareFindings` remains the
+fixture gate's exact multiset, never the diff's), and the
 bar counts added findings only; a change is not blamed for the debt it
 was born into. A partial base never gates: any base-scan crash aborts
 the run loudly (exit 1, no report, no JSON), because a baseline
 missing findings would dress pre-existing debt up as "added" — and a
 crashed HEAD doctor skips the diff for the same reason: its findings
-are absent, and absence must never read as "resolved". Machine
+are absent, and absence must never read as "no longer detected". Machine
 output rides `--format json` — one schema-tagged object on stdout,
 diagnostics on stderr.
 
