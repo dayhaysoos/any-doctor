@@ -2,7 +2,6 @@ import { RunOutcome, VerifyRunResult } from "./contract.js";
 import { RunSummary } from "./summary.js";
 import type { DiffResult } from "./diff.js";
 import type { GateVerdict } from "./gate.js";
-export type { CrashedDoctor } from "./contract.js";
 export declare function unsafeSkipLine(names: string[]): string;
 export declare function emptyScanLine(): string;
 export declare function unsafeRefusalLine(name: string, capabilities: readonly string[]): string;

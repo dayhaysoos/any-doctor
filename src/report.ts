@@ -4,11 +4,6 @@ import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLO
 import type { DiffResult } from "./diff.js";
 import type { GateVerdict } from "./gate.js";
 
-// The batch record and its crash fold moved to contract.ts — the single
-// home for shared shapes — so the Cohort, the Summary, and the dashboard
-// no longer depend on the rendering adapter for their central types.
-export type { CrashedDoctor } from "./contract.js";
-
 // The one place the skip-note copy lives; report, dashboard, and the CLI
 // all render this sentence so the story is identical everywhere. The count
 // is always the true total; only the name list caps — three names, then

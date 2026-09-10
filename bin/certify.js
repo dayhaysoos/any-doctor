@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { buildCtx, setAnalysisDisabled, probeAnalysisAvailable } from "./sdk.js";
-import { withinBase } from "./contract.js";
+import { withinDir } from "./contract.js";
 import * as contract from "./contract.js";
 // One execution of a doctor program against a root, framed as a run result.
 // Owned here because both halves need it: the loader's run mode and every
@@ -73,7 +73,7 @@ const errorRow = (name, e) => ({
 });
 function materializeSeed(tmp, rel, content) {
     const abs = path.resolve(tmp, rel);
-    if (!withinBase(abs, tmp)) {
+    if (!withinDir(abs, tmp)) {
         throw new Error(`fixture seed path escapes the sandbox: ${rel}`);
     }
     fs.mkdirSync(path.dirname(abs), { recursive: true });

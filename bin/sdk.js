@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { DEFAULT_EXTS, isTestPath, SEARCH_REQUEST, SEARCH_RESULT, withinBase } from "./contract.js";
+import { DEFAULT_EXTS, isTestPath, SEARCH_REQUEST, SEARCH_RESULT, withinDir } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 // The verify harness forces the degraded path per fixture (fixture
 // `analysis: "off"`): the loader flips this switch before running that
@@ -132,11 +132,12 @@ function escapeRegExp(s) {
 }
 // The one read with one guard: an explicit path is a doctor's deliberate
 // choice (never test-path filtered), but it must stay inside the repo —
-// both read and readMasked pass through here, through the one
-// read-containment law (withinBase in contract.ts).
+// both read and readMasked pass through here, through the strict
+// containment form (withinDir in contract.ts; no mktemp anchor carve-out
+// — a repo root is a directory, not a prefix).
 function readFileWithin(root, relativePath) {
     const abs = path.resolve(root, relativePath);
-    if (!withinBase(abs, root)) {
+    if (!withinDir(abs, root)) {
         throw new Error(`ctx.files read escapes the repo root: ${relativePath}`);
     }
     return fs.readFileSync(abs, "utf8");

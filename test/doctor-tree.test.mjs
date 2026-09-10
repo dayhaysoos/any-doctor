@@ -38,7 +38,6 @@ const groups = [
 
 test("buildItems: one item per finding instance, not per check", () => {
   const items = buildItems(groups);
-  const gc = gcOf(groups);
   assert.equal(items.length, 3);
   assert.equal(items[0].readKey, "stripe-doctor/charges-create@src/a.ts:2");
   assert.equal(items[1].readKey, "stripe-doctor/charges-create@src/a.ts:9");
@@ -56,7 +55,6 @@ test("tree: each doctor carries its own score against the same denominator", asy
     { programName: "a.mjs", meta: { id: "a", description: "x", severity: "warning" }, findings: [{ file: "f1.ts", line: 1 }, { file: "f2.ts", line: 1 }] },
     { programName: "b.mjs", meta: { id: "b", description: "x", severity: "warning" }, findings: [{ file: "f1.ts", line: 9 }] },
   ];
-  const items = buildItems(twoDoctors);
   const gc = gcOf(twoDoctors);
   const tree = buildTree(gc, 10);
   const a = tree.find(d => d.doctorId === "a");

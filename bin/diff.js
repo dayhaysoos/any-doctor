@@ -5,7 +5,7 @@ import * as path from "path";
 import { resolveFinding } from "./contract.js";
 import { runCohort } from "./cohort.js";
 import { deriveSummary } from "./summary.js";
-import { withinBase } from "./contract.js";
+import { withinDir } from "./contract.js";
 import { compareOccurrences, comparableScans, extractEvidence, IDENTITY_SCHEMA_VERSION, scanProvenance, spansProvider, } from "./identity.js";
 // Raw causes, no flag prefixes: the caller attaches the context and the
 // remedy that actually matches (a missing binary wants "install git";
@@ -34,14 +34,13 @@ function evidenceInputOf(e) {
 }
 // Evidence reads stay inside the scanned root — a finding's file string is
 // doctor-supplied data, and the host's read must not become an escape hatch
-// the confined doctor itself could never take. withinBase is the one home
-// of the containment law (the same predicate the search and analysis hosts
-// enforce).
+// the confined doctor itself could never take. withinDir is the strict
+// containment form's one home (a scan root is a directory, not a prefix).
 function readFileFrom(root) {
     const containmentRoot = path.resolve(root);
     return (rel) => {
         const abs = path.resolve(root, rel);
-        if (!withinBase(abs, containmentRoot))
+        if (!withinDir(abs, containmentRoot))
             return null;
         try {
             return fs.readFileSync(abs, "utf8");

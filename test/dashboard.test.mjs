@@ -40,7 +40,6 @@ const groups = [
 
 test("buildListRows: multi-doctor frames render collapsible doctor rows", async () => {
   const { initialExpanded } = await import("../bin/doctor-tree.js");
-  const items = buildItems(groups);
   const gc = gcOf(groups);
   const expanded = initialExpanded(buildTree(gc, 10));
   assert.ok(expanded.has("stripe-doctor"), "the error-carrying top doctor opens on entry");
@@ -156,7 +155,6 @@ test("runDashboard: enter on an empty findings list draws instead of crashing", 
 });
 
 test("dashboardFrame: unsafe skips appear as one header note line", () => {
-  const items = buildItems(groups);
   const gc = gcOf(groups);
   const frame = dashboardFrame({
     tree: buildTree(gc, 10),
@@ -174,7 +172,6 @@ test("dashboardFrame: unsafe skips appear as one header note line", () => {
 });
 
 test("dashboardFrame: frame height is exactly rows - 1 in every state (notice never resizes it)", () => {
-  const items = buildItems(groups);
   const gc = gcOf(groups);
   const height = (notice, cols, selected) =>
     dashboardFrame({ tree: buildTree(gc, 10), selectedRow: selected, readKeys: new Set(), readSource: () => null, filesTotal: 2, durationMs: 10, useColor: false, notice, cols, rows: 34 })
@@ -209,7 +206,6 @@ test("runDashboard: repaints in place — no full-screen erase after the first p
 });
 
 test("dashboardFrame: pure state -> string; code frames come from the injected source", async () => {
-  const items = buildItems(groups);
   const gc = gcOf(groups);
   const source = ["one", "two", "const three = 3", "four", "five"];
   const readSource = (file) => (file === "src/a.ts" ? source : null);
@@ -223,7 +219,6 @@ test("dashboardFrame: pure state -> string; code frames come from the injected s
 });
 
 test("dashboardFrame with color: header carries no function source", () => {
-  const items = buildItems(groups);
   const gc = gcOf(groups);
   const out = dashboardFrame({ tree: buildTree(gc, 10), selectedRow: 0, readKeys: new Set(), readSource: () => null, filesTotal: 2, durationMs: 10, useColor: true, cols: 120, rows: 34 });
   assert.ok(!out.includes("function gradeColor"), "gradeColor is called, not concatenated");
@@ -252,7 +247,6 @@ const multiGroups = [{
 test("tree: checks render as severity-ordered rows; errors start expanded, warnings collapsed", async () => {
   const { buildListRows } = await import("../bin/dashboard.js");
   const { buildItems, initialExpanded } = await import("../bin/doctor-tree.js");
-  const items = buildItems(multiGroups);
   const gc = gcOf(multiGroups);
   const expanded = initialExpanded(buildTree(gc, 10));
   assert.deepEqual([...expanded], ["multi-doctor/bad-error"], "only the error check opens on entry");
@@ -269,7 +263,6 @@ test("tree: checks render as severity-ordered rows; errors start expanded, warni
 test("tree: expanding a warning check reveals its instances in the frame", async () => {
   const { dashboardFrame } = await import("../bin/dashboard.js");
   const { buildItems, initialExpanded } = await import("../bin/doctor-tree.js");
-  const items = buildItems(multiGroups);
   const gc = gcOf(multiGroups);
   const base = { tree: buildTree(gc, 10), selectedRow: 1, readKeys: new Set(), readSource: () => null, filesTotal: 1, durationMs: 5, useColor: false, cols: 120, rows: 34 };
   const closed = dashboardFrame({ ...base, expanded: initialExpanded(buildTree(gc, 10)) });
@@ -281,7 +274,6 @@ test("tree: expanding a warning check reveals its instances in the frame", async
 test("tree: a check row's detail pane tells the check's story", async () => {
   const { dashboardFrame } = await import("../bin/dashboard.js");
   const { buildItems, initialExpanded } = await import("../bin/doctor-tree.js");
-  const items = buildItems(multiGroups);
   const gc = gcOf(multiGroups);
   const out = dashboardFrame({ tree: buildTree(gc, 10), selectedRow: 1, readKeys: new Set(), readSource: () => null, expanded: initialExpanded(buildTree(gc, 10)), filesTotal: 1, durationMs: 5, useColor: false, cols: 120, rows: 34 });
   assert.ok(out.includes("multi-doctor/bad-error"), "checkKey in the detail pane");
@@ -294,7 +286,6 @@ test("tree: 60 findings in one check show 50 instances plus the re-scan affordan
   const { buildItems, initialExpanded, FINDINGS_PER_CHECK } = await import("../bin/doctor-tree.js");
   assert.equal(FINDINGS_PER_CHECK, 50);
   const findings = Array.from({ length: 60 }, (_, i) => ({ rule: "bad-error", file: "a.ts", line: i + 1 }));
-  const items = buildItems([{ ...multiGroups[0], findings: [...findings, { rule: "meh-warn", file: "b.ts", line: 3 }] }]);
   const gc = gcOf([{ ...multiGroups[0], findings: [...findings, { rule: "meh-warn", file: "b.ts", line: 3 }] }]);
   const rows = buildListRows(buildTree(gc, 10), false, 0, new Set(), initialExpanded(buildTree(gc, 10)));
   const kinds = rows.map(r => r.kind);
@@ -307,7 +298,6 @@ test("tree: 60 findings in one check show 50 instances plus the re-scan affordan
 test("tree: single-doctor frames stay exactly flat — headers, no tree", async () => {
   const { buildListRows } = await import("../bin/dashboard.js");
   const { buildItems, initialExpanded } = await import("../bin/doctor-tree.js");
-  const items = buildItems([groups[0]]); // one doctor, one check
   const gc = gcOf([groups[0]]);
   assert.deepEqual([...initialExpanded(buildTree(gc, 10))], [], "nothing to expand in a single-doctor frame");
   const rows = buildListRows(buildTree(gc, 10), false, 0, new Set(), initialExpanded(buildTree(gc, 10)));
@@ -355,7 +345,6 @@ const aggregateGroups = [
 test("aggregate: doctors sort worst-severity-first and the top doctor opens", async () => {
   const { buildListRows } = await import("../bin/dashboard.js");
   const { buildItems, initialExpanded } = await import("../bin/doctor-tree.js");
-  const items = buildItems(aggregateGroups);
   const gc = gcOf(aggregateGroups);
   const expanded = initialExpanded(buildTree(gc, 10));
   assert.ok(expanded.has("multi-doctor"), "the error-carrying doctor is expanded");
@@ -389,7 +378,6 @@ test("aggregate: enter on a doctor row toggles it and the doctor detail pane ren
 test("tree: children hang off connectors; guides hold the column under an expanded check", async () => {
   const { buildListRows } = await import("../bin/dashboard.js");
   const { buildItems, initialExpanded } = await import("../bin/doctor-tree.js");
-  const items = buildItems(aggregateGroups);
   const gc = gcOf(aggregateGroups);
   const expanded = new Set([...initialExpanded(buildTree(gc, 10)), "multi-doctor/meh-warn"]);
   const rows = buildListRows(buildTree(gc, 10), false, 0, new Set(), expanded);
@@ -432,7 +420,6 @@ test("tree: back collapses up — instance to check, check to doctor", async () 
 test("tree: one multi-check doctor run directly nests like the aggregate", async () => {
   const { buildListRows } = await import("../bin/dashboard.js");
   const { buildItems, initialExpanded } = await import("../bin/doctor-tree.js");
-  const items = buildItems(multiGroups); // single-DOCTOR, multi-check frame
   const gc = gcOf(multiGroups);
   const rows = buildListRows(buildTree(gc, 10), false, 1, new Set(), initialExpanded(buildTree(gc, 10)));
   const texts = rows.map(r => r.text);
@@ -498,7 +485,6 @@ test("more-row on a flat doctor carries its story — the detail pane never blan
     { programName: "flat.mjs", meta: { id: "flat-doctor", description: "Flat", severity: "warning" }, findings: many },
     { programName: "solo.mjs", meta: { id: "solo-doctor", description: "Solo", severity: "info" }, findings: [{ file: "c.ts", line: 1 }] },
   ];
-  const items = buildItems(groups);
   const gc = gcOf(groups);
   const rows = buildListRows(buildTree(gc, 10), false, 0, new Set(), new Set(["flat-doctor"]));
   const more = rows.find(r => r.kind === "more");
@@ -611,7 +597,6 @@ test("dashboard header: the selected doctor's score, never a cohort total", asyn
     { programName: "a.mjs", meta: { id: "a", description: "x", severity: "warning" }, findings: [{ file: "f1.ts", line: 1 }, { file: "f2.ts", line: 1 }] },
     { programName: "b.mjs", meta: { id: "b", description: "x", severity: "warning" }, findings: [{ file: "f1.ts", line: 9 }] },
   ];
-  const items = buildItems(twoDoctors);
   const gc = gcOf(twoDoctors);
   const tree = buildTree(gc, 10);
   const state = (selectedRow) => ({ tree, selectedRow, readKeys: new Set(), readSource: () => null, expanded: new Set(["a", "b"]), filesTotal: 10, durationMs: 5, useColor: false, cols: 120, rows: 34 });

@@ -58,14 +58,12 @@ const multiGroups = [{
 
 test("fixPrompt: verify command resolves through doctorPath (the fixture field is load-bearing)", () => {
   const items = buildItems(groups);
-  const gc = gcOf(groups);
   const prompt = fixPrompt(items[0], "any-doctor run doctors/stripe-doctor.mjs .");
   assert.match(prompt, /Verify with `any-doctor run doctors\/stripe-doctor\.mjs \.`/);
 });
 
 test("fixPrompt: per-finding scope with single affected site", () => {
   const items = buildItems(groups);
-  const gc = gcOf(groups);
   const prompt = fixPrompt(items[0], "any-doctor verify doctors/stripe-doctor.mjs");
   assert.match(prompt, /Fix exactly one any-doctor finding/);
   assert.match(prompt, /ERROR · Direct legacy charge creation \(stripe-doctor\/charges-create\)/);
@@ -98,7 +96,6 @@ test("checkFixPrompt: overarching explanation with every relevant site", async (
 test("doctorFixPrompt: per-check sections with sites and fixes", async () => {
   const { buildItems, buildTree, summarizeDoctor } = await import("../bin/doctor-tree.js");
   const { doctorFixPrompt } = await import("../bin/prompts.js");
-  const items = buildItems(multiGroups);
   const gc = gcOf(multiGroups);
   const tree = buildTree(gc, 10);
   const prompt = doctorFixPrompt(summarizeDoctor(tree[0]), tree[0], "any-doctor run x y");
@@ -113,7 +110,6 @@ test("checkFixPrompt caps at 100 sites with the re-run note", async () => {
   const { checkFixPrompt } = await import("../bin/prompts.js");
   const findings = Array.from({ length: 130 }, (_, i) => ({ rule: "bad-error", file: "src/a" + (i % 7) + ".ts", line: i + 1 }));
   const items = buildItems([{ ...multiGroups[0], findings }]);
-  const gc = gcOf([{ ...multiGroups[0], findings }]);
   const prompt = checkFixPrompt(items, "any-doctor run x y");
   const siteCount = (prompt.match(/^- src\//gm) || []).length;
   assert.equal(siteCount, 100, "exactly the cap listed");
@@ -124,26 +120,6 @@ test("checkFixPrompt caps at 100 sites with the re-run note", async () => {
 test("doctorFixPrompt says any-of-these-checks for multi-check tasks", async () => {
   const { buildItems, buildTree, summarizeDoctor } = await import("../bin/doctor-tree.js");
   const { doctorFixPrompt } = await import("../bin/prompts.js");
-  const items = buildItems(multiGroups);
-  const gc = gcOf(multiGroups);
-  const tree = buildTree(gc, 10);
-  const prompt = doctorFixPrompt(summarizeDoctor(tree[0]), tree[0], "any-doctor run x y");
-  assert.match(prompt, /do not suppress, disable, or silence any of these checks/);
-  assert.match(prompt, /confirm the findings are gone/);
-});
-
-test("checkFixPrompt caps at 100 sites with the re-run note", async () => {
-  const items = buildItems([{ ...multiGroups[0], findings: Array.from({ length: 130 }, (_, i) => ({ rule: "bad-error", file: "src/a" + (i % 7) + ".ts", line: i + 1 })) }]);
-  const gc = gcOf([{ ...multiGroups[0], findings: Array.from({ length: 130 }, (_, i) => ({ rule: "bad-error", file: "src/a" + (i % 7) + ".ts", line: i + 1 })) }]);
-  const prompt = checkFixPrompt(items, "any-doctor run x y");
-  const siteCount = (prompt.match(/^- src\//gm) || []).length;
-  assert.equal(siteCount, 100, "exactly the cap listed");
-  assert.match(prompt, /… and 30 more — fix this batch, then re-run for the rest/);
-  assert.match(prompt, /any of these checks|the check/, "suppress guidance present");
-});
-
-test("doctorFixPrompt says any-of-these-checks for multi-check tasks", async () => {
-  const items = buildItems(multiGroups);
   const gc = gcOf(multiGroups);
   const tree = buildTree(gc, 10);
   const prompt = doctorFixPrompt(summarizeDoctor(tree[0]), tree[0], "any-doctor run x y");

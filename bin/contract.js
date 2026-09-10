@@ -78,19 +78,21 @@ export function isTestPath(relativePath) {
         return true;
     return relativePath.split(/[\\/]+/).some((seg) => TEST_DIR_NAMES.has(seg));
 }
-// The read-containment law, one home: a resolved path is inside its base
-// when it IS the base or lies beneath it. The "-"-suffix form anchors
-// mkdtemp sandboxes (any any-doctor-verify-* dir qualifies). The sdk's
-// ctx.files read, certify's seed materialization, and both hosts enforce
-// this same predicate — private copies are how the `..`-resolution
-// subtlety gets forgotten (resolve() collapses it; a raw prefix check
-// would let /target/../../etc through).
+// The read-containment laws, one home each. withinDir is the strict
+// form — the path IS the directory or lies beneath it — and is what a
+// repo root, a sandbox dir, or an evidence read enforces. withinBase
+// adds the mkdtemp anchor form for verify's sandbox PREFIX (any
+// any-doctor-verify-* dir qualifies), which only the channel hosts use.
+// Private copies are how the `..`-resolution subtlety gets forgotten
+// (resolve() collapses it; a raw prefix check would let
+// /target/../../etc through). Fusing the two forms would WIDEN strict
+// roots whose path happens to end in "-" — found in review; kept apart
+// on purpose.
+export function withinDir(p, dir) {
+    return p === dir || p.startsWith(dir + path.sep);
+}
 export function withinBase(root, base) {
-    if (root === base)
-        return true;
-    if (base.endsWith("-"))
-        return root.startsWith(base);
-    return root.startsWith(base + path.sep);
+    return base.endsWith("-") ? root.startsWith(base) : withinDir(root, base);
 }
 // The base a mode's reads must stay within: a run's target directory, a
 // verify's sandbox prefix under the temp dir, or nothing for meta (meta
