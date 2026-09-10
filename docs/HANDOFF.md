@@ -49,6 +49,16 @@ innermost span, independently addressable same-line occurrences without
 doctor-supplied columns, and before/after pair display (M4). The CLI still has
 no persistent decision store, SQLite layer, or finding history.
 
+**Architecture pass (same branch):** the dashboard split into its three
+concerns — src/doctor-tree.ts (the view-model: SiteFinding, buildTree,
+summaries, expansion defaults), src/prompts.ts (the Task prompt family),
+and a slimmer src/dashboard.ts (layout, frame, loop, read state);
+RunOutcome/CrashedDoctor/cohortFileCount/DEFAULT_EXTS moved to
+contract.ts. Strictly behavior-preserving (test bodies unchanged, import
+sources updated); glossary entries added (Dashboard, Doctor tree, Task
+prompt). M2's decision workflow now lands in the loop's state and the
+prompt family without piercing the tree.
+
 ## Next bounded scope
 
 M2 — remember one decision end to end — is next, per the

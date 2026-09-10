@@ -65,6 +65,32 @@ deriving twice from one RunOutcome yields one Summary; rendering
 derivation. The facts a gate needs (`--fail-on` severity counts,
 baseline-diffable shapes) live here as data, not inside rendering.
 
+## Dashboard
+
+The interactive review surface over a RunOutcome: one module
+(src/dashboard.ts) that owns layout, the frame renderer, the TUI loop, and
+the per-finding read state — composing the Doctor tree as its view-model
+and the Task prompts it copies. Selection, expansion, keymap, and the
+clipboard notice live here; the tree's shape and the prompt copy do not.
+
+## Doctor tree
+
+The dashboard's view-model: DoctorGroup → checks → SiteFinding, computed
+once from the Summary's deduped groups (src/doctor-tree.ts) and ordered
+for triage — worst severity first, then finding count, then name. Every
+consumer (the list rows, the detail pane, the task prompts) flattens or
+reads the one tree without rebuilding it. A SiteFinding's readKey
+(`checkKey@file:line`) is the within-run identity the read state keys on.
+
+## Task prompt
+
+Text the dashboard copies to the clipboard as one unit of agent work: one
+finding (fixPrompt), every finding of one check (checkFixPrompt), or a
+doctor's whole batch (doctorFixPrompt) — pure functions of Doctor-tree
+types plus the verify command, no terminal required. The lifecycle plan
+(M2) reworks this family toward investigation-first framing and
+authorized decision paths.
+
 ## Gate
 
 A run's exit policy — one module (src/gate.ts), one law. Findings are
