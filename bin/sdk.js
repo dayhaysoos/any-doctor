@@ -110,6 +110,17 @@ export function buildCtx(root, opts = {}) {
                     throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
                 return r.file;
             },
+            spans(file) {
+                var _a;
+                if (analysisForcedOff || !this.available) {
+                    throw new Error("ctx.analysis.spans requires the analysis engine and it is unavailable"
+                        + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.");
+                }
+                const r = runAnalysis({ kind: "spans", file }, root);
+                if (r.file === undefined)
+                    throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
+                return r.file;
+            },
         },
         report: {
             finding(f) {

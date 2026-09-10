@@ -42,7 +42,7 @@ test("handleAnalysisRequest: roots outside the target are refused before the ana
 
 test("handleAnalysisRequest: unknown kinds are loud errors naming the known kinds", () => {
   const out = handleAnalysisRequest({ kind: "bindingz", root: TARGET }, RUN, undefined, () => ({ available: true }));
-  assert.match(out.error, /unknown analysis kind.*known kinds: available, bindings/);
+  assert.match(out.error, /unknown analysis kind.*known kinds: available, bindings, spans/);
 });
 
 test("handleAnalysisRequest: bindings ask reads the file and returns the analyzer's model, cached by mtime+size", () => {
@@ -118,4 +118,29 @@ test("handleSearchLine: a missing op still means pattern (the original wire form
     },
   ));
   assert.deepEqual(out, { matches: [] });
+});
+
+test("handleAnalysisRequest: spans ask routes to the spanzer with its own cache", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-ah-"));
+  try {
+    fs.writeFileSync(path.join(dir, "a.ts"), "function a() { return 1; }\n");
+    let spanzerCalls = 0;
+    let analyzerCalls = 0;
+    const spanzer = (file, source) => {
+      spanzerCalls += 1;
+      assert.ok(source.includes("function a"));
+      return { ok: true, file: { file, spans: [] } };
+    };
+    const analyzer = () => { analyzerCalls += 1; return { ok: true, file: { file: "x", bindings: [] } }; };
+    const root = { kind: "run", root: dir };
+    const first = handleAnalysisRequest({ kind: "spans", file: "a.ts", root: dir }, root, analyzer, undefined, spanzer);
+    assert.deepEqual(first.file.spans, []);
+    const second = handleAnalysisRequest({ kind: "spans", file: "a.ts", root: dir }, root, analyzer, undefined, spanzer);
+    assert.deepEqual(second.file.spans, []);
+    assert.equal(spanzerCalls, 1, "second ask hits the spans cache");
+    assert.equal(analyzerCalls, 0, "spans never consult the bindings analyzer");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    clearAnalysisCache();
+  }
 });

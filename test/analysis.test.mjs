@@ -101,3 +101,71 @@ test("analyzeBindings: JSX references, type positions, exported and excluded fac
   const semicolonType = analyzeBindings("e.ts", 'export const status: { label: string; } = { label: "ready" };');
   assert.equal(semicolonType.file.bindings.find((b) => b.name === "status")?.exported, true, "semicolon inside a type annotation does not end the export statement");
 });
+
+// --- analyzeSpans (D26): function-like spans as AST facts ---
+
+const { analyzeSpans } = await import("../bin/analysis.js");
+
+test("analyzeSpans: named functions carry their id and extent", () => {
+  const r = analyzeSpans("a.ts", [
+    "export async function slugify(name: string): string {",
+    "  return name.trim();",
+    "}",
+  ].join("\n"));
+  assert.equal(r.ok, true);
+  const fn = r.file.spans.find(s => s.kind === "function");
+  assert.equal(fn.name, "slugify");
+  assert.equal(fn.async, true);
+  assert.equal(fn.line, 1);
+  assert.equal(fn.endLine, 3);
+});
+
+test("analyzeSpans: a semicolon inside a multi-line callback cannot truncate a span (the audit bug class)", () => {
+  const r = analyzeSpans("a.ts", [
+    "function scan(ctx) {",
+    "  const rows = ctx.db.query(\"t\")",
+    "    .withIndex(\"by_x\", (q) => { q.eq(\"a\", 1); q.eq(\"b\", 2); })",
+    "    .collect();",
+    "  return rows;",
+    "}",
+  ].join("\n"));
+  assert.equal(r.ok, true);
+  const fn = r.file.spans.find(s => s.kind === "function" && s.name === "scan");
+  assert.equal(fn.line, 1);
+  assert.equal(fn.endLine, 6, "span covers the whole function despite inner braces and semicolons");
+});
+
+test("analyzeSpans: methods, arrows, and classes carry their kinds; anonymous arrows have no name", () => {
+  const r = analyzeSpans("a.ts", [
+    "class Widget {",
+    "  render() {",
+    "    const double = (x) => x * 2;",
+    "    return double(1);",
+    "  }",
+    "}",
+    "const handler = function () { return 1; };",
+  ].join("\n"));
+  assert.equal(r.ok, true);
+  const kinds = r.file.spans.map(s => s.kind);
+  assert.ok(kinds.includes("class"));
+  assert.ok(kinds.includes("method"));
+  assert.ok(kinds.includes("arrow"));
+  assert.ok(kinds.includes("function-expression"));
+  const arrow = r.file.spans.find(s => s.kind === "arrow");
+  assert.equal(arrow.name, null);
+  assert.equal(r.file.spans.find(s => s.kind === "method").name, "render");
+  assert.equal(r.file.spans.find(s => s.kind === "class").name, "Widget");
+});
+
+test("analyzeSpans: braces inside strings and comments do not bend spans", () => {
+  const r = analyzeSpans("a.ts", [
+    "function tricky() {",
+    "  const s = \"}{ {(\";",
+    "  // comment with } brace",
+    "  return s.length;",
+    "}",
+  ].join("\n"));
+  assert.equal(r.ok, true);
+  const fn = r.file.spans.find(s => s.name === "tricky");
+  assert.equal(fn.endLine, 5);
+});

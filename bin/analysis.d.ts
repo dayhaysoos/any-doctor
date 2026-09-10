@@ -1,5 +1,5 @@
-import { AnalysisFile, BindingInfo, BindingRef } from "./contract.js";
-export type { AnalysisFile, BindingInfo, BindingRef };
+import { AnalysisFile, AnalysisSpans, BindingInfo, BindingRef, SpanInfo } from "./contract.js";
+export type { AnalysisFile, AnalysisSpans, BindingInfo, BindingRef, SpanInfo };
 export interface AnalysisStatus {
     available: true;
 }
@@ -15,4 +15,12 @@ export type AnalysisResult = {
     ok: false;
     error: string;
 };
+export type SpansResult = {
+    ok: true;
+    file: AnalysisSpans;
+} | {
+    ok: false;
+    error: string;
+};
+export declare function analyzeSpans(file: string, source: string): SpansResult;
 export declare function analyzeBindings(file: string, source: string): AnalysisResult;
