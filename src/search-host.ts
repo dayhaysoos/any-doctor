@@ -1,6 +1,5 @@
-import * as os from "os";
 import * as path from "path";
-import { decodeSearchOp, includeTestsFor, isTestPath, Mode, NamedRuleQuery, RuleQuery, SEARCH_REQUEST } from "./contract.js";
+import { decodeSearchOp, includeTestsFor, isTestPath, Mode, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, searchBase, withinBase } from "./contract.js";
 import { runEngine, EngineQuery, RawSgMatch } from "./engine.js";
 import { handleAnalysisRequest } from "./analysis-host.js";
 
@@ -14,26 +13,6 @@ import { handleAnalysisRequest } from "./analysis-host.js";
 // not search at all. The test-path filter is D18's law applied to this
 // seam: the same isTestPath predicate the sdk walk uses, the same
 // includeTestsFor derivation (run → flag, verify → everything).
-
-export function searchBase(mode: Mode): string {
-  switch (mode.kind) {
-    // Verify sandboxes are seeded under the temp dir with this prefix —
-    // not the whole temp dir, and nothing else in it.
-    case "verify": return path.join(os.tmpdir(), "any-doctor-verify-");
-    case "run": return mode.root;
-    case "meta": return "";
-  }
-}
-
-// Bases are anchors: a run's target directory (anything beneath it), or
-// verify's sandbox prefix (any any-doctor-verify-* sandbox). The prefix
-// form ends in "-" on purpose — mkdtemp appends to it. Shared by the
-// analysis host — one copy of the containment law.
-export function withinBase(root: string, base: string): boolean {
-  if (root === base) return true;
-  if (base.endsWith("-")) return root.startsWith(base);
-  return root.startsWith(base + path.sep);
-}
 
 type Engine = typeof runEngine;
 

@@ -5,7 +5,7 @@ import * as path from "path";
 import { Finding, resolveFinding, ReportGroup, Severity } from "./contract.js";
 import { CohortSpec, runCohort } from "./cohort.js";
 import { deriveSummary } from "./summary.js";
-import { withinBase } from "./search-host.js";
+import { withinBase } from "./contract.js";
 import {
   compareOccurrences, comparableScans, extractEvidence, EvidenceInput, EvidenceReport,
   IDENTITY_SCHEMA_VERSION, ScanComparison, ScanProvenance, scanProvenance, spansProvider,

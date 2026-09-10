@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
+import { searchBase, withinBase } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls } from "./analysis.js";
-import { searchBase, withinBase } from "./search-host.js";
 // One cache per host process. The host lives in the runner process, so
 // the lifetime is the any-doctor invocation; across a cohort's doctors
 // the same unchanged file answers from memory.

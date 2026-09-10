@@ -1,3 +1,6 @@
+import * as os from "os";
+import * as path from "path";
+
 export type Severity = "error" | "warning" | "info";
 
 export interface CheckMeta {
@@ -407,7 +410,7 @@ export function fixturesPathFor(programPath: string): string {
   return programPath.replace(DOCTOR_FILE_RE, "") + ".fixtures.mjs";
 }
 
-// D18's one law, in the conventions' home: test files and test directories
+// One law, in the conventions' home: test files and test directories
 // are not production reads. Every read capability applies this predicate —
 // the sdk walk prunes by it, the search host filters matches by it. Test
 // FILES are test-named code files (.test./.spec. with a code extension);
@@ -418,6 +421,30 @@ const TEST_DIR_NAMES = new Set(["test", "tests", "__tests__"]);
 export function isTestPath(relativePath: string): boolean {
   if (TEST_FILE_RE.test(relativePath)) return true;
   return relativePath.split(/[\\/]+/).some((seg) => TEST_DIR_NAMES.has(seg));
+}
+
+// The read-containment law, one home: a resolved path is inside its base
+// when it IS the base or lies beneath it. The "-"-suffix form anchors
+// mkdtemp sandboxes (any any-doctor-verify-* dir qualifies). The sdk's
+// ctx.files read, certify's seed materialization, and both hosts enforce
+// this same predicate — private copies are how the `..`-resolution
+// subtlety gets forgotten (resolve() collapses it; a raw prefix check
+// would let /target/../../etc through).
+export function withinBase(root: string, base: string): boolean {
+  if (root === base) return true;
+  if (base.endsWith("-")) return root.startsWith(base);
+  return root.startsWith(base + path.sep);
+}
+
+// The base a mode's reads must stay within: a run's target directory, a
+// verify's sandbox prefix under the temp dir, or nothing for meta (meta
+// may not read at all). Pure function of the Mode — placed with it.
+export function searchBase(mode: Mode): string {
+  switch (mode.kind) {
+    case "verify": return path.join(os.tmpdir(), "any-doctor-verify-");
+    case "run": return mode.root;
+    case "meta": return "";
+  }
 }
 
 // One derivation, one home: a run scans test files only when --include-tests

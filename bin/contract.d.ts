@@ -297,6 +297,8 @@ export declare const DOCTOR_FILE_RE: RegExp;
 export declare const FIXTURES_FILE_RE: RegExp;
 export declare function fixturesPathFor(programPath: string): string;
 export declare function isTestPath(relativePath: string): boolean;
+export declare function withinBase(root: string, base: string): boolean;
+export declare function searchBase(mode: Mode): string;
 export declare function includeTestsFor(mode: Mode): boolean;
 export declare function runCommandFor(doctorPath: string, root: string, invoker?: string): string;
 export declare function compareFindings(expected: ExpectedFinding[], actual: Finding[]): FixtureDiff;

@@ -3,6 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import { buildCtx, setAnalysisDisabled, probeAnalysisAvailable } from "./sdk.js";
 import type { DoctorMeta, ExpectedFinding, Finding, Fixture, FixtureResult, RunResult } from "./contract.js";
+import { withinBase } from "./contract.js";
 import * as contract from "./contract.js";
 
 // The Certification harness: every verify-mode policy in one module, behind
@@ -89,7 +90,7 @@ const errorRow = (name: string, e: unknown): FixtureResult => ({
 
 function materializeSeed(tmp: string, rel: string, content: string): void {
   const abs = path.resolve(tmp, rel);
-  if (abs !== tmp && !abs.startsWith(tmp + path.sep)) {
+  if (!withinBase(abs, tmp)) {
     throw new Error(`fixture seed path escapes the sandbox: ${rel}`);
   }
   fs.mkdirSync(path.dirname(abs), { recursive: true });

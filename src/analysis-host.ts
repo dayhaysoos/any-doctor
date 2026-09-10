@@ -1,8 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, Mode } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, Mode, searchBase, withinBase } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls, AnalysisResult, AnalysisStatusResult, SpansResult } from "./analysis.js";
-import { searchBase, withinBase } from "./search-host.js";
 
 // The analysis host: the identity engine's side of the channel, a sibling
 // to the search host. The search host routes `op: "analysis"` requests

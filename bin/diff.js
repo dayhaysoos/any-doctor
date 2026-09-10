@@ -5,7 +5,7 @@ import * as path from "path";
 import { resolveFinding } from "./contract.js";
 import { runCohort } from "./cohort.js";
 import { deriveSummary } from "./summary.js";
-import { withinBase } from "./search-host.js";
+import { withinBase } from "./contract.js";
 import { compareOccurrences, comparableScans, extractEvidence, IDENTITY_SCHEMA_VERSION, scanProvenance, spansProvider, } from "./identity.js";
 // Raw causes, no flag prefixes: the caller attaches the context and the
 // remedy that actually matches (a missing binary wants "install git";
