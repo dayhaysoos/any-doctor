@@ -92,7 +92,6 @@ export function extractEvidence(findings, readSource, spansFor) {
     var _a;
     const occurrences = [];
     const unreadableFiles = [];
-    const staleLines = [];
     const contextUnavailableFiles = [];
     const fileFacts = new Map();
     for (const f of findings) {
@@ -125,7 +124,6 @@ export function extractEvidence(findings, readSource, spansFor) {
         }
         const raw = facts.lines[f.line - 1];
         if (raw === undefined) {
-            staleLines.push(`${f.file}:${f.line}`);
             occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
             continue;
         }
@@ -138,7 +136,7 @@ export function extractEvidence(findings, readSource, spansFor) {
             contextId: facts.ids !== null ? enclosingContext(facts.spans, facts.ids, f.line, (_a = f.column) !== null && _a !== void 0 ? _a : 0) : null,
         });
     }
-    return { occurrences, unreadableFiles, staleLines, contextUnavailableFiles };
+    return { occurrences, unreadableFiles, contextUnavailableFiles };
 }
 // Stable identity for each function-like span: kind + name + its ordinal
 // among same-named same-kind spans in positional order. Ordinals shift only

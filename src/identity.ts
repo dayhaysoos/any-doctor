@@ -86,8 +86,6 @@ export interface EvidenceReport {
   occurrences: OccurrenceEvidence[];
   // Files whose content could not be read at comparison time.
   unreadableFiles: string[];
-  // Occurrences whose reported line is outside the content that was read.
-  staleLines: string[];
   // Files where the analysis engine could not supply structural context.
   contextUnavailableFiles: string[];
 }
@@ -147,7 +145,6 @@ export function extractEvidence(
 ): EvidenceReport {
   const occurrences: OccurrenceEvidence[] = [];
   const unreadableFiles: string[] = [];
-  const staleLines: string[] = [];
   const contextUnavailableFiles: string[] = [];
 
   // Per-file facts computed once (one read, one parse), keyed by first
@@ -187,7 +184,6 @@ export function extractEvidence(
     }
     const raw = facts.lines[f.line - 1];
     if (raw === undefined) {
-      staleLines.push(`${f.file}:${f.line}`);
       occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
       continue;
     }
@@ -200,7 +196,7 @@ export function extractEvidence(
       contextId: facts.ids !== null ? enclosingContext(facts.spans!, facts.ids, f.line, f.column ?? 0) : null,
     });
   }
-  return { occurrences, unreadableFiles, staleLines, contextUnavailableFiles };
+  return { occurrences, unreadableFiles, contextUnavailableFiles };
 }
 
 // Stable identity for each function-like span: kind + name + its ordinal

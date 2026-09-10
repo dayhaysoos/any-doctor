@@ -43,6 +43,13 @@ export interface DiffResult {
   base: string;
   // The merge base the diff actually ran against.
   baseSha: string;
+  // The HEAD commit the working tree sits on, and whether anything in the
+  // repo (tracked changes or untracked files, repo-wide — a coarse but
+  // honest over-approximation of "the scan saw more than HEAD") differed
+  // from it at diff time. The head side scans the working tree, not the
+  // commit; these two fields are what attributes its findings later.
+  headSha: string;
+  headDirty: boolean;
   added: DiffFinding[];
   // Occurrences matched to a base counterpart — the count, not a pairing
   // claim when identical copies were matched by cardinality (ambiguous).
@@ -53,12 +60,13 @@ export interface DiffResult {
   // on at least one side) — the engine-off fallback, kept visible.
   contextFallback: number;
   ambiguous: number;
+  // Occurrences with no confident content (unreadable file or a line past
+  // end-of-content) — evidence-less, so they can never continue.
   stale: number;
-  // Occurrences whose file could not be read at comparison time, per side
-  // summed — evidence-less, so they can never continue.
+  // FILES that could not be read at comparison time, per side summed
+  // (their occurrences are already counted in stale).
   unreadable: number;
-  // Occurrences in files the analysis engine could not parse for context,
-  // per side summed — matched on content alone or not matched.
+  // FILES the analysis engine could not parse for context, per side summed.
   contextUnavailable: number;
   identitySchema: number;
   provenance: { head: ScanProvenance; base: ScanProvenance; comparable: boolean };
@@ -168,6 +176,15 @@ export async function runDiff(
     throw new Error(`--base failed to resolve "${baseRef}": ` + baseShaR.cause);
   }
   const baseSha = baseShaR.out;
+  // Head-side provenance: the commit the working tree sits on, and whether
+  // the scan's real input (the working tree) differed from it.
+  const headShaR = git(["rev-parse", "HEAD"], repoRoot);
+  if (!headShaR.ok) {
+    throw new Error("--base failed to read HEAD: " + headShaR.cause);
+  }
+  const headSha = headShaR.out;
+  const statusR = git(["status", "--porcelain"], repoRoot);
+  const headDirty = statusR.ok ? statusR.out.length > 0 : true;
 
   const worktree = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-base-"));
   try {
@@ -230,6 +247,8 @@ export async function runDiff(
     return {
       base: baseRef,
       baseSha,
+      headSha,
+      headDirty,
       added: joinFindings(headEntries, cmp.addedIndices),
       continuing: cmp.pairs.length,
       noLongerDetected: joinFindings(baseEntries, cmp.absentIndices),

@@ -95,8 +95,27 @@ export interface ReportDiff {
   // engine-off run never reads as structurally verified continuity.
   contextFallback: number;
   ambiguous: number;
+  // Occurrences with no confident content (unreadable or past end-of-file).
   stale: number;
-  unreadable: number;
+  // False when the doctor programs differed between the two sides — every
+  // occurrence is then counted as added and the prose must say so.
+  comparable: boolean;
+}
+
+// The one projection from the diff's full result to the prose surface —
+// beside the type it fills, so the command layer cannot hand-copy fields
+// into drift (loop-2 finding: an 8-field copy had already diverged).
+export function reportDiffOf(diff: DiffResult): ReportDiff {
+  return {
+    base: diff.base,
+    added: diff.added.length,
+    continuing: diff.continuing,
+    noLongerDetected: diff.noLongerDetected.length,
+    contextFallback: diff.contextFallback,
+    ambiguous: diff.ambiguous,
+    stale: diff.stale,
+    comparable: diff.provenance.comparable,
+  };
 }
 
 // The report is an adapter over the Summary: the derivation (dedupe,
@@ -124,9 +143,12 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
   if (diff !== undefined) {
     let line = `vs ${diff.base} (merged base): ${diff.added} added · ${diff.continuing} continuing · ${diff.noLongerDetected} no longer detected`;
     const notes: string[] = [];
+    if (!diff.comparable) {
+      notes.push("doctor programs changed between the two sides — continuity refused, everything counts as added");
+    }
     if (diff.contextFallback > 0) notes.push(`${diff.contextFallback} matched without structural context`);
     if (diff.ambiguous > 0) notes.push(`${diff.ambiguous} matched among identical copies`);
-    if (diff.stale + diff.unreadable > 0) notes.push(`${diff.stale + diff.unreadable} unread or changed mid-scan`);
+    if (diff.stale > 0) notes.push(`${diff.stale} unread or changed mid-scan`);
     if (notes.length > 0) line += ` (${notes.join("; ")})`;
     lines.push(c(line, DIM));
   }
@@ -262,6 +284,8 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
       diff: {
         base: diff.base,
         baseSha: diff.baseSha,
+        headSha: diff.headSha,
+        headDirty: diff.headDirty,
         added: diff.added,
         continuing: diff.continuing,
         noLongerDetected: diff.noLongerDetected,

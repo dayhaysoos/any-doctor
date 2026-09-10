@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { DOCTOR_FILE_RE } from "./contract.js";
-import { renderJson, renderReport, renderVerifyResult, RunOutcome, unsafeSkipLine } from "./report.js";
+import { renderJson, renderReport, renderVerifyResult, reportDiffOf, RunOutcome, unsafeSkipLine } from "./report.js";
 import { CohortSpec, runCohort } from "./cohort.js";
 import { countsOfSeverities, FailOn, gateVerdict, GateVerdict, isFailOn } from "./gate.js";
 import { DiffResult, runDiff } from "./diff.js";
@@ -397,11 +397,7 @@ async function cmdRun(args: string[]): Promise<number> {
   }
 
   if (!interactive) {
-    console.log(renderReport(outcome, useColor(), diff !== undefined
-      ? { base: diff.base, added: diff.added.length, continuing: diff.continuing,
-          noLongerDetected: diff.noLongerDetected.length, contextFallback: diff.contextFallback,
-          ambiguous: diff.ambiguous, stale: diff.stale, unreadable: diff.unreadable }
-      : undefined));
+    console.log(renderReport(outcome, useColor(), diff !== undefined ? reportDiffOf(diff) : undefined));
     return exitAfterSurface(outcome, gate);
   }
 

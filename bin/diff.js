@@ -96,6 +96,15 @@ export async function runDiff(spec, baseRef, headGroups, headAnalysisAvailable) 
         throw new Error(`--base failed to resolve "${baseRef}": ` + baseShaR.cause);
     }
     const baseSha = baseShaR.out;
+    // Head-side provenance: the commit the working tree sits on, and whether
+    // the scan's real input (the working tree) differed from it.
+    const headShaR = git(["rev-parse", "HEAD"], repoRoot);
+    if (!headShaR.ok) {
+        throw new Error("--base failed to read HEAD: " + headShaR.cause);
+    }
+    const headSha = headShaR.out;
+    const statusR = git(["status", "--porcelain"], repoRoot);
+    const headDirty = statusR.ok ? statusR.out.length > 0 : true;
     const worktree = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-base-"));
     try {
         const addR = git(["worktree", "add", "--detach", worktree, baseSha], repoRoot);
@@ -152,6 +161,8 @@ export async function runDiff(spec, baseRef, headGroups, headAnalysisAvailable) 
         return {
             base: baseRef,
             baseSha,
+            headSha,
+            headDirty,
             added: joinFindings(headEntries, cmp.addedIndices),
             continuing: cmp.pairs.length,
             noLongerDetected: joinFindings(baseEntries, cmp.absentIndices),

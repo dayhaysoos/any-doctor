@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { DOCTOR_FILE_RE } from "./contract.js";
-import { renderJson, renderReport, renderVerifyResult, unsafeSkipLine } from "./report.js";
+import { renderJson, renderReport, renderVerifyResult, reportDiffOf, unsafeSkipLine } from "./report.js";
 import { runCohort } from "./cohort.js";
 import { countsOfSeverities, gateVerdict, isFailOn } from "./gate.js";
 import { runDiff } from "./diff.js";
@@ -378,11 +378,7 @@ async function cmdRun(args) {
         return exitAfterSurface(outcome, gate);
     }
     if (!interactive) {
-        console.log(renderReport(outcome, useColor(), diff !== undefined
-            ? { base: diff.base, added: diff.added.length, continuing: diff.continuing,
-                noLongerDetected: diff.noLongerDetected.length, contextFallback: diff.contextFallback,
-                ambiguous: diff.ambiguous, stale: diff.stale, unreadable: diff.unreadable }
-            : undefined));
+        console.log(renderReport(outcome, useColor(), diff !== undefined ? reportDiffOf(diff) : undefined));
         return exitAfterSurface(outcome, gate);
     }
     const invoker = process.argv[1] ? `node "${fs.realpathSync(process.argv[1])}"` : "any-doctor";

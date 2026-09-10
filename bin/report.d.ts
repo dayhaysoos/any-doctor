@@ -30,8 +30,9 @@ export interface ReportDiff {
     contextFallback: number;
     ambiguous: number;
     stale: number;
-    unreadable: number;
+    comparable: boolean;
 }
+export declare function reportDiffOf(diff: DiffResult): ReportDiff;
 export declare function renderReport(input: RunOutcome, useColor: boolean, diff?: ReportDiff): string;
 export declare function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult): string;
 export declare function renderVerifyResult(result: VerifyRunResult, useColor: boolean): string;

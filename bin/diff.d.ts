@@ -12,6 +12,8 @@ export interface DiffFinding {
 export interface DiffResult {
     base: string;
     baseSha: string;
+    headSha: string;
+    headDirty: boolean;
     added: DiffFinding[];
     continuing: number;
     noLongerDetected: DiffFinding[];

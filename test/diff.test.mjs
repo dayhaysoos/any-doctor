@@ -94,6 +94,8 @@ test("diff: added and resolved against the merge base — never against main's t
     assert.deepEqual(d.noLongerDetected.map(r => r.file), ["a.ts"], "no longer detected: the base occurrence without a head counterpart");
     assert.equal(d.continuing, 0);
     assert.equal(d.provenance.comparable, true, "same doctor programs ran on both sides");
+    assert.match(d.headSha, /^[0-9a-f]{40}$/, "the head side's source state is attributed");
+    assert.equal(typeof d.headDirty, "boolean");
     assert.ok(!JSON.stringify(d).includes("d.ts"), "main's post-branch finding is nobody's baseline");
     assert.match(d.base, /main/);
     assert.match(d.baseSha, /^[0-9a-f]{40}$/);

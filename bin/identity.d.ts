@@ -18,7 +18,6 @@ export interface EvidenceInput {
 export interface EvidenceReport {
     occurrences: OccurrenceEvidence[];
     unreadableFiles: string[];
-    staleLines: string[];
     contextUnavailableFiles: string[];
 }
 export interface ScanProvenance {
