@@ -1,5 +1,5 @@
 import { RunOutcome } from "./contract.js";
-import { CohortProgress } from "./runner.js";
+import { CohortProgress, runDoctorCohort } from "./runner.js";
 export interface CohortDoctor {
     id: string;
     programPath: string;
@@ -10,4 +10,5 @@ export interface CohortSpec {
     includeTests: boolean;
     skippedUnsafe?: readonly string[];
 }
-export declare function runCohort(spec: CohortSpec, onProgress?: (p: CohortProgress) => void): Promise<RunOutcome>;
+export type DoctorExecutor = typeof runDoctorCohort;
+export declare function runCohort(spec: CohortSpec, onProgress?: (p: CohortProgress) => void, exec?: DoctorExecutor): Promise<RunOutcome>;
