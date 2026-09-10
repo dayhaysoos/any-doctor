@@ -116,8 +116,8 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
           );
         }
         const r = runAnalysis({ kind: "bindings", file }, root);
-        if (r.file === undefined) throw new Error(r.error ?? "ctx.analysis failed");
-        return r.file as AnalysisFile;
+        if (r.file === undefined || !("bindings" in r.file)) throw new Error(r.error ?? "ctx.analysis failed");
+        return r.file;
       },
 
       spans(file: string): AnalysisSpans {
@@ -128,8 +128,8 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
           );
         }
         const r = runAnalysis({ kind: "spans", file }, root);
-        if (r.file === undefined) throw new Error(r.error ?? "ctx.analysis failed");
-        return r.file as AnalysisSpans;
+        if (r.file === undefined || !("spans" in r.file)) throw new Error(r.error ?? "ctx.analysis failed");
+        return r.file;
       },
     },
 

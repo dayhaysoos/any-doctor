@@ -902,6 +902,22 @@ fixtures. What this does NOT do: measure precision on unfamiliar repos
 (the held-out set remains tier-2 process), or replace the per-fixture
 gate — the probe and corpus are reliability floors beneath it.
 
+**Amendment (2026-09-10, review loop):** The probe was hardened after
+review found the twin-only shape missed the spec's central clause (same
+FILE, twice): it now plants three locations — the untouched original, a
+byte-identical twin module, and a pair file with the violation doubled
+inside one file — counting only the rules the fixture expected. The
+same-file pair rule applies only when the witness fixture itself seeded
+two or more expected findings in one file: that is the proof the check
+reports per-violation rather than one verdict per file (openrouter's
+"no error check anywhere in the file" is a legitimate file-scoped
+claim, and the probe must not read its single pair finding as
+collapse). Witness selection picks the fixture with the most expected
+findings in one file; the skill tells authors to seed a two-violation
+fixture so same-file dedup is policed. The synthetic test-stake case
+left the shipped corpus (tests point ANY_DOCTOR_CORPUS_ROOT at their
+own trees) — the commons hold audit patterns only.
+
 ---
 
 ## D25 — The Certification harness: verify-mode policies leave the loader

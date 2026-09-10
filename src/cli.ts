@@ -358,7 +358,7 @@ async function cmdRun(args: string[]): Promise<number> {
   // report's every-crashed line stays true, and the dashboard's own
   // rendering (findings and skips, not crashes) stays clean.
   for (const c of ran.crashed) fail(c.detail);
-  const outcome: RunOutcome = ran; // complete as returned — skips rode in with the spec
+  const outcome: RunOutcome = ran;
   const summary = deriveSummary(outcome);
 
   // Diff mode exists iff --base was passed AND the HEAD scan is whole:

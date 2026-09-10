@@ -39,9 +39,9 @@ call: the runner's bounded pool, the crash fold (a crash is data — id
 plus full error detail, never a throw), the process-wide analysis fold,
 the per-doctor paths, the file-count policy, and the timing. Progress
 events (settle order) are the only side channel — the live line renders
-them, it never joins the fold. Skips are a discovery fact, so the
-command layer, which owns discovery, patches `skippedUnsafe` onto the
-outcome.
+them, it never joins the fold. Skips are a discovery fact, so they ride
+in with the CohortSpec: the command layer, which owns discovery, hands
+them to the run and the outcome comes back complete.
 
 ## Summary
 

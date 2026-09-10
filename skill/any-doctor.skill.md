@@ -295,12 +295,18 @@ definition, whoever wrote the check.
 
 Verify also runs two automatic reliability probes beyond your fixtures:
 
-- **The duplicate-location sensitivity probe.** Your first flag-shaped
-  fixture is re-planted with its violation at a second location (a
-  byte-identical twin module). A dedup keyed on statement text — the
-  billing.ts bug, three identical chains collapsed into one finding —
-  fails this deterministically. Never dedup findings by normalized text;
-  every distinct location is a distinct finding.
+- **The duplicate-location sensitivity probe.** Your strongest
+  flag-shaped fixture is re-planted at three locations: untouched, as a
+  byte-identical twin module, and doubled inside one file. Each location
+  must independently reproduce the fixture's findings — a dedup keyed on
+  statement text (the billing.ts bug, three identical chains collapsed
+  into one finding) fails this deterministically. Never dedup findings
+  by normalized text; every distinct location is a distinct finding.
+  Seed at least one fixture with TWO violations in one file (expected:
+  two findings there) so the probe can police same-file collapse —
+  a witness with one violation per file cannot distinguish per-violation
+  reporting from a one-verdict-per-file claim, and the probe will not
+  guess.
 - **The shared sensitivity corpus** (`fixtures/sensitivity/` —
   confirmed-real patterns from the audits, each with per-doctor expected
   findings in `expect.json`). These MUST produce their findings; a

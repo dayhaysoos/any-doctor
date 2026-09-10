@@ -298,6 +298,15 @@ test("duplicate-location probe fails a doctor that dedups by statement text", as
 
 test("sensitivity corpus runs only cases the doctor has expectations for", async () => {
   const root = tmpRoot();
+  // The test's own corpus via ANY_DOCTOR_CORPUS_ROOT — the shipped commons
+  // stay audit patterns only, no synthetic stakes.
+  const corpus = tmpRoot();
+  fs.mkdirSync(path.join(corpus, "sensitivity", "test-stake"), { recursive: true });
+  fs.mkdirSync(path.join(corpus, "innocent"), { recursive: true });
+  fs.writeFileSync(path.join(corpus, "sensitivity", "test-stake", "rateLimit.ts"),
+    "export const rateLimiter = {\n  check: () => true,\n};\n");
+  fs.writeFileSync(path.join(corpus, "sensitivity", "test-stake", "expect.json"),
+    JSON.stringify({ expect: { "sensitivity-test-stake": [{ rule: "rate", file: "rateLimit.ts", line: 1 }] } }));
   const doctor = path.join(root, "staked.mjs");
   fs.writeFileSync(doctor, [
     "export const meta = { id: 'sensitivity-test-stake', description: 'flags rateLimit files', severity: 'info',",
@@ -309,8 +318,8 @@ test("sensitivity corpus runs only cases the doctor has expectations for", async
     "}",
   ].join("\n"));
   fs.writeFileSync(path.join(root, "staked.fixtures.mjs"), "export const fixtures = []");
-  // The loader reads the corpus from its own package dir; this test doctor has
-  // an expectation in fixtures/sensitivity/test-stake/ (shipped with the repo).
+  const prev = process.env.ANY_DOCTOR_CORPUS_ROOT;
+  process.env.ANY_DOCTOR_CORPUS_ROOT = corpus;
   try {
     const r = await runLoader([doctor, "--verify", path.join(root, "staked.fixtures.mjs")]);
     assert.equal(r.status, 0);
@@ -323,6 +332,8 @@ test("sensitivity corpus runs only cases the doctor has expectations for", async
     assert.equal(unstaked.length, 0, "cases without stakes for this doctor are silent");
     assert.ok(!parsed.results.some(x => x.name.startsWith("duplicate-location")), "no flag-shaped fixture, no probe");
   } finally {
+    if (prev === undefined) delete process.env.ANY_DOCTOR_CORPUS_ROOT; else process.env.ANY_DOCTOR_CORPUS_ROOT = prev;
     fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(corpus, { recursive: true, force: true });
   }
 });
