@@ -14,7 +14,7 @@ export function clearAnalysisCache() {
     modelCache.clear();
     spansCache.clear();
 }
-export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, status = analysisStatus, spanzer = analyzeSpans) {
+export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, status = analysisStatus, spansAnalyzer = analyzeSpans) {
     const base = searchBase(mode);
     const root = typeof req.root === "string" ? path.resolve(req.root) : "";
     if (base === "" || !withinBase(root, base)) {
@@ -35,7 +35,7 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
         if (req.kind === "bindings") {
             return cachedModel(abs, root, modelCache, analyzer, req.file);
         }
-        return cachedModel(abs, root, spansCache, spanzer, req.file);
+        return cachedModel(abs, root, spansCache, spansAnalyzer, req.file);
     }
     return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans` };
 }
