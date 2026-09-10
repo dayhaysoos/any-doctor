@@ -81,13 +81,19 @@ export function unsafeRefusalLine(name: string, capabilities: readonly string[])
   return `${name} could be malicious (${capabilities.join(", ")}) — not running it.`;
 }
 
-// Diff mode's one prose line, as data: what the change added and
-// resolved against the merged base. The findings list stays the full
-// HEAD picture — the diff is context, not a filter.
+// Diff mode's one prose line, as data: what the change added, what it
+// carried forward, and what it left behind against the merged base. The
+// findings list stays the full HEAD picture — the diff is context, not a
+// filter. "No longer detected" is the honest name for base occurrences
+// with no head counterpart: an observed absence, never a fix claim.
 export interface ReportDiff {
   base: string;
   added: number;
-  resolved: number;
+  continuing: number;
+  noLongerDetected: number;
+  // Continuing matches that rested on content alone — kept visible so an
+  // engine-off run never reads as structurally verified continuity.
+  contextFallback: number;
 }
 
 // The report is an adapter over the Summary: the derivation (dedupe,
@@ -113,7 +119,11 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
     lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
   }
   if (diff !== undefined) {
-    lines.push(c(`vs ${diff.base} (merged base): ${diff.added} added · ${diff.resolved} resolved`, DIM));
+    let line = `vs ${diff.base} (merged base): ${diff.added} added · ${diff.continuing} continuing · ${diff.noLongerDetected} no longer detected`;
+    if (diff.contextFallback > 0) {
+      line += ` (${diff.contextFallback} matched without structural context)`;
+    }
+    lines.push(c(line, DIM));
   }
 
   // The empty scan is its own outcome, not a clean one: no findings
@@ -248,7 +258,13 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
         base: diff.base,
         baseSha: diff.baseSha,
         added: diff.added,
-        resolved: diff.resolved,
+        continuing: diff.continuing,
+        noLongerDetected: diff.noLongerDetected,
+        contextFallback: diff.contextFallback,
+        ambiguous: diff.ambiguous,
+        stale: diff.stale,
+        identitySchema: diff.identitySchema,
+        comparable: diff.provenance.comparable,
       },
     } : {}),
   }, null, 2);

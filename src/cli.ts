@@ -368,7 +368,7 @@ async function cmdRun(args: string[]): Promise<number> {
   let diff: DiffResult | undefined;
   if (parsed.base !== undefined && outcome.crashed.length === 0) {
     try {
-      diff = await runDiff(spec, parsed.base, summary.groups);
+      diff = await runDiff(spec, parsed.base, summary.groups, outcome.analysisAvailable);
     } catch (e) {
       fail(e instanceof Error ? e.message : String(e));
       return 1;
@@ -398,7 +398,8 @@ async function cmdRun(args: string[]): Promise<number> {
 
   if (!interactive) {
     console.log(renderReport(outcome, useColor(), diff !== undefined
-      ? { base: diff.base, added: diff.added.length, resolved: diff.resolved.length }
+      ? { base: diff.base, added: diff.added.length, continuing: diff.continuing,
+          noLongerDetected: diff.noLongerDetected.length, contextFallback: diff.contextFallback }
       : undefined));
     return exitAfterSurface(outcome, gate);
   }

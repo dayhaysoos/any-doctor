@@ -57,7 +57,11 @@ export function renderReport(input, useColor, diff) {
         lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
     }
     if (diff !== undefined) {
-        lines.push(c(`vs ${diff.base} (merged base): ${diff.added} added · ${diff.resolved} resolved`, DIM));
+        let line = `vs ${diff.base} (merged base): ${diff.added} added · ${diff.continuing} continuing · ${diff.noLongerDetected} no longer detected`;
+        if (diff.contextFallback > 0) {
+            line += ` (${diff.contextFallback} matched without structural context)`;
+        }
+        lines.push(c(line, DIM));
     }
     // The empty scan is its own outcome, not a clean one: no findings
     // headline, no per-doctor "clean" roll — those are claims a zero-file
@@ -188,7 +192,13 @@ export function renderJson(input, summary, gate, diff) {
                 base: diff.base,
                 baseSha: diff.baseSha,
                 added: diff.added,
-                resolved: diff.resolved,
+                continuing: diff.continuing,
+                noLongerDetected: diff.noLongerDetected,
+                contextFallback: diff.contextFallback,
+                ambiguous: diff.ambiguous,
+                stale: diff.stale,
+                identitySchema: diff.identitySchema,
+                comparable: diff.provenance.comparable,
             },
         } : {}),
     }, null, 2);

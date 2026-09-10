@@ -25,7 +25,9 @@ export declare function unsafeRefusalLine(name: string, capabilities: readonly s
 export interface ReportDiff {
     base: string;
     added: number;
-    resolved: number;
+    continuing: number;
+    noLongerDetected: number;
+    contextFallback: number;
 }
 export declare function renderReport(input: RunOutcome, useColor: boolean, diff?: ReportDiff): string;
 export declare function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult): string;

@@ -1,0 +1,52 @@
+import { SpanInfo } from "./contract.js";
+export declare const IDENTITY_SCHEMA_VERSION = 1;
+export interface OccurrenceEvidence {
+    checkKey: string;
+    file: string;
+    line: number;
+    column?: number;
+    lineDigest: string | null;
+    relColumn: number | null;
+    contextId: string | null;
+}
+export interface EvidenceInput {
+    checkKey: string;
+    file: string;
+    line: number;
+    column?: number;
+}
+export interface EvidenceReport {
+    occurrences: OccurrenceEvidence[];
+    unreadableFiles: string[];
+    staleLines: string[];
+    contextUnavailableFiles: string[];
+}
+export interface ScanProvenance {
+    schema: number;
+    doctors: {
+        doctorId: string;
+        digest: string;
+    }[];
+    analysisAvailable: boolean;
+}
+export declare function scanProvenance(doctors: readonly {
+    id: string;
+    programPath: string;
+}[], analysisAvailable: boolean, readProgram: (programPath: string) => string | null): ScanProvenance;
+export declare function comparableScans(base: ScanProvenance, head: ScanProvenance): boolean;
+export declare function extractEvidence(findings: EvidenceInput[], readSource: (file: string) => string | null, spansFor: (file: string, source: string) => SpanInfo[] | null): EvidenceReport;
+export interface MatchedPair {
+    baseIndex: number;
+    headIndex: number;
+    contextFallback: boolean;
+}
+export interface ScanComparison {
+    pairs: MatchedPair[];
+    addedIndices: number[];
+    absentIndices: number[];
+    ambiguous: number;
+    stale: number;
+}
+export declare function compareOccurrences(base: OccurrenceEvidence[], head: OccurrenceEvidence[]): ScanComparison;
+export declare function spansProvider(engineOn: boolean): (file: string, source: string) => SpanInfo[] | null;
+export declare function analysisEngineAvailable(): boolean;

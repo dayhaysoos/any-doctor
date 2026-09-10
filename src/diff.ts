@@ -2,27 +2,38 @@ import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { compareFindings, ExpectedFinding, Finding, resolveFinding, ReportGroup, Severity } from "./contract.js";
+import { Finding, resolveFinding, ReportGroup, Severity } from "./contract.js";
 import { CohortSpec, runCohort } from "./cohort.js";
 import { deriveSummary } from "./summary.js";
+import {
+  compareOccurrences, comparableScans, extractEvidence, EvidenceInput,
+  IDENTITY_SCHEMA_VERSION, ScanComparison, ScanProvenance, scanProvenance, spansProvider,
+} from "./identity.js";
 
 // Diff mode: the stateless baseline. No file is committed, nothing goes
 // stale — "new" means "in HEAD but not at the merge base of --base and
 // HEAD" (React Doctor's proven posture). The same cohort runs against a
-// materialized base tree, and the two DEDUPED finding sets compare
-// through the verify gate's own multiset (compareFindings — rule-aware,
-// duplicates counted), so what the gate counts and what the report
-// shows are the same story.
+// materialized base tree, and the two DEDUPED finding sets compare through
+// the identity layer (A1/A2): an occurrence is "added" when no compatible
+// base occurrence matches its evidence — namespace, file, normalized line
+// content, relative column, and enclosing structural context — not merely
+// when its coordinates are new. A finding that moved with its code is
+// continuing; a base occurrence with no head counterpart is no-longer-
+// detected, and that is an observed absence, never a fix claim.
+// compareFindings remains the fixture gate's exact multiset: movement
+// tolerance lives here, where movement is the question — never in
+// certification, where exact locations are the claim.
 //
-// A partial base never gates: any base-scan crash aborts the run
-// loudly, because a base missing findings would dress pre-existing
-// debt up as "added" and block merges dishonestly.
+// A partial base never gates: any base-scan crash aborts the run loudly,
+// because a base missing findings would dress pre-existing debt up as
+// "added" and block merges dishonestly.
 
-export interface AddedFinding {
+export interface DiffFinding {
   doctorId: string;
   rule?: string;
   file: string;
   line: number;
+  column?: number;
   severity: Severity;
 }
 
@@ -31,8 +42,19 @@ export interface DiffResult {
   base: string;
   // The merge base the diff actually ran against.
   baseSha: string;
-  added: AddedFinding[];
-  resolved: ExpectedFinding[];
+  added: DiffFinding[];
+  // Occurrences matched to a base counterpart — the count, not a pairing
+  // claim when identical copies were matched by cardinality (ambiguous).
+  continuing: number;
+  // Base occurrences with no head counterpart: absence under this scan.
+  noLongerDetected: DiffFinding[];
+  // Continuing matches that rested on content alone (no structural context
+  // on at least one side) — the engine-off fallback, kept visible.
+  contextFallback: number;
+  ambiguous: number;
+  stale: number;
+  identitySchema: number;
+  provenance: { head: ScanProvenance; base: ScanProvenance; comparable: boolean };
 }
 
 // Raw causes, no flag prefixes: the caller attaches the context and the
@@ -49,41 +71,78 @@ function git(args: string[], cwd: string): { ok: true; out: string } | { ok: fal
   return { ok: true, out: String(r.stdout).trim() };
 }
 
-function findingKey(rule: string | undefined, file: string, line: number, column?: number): string {
-  return `${rule ?? ""}:${file}:${line}:${column ?? ""}`;
+// One finding zipped with the group that emitted it and the checkKey the
+// identity layer namespaces by — parallel to the neutral evidence array.
+interface Entry {
+  f: Finding;
+  g: ReportGroup;
+  checkKey: string;
 }
 
-// Join each unexpected diff entry back to the rich HEAD finding it
-// corresponds to (same key, in scan order) — the multiset diff counts
-// keys; the report and the gate need severities and doctor ids.
-function joinAdded(unexpected: ExpectedFinding[], headGroups: ReportGroup[]): AddedFinding[] {
-  const byKey = new Map<string, { f: Finding; g: ReportGroup }[]>();
-  for (const g of headGroups) {
+function entriesOf(groups: ReportGroup[]): Entry[] {
+  const out: Entry[] = [];
+  for (const g of groups) {
     for (const f of g.findings) {
-      const q = byKey.get(findingKey(f.rule, f.file, f.line, f.column)) ?? [];
-      q.push({ f, g });
-      byKey.set(findingKey(f.rule, f.file, f.line, f.column), q);
+      out.push({ f, g, checkKey: resolveFinding(g.meta, f).checkKey });
     }
-  }
-  const out: AddedFinding[] = [];
-  for (const u of unexpected) {
-    const pair = byKey.get(findingKey(u.rule, u.file, u.line, u.column))?.shift();
-    if (pair === undefined) continue; // unreachable: the entry came from those findings
-    out.push({
-      doctorId: pair.g.meta.id,
-      ...(pair.f.rule !== undefined ? { rule: pair.f.rule } : {}),
-      ...(pair.f.column !== undefined ? { column: pair.f.column } : {}),
-      file: pair.f.file,
-      line: pair.f.line,
-      severity: resolveFinding(pair.g.meta, pair.f).severity,
-    });
   }
   return out;
 }
 
+function evidenceInputOf(e: Entry): EvidenceInput {
+  return { checkKey: e.checkKey, file: e.f.file, line: e.f.line, ...(e.f.column !== undefined ? { column: e.f.column } : {}) };
+}
+
+// Evidence reads stay inside the scanned root — a finding's file string is
+// doctor-supplied data, and the host's read must not become an escape hatch
+// the confined doctor itself could never take (the same withinBase policy
+// the search and analysis hosts enforce).
+function readFileFrom(root: string): (rel: string) => string | null {
+  const base = path.resolve(root);
+  return (rel: string): string | null => {
+    const abs = path.resolve(root, rel);
+    if (abs !== base && !abs.startsWith(base + path.sep)) return null;
+    try {
+      return fs.readFileSync(abs, "utf8");
+    } catch {
+      return null;
+    }
+  };
+}
+
+function readProgramOrNull(programPath: string): string | null {
+  try {
+    return fs.readFileSync(programPath, "utf8");
+  } catch {
+    return null;
+  }
+}
+
+// The rich projection of chosen entries — severities and doctor ids for the
+// gate and the report, joined back through the identity layer's indices.
+function joinFindings(entries: Entry[], indices: number[]): DiffFinding[] {
+  return indices.map((i) => {
+    const { f, g } = entries[i];
+    return {
+      doctorId: g.meta.id,
+      ...(f.rule !== undefined ? { rule: f.rule } : {}),
+      file: f.file,
+      line: f.line,
+      ...(f.column !== undefined ? { column: f.column } : {}),
+      severity: resolveFinding(g.meta, f).severity,
+    };
+  });
+}
+
 // The HEAD cohort has already run by the time diff mode starts — the
-// caller passes its (deduped) groups; only the base side scans here.
-export async function runDiff(spec: CohortSpec, baseRef: string, headGroups: ReportGroup[]): Promise<DiffResult> {
+// caller passes its (deduped) groups and analysis availability; only the
+// base side scans here.
+export async function runDiff(
+  spec: CohortSpec,
+  baseRef: string,
+  headGroups: ReportGroup[],
+  headAnalysisAvailable = false,
+): Promise<DiffResult> {
   const repoRootR = git(["rev-parse", "--show-toplevel"], spec.targetDir);
   if (!repoRootR.ok) {
     throw new Error("--base failed: " + repoRootR.cause);
@@ -111,10 +170,9 @@ export async function runDiff(spec: CohortSpec, baseRef: string, headGroups: Rep
     // A subpath that doesn't exist at the base is a directory HEAD
     // invented — its base findings are honestly empty, not a failure.
     const baseTarget = path.join(worktree, rel);
-    let baseFindings: Finding[];
-    if (!fs.existsSync(baseTarget)) {
-      baseFindings = [];
-    } else {
+    let baseGroups: ReportGroup[] = [];
+    let baseAnalysisAvailable = false;
+    if (fs.existsSync(baseTarget)) {
       const baseRun = await runCohort({ ...spec, targetDir: baseTarget });
       if (baseRun.crashed.length > 0) {
         // The loud abort: never gate on a partial base.
@@ -126,15 +184,51 @@ export async function runDiff(spec: CohortSpec, baseRef: string, headGroups: Rep
       }
       // Deduped like the HEAD side — both sets read through the one
       // derivation, so the gate counts what the report shows.
-      baseFindings = deriveSummary(baseRun).groups.flatMap(g => g.findings);
+      baseGroups = deriveSummary(baseRun).groups;
+      baseAnalysisAvailable = baseRun.analysisAvailable ?? false;
     }
 
-    const diff = compareFindings(baseFindings, headGroups.flatMap(g => g.findings));
+    const headEntries = entriesOf(headGroups);
+    const baseEntries = entriesOf(baseGroups);
+    const provenance = {
+      head: scanProvenance(spec.doctors, headAnalysisAvailable, readProgramOrNull),
+      base: scanProvenance(spec.doctors, baseAnalysisAvailable, readProgramOrNull),
+    };
+    const comparable = comparableScans(provenance.base, provenance.head);
+
+    // A changed doctor between the two sides refuses continuity outright —
+    // every head occurrence added, every base occurrence absent — instead
+    // of guessing movement through a changed detector. Within one run the
+    // same programs execute on both sides, so this is the guard, not the
+    // norm.
+    let cmp: ScanComparison;
+    if (comparable) {
+      const baseEvidence = extractEvidence(
+        baseEntries.map(evidenceInputOf), readFileFrom(baseTarget), spansProvider(baseAnalysisAvailable));
+      const headEvidence = extractEvidence(
+        headEntries.map(evidenceInputOf), readFileFrom(spec.targetDir), spansProvider(headAnalysisAvailable));
+      cmp = compareOccurrences(baseEvidence.occurrences, headEvidence.occurrences);
+    } else {
+      cmp = {
+        pairs: [],
+        addedIndices: headEntries.map((_, i) => i),
+        absentIndices: baseEntries.map((_, i) => i),
+        ambiguous: 0,
+        stale: 0,
+      };
+    }
+
     return {
       base: baseRef,
       baseSha,
-      added: joinAdded(diff.unexpected, headGroups),
-      resolved: diff.missing,
+      added: joinFindings(headEntries, cmp.addedIndices),
+      continuing: cmp.pairs.length,
+      noLongerDetected: joinFindings(baseEntries, cmp.absentIndices),
+      contextFallback: cmp.pairs.filter(p => p.contextFallback).length,
+      ambiguous: cmp.ambiguous,
+      stale: cmp.stale,
+      identitySchema: IDENTITY_SCHEMA_VERSION,
+      provenance: { ...provenance, comparable },
     };
   } finally {
     git(["worktree", "remove", "--force", worktree], repoRoot);

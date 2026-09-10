@@ -1,0 +1,227 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+// The identity layer's acceptance matrix (analysis-improvements A1/A2),
+// exercised at unit level with hand-built sources and spans — deterministic,
+// engine-independent. The diff integration tests in diff.test.mjs run the
+// same laws through the real CLI path; certification's exact matching has
+// its own pins in certify.test.mjs and must never become movement-tolerant.
+
+const {
+  extractEvidence, compareOccurrences, scanProvenance, comparableScans, IDENTITY_SCHEMA_VERSION,
+} = await import("../bin/identity.js");
+
+const mem = (files) => (file) => (Object.prototype.hasOwnProperty.call(files, file) ? files[file] : null);
+const noSpans = () => null;
+
+function ev(findings, files, spansFor = noSpans) {
+  return extractEvidence(findings, mem(files), spansFor).occurrences;
+}
+
+const f = (line, column, checkKey = "doc/rule", file = "x.ts") => ({
+  ...(column === undefined ? {} : { column }), checkKey, file, line,
+});
+
+// Two synthetic function spans over a 6-line source, the classic shape:
+// function a (1-3), function b (4-6), one flagged line inside each.
+const SPANS_AB = [
+  { kind: "function", name: "a", async: false, line: 1, column: 0, endLine: 3, endColumn: 1 },
+  { kind: "function", name: "b", async: false, line: 4, column: 0, endLine: 6, endColumn: 1 },
+];
+const SRC_AB = "function a() {\n  doWork(BAD);\n}\nfunction b() {\n  doWork(BAD);\n}\n";
+
+test("identity: a moved unchanged line continues — blank lines above change nothing", () => {
+  const base = ev([f(2)], { "x.ts": "const ok = 1;\nconst BAD = 1;\n" });
+  const head = ev([f(4)], { "x.ts": "const ok = 1;\n\n\nconst BAD = 1;\n" });
+  const cmp = compareOccurrences(base, head);
+  assert.equal(cmp.pairs.length, 1, "the occurrence continues");
+  assert.deepEqual(cmp.addedIndices, [], "movement is not addition");
+  assert.deepEqual(cmp.absentIndices, [], "movement is not disappearance");
+});
+
+test("identity: an unrelated edit in the same file keeps the occurrence continuing", () => {
+  const base = ev([f(3)], { "x.ts": "function a() {\n  other(1);\n  doWork(BAD);\n}\n" });
+  const head = ev([f(3)], { "x.ts": "function a() {\n  other(2);\n  doWork(BAD);\n}\n" });
+  const cmp = compareOccurrences(base, head);
+  assert.equal(cmp.pairs.length, 1, "the neighbor line changed, the flagged line did not");
+  assert.equal(cmp.addedIndices.length, 0);
+  assert.equal(cmp.absentIndices.length, 0);
+});
+
+test("identity: an edit to the flagged line breaks continuity — operator/literal changes are visible", () => {
+  const base = ev([f(1)], { "x.ts": "await x(1);\n" });
+  const head = ev([f(1)], { "x.ts": "await x(2);\n" });
+  const cmp = compareOccurrences(base, head);
+  assert.equal(cmp.pairs.length, 0, "changed content never continues");
+  assert.equal(cmp.addedIndices.length, 1);
+  assert.equal(cmp.absentIndices.length, 1);
+});
+
+test("identity: CRLF and LF spellings of one line share a digest", () => {
+  const base = ev([f(1)], { "x.ts": "const BAD = 1;\r\n" });
+  const head = ev([f(1)], { "x.ts": "const BAD = 1;\n" });
+  assert.equal(compareOccurrences(base, head).pairs.length, 1);
+});
+
+test("identity: reindentation preserves the relative column", () => {
+  const base = ev([f(1, 8)], { "x.ts": "  doWork(BAD);\n" });
+  const head = ev([f(1, 10)], { "x.ts": "    doWork(BAD);\n" });
+  assert.equal(compareOccurrences(base, head).pairs.length, 1, "4-space reindent of a 2-space line");
+});
+
+test("identity: two findings on one line stay distinct via relative columns", () => {
+  const src = { "x.ts": "BAD(BAD);\n" };
+  const both = [f(1, 6), f(1, 10)];
+  const cmp = compareOccurrences(ev(both, src), ev(both, src));
+  assert.equal(cmp.pairs.length, 2);
+  // The second occurrence disappears at head: one continuing, one absent.
+  const dropped = compareOccurrences(ev(both, src), ev([f(1, 6)], src));
+  assert.equal(dropped.pairs.length, 1);
+  assert.equal(dropped.absentIndices.length, 1);
+});
+
+test("identity: identical text in two modules stays distinct (file is part of the key)", () => {
+  const one = (file) => ev([f(1, undefined, "doc/rule", file)], { "a.ts": "const BAD = 1;\n", "b.ts": "const BAD = 1;\n" });
+  const cmp = compareOccurrences(one("a.ts"), one("b.ts"));
+  assert.equal(cmp.pairs.length, 0, "no cross-file text collapse");
+  assert.equal(cmp.addedIndices.length, 1);
+  assert.equal(cmp.absentIndices.length, 1);
+});
+
+test("identity: two doctors using the same rule name never share continuity", () => {
+  const src = { "x.ts": "const BAD = 1;\n" };
+  const cmp = compareOccurrences(ev([f(1, undefined, "one/shared")], src), ev([f(1, undefined, "two/shared")], src));
+  assert.equal(cmp.pairs.length, 0);
+  assert.equal(cmp.addedIndices.length, 1);
+});
+
+test("identity: identical occurrences match by cardinality — the third copy cannot hide", () => {
+  const base = ev([f(1), f(2)], { "x.ts": "const BAD = 1;\nconst BAD = 1;\n" });
+  const head = ev([f(1), f(3), f(5)], { "x.ts": "const BAD = 1;\n\nconst BAD = 1;\n\nconst BAD = 1;\n" });
+  const cmp = compareOccurrences(base, head);
+  assert.equal(cmp.pairs.length, 2, "the two existing copies continue");
+  assert.equal(cmp.addedIndices.length, 1, "the third copy is added");
+  assert.equal(cmp.ambiguous, 1, "the duplicate bucket is reported as ambiguous");
+});
+
+test("identity: structural context keeps identical text in different functions from sharing an identity", () => {
+  // Base flags one line in a() and one in b(); head deletes a(), keeps b(),
+  // and adds the same line in c(). Same content everywhere — only context
+  // can say which occurrence continued.
+  const base = ev([f(2, 8), f(5, 8)], { "x.ts": SRC_AB }, () => SPANS_AB);
+  const SRC_CB = "function b() {\n  doWork(BAD);\n}\nfunction c() {\n  doWork(BAD);\n}\n";
+  const SPANS_CB = [
+    { kind: "function", name: "b", async: false, line: 1, column: 0, endLine: 3, endColumn: 1 },
+    { kind: "function", name: "c", async: false, line: 4, column: 0, endLine: 6, endColumn: 1 },
+  ];
+  const head = ev([f(2, 8), f(5, 8)], { "x.ts": SRC_CB }, () => SPANS_CB);
+  const cmp = compareOccurrences(base, head);
+  assert.equal(cmp.pairs.length, 1, "only the b() occurrence continues");
+  assert.equal(cmp.addedIndices.length, 1, "the c() occurrence is new");
+  assert.equal(cmp.absentIndices.length, 1, "the a() occurrence is gone");
+  assert.equal(cmp.pairs[0].contextFallback, false, "a contexted match is not fallback");
+});
+
+test("identity: without structural context, content matching is the documented fallback and says so", () => {
+  const base = ev([f(2, 8), f(5, 8)], { "x.ts": SRC_AB });
+  const head = ev([f(2, 8), f(5, 8)], { "x.ts": SRC_AB });
+  const cmp = compareOccurrences(base, head);
+  assert.equal(cmp.pairs.length, 2, "engine-off: content + namespace + file");
+  assert.equal(cmp.pairs.filter(p => p.contextFallback).length, 2, "every match is flagged content-only");
+  assert.equal(cmp.ambiguous, 1, "the identical pair is a duplicate bucket");
+});
+
+test("identity: the innermost span owns the occurrence — nested callbacks bind to their own function", () => {
+  const SRC_NESTED = "function outer() {\n  step(1);\n  const inner = () => {\n    step(2);\n  };\n}\n";
+  const spans = [
+    { kind: "function", name: "outer", async: false, line: 1, column: 0, endLine: 6, endColumn: 1 },
+    { kind: "arrow", name: null, async: false, line: 3, column: 22, endLine: 5, endColumn: 3 },
+  ];
+  const occ = ev([f(2, 2), f(4, 4)], { "x.ts": SRC_NESTED }, () => spans);
+  assert.equal(occ[0].contextId, "function:outer#0");
+  assert.equal(occ[1].contextId, "arrow:anon#0");
+});
+
+test("identity: top-level code has no enclosing span — context null, match still content-confident", () => {
+  const occ = ev([f(1)], { "x.ts": "const BAD = 1;\n" }, () => []);
+  assert.equal(occ[0].contextId, null);
+  const cmp = compareOccurrences(occ, ev([f(2)], { "x.ts": "\nconst BAD = 1;\n" }, () => []));
+  assert.equal(cmp.pairs.length, 1);
+  assert.equal(cmp.pairs[0].contextFallback, true);
+});
+
+test("identity: an identically-named sibling inserted above shifts ordinals — conservative break, no false continuity", () => {
+  // Base has function a (ordinal 0); head gains another a above it, so the
+  // original becomes a#1. Same content, different context id: no match.
+  const base = ev([f(2, 8)], { "x.ts": SRC_AB.slice(0, SRC_AB.indexOf("function b")) }, () => [SPANS_AB[0]]);
+  const headSrc = "function a() {\n  other();\n}\nfunction a() {\n  doWork(BAD);\n}\n";
+  const headSpans = [
+    { kind: "function", name: "a", async: false, line: 1, column: 0, endLine: 3, endColumn: 1 },
+    { kind: "function", name: "a", async: false, line: 4, column: 0, endLine: 6, endColumn: 1 },
+  ];
+  const head = ev([f(5, 8)], { "x.ts": headSrc }, () => headSpans);
+  const cmp = compareOccurrences(base, head);
+  assert.equal(cmp.pairs.length, 0, "the ordinal shift refuses continuity");
+  assert.equal(cmp.addedIndices.length, 1);
+  assert.equal(cmp.absentIndices.length, 1);
+});
+
+test("identity: non-ASCII and emoji content digest honestly", () => {
+  const src = { "x.ts": "const BAD = 'café ☕';\n" };
+  const moved = ev([f(3)], { "x.ts": "// pad\n// pad\nconst BAD = 'café ☕';\n" });
+  assert.equal(compareOccurrences(ev([f(1)], src), moved).pairs.length, 1, "same emoji line continues");
+  const changed = ev([f(1)], { "x.ts": "const BAD = 'café 🍵';\n" });
+  assert.equal(compareOccurrences(ev([f(1)], src), changed).pairs.length, 0, "a swapped emoji is a change");
+});
+
+test("identity: a finding past end-of-file is stale — never matched, counted", () => {
+  const cmp = compareOccurrences(
+    ev([f(1)], { "x.ts": "const BAD = 1;\n" }),
+    ev([f(99)], { "x.ts": "const BAD = 1;\n" }),
+  );
+  assert.equal(cmp.pairs.length, 0, "stale evidence never continues");
+  assert.equal(cmp.addedIndices.length, 1);
+  assert.equal(cmp.stale, 1);
+});
+
+test("identity: an unreadable file is evidence-less and reported", () => {
+  const report = extractEvidence([f(1)], mem({}), noSpans);
+  assert.deepEqual(report.unreadableFiles, ["x.ts"]);
+  assert.equal(report.occurrences[0].lineDigest, null);
+  assert.equal(compareOccurrences(report.occurrences, report.occurrences).pairs.length, 0);
+});
+
+test("identity: a file the engine cannot parse reports context unavailability", () => {
+  const report = extractEvidence([f(1)], mem({ "x.ts": "const BAD = 1;\n" }), noSpans);
+  assert.deepEqual(report.contextUnavailableFiles, ["x.ts"]);
+});
+
+test("identity: one-sided parse failure refuses continuity — unverified structure is not guessed", () => {
+  // The base file failed to parse (no spans); the head file parses and
+  // claims context. Identical content is not enough: the pair surfaces as
+  // added plus absent rather than a guessed continuation.
+  const base = ev([f(2, 8)], { "x.ts": SRC_AB }, noSpans);
+  const head = ev([f(2, 8)], { "x.ts": SRC_AB }, () => SPANS_AB);
+  const cmp = compareOccurrences(base, head);
+  assert.equal(cmp.pairs.length, 0);
+  assert.equal(cmp.addedIndices.length, 1);
+  assert.equal(cmp.absentIndices.length, 1);
+});
+
+test("identity: provenance digests the exact program bytes; changed programs are incomparable", () => {
+  const doctors = [{ id: "d", programPath: "/x/d.mjs" }];
+  const read = (content) => () => content;
+  const p1 = scanProvenance(doctors, true, read("program v1"));
+  const p1again = scanProvenance(doctors, false, read("program v1"));
+  assert.equal(comparableScans(p1, p1again), true, "analysis availability differs; programs do not");
+  assert.equal(p1.schema, IDENTITY_SCHEMA_VERSION);
+  const p2 = scanProvenance(doctors, true, read("program v2"));
+  assert.equal(comparableScans(p1, p2), false, "changed detector bytes refuse continuity");
+  const other = scanProvenance([{ id: "e", programPath: "/x/e.mjs" }], true, read("program v1"));
+  assert.equal(comparableScans(p1, other), false, "a different doctor set is incomparable");
+});
+
+test("identity: an unreadable doctor program is marked, not crashed", () => {
+  const p = scanProvenance([{ id: "d", programPath: "/x/gone.mjs" }], false, () => null);
+  assert.equal(p.doctors[0].digest, scanProvenance([{ id: "d", programPath: "/x/gone2.mjs" }], false, () => null).doctors[0].digest);
+});

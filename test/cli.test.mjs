@@ -356,7 +356,7 @@ test("gate: --base against HEAD adds nothing — advisory findings pass, pre-exi
   const code = await cli.main(["run", DOCTOR, TARGET, "--base", "HEAD", "--fail-on", "warning"]);
   assert.equal(code, 0, "identical trees: zero added findings, the bar holds");
   const printed = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
-  assert.match(printed, /vs HEAD \(merged base\): 0 added · 0 resolved/, "the report carries the diff line");
+  assert.match(printed, /vs HEAD \(merged base\): 0 added · \d+ continuing · 0 no longer detected/, "the report carries the diff line");
 });
 
 test("gate: json output stays parseable when a doctor crashes — detail on stderr, exit 1", async (t) => {
