@@ -314,18 +314,26 @@ positive witness. Unspecified legacy units and unavailable analysis are
 reported as not exercised, not counted as passing. Fixture expectations
 establish tested coverage, not general correctness or independence of labels.
 
-## Lifecycle vocabulary (planned)
+## Lifecycle vocabulary (planned, except where marked landed)
 
 These terms describe the accepted direction, not current fields on Finding or
 DoctorCtx. The [design](docs/plans/finding-lifecycle/design.md) owns their data
 and applicability rules.
 
-- **Finding identity:** continuity of one occurrence across comparable scans,
-  distinct from its current source coordinates.
+- **Finding identity** *(landed in the diff path, D30)*: continuity of one
+  occurrence across comparable scans, distinct from its current source
+  coordinates. Host-derived today — check key, file, normalized flagged-line
+  digest, indentation-relative column, and innermost enclosing function span —
+  computed per comparison from one post-scan read, never persisted.
 - **Observation:** evidence that a finding was detected in a particular scan.
 - **Decision:** a reasoned accepted/not-applicable disposition with local or project
   scope; it changes review state, not the raw observation.
-- **No longer detected:** absence established by compatible, completed coverage.
+- **Continuing** *(landed in the diff path)*: a head occurrence matched to a
+  compatible base occurrence by identity — movement is not addition. Matches
+  resting on content alone are flagged contextFallback; identical copies
+  matched by cardinality are flagged ambiguous.
+- **No longer detected** *(landed in the diff path)*: absence established by
+  compatible, completed coverage.
 - **Claimed fix:** a recorded explanation of remediation, separate from rescan evidence.
 - **Reassessment:** a decision requires review because identity or applicability is
   changed, conflicting, or uncertain.

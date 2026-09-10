@@ -1089,6 +1089,56 @@ is in [features](features.md).
 
 ---
 
+## D30 — Host-derived finding identity in the stateless diff (A1+A2)
+
+**Date:** 2026-09-10
+
+**Context:** The analysis-improvements plan's first delivery (A1+A2) was
+implemented on branch `implement/analysis-a1-a2`: occurrence evidence,
+movement-aware Git-base comparison, and provenance — with the acceptance matrix
+as tests and a real-target smoke.
+
+**Decision:** Finding identity v1 is **host-derived only** — no `Finding`
+contract change, no doctor rewrites. Evidence per occurrence: doctor
+namespace/check key, root-relative file, sha256 of the whitespace-normalized
+flagged line, column relative to the line's indentation, and the innermost
+enclosing function-like span when the analysis engine parses the file.
+Coordinates stay line/column; no byte offsets join across engines (ast-grep is
+UTF-8, the analysis model UTF-16 — a content digest sidesteps the conversion).
+Evidence comes from one post-scan read per file that produced findings; a
+finding past end-of-content is stale and never matches; mtime/size are trusted
+nowhere.
+
+Matching is a single-pass multiset over the full key: cardinality preserves
+duplicate counts (a third identical occurrence cannot hide), occurrences
+without structural context on either side share the "none" bucket (the
+engine-off fallback — React Doctor's proven scheme), and a context claim on
+one side against no context on the other refuses continuity (parse failure
+between scans is a source change). Unmatched occurrences are added/absent, so
+the gate only ever sees more findings. Doctor-program digests are recorded per
+side; a mismatch refuses continuity outright (all added, all absent).
+
+`compareFindings` is unchanged and remains the fixture gate — certification
+still fails findings emitted at wrong locations. Diff outcomes are
+added/continuing/no-longer-detected with `contextFallback`, `ambiguous`, and
+`stale` surfaced in report, JSON, and gate paths.
+
+**Consequences:** Movement no longer reads as added-plus-resolved in `--base`.
+Verified on a real target (sift-skills, 632 files, 403 findings: 402
+continuing, 1 added cross-checked against git — a gitignored build artifact
+present only in the working tree). Synthetic identity/comparison scale
+(all-unmatched worst case): 10k ≈ 60ms, 100k ≈ 0.5s, 1M ≈ 5s and ~1.1GB heap —
+a recorded limit of this layer, not scanner capacity. Two smoke-found defects
+were fixed with regression tests: evidence emission now preserves input order
+(a doctor's findings interleave files across checks, and regrouping
+misattributed comparison indices), and `resolveDoctorPath` stat-checks
+`isFile` (the verbatim-slug candidate resolved `.` to the bundled doctors
+directory, which then crashed under Confinement). Persistent identity for
+decisions (M2), per-check compatibility revisions, and doctor-supplied
+evidence remain open in the [design](plans/finding-lifecycle/design.md).
+
+---
+
 ## Historical open questions
 
 Retained from earlier planning. The active lifecycle questions and their owning

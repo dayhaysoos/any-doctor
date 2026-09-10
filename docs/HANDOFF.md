@@ -29,21 +29,27 @@ by additional review commits. Its [audit](repair-audit-007.md) records the exact
 older candidate tested, including 286 tests and 100 Convex verification rows.
 Those results must not be presented as a fresh test of later source or this plan.
 
-The current CLI has location-based findings, JSON reports, interactive selection,
-optional gates, and Git-base diffing. It has no persistent decision store, SQLite
-integration, or finding history. This pass changes documentation and authoring
-instructions only; it does not implement lifecycle commands or alter the runtime.
-Existing runtime taglines and unconditional fix prompts are not a substitute for
-this direction; reconcile relevant copy when implementing the agent workflow.
+**Delivered on `implement/analysis-a1-a2` (A1+A2, D30):** the `--base` diff now
+compares through the host-derived identity layer — added / continuing /
+no-longer-detected with contextFallback, ambiguous, and stale surfaced in
+report, JSON, and gate paths. `compareFindings` stays the strict fixture gate.
+Evidence: 313 tests green (25 new identity/diff cases incl. the acceptance
+matrix and two smoke-found regression pins), packed-artifact smoke on
+sift-skills (632 files, 5 doctors: single scan 8.1s; `--base HEAD~5` double scan
+7.2s, 402 continuing / 1 added, the added finding cross-checked against git as
+a gitignored working-tree artifact), and a synthetic identity benchmark
+(all-unmatched worst case: 10k ≈ 60ms, 100k ≈ 0.5s, 1M ≈ 5s, ~1.1GB heap — a
+layer limit, not scanner capacity; end-to-end pipeline costs remain unmeasured
+at that scale). The CLI still has no persistent decision store, SQLite layer,
+or finding history.
 
 ## Next bounded scope
 
-Implement lifecycle M1 through A1 + A2 in the
-[analysis plan](plans/analysis-improvements.md): source evidence and anchors,
-explicit contract/compatibility choices, and movement-aware identity comparison
-in the existing stateless Git-base workflow. Preserve exact fixture matching in
-compareFindings; introduce separate scan comparison semantics. This gives the
-analysis work a real consumer before persistence exists.
+M2 — remember one decision end to end — is next, per the
+[milestones](plans/finding-lifecycle/milestones.md). The identity layer's v1
+choices are recorded in D30 and the [design](plans/finding-lifecycle/design.md)
+open-choice table; per-check compatibility revisions and doctor-supplied
+evidence are still open there because nothing persists yet.
 
 Broader module resolution, value flow, control flow, and optional types are later
 independently scoped capabilities. They do not all block M2/M3. Measure the real

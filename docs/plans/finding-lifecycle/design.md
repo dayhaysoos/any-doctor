@@ -149,13 +149,20 @@ using SQLite does not authorize silently raising the Node minimum.
 
 | Choice | Resolve by | Required evidence |
 | --- | --- | --- |
-| Host-derived versus doctor-supplied anchors; optional Finding evidence contract | M1 / A1 | Legacy doctors, validated ranges, same-snapshot joins, and Unicode conversion. |
-| Identity algorithm, fallback, per-check rule compatibility | M1 / A1–A2 | Moved/duplicate/changed-code examples, metadata-only revisions, and real stateless diff integration. |
+| Host-derived versus doctor-supplied anchors; optional Finding evidence contract | M1 / A1 — **accepted v1**: host-derived only, no Finding extension (D30) | Legacy doctors, validated ranges, same-snapshot joins, and Unicode conversion — delivered by test/identity.test.mjs and the Sift smoke. |
+| Identity algorithm, fallback, per-check rule compatibility | M1 / A1–A2 — **accepted v1**: single-pass full-key multiset; content-only matches flagged `contextFallback`; whole-program digest provenance with a comparability guard (D30) | Moved/duplicate/changed-code examples, metadata-only revisions, and real stateless diff integration — delivered by test/identity.test.mjs, test/diff.test.mjs, and the Sift runs. |
 | Runtime binding, paths, schema, migrations | M2 | Supported-runtime packaged smoke; recovery and concurrency tests. |
 | Command/TUI controls, actor policy, history defaults | M2 | One-off, interactive, agent, headless, and read-only workflows. |
 | Decision partitions, semantic conflicts, CI gate behavior | M3 | Two checkouts, clean textual/conflicting semantic merge, local-only override. |
 | Score display after review | M3 | Raw, active, reviewed counts remain distinguishable; no dismissal counted as fixed. |
 | Retention budgets and scan comparability representation | M4 | Repeated-run disk growth, partial-coverage tests, expired-history behavior. |
+
+The v1 acceptance above is scoped to the stateless diff path: identity is
+computed per comparison from one post-scan read per file with findings, never
+persisted, and a doctor-program digest change between the two sides refuses
+continuity outright. Per-check compatibility revisions and persistent
+doctor-supplied evidence remain open for M2, where decisions must survive
+across runs.
 
 Performance targets are set at M1 from a measured baseline and representative
 workloads, then carried through all milestones. Proposed choices become accepted

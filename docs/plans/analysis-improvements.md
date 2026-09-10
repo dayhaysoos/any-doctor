@@ -1,10 +1,9 @@
 # Analysis improvements before persistent decisions
 
-Status: implementation plan, September 10, 2026; not implemented by this document.
-This refines lifecycle M1. The first delivery is A1 + A2 below: evidence and
-identity used by the existing Git-base comparison. Later analysis capabilities
-are separate work, not prerequisites for local decisions or team sharing.
-
+Status: A1 + A2 (the first delivery below) is implemented on branch
+`implement/analysis-a1-a2` — see D30 in [decisions](../../decisions.md) for the
+accepted v1 choices and evidence. Later analysis capabilities remain separate
+work, not prerequisites for local decisions or team sharing.
 Read [vision](../vision.md), [reliability](../doctor-reliability.md), and the
 [lifecycle design](finding-lifecycle/design.md) for the surrounding contract.
 

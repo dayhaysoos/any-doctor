@@ -9,14 +9,20 @@ historical discovery choices remain in [decisions.md](decisions.md).
 - Interactive doctor selection with no default selection, grouped findings, and
   prompts that users can copy to their own agent. Headless runs do not prompt.
 - Explicit doctor runs, all-doctor runs, JSON reports, optional CI severity gates,
-  and a stateless comparison against a Git base.
+  and a stateless comparison against a Git base. The diff is identity-aware
+  (A1+A2): a finding that moved with its code is **continuing**, a base occurrence
+  with no head counterpart is **no longer detected**, and only genuinely added
+  occurrences gate — with content-only matches (`contextFallback`), duplicate
+  buckets (`ambiguous`), and stale reads surfaced rather than smoothed over.
 - Agent authoring instructions, fixture verification, shared counterexamples,
   and optional structural/semantic analysis with declared degraded behavior.
 - The Convex repair recorded in [repair-audit-007.md](repair-audit-007.md).
 
-Current findings carry source locations, not durable lifecycle identities.
-Current run does not persist decisions or history. Generate prepares the
-authoring skill and prompt; the user's agent writes the doctor and fixtures.
+Current findings still carry source locations only — the identity layer derives
+its evidence host-side (doctor namespace, normalized line digest, relative
+column, enclosing structural context), so no doctor or contract change was
+needed. Current run does not persist decisions or history. Generate prepares
+the authoring skill and prompt; the user's agent writes the doctor and fixtures.
 
 ## Next: finding lifecycle
 
@@ -52,4 +58,5 @@ The future CLI may write its own state when recording a run or a decision;
 doctors retain their read-only analysis contract. Existing read-only scans must
 remain possible. The current dashboard's unconditional fix prompts need an
 investigation-first lifecycle that also supports an authorized decision.
-Current location-based diff matching is not sufficient for persistent identities.
+Host-side diff identity (landed) is the first step toward persistent
+per-finding identity for decisions; decisions themselves remain unimplemented.
