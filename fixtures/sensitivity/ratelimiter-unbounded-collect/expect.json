@@ -1,0 +1,9 @@
+{
+  "name": "rateLimiter unbounded index collect",
+  "source": "D22 convex-doctor audit — the rateLimiter triple (73/74/75) collapsed to one finding whose fix is to bound the index scan",
+  "expect": {
+    "convex-doctor": [
+      { "rule": "index-without-range", "file": "rateLimiter.ts", "line": 11 }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "loader test stake — exercises the corpus mechanism, not a real audit pattern",
+  "expect": {
+    "sensitivity-test-stake": [{ "rule": "rate", "file": "rateLimit.ts", "line": 1 }]
+  }
+}

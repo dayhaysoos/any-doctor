@@ -105,7 +105,7 @@ test("seed path traversal becomes a named failing fixture, siblings still run", 
   assert.equal(r.status, 0);
   const frame = r.stdout.split("\n").find(l => l.startsWith(SENTINEL));
   const parsed = JSON.parse(frame.slice(SENTINEL.length));
-  assert.equal(parsed.results.length, 3); // + shared innocent corpus
+  assert.equal(parsed.results.length, 4); // + shared innocent corpus + duplicate-location probe
   const trav = parsed.results.find(x => x.name === "traveller");
   assert.equal(trav.ok, false);
   assert.match(trav.error, /escapes the sandbox/);
@@ -224,6 +224,104 @@ test("verify refuses a needs-declaring check without onUnknown", async () => {
     const r = await runLoader([doctor, "--verify", path.join(root, "no-unknown.fixtures.mjs")]);
     assert.equal(r.status, 3);
     assert.match(r.stderr, /onUnknown is required/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("duplicate-location probe passes a doctor that reports per violation", async () => {
+  const root = tmpRoot();
+  const doctor = path.join(root, "perSite.mjs");
+  fs.writeFileSync(doctor, [
+    "export const meta = { id: 'perSite', description: 'flags TODO comments', severity: 'info',",
+    "  checks: [{ id: 'todo', description: 'TODO found', claim: 'a TODO comment is present', lookalikes: ['the word todorok'] }] }",
+    "export async function doctor(ctx) {",
+    "  for (const f of ctx.files.list()) {",
+    "    const lines = ctx.files.read(f).split('\\n');",
+    "    lines.forEach((l, i) => { if (l.includes('// TODO')) ctx.report.finding({ rule: 'todo', file: f, line: i + 1 }) });",
+    "  }",
+    "}",
+  ].join("\n"));
+  fs.writeFileSync(path.join(root, "perSite.fixtures.mjs"), [
+    "export const fixtures = [",
+    "  { name: 'flagged', seed: { 'src/a.ts': 'const a = 1; // TODO fix\\n' }, expected: [{ rule: 'todo', file: 'src/a.ts', line: 1 }] },",
+    "];",
+  ].join("\n"));
+  try {
+    const r = await runLoader([doctor, "--verify", path.join(root, "perSite.fixtures.mjs")]);
+    assert.equal(r.status, 0);
+    const frame = r.stdout.split("\n").find(l => l.startsWith(SENTINEL));
+    const parsed = JSON.parse(frame.slice(SENTINEL.length));
+    const probe = parsed.results.find(x => x.name.startsWith("duplicate-location sensitivity"));
+    assert.ok(probe, "probe row present");
+    assert.equal(probe.ok, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("duplicate-location probe fails a doctor that dedups by statement text", async () => {
+  const root = tmpRoot();
+  const doctor = path.join(root, "deduping.mjs");
+  fs.writeFileSync(doctor, [
+    "export const meta = { id: 'deduping', description: 'flags TODO comments, once per unique text', severity: 'info',",
+    "  checks: [{ id: 'todo', description: 'TODO found', claim: 'a TODO comment is present', lookalikes: ['the word todorok'] }] }",
+    "export async function doctor(ctx) {",
+    "  const seen = new Set();",
+    "  for (const f of ctx.files.list()) {",
+    "    const lines = ctx.files.read(f).split('\\n');",
+    "    lines.forEach((l, i) => {",
+    "      const norm = l.trim();",
+    "      if (l.includes('// TODO') && !seen.has(norm)) { seen.add(norm); ctx.report.finding({ rule: 'todo', file: f, line: i + 1 }) }",
+    "    });",
+    "  }",
+    "}",
+  ].join("\n"));
+  fs.writeFileSync(path.join(root, "deduping.fixtures.mjs"), [
+    "export const fixtures = [",
+    "  { name: 'flagged', seed: { 'src/a.ts': 'const a = 1; // TODO fix\\n' }, expected: [{ rule: 'todo', file: 'src/a.ts', line: 1 }] },",
+    "];",
+  ].join("\n"));
+  try {
+    const r = await runLoader([doctor, "--verify", path.join(root, "deduping.fixtures.mjs")]);
+    assert.equal(r.status, 0);
+    const frame = r.stdout.split("\n").find(l => l.startsWith(SENTINEL));
+    const parsed = JSON.parse(frame.slice(SENTINEL.length));
+    const probe = parsed.results.find(x => x.name.startsWith("duplicate-location sensitivity"));
+    assert.ok(probe);
+    assert.equal(probe.ok, false);
+    assert.match(probe.error, /dedup keyed on statement text|different locations/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("sensitivity corpus runs only cases the doctor has expectations for", async () => {
+  const root = tmpRoot();
+  const doctor = path.join(root, "staked.mjs");
+  fs.writeFileSync(doctor, [
+    "export const meta = { id: 'sensitivity-test-stake', description: 'flags rateLimit files', severity: 'info',",
+    "  checks: [{ id: 'rate', description: 'rate limiter found', claim: 'a rate limiter is present', lookalikes: ['rate-limiting in tests'] }] }",
+    "export async function doctor(ctx) {",
+    "  for (const f of ctx.files.list()) {",
+    "    if (ctx.files.read(f).includes('rateLimiter')) ctx.report.finding({ rule: 'rate', file: f, line: 1 });",
+    "  }",
+    "}",
+  ].join("\n"));
+  fs.writeFileSync(path.join(root, "staked.fixtures.mjs"), "export const fixtures = []");
+  // The loader reads the corpus from its own package dir; this test doctor has
+  // an expectation in fixtures/sensitivity/test-stake/ (shipped with the repo).
+  try {
+    const r = await runLoader([doctor, "--verify", path.join(root, "staked.fixtures.mjs")]);
+    assert.equal(r.status, 0);
+    const frame = r.stdout.split("\n").find(l => l.startsWith(SENTINEL));
+    const parsed = JSON.parse(frame.slice(SENTINEL.length));
+    const row = parsed.results.find(x => x.name === "sensitivity: test-stake");
+    assert.ok(row, "staked case runs");
+    assert.equal(row.ok, true);
+    const unstaked = parsed.results.filter(x => x.name.startsWith("sensitivity:") && x.name !== "sensitivity: test-stake");
+    assert.equal(unstaked.length, 0, "cases without stakes for this doctor are silent");
+    assert.ok(!parsed.results.some(x => x.name.startsWith("duplicate-location")), "no flag-shaped fixture, no probe");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
