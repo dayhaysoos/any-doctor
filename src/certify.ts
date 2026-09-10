@@ -142,11 +142,15 @@ function collectSeed(dir: string, prefix: string, seed: Record<string, string>, 
 //     in the one file (proof the check reports per-violation, not one
 //     verdict per file — openrouter's "no error check anywhere in the
 //     file" is a legitimate file-scoped claim), the pair file must yield
-//     at least 2x that count. Less is the collapse signature — N identical
-//     violations in one file reduced to a single finding. Doctors whose
-//     every fixture seeds at most one violation per file get twin+original
-//     policing only; the skill tells authors to seed a two-violation
-//     fixture so the probe can police same-file dedup.
+//     at least 2x that count — UNLESS it yields zero, which is exempt by
+//     design: the pair wrap strips exports and nests bodies in functions,
+//     which can remove the very context a check needs (an export-keyed
+//     check cannot fire inside the pair file). Less-than-double but
+//     nonzero is the collapse signature — N identical violations in one
+//     file reduced to a single finding. Doctors whose every fixture
+//     seeds at most one violation per file get twin+original policing
+//     only and the probe row says so; the skill tells authors to seed a
+//     two-violation fixture so the probe can police same-file dedup.
 function buildDuplicateLocationProbe(fixtures: Fixture[]): {
   seed: Record<string, string>;
   fixtureName: string;
@@ -236,6 +240,16 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
   // direct invocation fail fixtures that never touch analysis at all.
   const declaresNeeds = contract.narrowedCheckIds(mod.meta as DoctorMeta).length > 0;
   let analysisAvailable: boolean | undefined;
+  // The one skip policy (D25): an analysis-on sandbox whose engine is not
+  // installed here is an honest skip, not a failure — expectations belong
+  // to the full-power path. One decision for every policy that asks.
+  const skipFor = async (analysisOn: boolean): Promise<boolean> => {
+    if (!declaresNeeds || !analysisOn) return false;
+    if (analysisAvailable === undefined) {
+      analysisAvailable = await inSandbox<boolean>({}, async (tmp) => probeAnalysisAvailable(tmp));
+    }
+    return analysisAvailable === false;
+  };
   for (const fixture of fixtures) {
     try {
       // The fixture's declared analysis mode: "off" forces the degraded
@@ -244,10 +258,7 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
       // rather than failing a fixture whose expectations belong to the
       // full-power path.
       setAnalysisDisabled(fixture.analysis === "off");
-      if (declaresNeeds && fixture.analysis !== "off" && analysisAvailable === undefined) {
-        analysisAvailable = await inSandbox<boolean>({}, async (tmp) => probeAnalysisAvailable(tmp));
-      }
-      if (declaresNeeds && fixture.analysis !== "off" && analysisAvailable === false) {
+      if (await skipFor(fixture.analysis !== "off")) {
         results.push(skipRow(fixture.name));
         continue;
       }
@@ -286,8 +297,10 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
   // The duplicate-location sensitivity probe (D24).
   const probe = buildDuplicateLocationProbe(fixtures);
   if (probe !== null) {
-    const name = `duplicate-location sensitivity (from "${probe.fixtureName}")`;
-    if (declaresNeeds && !probe.analysisOff && analysisAvailable === false) {
+    const name = `duplicate-location sensitivity (from "${probe.fixtureName}")` + (probe.expectedCount < 2
+      ? " — no two-in-one-file witness: same-file collapse unpolicied"
+      : "");
+    if (await skipFor(!probe.analysisOff)) {
       results.push(skipRow(name));
     } else {
       try {
@@ -333,7 +346,7 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
       try {
         manifest = JSON.parse(fs.readFileSync(expectPath, "utf8"));
       } catch (e) {
-        results.push({ ...errorRow(name, e), error: "unreadable expect.json: " + (e instanceof Error ? e.message : String(e)) });
+        results.push({ ...okRow(name), ok: false, error: "unreadable expect.json: " + (e instanceof Error ? e.message : String(e)) });
         continue;
       }
       const expected = manifest?.expect?.[String((mod.meta as DoctorMeta).id)];
@@ -341,10 +354,7 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
       try {
         const seed: Record<string, string> = {};
         collectSeed(caseDir, "", seed, "expect.json");
-        if (declaresNeeds && analysisAvailable === undefined) {
-          analysisAvailable = await inSandbox<boolean>({}, async (tmp) => probeAnalysisAvailable(tmp));
-        }
-        if (declaresNeeds && analysisAvailable === false) {
+        if (await skipFor(true)) {
           results.push(skipRow(name));
           continue;
         }

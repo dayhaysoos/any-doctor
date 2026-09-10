@@ -35,7 +35,10 @@ test("certify runs every policy in-process and names the rows", async () => {
   assert.equal(byName.get("flagged").ok, true);
   assert.equal(byName.get("clean").ok, true);
   assert.ok(byName.get("shared innocent corpus (12 files)").ok, "innocent corpus row");
-  assert.ok(byName.get('duplicate-location sensitivity (from "flagged")').ok, "probe row");
+  const probeRow = results.find((r) => r.name.startsWith("duplicate-location sensitivity"));
+  assert.ok(probeRow, "probe row present");
+  assert.ok(probeRow.ok, probeRow.error);
+  assert.match(probeRow.name, /no two-in-one-file witness/, "single-violation witness is named as unpolicied");
   assert.equal(results.filter((r) => r.name.startsWith("sensitivity:")).length, 0, "no stakes, no sensitivity rows");
 });
 

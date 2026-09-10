@@ -120,24 +120,24 @@ test("handleSearchLine: a missing op still means pattern (the original wire form
   assert.deepEqual(out, { matches: [] });
 });
 
-test("handleAnalysisRequest: spans ask routes to the spanzer with its own cache", () => {
+test("handleAnalysisRequest: spans ask routes to the spans analyzer with its own cache", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-ah-"));
   try {
     fs.writeFileSync(path.join(dir, "a.ts"), "function a() { return 1; }\n");
-    let spanzerCalls = 0;
+    let spansCalls = 0;
     let analyzerCalls = 0;
-    const spanzer = (file, source) => {
-      spanzerCalls += 1;
+    const spansAnalyzer = (file, source) => {
+      spansCalls += 1;
       assert.ok(source.includes("function a"));
       return { ok: true, file: { file, spans: [] } };
     };
     const analyzer = () => { analyzerCalls += 1; return { ok: true, file: { file: "x", bindings: [] } }; };
     const root = { kind: "run", root: dir };
-    const first = handleAnalysisRequest({ kind: "spans", file: "a.ts", root: dir }, root, analyzer, undefined, spanzer);
+    const first = handleAnalysisRequest({ kind: "spans", file: "a.ts", root: dir }, root, analyzer, undefined, spansAnalyzer);
     assert.deepEqual(first.file.spans, []);
-    const second = handleAnalysisRequest({ kind: "spans", file: "a.ts", root: dir }, root, analyzer, undefined, spanzer);
+    const second = handleAnalysisRequest({ kind: "spans", file: "a.ts", root: dir }, root, analyzer, undefined, spansAnalyzer);
     assert.deepEqual(second.file.spans, []);
-    assert.equal(spanzerCalls, 1, "second ask hits the spans cache");
+    assert.equal(spansCalls, 1, "second ask hits the spans cache");
     assert.equal(analyzerCalls, 0, "spans never consult the bindings analyzer");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

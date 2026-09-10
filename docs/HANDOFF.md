@@ -10,14 +10,18 @@ A third audit round on convex-doctor 0.0.6 found three remaining issues (push-th
 
 ## What to build next (from the advisor's recommendation, prioritized)
 
-### 1. Duplicate-location framework test — DONE (D24)
+### 1. Duplicate-location framework test — DONE (D24, hardened in the review loop)
 
-Shipped in the loader's verify branch: every verify takes the doctor's
-first flag-shaped fixture, plants the violation at a second location
-(a byte-identical twin module, `__probe_twin__/<name>` — transform-free
-by design; an earlier transform-based shape broke cross-module identity
-checks), and demands the count across both locations at least double.
-Floor, not equality — over-reporting stays compareFindings' job.
+In the Certification harness: every verify picks the doctor's strongest
+flag-shaped fixture (most expected findings in one seeded file) and
+plants it at three locations — untouched original, a byte-identical
+twin module, and a pair file with the violation doubled inside one file
+(the billing.ts shape). Original and twin must each reproduce the
+fixture's expected count (counting only expected rules); the pair file
+must reach 2x when the witness seeded ≥2 findings in one file (the
+per-violation proof — file-scoped claims are respected; zero pair
+findings are exempt, the wrap can remove needed context). Text-keyed
+dedup fails deterministically.
 
 ### 2. Sensitivity corpus — DONE (D24)
 
@@ -25,8 +29,9 @@ Floor, not equality — over-reporting stays compareFindings' job.
 doctor id → expected findings; doctors only run cases they have stakes
 in. Seeded with the three audit patterns: ratelimiter-unbounded-collect,
 billing-triple (three findings at three chain-start lines — the dedup
-regression frozen as data), dead-prompt-builders. Plus `test-stake`, a
-synthetic case exercising the mechanism for the loader tests.
+regression frozen as data), dead-prompt-builders. Tests exercise the
+mechanism through ANY_DOCTOR_CORPUS_ROOT with their own corpora — the
+shipped commons hold audit patterns only.
 
 ### 3. Release diff (`any-doctor diff-scan`)
 

@@ -914,7 +914,13 @@ reports per-violation rather than one verdict per file (openrouter's
 claim, and the probe must not read its single pair finding as
 collapse). Witness selection picks the fixture with the most expected
 findings in one file; the skill tells authors to seed a two-violation
-fixture so same-file dedup is policed. The synthetic test-stake case
+fixture so same-file dedup is policed. A pair file yielding ZERO
+findings of the expected rules is exempt by design — the pair wrap
+strips exports and nests bodies in functions, which can remove the
+context a check needs (an export-keyed check cannot fire there); the
+original and twin assertions still apply. The probe row's name says
+when no two-in-one-file witness exists (same-file collapse unpolicied).
+The synthetic test-stake case
 left the shipped corpus (tests point ANY_DOCTOR_CORPUS_ROOT at their
 own trees) — the commons hold audit patterns only.
 

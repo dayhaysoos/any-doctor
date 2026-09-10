@@ -19,5 +19,5 @@ export type AnalysisResponse = {
 } | {
     error: string;
 };
-export declare function handleAnalysisRequest(req: AnalysisRequestBody, mode: Mode, analyzer?: Analyzer, status?: Status, spanzer?: SpansAnalyzer): AnalysisResponse;
+export declare function handleAnalysisRequest(req: AnalysisRequestBody, mode: Mode, analyzer?: Analyzer, status?: Status, spansAnalyzer?: SpansAnalyzer): AnalysisResponse;
 export {};
