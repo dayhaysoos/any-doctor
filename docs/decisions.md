@@ -3,6 +3,11 @@
 Append-only. Each entry: context → decision → consequences. New sessions
 should read this file first and *not* relitigate closed decisions.
 
+Later entries may explicitly supersede earlier ones. D29 and
+[vision.md](vision.md) describe the current direction; the
+[feature map](features.md) separates implementation from plans. Historical
+experiments and open questions below are not automatically current tasks.
+
 ---
 
 ## D1 — Open source tool, not a startup
@@ -1044,7 +1049,50 @@ This is a bounded repair, not whole-program promise verification. See
 
 ---
 
-## Open questions
+## D29 — Agent review, remembered decisions, and team convergence
+
+**Date:** 2026-09-10
+
+**Context:** The maintainer clarified three priorities: catch recurring AI-code
+concerns beyond ordinary lint configurations; make after-coding review useful for
+agents; and let people use their own agents to author codebase-specific doctors.
+The discussion also established that decisions must persist through npx use,
+be shareable across teams, and remain practical on massive codebases.
+
+**Decision:** Keep contextual review candidates alongside defect and project-policy
+checks. Explain their evidence and limits; correctness is not established by
+finding counts, scores, or author-written fixtures alone. Users may record a
+reasoned accepted/not-applicable decision and reverse or reassess it later.
+
+Plan CLI-owned finding state with local SQLite and Git-tracked authoritative
+project decisions/configuration. Create state lazily when needed, without mandatory
+init. Doctors keep their existing read-only analysis contract. Team convergence
+uses the checked-out Git records; databases and private scan histories are local.
+Observation, review disposition, and claimed fix are distinct. Partial scans,
+changed detectors, and uncertain identity must not become silent resolutions.
+Bounded storage, output, and memory are design requirements from the first slice.
+
+**Consequences:** The current direction is in [vision](vision.md); the next feature
+has a [proposal](plans/finding-lifecycle/proposal.md),
+[design](plans/finding-lifecycle/design.md), and
+[milestones](plans/finding-lifecycle/milestones.md). Begin with identity and scan
+provenance before building persistence around source line numbers. Exact schemas,
+SQLite binding, commands, history defaults, and score/gate behavior are open choices,
+not implicit requirements. This decision records direction, not shipped behavior
+or authorization to publish.
+
+This supersedes older roadmap language making registry/init the next prerequisite,
+blanket fixture-proven-precision claims, and a permanent prohibition on CLI-owned
+scan state. Existing read-only scans remain supported. Historical results and
+previous decisions retain their original context; current feature availability
+is in [features](features.md).
+
+---
+
+## Historical open questions
+
+Retained from earlier planning. The active lifecycle questions and their owning
+milestones are in the [design](plans/finding-lifecycle/design.md).
 
 - Opt-in metrics/score API (parked, D19): count doctors run and findings
   resolved over time the way React Doctor's score API does — valuable for

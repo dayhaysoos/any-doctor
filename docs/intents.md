@@ -1,5 +1,11 @@
 # Intent-only prompts (experiment input)
 
+Historical inputs for the initial experiment, retained for reproducibility.
+These one-liners are not claims that each pattern establishes a bug. Current
+doctor authoring uses [the skill](../skill/any-doctor.skill.md) and
+[reliability protocol](doctor-reliability.md), including explicit project
+conventions, valid lookalikes, and independent evaluation.
+
 The rules in `rules/` must be derivable from these one-liners alone. This
 file is written FIRST; rules come after. If a rule needs knowledge not in
 its intent, that's a finding for the repair log.

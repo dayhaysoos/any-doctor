@@ -1,67 +1,55 @@
-# Planned features — doctor discovery & registry
+# Feature map
 
-Status: F1, F2, and F3 are BUILT on the `buildout` branch — discovery
-scopes, the fuzzy picker (now `verify`-only: bare `run` aggregates every
-doctor straight into the review tree, per D15's amendment), both `--all`
-batch modes, and the repo-local-wins collision policy (with an origin
-suffix when one doctor shadows another). The index.json registration cache
-was dropped (D14): the directory is the registry.
+Updated September 10, 2026. This replaces the outdated F1–F3 planning text;
+historical discovery choices remain in [decisions.md](decisions.md).
 
-Source: Nick's direction (2026-08-29) — "when someone types any-doctor
-verify or any-doctor run without specifying which doctor, there should be
-a select for it, searchable with fuzzy search; and doctors that get
-created should be automatically stored somewhere — its own little doctors
-directory that doesn't interfere."
+## Available in the inspected source
 
-## F1 — No-argument interactive selection
+- Local, user-global, and bundled doctor discovery; local wins slug collisions.
+- Interactive doctor selection with no default selection, grouped findings, and
+  prompts that users can copy to their own agent. Headless runs do not prompt.
+- Explicit doctor runs, all-doctor runs, JSON reports, optional CI severity gates,
+  and a stateless comparison against a Git base.
+- Agent authoring instructions, fixture verification, shared counterexamples,
+  and optional structural/semantic analysis with declared degraded behavior.
+- The Convex repair recorded in [repair-audit-007.md](repair-audit-007.md).
 
-When `run` or `verify` is invoked WITHOUT a doctor path:
+Current findings carry source locations, not durable lifecycle identities.
+Current run does not persist decisions or history. Generate prepares the
+authoring skill and prompt; the user's agent writes the doctor and fixtures.
 
-- **TTY session:** show a fuzzy-searchable picker. Type to filter,
-  ↑↓ to move, enter to select, esc/q to cancel. Picker lists every
-  discovered doctor by its one-line description and severity glyph; the
-  id feeds fuzzy matching and appears in the report and review browser.
-  On select: proceed exactly as if the path had been typed
-  (`verify` → fixture gate; `run` → report + findings browser).
-- **Non-TTY (piped/CI):** never prompt. Print the discovered doctor list
-  and exit non-zero with a clear "specify a doctor" message.
-- Precedence for discovery: `./doctors/` (repo-local) first, then the
-  user registry (F2), each entry labeled with its origin.
+## Next: finding lifecycle
 
-## F2 — Doctor registry & auto-save
+First deliver [analysis evidence and identity](plans/analysis-improvements.md) in
+the existing stateless Git-base comparison. This is lifecycle M1, before saved
+decisions. Broader import/type/flow analysis is separate follow-up work.
 
-Any doctor created by `generate` is automatically **saved** — registered
-so the picker in F1 can find it later. Two scopes, no mixing:
+The [proposal](plans/finding-lifecycle/proposal.md) owns product behavior; the
+[design](plans/finding-lifecycle/design.md) owns proposed storage and convergence;
+the [milestones](plans/finding-lifecycle/milestones.md) own delivery order and proof.
 
-- **Repo-local:** `./doctors/` — already the format. A doctor lives next
-  to its fixtures; committing both to the consuming repo is encouraged.
-- **User-global:** `~/.any-doctor/doctors/` — for doctors a user wants
-  available in every repo. `generate --global` writes here; a doctor
-  here is usable from any directory.
+Planned capabilities:
 
-Registration data lives beside the doctor: its `meta` is the registry
-entry (id, description, severity, blindSpots). The directory is the
-whole registry — there is no index file; discovery scans the directory.
+- Stable finding identity and exact scan provenance.
+- Local and project decisions with reasons, reversal, and reassessment.
+- Local SQLite state, created lazily; shared decisions as reviewable Git files.
+- Consistent decisions across branches, teammates, agents, and CI.
+- Finding history, comparable rescans, and honest disappearance/fix reporting.
+- Bounded history and report queries for large repositories and concurrent agents.
 
-**Non-interference rule:** discovery and registry reads never write to
-the target repo being scanned. `run` reads doctors and code; it writes
-nothing anywhere. `verify` writes only to its own temp sandbox.
+None of these lifecycle capabilities is implemented by this documentation update.
+Command names, storage schemas, and automatic-history defaults remain open.
 
-## F3 — Related (noted, not designed)
+## Deferred
 
-- `run --all` — execute every discovered doctor, one combined report.
-- `verify --all` — fixture-gate every discovered doctor; exit non-zero
-  if any fails.
-- Registry collision policy: same slug in both scopes → repo-local wins,
-  picker shows the origin suffix.
-- Sharing/publishing doctor packs — out of scope until F1/F2 exist.
+Hosted team history, a public doctor registry, mandatory adoption/init workflows,
+and issue-tracker features are outside the next lifecycle scope. Custom doctor
+authoring and useful contextual suggestions remain core to the product.
 
-## Implementation notes
+## Changes the implementation must account for
 
-- Fuzzy matching must be a small zero-dep scorer (subsequence match,
-  prefer consecutive runs and word starts — same spirit as React
-  Doctor's fuzzy-match.ts, which predates this spec).
-- The picker is raw-mode like the findings browser; frame-builder stays
-  pure and golden-testable, per the architecture review.
-- New glossary terms go into CONTEXT.md when these land: "registry",
-  "scope" (repo-local vs user-global).
+The future CLI may write its own state when recording a run or a decision;
+doctors retain their read-only analysis contract. Existing read-only scans must
+remain possible. The current dashboard's unconditional fix prompts need an
+investigation-first lifecycle that also supports an authorized decision.
+Current location-based diff matching is not sufficient for persistent identities.

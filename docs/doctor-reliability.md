@@ -3,6 +3,11 @@
 A passing fixture suite establishes agreement on its cases. It does not establish
 precision on arbitrary repositories. Treat every check as a bounded claim.
 
+The [vision](vision.md) includes project-specific policies and contextual review
+candidates alongside defects. Reliability means the evidence supports the stated
+interpretation; it does not require removing every useful judgment call from the
+product. Severity and certainty are different concepts.
+
 ## Before implementing a check
 
 State the observable condition, the reporting unit (occurrence, file, or project),
@@ -39,6 +44,24 @@ using a fixed target checkout. Classify added and removed findings against sourc
 corrected false positive, preserved positive, intentional narrowing, new candidate,
 or regression. Counts alone cannot establish improvement. Record versions, target
 commit and dirty state, analysis availability, crashes, and unsupported cases.
+
+## Review decisions and reliability (planned)
+
+The [lifecycle proposal](plans/finding-lifecycle/proposal.md) adds accepted and
+not-applicable decisions. Preserve their reasons and distinguish the two: an
+accepted concern is not evidence that the detector is wrong. A confirmed
+not-applicable case should become a counterexample for its rule when appropriate.
+Shared decisions change the review view, not raw observations or analysis coverage.
+They must not silently teach a doctor to ignore unrelated similar code.
+
+Revalidate decision applicability after relevant source or rule changes. A claimed
+fix, a disappearance under comparable coverage, and an accepted finding are
+different outcomes. Evaluations and summaries must not count all three as fixes.
+Track false positives and preserved positives per check rather than treating fewer
+findings or a higher score as proof of improved accuracy.
+
+The initial lifecycle is local and Git-based. Collecting decisions does not
+authorize telemetry, uploading source, or automatic global rule changes.
 
 ## Current Convex boundaries
 

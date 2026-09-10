@@ -3,6 +3,14 @@
 Canonical vocabulary for any-doctor. Glossary only — no implementation.
 When a term here conflicts with language elsewhere, this file wins.
 
+Current product intent lives in [docs/vision.md](docs/vision.md). For work on
+persistent decisions, history, identity, or team convergence, read the
+[lifecycle design](docs/plans/finding-lifecycle/design.md); the first identity
+delivery (lifecycle M1, slices A1+A2) is planned in
+[analysis improvements](docs/plans/analysis-improvements.md). Their proposed records
+are not implemented interfaces; the glossary below describes current behavior
+unless a term is explicitly marked planned.
+
 ## Doctor program
 
 The artifact an LLM writes: a JavaScript module that inspects a target
@@ -93,11 +101,15 @@ runs. There is no override in any mode.
 
 ## Finding
 
-One emitted finding: a location (file, line, optional zero-based column) plus optional per-finding
+One emitted finding: an observed condition, represented by a location (file, line, optional zero-based column) plus optional per-finding
 message or severity override. "Issue" and "instance" are retired
 synonyms — Finding is the term in code, copy, and prompts. The
 doctor-level truth (id, description, default severity, blind spots)
 lives in the program's meta, not in individual findings.
+
+A finding may establish a defect, flag a project convention, or identify a
+contextual review candidate. Its existence alone does not establish that a code
+change is appropriate. Current locations are not durable lifecycle identities.
 
 ## Check
 
@@ -107,7 +119,7 @@ and, when the check uses the identity engine at full power, its
 declaration of that need (`needs`), which is what renders "narrowed"
 when the engine is absent; the doctor's meta supplies the defaults when
 a finding names no check. A check id is a short kebab-case noun phrase
-over [a-z0-9-], unique within its doctor, naming the defect
+over [a-z0-9-], unique within its doctor, naming the detected concern
 (fetch-calls-without-abortsignal, filter-table-scan). One doctor
 program, many checks.
 
@@ -232,7 +244,8 @@ known input.
 One seed plus the findings expected from running a doctor program against
 it. Expected findings match on (rule, file, line, optional column), duplicates
 counted: a missing expected finding is a recall failure; an unexpected
-finding is a precision failure. The rule in an expectation is part of the
+finding is a precision failure within these labeled cases, not a population
+accuracy measurement. The rule in an expectation is part of the
 match — a wrong-check finding at the right line fails the gate. A fixture
 also declares its analysis mode (D20 Stage 2): "on" (default) pins the
 full-power path and skips with a named notice where the engine is not
@@ -280,7 +293,8 @@ the consuming repo), user-global (`~/.any-doctor/doctors/`, available
 in every repo), or bundled (the first-party pack inside the package,
 read-only — a starting point, not a dependency). Repo-local wins slug
 collisions, then user-global, then bundled. Scanning a target repo
-never writes to any scope.
+currently does not persist state in any scope. Planned CLI-owned state is
+separate from doctor discovery and does not grant doctors write capabilities.
 
 ## Skill
 
@@ -299,3 +313,19 @@ distinct locations of that check in one file. File/project checks need a
 positive witness. Unspecified legacy units and unavailable analysis are
 reported as not exercised, not counted as passing. Fixture expectations
 establish tested coverage, not general correctness or independence of labels.
+
+## Lifecycle vocabulary (planned)
+
+These terms describe the accepted direction, not current fields on Finding or
+DoctorCtx. The [design](docs/plans/finding-lifecycle/design.md) owns their data
+and applicability rules.
+
+- **Finding identity:** continuity of one occurrence across comparable scans,
+  distinct from its current source coordinates.
+- **Observation:** evidence that a finding was detected in a particular scan.
+- **Decision:** a reasoned accepted/not-applicable disposition with local or project
+  scope; it changes review state, not the raw observation.
+- **No longer detected:** absence established by compatible, completed coverage.
+- **Claimed fix:** a recorded explanation of remediation, separate from rescan evidence.
+- **Reassessment:** a decision requires review because identity or applicability is
+  changed, conflicting, or uncertain.
