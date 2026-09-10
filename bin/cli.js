@@ -346,7 +346,7 @@ async function cmdRun(args) {
     // rendering (findings and skips, not crashes) stays clean.
     for (const c of ran.crashed)
         fail(c.detail);
-    const outcome = ran; // complete as returned — skips rode in with the spec
+    const outcome = ran;
     const summary = deriveSummary(outcome);
     // Diff mode exists iff --base was passed AND the HEAD scan is whole:
     // a crashed HEAD doctor contributes no findings, so its base findings

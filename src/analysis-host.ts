@@ -14,7 +14,7 @@ import { searchBase, withinBase } from "./search-host.js";
 // analyze its target, a verify its fixture sandboxes, meta nothing.
 
 type Analyzer = typeof analyzeBindings;
-type Spanzer = typeof analyzeSpans;
+type SpansAnalyzer = typeof analyzeSpans;
 type Status = typeof analysisStatus;
 
 // One cache per host process. The host lives in the runner process, so
@@ -48,7 +48,7 @@ export function handleAnalysisRequest(
   mode: Mode,
   analyzer: Analyzer = analyzeBindings,
   status: Status = analysisStatus,
-  spanzer: Spanzer = analyzeSpans,
+  spanzer: SpansAnalyzer = analyzeSpans,
 ): AnalysisResponse {
   const base = searchBase(mode);
   const root = typeof req.root === "string" ? path.resolve(req.root) : "";

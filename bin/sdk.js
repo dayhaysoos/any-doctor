@@ -106,7 +106,7 @@ export function buildCtx(root, opts = {}) {
                         + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.");
                 }
                 const r = runAnalysis({ kind: "bindings", file }, root);
-                if (r.file === undefined)
+                if (r.file === undefined || !("bindings" in r.file))
                     throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
                 return r.file;
             },
@@ -117,7 +117,7 @@ export function buildCtx(root, opts = {}) {
                         + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.");
                 }
                 const r = runAnalysis({ kind: "spans", file }, root);
-                if (r.file === undefined)
+                if (r.file === undefined || !("spans" in r.file))
                     throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
                 return r.file;
             },
