@@ -184,3 +184,21 @@ test("resolveDoctorPath: an extensionless bare slug resolves a scoped doctor (.m
   assert.equal(resolveDoctorPath("no-such-doctor", cwd, { bundledDir }), null, "unknown slug stays null");
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test("resolveDoctorPath: a directory is never a doctor program — '.' stays a target", async () => {
+  const { resolveDoctorPath } = await import("../bin/discover.js");
+  const root = tmp();
+  const bundled = path.join(root, "bundled-doctors");
+  const global = path.join(root, "global-doctors");
+  fs.mkdirSync(bundled);
+  fs.mkdirSync(global);
+  fs.writeFileSync(path.join(bundled, "real.mjs"), pilotSource);
+  const nested = path.join(root, "nested", "cwd");
+  fs.mkdirSync(nested, { recursive: true });
+
+  assert.equal(resolveDoctorPath("real", nested, { globalDir: global, bundledDir: bundled }), path.join(bundled, "real.mjs"), "files still resolve");
+  // The verbatim candidate join(dir, ".") IS the doctors directory — the
+  // bug ran it as a program. "." must resolve to nothing and stay a target.
+  assert.equal(resolveDoctorPath(".", nested, { globalDir: global, bundledDir: bundled }), null, "the scope directory itself is not a program");
+  assert.equal(resolveDoctorPath(bundled, nested, { globalDir: global, bundledDir: bundled }), null, "an explicit directory path is not a program either");
+});
