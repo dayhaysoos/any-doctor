@@ -1,5 +1,5 @@
 import { createRequire } from "module";
-import { AnalysisFile, AnalysisSpans, BindingInfo, BindingRef, SpanInfo } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, CallInfo, CallTarget, FunctionInfo, OperandInfo, SourceRange, BindingInfo, BindingRef, SpanInfo } from "./contract.js";
 
 // The analysis adapter: the one place that knows how to run the identity
 // stack — oxc-parser (fast TS parse, a native optional dependency) plus
@@ -57,6 +57,8 @@ export function analysisStatus(): AnalysisStatusResult {
 }
 
 export type AnalysisResult = { ok: true; file: AnalysisFile } | { ok: false; error: string };
+
+export type CallsResult = { ok: true; file: AnalysisCalls } | { ok: false; error: string };
 
 export type SpansResult = { ok: true; file: AnalysisSpans } | { ok: false; error: string };
 
@@ -298,6 +300,12 @@ function addRanges(node: unknown): void {
   if (!node || typeof node !== "object") return;
   const n = node as { start?: number; end?: number; range?: [number, number]; [k: string]: unknown };
   if (typeof n.start === "number" && typeof n.end === "number") n.range = [n.start, n.end];
+  if (["ClassDeclaration", "ClassExpression", "MethodDefinition", "PropertyDefinition", "AccessorProperty"].includes(String(n.type)) && n.decorators === undefined) n.decorators = [];
+  if (["ClassDeclaration", "ClassExpression"].includes(String(n.type)) && n.implements === undefined) n.implements = [];
+  // OXC omits parameter decorators in JS; the TS scope adapter expects an array.
+  if (Array.isArray(n.params)) for (const param of n.params) {
+    if (isNode(param) && param.decorators === undefined) param.decorators = [];
+  }
   for (const key of Object.keys(n)) {
     if (key === "range" || key === "start" || key === "end") continue;
     const v = n[key];
@@ -340,3 +348,134 @@ function lowerBound(sorted: number[], value: number): number {
   }
   return lo;
 }
+
+// Call relationships and receiver identities are language facts. The doctor
+// decides which imported factory and methods belong to its framework.
+export function analyzeCalls(file: string, source: string): CallsResult {
+  const stack = loadStack();
+  if (stack.error !== undefined) return { ok: false, error: stack.error };
+  try {
+    const parsed = stack.parseSync(file, source, { sourceType: "module" });
+    if (parsed.errors.length) return { ok: false, error: `analysis failed to parse ${file}: ${parsed.errors[0].message}` };
+    const program = parsed.program as unknown as Node;
+    addRanges(program);
+    const manager = stack.analyze(program as never, { sourceType: "module" });
+    const positions = positioner(source);
+    const parents = new Map<Node, Node>();
+    const nodes: Node[] = [];
+    const walk = (n: Node, parent?: Node): void => {
+      if (parent) parents.set(n, parent);
+      nodes.push(n);
+      for (const [key, value] of Object.entries(n)) {
+        if (key === "comments" || key === "tokens") continue;
+        if (isNode(value)) walk(value, n);
+        else if (Array.isArray(value)) for (const item of value) if (isNode(item)) walk(item, n);
+      }
+    };
+    walk(program);
+    const identities = new Map<Node, { binding: number; source?: string; importedName?: string; written: boolean }>();
+    for (const scope of manager.scopes) for (const variable of scope.variables) {
+      const def = variable.defs[0];
+      if (!def || !def.name.range) continue;
+      const info: { binding: number; source?: string; importedName?: string; written: boolean } = {
+        binding: def.name.range[0], written: variable.references.some(r => r.isWrite() && !r.init),
+      };
+      if (def.type === "ImportBinding" && def.parent.type === "ImportDeclaration") {
+        info.source = String(def.parent.source.value);
+        const spec = def.node as unknown as Node;
+        info.importedName = spec.type === "ImportNamespaceSpecifier" ? "*"
+          : spec.type === "ImportDefaultSpecifier" ? "default" : propertyName(spec.imported) ?? undefined;
+      }
+      identities.set(def.name as unknown as Node, info);
+      for (const ref of variable.references) identities.set(ref.identifier as unknown as Node, info);
+    }
+    const range = (n: Node): SourceRange => {
+      const [start, end] = n.range!;
+      return { start, end, line: positions.line(start), column: positions.column(start), endLine: positions.line(end), endColumn: positions.column(end) };
+    };
+    const unwrap = (n: Node): Node => {
+      while (TRANSPARENT_EXPRESSIONS.has(n.type) && isNode(n.expression)) n = n.expression;
+      return n;
+    };
+    const outer = (n: Node): Node => {
+      let p = parents.get(n);
+      while (p && TRANSPARENT_EXPRESSIONS.has(p.type)) { n = p; p = parents.get(n); }
+      return n;
+    };
+    const target = (expr: Node): CallTarget => {
+      let n = unwrap(expr);
+      const members: string[] = [];
+      while (n.type === "MemberExpression" && !n.computed && isNode(n.object) && isNode(n.property)) {
+        const name = idName(n.property);
+        if (!name) break;
+        members.unshift(name); n = unwrap(n.object);
+      }
+      if (n.type !== "Identifier") return { root: null, members, binding: null };
+      const identity = identities.get(n);
+      return { root: idName(n), members, binding: identity?.binding ?? null,
+        ...(identity?.written ? { reassigned: true } : {}),
+        ...(identity?.source && !identity.written ? { source: identity.source, importedName: identity.importedName } : {}) };
+    };
+    const functionStart = (n: Node): number | null => {
+      let p = parents.get(n);
+      while (p) {
+        if (FUNCTION_EXPRESSIONS.has(p.type)) return p.range![0];
+        p = parents.get(p);
+      }
+      return null;
+    };
+    const functions: FunctionInfo[] = [];
+    const calls: CallInfo[] = [];
+    const differences: AnalysisCalls["differences"] = [];
+    const operand = (n: Node): OperandInfo => {
+      n = unwrap(n);
+      if (n.type === "CallExpression") return { call: n.range![0] };
+      const identity = identities.get(n);
+      return identity && !identity.written ? { binding: identity.binding } : {};
+    };
+    for (const n of nodes) {
+      if (FUNCTION_EXPRESSIONS.has(n.type)) {
+        const f: FunctionInfo = { ...range(n), parameters: (n.params as Node[]).map(p => identities.get(p)?.binding ?? null) };
+        let child = outer(n), parent = parents.get(child), property: string | null = null;
+        if (parent?.type === "Property" && parent.value === child && !parent.computed) {
+          property = propertyName(parent.key);
+          child = parents.get(parent)!; parent = parents.get(child);
+        }
+        if (parent?.type === "CallExpression" && Array.isArray(parent.arguments)) {
+          const argument = parent.arguments.indexOf(child);
+          if (argument >= 0) f.registration = { target: target(parent.callee as Node), property, argument };
+        }
+        functions.push(f);
+      }
+      if (n.type === "CallExpression") {
+        const child = outer(n), parent = parents.get(child);
+        const usage: CallInfo["usage"] = parent?.type === "ExpressionStatement" ? "discarded"
+          : parent?.type === "AwaitExpression" ? "awaited"
+          : parent?.type === "ReturnStatement" || (parent?.type === "ArrowFunctionExpression" && parent.body === child) ? "returned"
+          : parent?.type === "VariableDeclarator" || parent?.type === "AssignmentExpression" ? "stored"
+          : parent?.type === "CallExpression" && (parent.arguments as Node[]).includes(child) ? "passed" : "unknown";
+        const call: CallInfo = { ...range(n), target: target(n.callee as Node), usage, functionStart: functionStart(n), arguments: (n.arguments as Node[]).map(range) };
+        if (parent?.type === "VariableDeclarator" && parent.init === child && parents.get(parent)?.kind === "const") {
+          const id = identities.get(parent.id as Node);
+          if (id && !id.written) call.resultBinding = id.binding;
+        }
+        const callee = unwrap(n.callee as Node);
+        if (callee.type === "MemberExpression" && isNode(callee.object)) {
+          if (isNode(callee.property)) call.memberRange = range(callee.property);
+          const receiver = unwrap(callee.object);
+          if (receiver.type === "CallExpression") call.receiverCall = receiver.range![1];
+        }
+        calls.push(call);
+      }
+      if (n.type === "BinaryExpression" && n.operator === "-") differences.push({
+        ...range(n), functionStart: functionStart(n), left: operand(n.left as Node), right: operand(n.right as Node),
+      });
+    }
+    return { ok: true, file: { file, calls, functions, differences } };
+  } catch (e) {
+    return { ok: false, error: `analysis failed for ${file}: ${e instanceof Error ? e.message : String(e)}` };
+  }
+}
+
+const FUNCTION_EXPRESSIONS = new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"]);
+const TRANSPARENT_EXPRESSIONS = new Set(["TSAsExpression", "TSTypeAssertion", "TSNonNullExpression", "TSSatisfiesExpression", "ChainExpression", "ParenthesizedExpression"]);

@@ -1,0 +1,951 @@
+{
+  "schema": 1,
+  "tool": "any-doctor",
+  "target": "/Users/nickdejesus/Code/sift-skills",
+  "fileCount": 630,
+  "durationMs": 3762,
+  "score": {
+    "score": 98,
+    "grade": "Excellent",
+    "filesClean": 525,
+    "filesTotal": 630
+  },
+  "counts": {
+    "error": 0,
+    "warning": 0,
+    "info": 178,
+    "total": 178,
+    "hiddenDuplicates": 0
+  },
+  "analysisAvailable": true,
+  "emptyScan": false,
+  "groups": [
+    {
+      "doctor": "slop-doctor",
+      "checks": [
+        {
+          "rule": "identical-helper-body-in-two-modules",
+          "heading": "A function body identical (literals included) to one in another module - a consolidation suggestion, not a proven defect.",
+          "severity": "info",
+          "findings": [
+            {
+              "file": "convex/analysis/bonus.ts",
+              "line": 87,
+              "message": "identical body also in: convex/analysis/gaps.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts"
+            },
+            {
+              "file": "convex/analysis/gaps.ts",
+              "line": 164,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts"
+            },
+            {
+              "file": "convex/analysis/transferable.ts",
+              "line": 101,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/gaps.ts, convex/job_wizard_ai.ts"
+            },
+            {
+              "file": "convex/job_wizard_ai.ts",
+              "line": 43,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts"
+            },
+            {
+              "file": "convex/analysis/bonus.ts",
+              "line": 115,
+              "message": "identical body also in: convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts"
+            },
+            {
+              "file": "convex/analysis/evidence.ts",
+              "line": 146,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts"
+            },
+            {
+              "file": "convex/analysis/fit.ts",
+              "line": 227,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts"
+            },
+            {
+              "file": "convex/analysis/gaps.ts",
+              "line": 192,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/transferable.ts"
+            },
+            {
+              "file": "convex/analysis/transferable.ts",
+              "line": 129,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts"
+            },
+            {
+              "file": "convex/analysis/bonus.ts",
+              "line": 121,
+              "message": "identical body also in: convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts"
+            },
+            {
+              "file": "convex/analysis/evidence.ts",
+              "line": 197,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts"
+            },
+            {
+              "file": "convex/analysis/fit.ts",
+              "line": 518,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts"
+            },
+            {
+              "file": "convex/analysis/gaps.ts",
+              "line": 291,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts"
+            },
+            {
+              "file": "convex/analysis/transferable.ts",
+              "line": 136,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/job_wizard_ai.ts"
+            },
+            {
+              "file": "convex/job_wizard_ai.ts",
+              "line": 119,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts"
+            },
+            {
+              "file": "convex/analysis/evidence.ts",
+              "line": 112,
+              "message": "identical body also in: convex/analysis/fit.ts"
+            },
+            {
+              "file": "convex/analysis/fit.ts",
+              "line": 193,
+              "message": "identical body also in: convex/analysis/evidence.ts"
+            },
+            {
+              "file": "convex/analysis/githubProfileReader.ts",
+              "line": 1039,
+              "message": "identical body also in: convex/lib/firecrawlClient.ts"
+            },
+            {
+              "file": "convex/lib/firecrawlClient.ts",
+              "line": 614,
+              "message": "identical body also in: convex/analysis/githubProfileReader.ts"
+            },
+            {
+              "file": "convex/analysis/githubProfileReader.ts",
+              "line": 1188,
+              "message": "identical body also in: convex/lib/firecrawlClient.ts"
+            },
+            {
+              "file": "convex/lib/firecrawlClient.ts",
+              "line": 669,
+              "message": "identical body also in: convex/analysis/githubProfileReader.ts"
+            },
+            {
+              "file": "convex/analysis/githubProfileReader.ts",
+              "line": 1200,
+              "message": "identical body also in: convex/lib/firecrawlClient.ts"
+            },
+            {
+              "file": "convex/lib/firecrawlClient.ts",
+              "line": 687,
+              "message": "identical body also in: convex/analysis/githubProfileReader.ts"
+            },
+            {
+              "file": "convex/billingActions.ts",
+              "line": 28,
+              "message": "identical body also in: convex/stripeWebhook.ts"
+            },
+            {
+              "file": "convex/stripeWebhook.ts",
+              "line": 135,
+              "message": "identical body also in: convex/billingActions.ts"
+            },
+            {
+              "file": "convex/hiring/stateRead.ts",
+              "line": 123,
+              "message": "identical body also in: convex/hiringApplication.ts"
+            },
+            {
+              "file": "convex/hiringApplication.ts",
+              "line": 58,
+              "message": "identical body also in: convex/hiring/stateRead.ts"
+            },
+            {
+              "file": "convex/lib/chatPayloadSanitize.ts",
+              "line": 8,
+              "message": "identical body also in: convex/lib/chatSearchEvidence.ts"
+            },
+            {
+              "file": "convex/lib/chatSearchEvidence.ts",
+              "line": 90,
+              "message": "identical body also in: convex/lib/chatPayloadSanitize.ts"
+            },
+            {
+              "file": "convex/lib/contactForm.ts",
+              "line": 88,
+              "message": "identical body also in: convex/lib/supportForm.ts, extensions/sift-chrome/popup.ts"
+            },
+            {
+              "file": "convex/lib/supportForm.ts",
+              "line": 163,
+              "message": "identical body also in: convex/lib/contactForm.ts, extensions/sift-chrome/popup.ts"
+            },
+            {
+              "file": "extensions/sift-chrome/popup.ts",
+              "line": 849,
+              "message": "identical body also in: convex/lib/contactForm.ts, convex/lib/supportForm.ts"
+            },
+            {
+              "file": "convex/lib/extensionAuth.ts",
+              "line": 42,
+              "message": "identical body also in: convex/lib/mcpApiKeys.ts, convex/lib/promoCodes.ts"
+            },
+            {
+              "file": "convex/lib/mcpApiKeys.ts",
+              "line": 38,
+              "message": "identical body also in: convex/lib/extensionAuth.ts, convex/lib/promoCodes.ts"
+            },
+            {
+              "file": "convex/lib/promoCodes.ts",
+              "line": 59,
+              "message": "identical body also in: convex/lib/extensionAuth.ts, convex/lib/mcpApiKeys.ts"
+            },
+            {
+              "file": "convex/lib/publicApplicationEmailIdentity.ts",
+              "line": 16,
+              "message": "identical body also in: convex/lib/publicApplicationIngressAuth.ts"
+            },
+            {
+              "file": "convex/lib/publicApplicationIngressAuth.ts",
+              "line": 19,
+              "message": "identical body also in: convex/lib/publicApplicationEmailIdentity.ts"
+            },
+            {
+              "file": "convex/lib/publicApplicationEmailIdentity.ts",
+              "line": 24,
+              "message": "identical body also in: convex/lib/publicApplicationIngressAuth.ts"
+            },
+            {
+              "file": "convex/lib/publicApplicationIngressAuth.ts",
+              "line": 23,
+              "message": "identical body also in: convex/lib/publicApplicationEmailIdentity.ts"
+            },
+            {
+              "file": "convex/lib/recruiterChatPrimaryDecision.ts",
+              "line": 148,
+              "message": "identical body also in: convex/lib/recruiterChatTurn.ts"
+            },
+            {
+              "file": "convex/lib/recruiterChatTurn.ts",
+              "line": 302,
+              "message": "identical body also in: convex/lib/recruiterChatPrimaryDecision.ts"
+            },
+            {
+              "file": "convex/lib/recruiterChatQaTargetPolicy.ts",
+              "line": 279,
+              "message": "identical body also in: convex/qaBrowserAccounts.ts"
+            },
+            {
+              "file": "convex/qaBrowserAccounts.ts",
+              "line": 65,
+              "message": "identical body also in: convex/lib/recruiterChatQaTargetPolicy.ts"
+            },
+            {
+              "file": "convex/lib/shareViewerProofCrypto.ts",
+              "line": 3,
+              "message": "identical body also in: shared/authNetworkSignal.ts"
+            },
+            {
+              "file": "shared/authNetworkSignal.ts",
+              "line": 34,
+              "message": "identical body also in: convex/lib/shareViewerProofCrypto.ts"
+            },
+            {
+              "file": "extensions/sift-chrome/popup.ts",
+              "line": 282,
+              "message": "identical body also in: extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx"
+            },
+            {
+              "file": "extensions/sift-chrome/src/api/client.ts",
+              "line": 36,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx"
+            },
+            {
+              "file": "extensions/sift-chrome/src/background/submitPipeline.ts",
+              "line": 167,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx"
+            },
+            {
+              "file": "extensions/sift-chrome/src/storage/durableRetryContext.ts",
+              "line": 17,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx"
+            },
+            {
+              "file": "extensions/sift-chrome/src/storage/settings.ts",
+              "line": 17,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx"
+            },
+            {
+              "file": "src/lib/public-application-ingress-client.ts",
+              "line": 98,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx"
+            },
+            {
+              "file": "src/routes/api/public-applications/submissions.ts",
+              "line": 79,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx"
+            },
+            {
+              "file": "src/routes/api/public-applications/uploads.ts",
+              "line": 51,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/evals/index.tsx"
+            },
+            {
+              "file": "src/routes/evals/index.tsx",
+              "line": 623,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts"
+            },
+            {
+              "file": "scripts/recruiterChatEvals/langfuseUpload.ts",
+              "line": 138,
+              "message": "identical body also in: scripts/recruiterChatEvals/tracePromotion.ts"
+            },
+            {
+              "file": "scripts/recruiterChatEvals/tracePromotion.ts",
+              "line": 87,
+              "message": "identical body also in: scripts/recruiterChatEvals/langfuseUpload.ts"
+            },
+            {
+              "file": "scripts/recruiterChatEvals/langfuseUpload.ts",
+              "line": 434,
+              "message": "identical body also in: scripts/recruiterChatEvals/tracePromotion.ts"
+            },
+            {
+              "file": "scripts/recruiterChatEvals/tracePromotion.ts",
+              "line": 95,
+              "message": "identical body also in: scripts/recruiterChatEvals/langfuseUpload.ts"
+            },
+            {
+              "file": "shared/compareChipPhrase.ts",
+              "line": 54,
+              "message": "identical body also in: shared/comparePhraseCompress.ts"
+            },
+            {
+              "file": "shared/comparePhraseCompress.ts",
+              "line": 54,
+              "message": "identical body also in: shared/compareChipPhrase.ts"
+            },
+            {
+              "file": "shared/resumeTextNormalize.ts",
+              "line": 49,
+              "message": "identical body also in: src/components/ChatWidget.tsx, src/lib/chatWidgetDisplay.ts"
+            },
+            {
+              "file": "src/components/ChatWidget.tsx",
+              "line": 2225,
+              "message": "identical body also in: shared/resumeTextNormalize.ts, src/lib/chatWidgetDisplay.ts"
+            },
+            {
+              "file": "src/lib/chatWidgetDisplay.ts",
+              "line": 265,
+              "message": "identical body also in: shared/resumeTextNormalize.ts, src/components/ChatWidget.tsx"
+            },
+            {
+              "file": "src/components/PaginationControls.tsx",
+              "line": 18,
+              "message": "identical body also in: src/components/jobs/ApplicationsTabPanel.tsx"
+            },
+            {
+              "file": "src/components/jobs/ApplicationsTabPanel.tsx",
+              "line": 96,
+              "message": "identical body also in: src/components/PaginationControls.tsx"
+            },
+            {
+              "file": "src/components/apply/JobDescriptionDisplay.tsx",
+              "line": 309,
+              "message": "identical body also in: src/components/jobs/wizard/JobWizardLivePreview.tsx"
+            },
+            {
+              "file": "src/components/jobs/wizard/JobWizardLivePreview.tsx",
+              "line": 392,
+              "message": "identical body also in: src/components/apply/JobDescriptionDisplay.tsx"
+            },
+            {
+              "file": "src/components/jobs/ApplicationsTabPanel.tsx",
+              "line": 369,
+              "message": "identical body also in: src/routes/jobs/$jobId/-components/ApplicationsSection.tsx, src/routes/jobs/$jobId/candidates/$applicationId.tsx, src/routes/jobs/$jobId/index.tsx, src/routes/jobs/index.tsx"
+            },
+            {
+              "file": "src/routes/jobs/$jobId/-components/ApplicationsSection.tsx",
+              "line": 54,
+              "message": "identical body also in: src/components/jobs/ApplicationsTabPanel.tsx, src/routes/jobs/$jobId/candidates/$applicationId.tsx, src/routes/jobs/$jobId/index.tsx, src/routes/jobs/index.tsx"
+            },
+            {
+              "file": "src/routes/jobs/$jobId/candidates/$applicationId.tsx",
+              "line": 2535,
+              "message": "identical body also in: src/components/jobs/ApplicationsTabPanel.tsx, src/routes/jobs/$jobId/-components/ApplicationsSection.tsx, src/routes/jobs/$jobId/index.tsx, src/routes/jobs/index.tsx"
+            },
+            {
+              "file": "src/routes/jobs/$jobId/index.tsx",
+              "line": 1906,
+              "message": "identical body also in: src/components/jobs/ApplicationsTabPanel.tsx, src/routes/jobs/$jobId/-components/ApplicationsSection.tsx, src/routes/jobs/$jobId/candidates/$applicationId.tsx, src/routes/jobs/index.tsx"
+            },
+            {
+              "file": "src/routes/jobs/index.tsx",
+              "line": 1237,
+              "message": "identical body also in: src/components/jobs/ApplicationsTabPanel.tsx, src/routes/jobs/$jobId/-components/ApplicationsSection.tsx, src/routes/jobs/$jobId/candidates/$applicationId.tsx, src/routes/jobs/$jobId/index.tsx"
+            },
+            {
+              "file": "src/components/social-cross-reference/SocialCrossReferenceSection.tsx",
+              "line": 112,
+              "message": "identical body also in: src/lib/social-cross-reference-view-model.ts"
+            },
+            {
+              "file": "src/lib/social-cross-reference-view-model.ts",
+              "line": 420,
+              "message": "identical body also in: src/components/social-cross-reference/SocialCrossReferenceSection.tsx"
+            },
+            {
+              "file": "src/lib/public-application-ingress-client.ts",
+              "line": 102,
+              "message": "identical body also in: src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts"
+            },
+            {
+              "file": "src/routes/api/public-applications/submissions.ts",
+              "line": 218,
+              "message": "identical body also in: src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/uploads.ts"
+            },
+            {
+              "file": "src/routes/api/public-applications/uploads.ts",
+              "line": 66,
+              "message": "identical body also in: src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts"
+            },
+            {
+              "file": "src/routes/api/public-applications/submissions.ts",
+              "line": 66,
+              "message": "identical body also in: src/routes/api/public-applications/uploads.ts"
+            },
+            {
+              "file": "src/routes/api/public-applications/uploads.ts",
+              "line": 38,
+              "message": "identical body also in: src/routes/api/public-applications/submissions.ts"
+            },
+            {
+              "file": "src/routes/api/public-applications/submissions.ts",
+              "line": 226,
+              "message": "identical body also in: src/routes/api/public-applications/uploads.ts"
+            },
+            {
+              "file": "src/routes/api/public-applications/uploads.ts",
+              "line": 74,
+              "message": "identical body also in: src/routes/api/public-applications/submissions.ts"
+            },
+            {
+              "file": "src/routes/api/public-applications/submissions.ts",
+              "line": 236,
+              "message": "identical body also in: src/routes/api/public-applications/uploads.ts"
+            },
+            {
+              "file": "src/routes/api/public-applications/uploads.ts",
+              "line": 84,
+              "message": "identical body also in: src/routes/api/public-applications/submissions.ts"
+            },
+            {
+              "file": "src/routes/applications.tsx",
+              "line": 261,
+              "message": "identical body also in: src/routes/jobs/$jobId/index.tsx"
+            },
+            {
+              "file": "src/routes/jobs/$jobId/index.tsx",
+              "line": 106,
+              "message": "identical body also in: src/routes/applications.tsx"
+            },
+            {
+              "file": "src/routes/applications.tsx",
+              "line": 273,
+              "message": "identical body also in: src/routes/jobs/$jobId/index.tsx"
+            },
+            {
+              "file": "src/routes/jobs/$jobId/index.tsx",
+              "line": 118,
+              "message": "identical body also in: src/routes/applications.tsx"
+            },
+            {
+              "file": "src/routes/applications.tsx",
+              "line": 1452,
+              "message": "identical body also in: src/routes/jobs/index.tsx"
+            },
+            {
+              "file": "src/routes/jobs/index.tsx",
+              "line": 1213,
+              "message": "identical body also in: src/routes/applications.tsx"
+            }
+          ]
+        },
+        {
+          "rule": "export-without-any-consumer",
+          "heading": "A named export with no consumer found - a deletion candidate, pending the blind spots below.",
+          "severity": "info",
+          "findings": [
+            {
+              "file": "convex/analysis/evidence.ts",
+              "line": 786,
+              "message": "candidate: no consumer found for buildEvidencePrompt"
+            },
+            {
+              "file": "convex/analysis/fit.ts",
+              "line": 1428,
+              "message": "candidate: no consumer found for buildFitPrompt"
+            },
+            {
+              "file": "convex/analysis/gaps.ts",
+              "line": 152,
+              "message": "candidate: no consumer found for finalizeHardCredentialFromRequirement"
+            },
+            {
+              "file": "convex/analysis/internal.ts",
+              "line": 59,
+              "message": "candidate: no consumer found for clearAnalysisStatusesHelper"
+            },
+            {
+              "file": "convex/analysis/jsonExtractor.ts",
+              "line": 135,
+              "message": "candidate: no consumer found for supportsStructuredOutput"
+            },
+            {
+              "file": "convex/analysis/piiRemoval.ts",
+              "line": 674,
+              "message": "candidate: no consumer found for redactPIIForTest"
+            },
+            {
+              "file": "convex/analysis/proportionalScore.ts",
+              "line": 100,
+              "message": "candidate: no consumer found for requirementProportionalWeight"
+            },
+            {
+              "file": "convex/analysis/verification.ts",
+              "line": 1236,
+              "message": "candidate: no consumer found for verifyGitHub"
+            },
+            {
+              "file": "convex/analysis/verificationInsights.ts",
+              "line": 71,
+              "message": "candidate: no consumer found for normalizeEvidence"
+            },
+            {
+              "file": "convex/analysis/verificationScrape.ts",
+              "line": 125,
+              "message": "candidate: no consumer found for scrapeWithFirecrawlV2"
+            },
+            {
+              "file": "convex/chat.ts",
+              "line": 971,
+              "message": "candidate: no consumer found for buildSystemPrompt"
+            },
+            {
+              "file": "convex/chatGoldenQuestions.ts",
+              "line": 62,
+              "message": "candidate: no consumer found for assertGoldenBlockedCoverage"
+            },
+            {
+              "file": "convex/chatGoldenQuestions.ts",
+              "line": 74,
+              "message": "candidate: no consumer found for assertGoldenAllowedCoverage"
+            },
+            {
+              "file": "convex/chatTools.ts",
+              "line": 910,
+              "message": "candidate: no consumer found for compareByScoreDesc"
+            },
+            {
+              "file": "convex/evals/registry.ts",
+              "line": 516,
+              "message": "candidate: no consumer found for getPromptsByCategory"
+            },
+            {
+              "file": "convex/evals/registry.ts",
+              "line": 525,
+              "message": "candidate: no consumer found for getAllPromptSlugs"
+            },
+            {
+              "file": "convex/evals/renderer.ts",
+              "line": 141,
+              "message": "candidate: no consumer found for previewPrompt"
+            },
+            {
+              "file": "convex/evals/renderer.ts",
+              "line": 213,
+              "message": "candidate: no consumer found for getFieldInfo"
+            },
+            {
+              "file": "convex/evals/validator.ts",
+              "line": 140,
+              "message": "candidate: no consumer found for hasOutputSchema"
+            },
+            {
+              "file": "convex/hiring/consumerRead.ts",
+              "line": 116,
+              "message": "candidate: no consumer found for payloadLeaksProtectedHiring"
+            },
+            {
+              "file": "convex/hiring/consumerRead.ts",
+              "line": 125,
+              "message": "candidate: no consumer found for hiringCsvStageLabel"
+            },
+            {
+              "file": "convex/hiring/consumerRead.ts",
+              "line": 193,
+              "message": "candidate: no consumer found for projectHiringForTrustedJobExport"
+            },
+            {
+              "file": "convex/hiring/stateRead.ts",
+              "line": 284,
+              "message": "candidate: no consumer found for hiringApplicationRow"
+            },
+            {
+              "file": "convex/lib/applicationFileUploads.ts",
+              "line": 501,
+              "message": "candidate: no consumer found for deleteUnattachedApplicationFileUploads"
+            },
+            {
+              "file": "convex/lib/authHelpers.ts",
+              "line": 270,
+              "message": "candidate: no consumer found for requireSelfOrThrow"
+            },
+            {
+              "file": "convex/lib/authHelpers.ts",
+              "line": 291,
+              "message": "candidate: no consumer found for getAuthOptional"
+            },
+            {
+              "file": "convex/lib/billing.ts",
+              "line": 280,
+              "message": "candidate: no consumer found for getBillingAudienceForOrgType"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 458,
+              "message": "candidate: no consumer found for getTierAudienceForLegacyPlanKey"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 477,
+              "message": "candidate: no consumer found for getScanAllowanceForTier"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 493,
+              "message": "candidate: no consumer found for getTrialDaysForTier"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 499,
+              "message": "candidate: no consumer found for isEnterprisePlan"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 503,
+              "message": "candidate: no consumer found for isPaidPlan"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 507,
+              "message": "candidate: no consumer found for isTrialTier"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 511,
+              "message": "candidate: no consumer found for isPaidTier"
+            },
+            {
+              "file": "convex/lib/chatAnswerComposer.ts",
+              "line": 609,
+              "message": "candidate: no consumer found for composeChatAnswerForNamedTurn"
+            },
+            {
+              "file": "convex/lib/chatAnswerComposer.ts",
+              "line": 636,
+              "message": "candidate: no consumer found for normalizeComposedAnswerLabel"
+            },
+            {
+              "file": "convex/lib/chatApplicationAnalysisPayload.ts",
+              "line": 61,
+              "message": "candidate: no consumer found for buildChatAnalysisListPayload"
+            },
+            {
+              "file": "convex/lib/chatCareerTimeline.ts",
+              "line": 204,
+              "message": "candidate: no consumer found for buildEmployerNeutralCareerTimeline"
+            },
+            {
+              "file": "convex/lib/chatPrivateEntitySafety.ts",
+              "line": 94,
+              "message": "candidate: no consumer found for isPrivateEntityResumeQuestion"
+            },
+            {
+              "file": "convex/lib/chatPrivateEntitySafety.ts",
+              "line": 108,
+              "message": "candidate: no consumer found for isWorkAuthorizationRecruitingSearch"
+            },
+            {
+              "file": "convex/lib/companySizes.ts",
+              "line": 33,
+              "message": "candidate: no consumer found for getCompanySizeBucketForEmployeeCount"
+            },
+            {
+              "file": "convex/lib/extensionAuth.ts",
+              "line": 113,
+              "message": "candidate: no consumer found for hasExtensionScope"
+            },
+            {
+              "file": "convex/lib/fileValidation.ts",
+              "line": 95,
+              "message": "candidate: no consumer found for validateStorageFile"
+            },
+            {
+              "file": "convex/lib/firecrawlClient.ts",
+              "line": 316,
+              "message": "candidate: no consumer found for scrapeFirecrawlUrlsEffect"
+            },
+            {
+              "file": "convex/lib/recruiterChatModel.ts",
+              "line": 142,
+              "message": "candidate: no consumer found for collectRecruiterChatToolExecutions"
+            },
+            {
+              "file": "convex/lib/recruiterChatModel.ts",
+              "line": 372,
+              "message": "candidate: no consumer found for classifyRecruiterChatContextRelationWithModel"
+            },
+            {
+              "file": "convex/lib/recruiterSearchContext.ts",
+              "line": 365,
+              "message": "candidate: no consumer found for legacyRecruiterCandidateSearchCriteriaFromStorage"
+            },
+            {
+              "file": "convex/lib/resumeOrgRedaction.ts",
+              "line": 374,
+              "message": "candidate: no consumer found for isExperienceEmployerName"
+            },
+            {
+              "file": "convex/lib/stripe.ts",
+              "line": 19,
+              "message": "candidate: no consumer found for getStripePublishableKey"
+            },
+            {
+              "file": "convex/lib/supportForm.ts",
+              "line": 5,
+              "message": "candidate: no consumer found for SUPPORT_SLA_TEXT"
+            },
+            {
+              "file": "convex/lib/supportForm.ts",
+              "line": 95,
+              "message": "candidate: no consumer found for formatSupportTicketId"
+            },
+            {
+              "file": "convex/lib/validation.ts",
+              "line": 174,
+              "message": "candidate: no consumer found for validateOptionalEmail"
+            },
+            {
+              "file": "extensions/sift-chrome/src/storage/settings.ts",
+              "line": 75,
+              "message": "candidate: no consumer found for clearSettings"
+            },
+            {
+              "file": "shared/chatTurnPlanner.ts",
+              "line": 27,
+              "message": "candidate: no consumer found for resolveChatAnswerMode"
+            },
+            {
+              "file": "shared/compareChipPhrase.ts",
+              "line": 6,
+              "message": "candidate: no consumer found for TARGET_COMPARE_CHIP_WORDS_MIN"
+            },
+            {
+              "file": "shared/comparePhraseCompress.ts",
+              "line": 4,
+              "message": "candidate: no consumer found for MAX_COMPARE_REQUIREMENT_WORDS"
+            },
+            {
+              "file": "shared/comparePhraseCompress.ts",
+              "line": 5,
+              "message": "candidate: no consumer found for MAX_COMPARE_CHIP_WORDS"
+            },
+            {
+              "file": "shared/resumeTextNormalize.ts",
+              "line": 30,
+              "message": "candidate: no consumer found for RESUME_SECTION_BLOCKLIST"
+            },
+            {
+              "file": "src/components/jobs/GeneratedJDPreview.tsx",
+              "line": 21,
+              "message": "candidate: no consumer found for GeneratedJDPreview"
+            },
+            {
+              "file": "src/components/jobs/SocialFieldsConfigurator.tsx",
+              "line": 20,
+              "message": "candidate: no consumer found for SocialFieldsConfigurator"
+            },
+            {
+              "file": "src/components/jobs/wizard/constants.ts",
+              "line": 68,
+              "message": "candidate: no consumer found for SENIORITY_LABELS"
+            },
+            {
+              "file": "src/components/jobs/wizard/primitives/WizardChipGroup.tsx",
+              "line": 12,
+              "message": "candidate: no consumer found for WizardChipGroup"
+            },
+            {
+              "file": "src/components/landing/LaunchPricingLink.tsx",
+              "line": 7,
+              "message": "candidate: no consumer found for LaunchPricingLink"
+            },
+            {
+              "file": "src/components/settings/ColorWheelIcon.tsx",
+              "line": 4,
+              "message": "candidate: no consumer found for ColorWheelIcon"
+            },
+            {
+              "file": "src/components/settings/SettingsTabPanel.tsx",
+              "line": 68,
+              "message": "candidate: no consumer found for resolveSettingsTabMetaForOrg"
+            },
+            {
+              "file": "src/components/settings/job-defaults/JobDefaultsSectionNav.tsx",
+              "line": 120,
+              "message": "candidate: no consumer found for JobDefaultsIconBadge"
+            },
+            {
+              "file": "src/lib/analysis-requirement-summary.ts",
+              "line": 448,
+              "message": "candidate: no consumer found for buildEvidenceSummaryText"
+            },
+            {
+              "file": "src/lib/analysis-requirement-summary.ts",
+              "line": 477,
+              "message": "candidate: no consumer found for pickCoreTransferableHighlight"
+            },
+            {
+              "file": "src/lib/analysis-requirement-summary.ts",
+              "line": 544,
+              "message": "candidate: no consumer found for formatTransferableSummaryTarget"
+            },
+            {
+              "file": "src/lib/analysis-status-colors.ts",
+              "line": 14,
+              "message": "candidate: no consumer found for TRANSFERABLE_ACCENT_HEX"
+            },
+            {
+              "file": "src/lib/analysis-status-colors.ts",
+              "line": 40,
+              "message": "candidate: no consumer found for TRANSFERABLE_ROW_ACCENT_CLASS"
+            },
+            {
+              "file": "src/lib/bulk-resume-intake.ts",
+              "line": 535,
+              "message": "candidate: no consumer found for selectBulkResumeFiles"
+            },
+            {
+              "file": "src/lib/bulk-resume-intake.ts",
+              "line": 621,
+              "message": "candidate: no consumer found for validateBulkResumeSubmitCapacity"
+            },
+            {
+              "file": "src/lib/compareCandidates.ts",
+              "line": 355,
+              "message": "candidate: no consumer found for buildLockedRequirementRows"
+            },
+            {
+              "file": "src/lib/compareDisplayCompact.ts",
+              "line": 22,
+              "message": "candidate: no consumer found for MAX_COMPARE_PHRASE_CHARS"
+            },
+            {
+              "file": "src/lib/compareDisplayCompact.ts",
+              "line": 23,
+              "message": "candidate: no consumer found for MAX_COMPARE_BULLET_CHARS"
+            },
+            {
+              "file": "src/lib/contact-sales.ts",
+              "line": 1,
+              "message": "candidate: no consumer found for CONTACT_SALES_EMAIL"
+            },
+            {
+              "file": "src/lib/eval-auth.ts",
+              "line": 37,
+              "message": "candidate: no consumer found for hasEvalToken"
+            },
+            {
+              "file": "src/lib/extension-connect-client.ts",
+              "line": 64,
+              "message": "candidate: no consumer found for getPersistedExtensionToken"
+            },
+            {
+              "file": "src/lib/extension-connect-client.ts",
+              "line": 118,
+              "message": "candidate: no consumer found for createPairingPayload"
+            },
+            {
+              "file": "src/lib/extension-connect-client.ts",
+              "line": 130,
+              "message": "candidate: no consumer found for exchangePairingCodeWithApi"
+            },
+            {
+              "file": "src/lib/extension-connect-client.ts",
+              "line": 179,
+              "message": "candidate: no consumer found for revokeConnectedToken"
+            },
+            {
+              "file": "src/lib/job-defaults-snapshot.ts",
+              "line": 103,
+              "message": "candidate: no consumer found for jobDefaultsSnapshotsEqual"
+            },
+            {
+              "file": "src/lib/job-types.ts",
+              "line": 30,
+              "message": "candidate: no consumer found for salaryPeriodLabels"
+            },
+            {
+              "file": "src/lib/use-stable-convex-query.ts",
+              "line": 4,
+              "message": "candidate: no consumer found for clearSettingsQueryCache"
+            },
+            {
+              "file": "src/lib/utils.ts",
+              "line": 202,
+              "message": "candidate: no consumer found for VERIFICATION_BLOCKED_REGEX"
+            },
+            {
+              "file": "src/lib/utils.ts",
+              "line": 255,
+              "message": "candidate: no consumer found for cleanVerificationBulletLine"
+            },
+            {
+              "file": "src/routes/jobs/$jobId/-components/ApplicationsSection.tsx",
+              "line": 204,
+              "message": "candidate: no consumer found for ApplicationsSection"
+            },
+            {
+              "file": "src/routes/jobs/$jobId/-hooks/useJobApplicantExport.ts",
+              "line": 14,
+              "message": "candidate: no consumer found for useJobApplicantExport"
+            }
+          ]
+        }
+      ],
+      "blindSpots": [
+        "Helpers: only function declarations are compared (arrow-const helpers and class methods are not), bodies must normalize to identical text, and trivial bodies under ~60 characters are ignored. Doctor programs (doctors/) and compiled output (bin/, dist/, build/) are exempt - the single-file law mandates copies, and build artifacts mirror their sources by construction.",
+        "Dead exports: entry-point-shaped files (cli, main, index, server, app, mod, anything under bin/, scripts/, or doctors/ - doctor programs are consumed by the loader's dynamic import) are exempt entirely, and a name counts as consumed when ANY other file imports that name from ANYWHERE, so same-name imports from other modules can mask a dead export. Dynamic import() and string-built references are not resolved; test-file consumers are invisible in the default run (pass --include-tests to count them).",
+        "Bindings: the analysis engine resolves value positions only - a binding used purely as a type never becomes a reference. The text-occurrence guard keeps those out of findings, but a name reused in comments or strings can mask a genuinely dead binding. Parameter and catch bindings are not checked.",
+        "Hostname: only .includes()/startsWith shapes against known environment tokens on host/URL-ish receivers are seen; URL parsing, DNS suffix checks, and configured-base-URL-first flows are not.",
+        "Substring matches: only OR-chains whose literal arguments overlap by prefix are flagged; a single unbounded stem that silently matches longer words is not seen.",
+        "Boolean collapse: the shape requires a ?? -defaulted boolean later tested with `=== true ?`; switches, explicit typeof branches, and collapses without a nullish default are not recognized.",
+        "Abbreviation regexes: only bare 1-5 letter case-insensitive patterns without anchors or word boundaries used with .test()/.match() are flagged; longer patterns and compiled RegExp objects are not seen.",
+        "Declaration files (.d.ts) are skipped entirely: they declare types, not behavior - a `declare const` is a contract, not a dead binding.",
+        "This doctor needs the identity engine for three checks (dead exports, unread bindings, unused imports); without it those narrow to silence and the report says so."
+      ]
+    }
+  ],
+  "crashed": [],
+  "skippedUnsafe": [],
+  "gate": {
+    "failOn": "none",
+    "mode": "full",
+    "fails": false
+  }
+}

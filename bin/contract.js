@@ -78,35 +78,29 @@ export function runCommandFor(doctorPath, root, invoker = "any-doctor") {
 // A finding or expectation without a rule keys on "" — rule-less expected
 // matches rule-less findings only.
 export function compareFindings(expected, actual) {
-    var _a, _b, _c, _d, _e;
-    const key = (f) => { var _a; return `${(_a = f.rule) !== null && _a !== void 0 ? _a : ""}:${f.file}:${f.line}`; };
-    const asDiffEntry = (f) => f.rule === undefined ? { file: f.file, line: f.line } : { rule: f.rule, file: f.file, line: f.line };
-    // Expectations are a consumption budget per key: each matching actual
-    // satisfies one, further actuals are unexpected, unsatisfied
-    // expectations are missing.
+    var _a, _b, _c;
+    const key = (f) => { var _a; return JSON.stringify([(_a = f.rule) !== null && _a !== void 0 ? _a : "", f.file, f.line]); };
+    const entry = (f) => ({
+        ...(f.rule === undefined ? {} : { rule: f.rule }), file: f.file, line: f.line,
+        ...(f.column === undefined ? {} : { column: f.column }),
+    });
     const budget = new Map();
-    for (const e of expected)
-        budget.set(key(e), ((_a = budget.get(key(e))) !== null && _a !== void 0 ? _a : 0) + 1);
-    const satisfied = new Map();
+    for (const e of expected) {
+        const rows = (_a = budget.get(key(e))) !== null && _a !== void 0 ? _a : [];
+        rows.push({ expected: e, used: false });
+        budget.set(key(e), rows);
+    }
     const unexpected = [];
     for (const a of actual) {
-        const k = key(a);
-        const n = (_b = satisfied.get(k)) !== null && _b !== void 0 ? _b : 0;
-        if (n < ((_c = budget.get(k)) !== null && _c !== void 0 ? _c : 0))
-            satisfied.set(k, n + 1);
+        const rows = (_b = budget.get(key(a))) !== null && _b !== void 0 ? _b : [];
+        // Consume exact columns before legacy wildcard expectations.
+        const match = (_c = rows.find(r => !r.used && r.expected.column !== undefined && r.expected.column === a.column)) !== null && _c !== void 0 ? _c : rows.find(r => !r.used && r.expected.column === undefined);
+        if (match)
+            match.used = true;
         else
-            unexpected.push(asDiffEntry(a));
+            unexpected.push(entry(a));
     }
-    const missing = [];
-    const matchedExpectations = new Map();
-    for (const e of expected) {
-        const k = key(e);
-        const n = (_d = matchedExpectations.get(k)) !== null && _d !== void 0 ? _d : 0;
-        if (n < ((_e = satisfied.get(k)) !== null && _e !== void 0 ? _e : 0))
-            matchedExpectations.set(k, n + 1);
-        else
-            missing.push(asDiffEntry(e));
-    }
+    const missing = [...budget.values()].flatMap(rows => rows.filter(r => !r.used).map(r => entry(r.expected)));
     return { missing, unexpected };
 }
 // The degradation contract's one projection (D20 Stage 2): which checks

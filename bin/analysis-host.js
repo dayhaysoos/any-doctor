@@ -1,11 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
-import { analysisStatus, analyzeBindings, analyzeSpans } from "./analysis.js";
+import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls } from "./analysis.js";
 import { searchBase, withinBase } from "./search-host.js";
 // One cache per host process. The host lives in the runner process, so
 // the lifetime is the any-doctor invocation; across a cohort's doctors
 // the same unchanged file answers from memory.
 const modelCache = new Map();
+const callsCache = new Map();
 const spansCache = new Map();
 // Test seam: the model cache is keyed by mtime+size for the process
 // lifetime; tests bust it between cases. Invisible to slop-doctor's
@@ -13,8 +14,9 @@ const spansCache = new Map();
 export function clearAnalysisCache() {
     modelCache.clear();
     spansCache.clear();
+    callsCache.clear();
 }
-export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, status = analysisStatus, spansAnalyzer = analyzeSpans) {
+export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, status = analysisStatus, spansAnalyzer = analyzeSpans, callsAnalyzer = analyzeCalls) {
     const base = searchBase(mode);
     const root = typeof req.root === "string" ? path.resolve(req.root) : "";
     if (base === "" || !withinBase(root, base)) {
@@ -24,7 +26,7 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
         const s = status();
         return s.available ? { available: true } : { available: false, reason: s.reason };
     }
-    if (req.kind === "bindings" || req.kind === "spans") {
+    if (req.kind === "bindings" || req.kind === "spans" || req.kind === "calls") {
         if (typeof req.file !== "string" || req.file === "") {
             return { error: `ctx.analysis.${req.kind} needs a "file" path` };
         }
@@ -35,9 +37,11 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
         if (req.kind === "bindings") {
             return cachedModel(abs, root, modelCache, analyzer, req.file);
         }
+        if (req.kind === "calls")
+            return cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
         return cachedModel(abs, root, spansCache, spansAnalyzer, req.file);
     }
-    return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans` };
+    return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans, calls` };
 }
 // The shared per-file model lifecycle: stat (cache hit on mtime+size),
 // read, compute, cache. Bindings and spans are the same policy over two

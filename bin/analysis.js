@@ -272,6 +272,16 @@ function addRanges(node) {
     const n = node;
     if (typeof n.start === "number" && typeof n.end === "number")
         n.range = [n.start, n.end];
+    if (["ClassDeclaration", "ClassExpression", "MethodDefinition", "PropertyDefinition", "AccessorProperty"].includes(String(n.type)) && n.decorators === undefined)
+        n.decorators = [];
+    if (["ClassDeclaration", "ClassExpression"].includes(String(n.type)) && n.implements === undefined)
+        n.implements = [];
+    // OXC omits parameter decorators in JS; the TS scope adapter expects an array.
+    if (Array.isArray(n.params))
+        for (const param of n.params) {
+            if (isNode(param) && param.decorators === undefined)
+                param.decorators = [];
+        }
     for (const key of Object.keys(n)) {
         if (key === "range" || key === "start" || key === "end")
             continue;
@@ -315,3 +325,161 @@ function lowerBound(sorted, value) {
     }
     return lo;
 }
+// Call relationships and receiver identities are language facts. The doctor
+// decides which imported factory and methods belong to its framework.
+export function analyzeCalls(file, source) {
+    var _a, _b;
+    const stack = loadStack();
+    if (stack.error !== undefined)
+        return { ok: false, error: stack.error };
+    try {
+        const parsed = stack.parseSync(file, source, { sourceType: "module" });
+        if (parsed.errors.length)
+            return { ok: false, error: `analysis failed to parse ${file}: ${parsed.errors[0].message}` };
+        const program = parsed.program;
+        addRanges(program);
+        const manager = stack.analyze(program, { sourceType: "module" });
+        const positions = positioner(source);
+        const parents = new Map();
+        const nodes = [];
+        const walk = (n, parent) => {
+            if (parent)
+                parents.set(n, parent);
+            nodes.push(n);
+            for (const [key, value] of Object.entries(n)) {
+                if (key === "comments" || key === "tokens")
+                    continue;
+                if (isNode(value))
+                    walk(value, n);
+                else if (Array.isArray(value))
+                    for (const item of value)
+                        if (isNode(item))
+                            walk(item, n);
+            }
+        };
+        walk(program);
+        const identities = new Map();
+        for (const scope of manager.scopes)
+            for (const variable of scope.variables) {
+                const def = variable.defs[0];
+                if (!def || !def.name.range)
+                    continue;
+                const info = {
+                    binding: def.name.range[0], written: variable.references.some(r => r.isWrite() && !r.init),
+                };
+                if (def.type === "ImportBinding" && def.parent.type === "ImportDeclaration") {
+                    info.source = String(def.parent.source.value);
+                    const spec = def.node;
+                    info.importedName = spec.type === "ImportNamespaceSpecifier" ? "*"
+                        : spec.type === "ImportDefaultSpecifier" ? "default" : (_a = propertyName(spec.imported)) !== null && _a !== void 0 ? _a : undefined;
+                }
+                identities.set(def.name, info);
+                for (const ref of variable.references)
+                    identities.set(ref.identifier, info);
+            }
+        const range = (n) => {
+            const [start, end] = n.range;
+            return { start, end, line: positions.line(start), column: positions.column(start), endLine: positions.line(end), endColumn: positions.column(end) };
+        };
+        const unwrap = (n) => {
+            while (TRANSPARENT_EXPRESSIONS.has(n.type) && isNode(n.expression))
+                n = n.expression;
+            return n;
+        };
+        const outer = (n) => {
+            let p = parents.get(n);
+            while (p && TRANSPARENT_EXPRESSIONS.has(p.type)) {
+                n = p;
+                p = parents.get(n);
+            }
+            return n;
+        };
+        const target = (expr) => {
+            var _a;
+            let n = unwrap(expr);
+            const members = [];
+            while (n.type === "MemberExpression" && !n.computed && isNode(n.object) && isNode(n.property)) {
+                const name = idName(n.property);
+                if (!name)
+                    break;
+                members.unshift(name);
+                n = unwrap(n.object);
+            }
+            if (n.type !== "Identifier")
+                return { root: null, members, binding: null };
+            const identity = identities.get(n);
+            return { root: idName(n), members, binding: (_a = identity === null || identity === void 0 ? void 0 : identity.binding) !== null && _a !== void 0 ? _a : null,
+                ...((identity === null || identity === void 0 ? void 0 : identity.written) ? { reassigned: true } : {}),
+                ...((identity === null || identity === void 0 ? void 0 : identity.source) && !identity.written ? { source: identity.source, importedName: identity.importedName } : {}) };
+        };
+        const functionStart = (n) => {
+            let p = parents.get(n);
+            while (p) {
+                if (FUNCTION_EXPRESSIONS.has(p.type))
+                    return p.range[0];
+                p = parents.get(p);
+            }
+            return null;
+        };
+        const functions = [];
+        const calls = [];
+        const differences = [];
+        const operand = (n) => {
+            n = unwrap(n);
+            if (n.type === "CallExpression")
+                return { call: n.range[0] };
+            const identity = identities.get(n);
+            return identity && !identity.written ? { binding: identity.binding } : {};
+        };
+        for (const n of nodes) {
+            if (FUNCTION_EXPRESSIONS.has(n.type)) {
+                const f = { ...range(n), parameters: n.params.map(p => { var _a, _b; return (_b = (_a = identities.get(p)) === null || _a === void 0 ? void 0 : _a.binding) !== null && _b !== void 0 ? _b : null; }) };
+                let child = outer(n), parent = parents.get(child), property = null;
+                if ((parent === null || parent === void 0 ? void 0 : parent.type) === "Property" && parent.value === child && !parent.computed) {
+                    property = propertyName(parent.key);
+                    child = parents.get(parent);
+                    parent = parents.get(child);
+                }
+                if ((parent === null || parent === void 0 ? void 0 : parent.type) === "CallExpression" && Array.isArray(parent.arguments)) {
+                    const argument = parent.arguments.indexOf(child);
+                    if (argument >= 0)
+                        f.registration = { target: target(parent.callee), property, argument };
+                }
+                functions.push(f);
+            }
+            if (n.type === "CallExpression") {
+                const child = outer(n), parent = parents.get(child);
+                const usage = (parent === null || parent === void 0 ? void 0 : parent.type) === "ExpressionStatement" ? "discarded"
+                    : (parent === null || parent === void 0 ? void 0 : parent.type) === "AwaitExpression" ? "awaited"
+                        : (parent === null || parent === void 0 ? void 0 : parent.type) === "ReturnStatement" || ((parent === null || parent === void 0 ? void 0 : parent.type) === "ArrowFunctionExpression" && parent.body === child) ? "returned"
+                            : (parent === null || parent === void 0 ? void 0 : parent.type) === "VariableDeclarator" || (parent === null || parent === void 0 ? void 0 : parent.type) === "AssignmentExpression" ? "stored"
+                                : (parent === null || parent === void 0 ? void 0 : parent.type) === "CallExpression" && parent.arguments.includes(child) ? "passed" : "unknown";
+                const call = { ...range(n), target: target(n.callee), usage, functionStart: functionStart(n), arguments: n.arguments.map(range) };
+                if ((parent === null || parent === void 0 ? void 0 : parent.type) === "VariableDeclarator" && parent.init === child && ((_b = parents.get(parent)) === null || _b === void 0 ? void 0 : _b.kind) === "const") {
+                    const id = identities.get(parent.id);
+                    if (id && !id.written)
+                        call.resultBinding = id.binding;
+                }
+                const callee = unwrap(n.callee);
+                if (callee.type === "MemberExpression" && isNode(callee.object)) {
+                    if (isNode(callee.property))
+                        call.memberRange = range(callee.property);
+                    const receiver = unwrap(callee.object);
+                    if (receiver.type === "CallExpression")
+                        call.receiverCall = receiver.range[1];
+                }
+                calls.push(call);
+            }
+            if (n.type === "BinaryExpression" && n.operator === "-")
+                differences.push({
+                    ...range(n), functionStart: functionStart(n), left: operand(n.left), right: operand(n.right),
+                });
+        }
+        return { ok: true, file: { file, calls, functions, differences } };
+    }
+    catch (e) {
+        return { ok: false, error: `analysis failed for ${file}: ${e instanceof Error ? e.message : String(e)}` };
+    }
+}
+const FUNCTION_EXPRESSIONS = new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"]);
+const TRANSPARENT_EXPRESSIONS = new Set(["TSAsExpression", "TSTypeAssertion", "TSNonNullExpression", "TSSatisfiesExpression", "ChainExpression", "ParenthesizedExpression"]);

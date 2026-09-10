@@ -50,6 +50,9 @@ export function validateClaimContract(mod) {
         if (!Array.isArray(c.lookalikes) || c.lookalikes.length === 0) {
             problems.push(`check "${String(c.id)}": lookalikes is required — at least one innocent shape that must stay silent`);
         }
+        if (c.reportingUnit !== undefined && !["occurrence", "file", "project"].includes(String(c.reportingUnit))) {
+            problems.push(`check "${String(c.id)}": reportingUnit must be occurrence, file, or project`);
+        }
         if (Array.isArray(c.needs) && c.needs.length > 0
             && (c.onUnknown !== "narrow" && c.onUnknown !== "skip")) {
             problems.push(`check "${String(c.id)}": onUnknown is required when needs is declared — "narrow" or "skip"`);
@@ -101,115 +104,10 @@ function collectSeed(dir, prefix, seed, skip) {
             seed[rel] = fs.readFileSync(abs, "utf8");
     }
 }
-// The duplicate-location sensitivity probe (D24, hardened in the review
-// loop): a doctor's own flag-shaped fixture — the one with the most
-// expected findings concentrated in a single seeded file — is re-planted
-// at three locations:
-//
-//   1. the original file, untouched (every fact the fixture proved);
-//   2. a byte-identical twin module (the cross-file location — checks
-//      whose violation is inherently cross-module must fire at both);
-//   3. a pair file: the violation twice INSIDE one file, wrapped in two
-//      functions (the billing.ts shape — identical chains in separate
-//      functions of one module, collapsed to one finding by a dedup keyed
-//      on normalized statement text).
-//
-// The pair file's bodies are transformed (exports stripped, imports
-// hoisted) so the two in-file copies stay byte-identical TO EACH OTHER —
-// which is exactly what a text-keyed dedup collapses. Assertions, counting
-// only the rules the fixture expected at that file (unrelated rules cannot
-// inflate a floor):
-//
-//   - original and twin must each independently reproduce the fixture's
-//     expected count;
-//   - when the witness fixture itself seeded TWO OR MORE expected findings
-//     in the one file (proof the check reports per-violation, not one
-//     verdict per file — openrouter's "no error check anywhere in the
-//     file" is a legitimate file-scoped claim), the pair file must yield
-//     at least 2x that count — UNLESS it yields zero, which is exempt by
-//     design: the pair wrap strips exports and nests bodies in functions,
-//     which can remove the very context a check needs (an export-keyed
-//     check cannot fire inside the pair file). Less-than-double but
-//     nonzero is the collapse signature — N identical violations in one
-//     file reduced to a single finding. Doctors whose every fixture
-//     seeds at most one violation per file get twin+original policing
-//     only and the probe row says so; the skill tells authors to seed a
-//     two-violation fixture so the probe can police same-file dedup.
-function buildDuplicateLocationProbe(fixtures) {
-    var _a;
-    // Witness selection: the flag-shaped fixture with the most expected
-    // findings in one seeded file — a 2-in-one-file witness catches per-file
-    // collapse directly; any 1-file witness still exercises the twin and
-    // pair locations.
-    let best = null;
-    for (const fixture of fixtures) {
-        const perFile = new Map();
-        for (const e of fixture.expected)
-            perFile.set(e.file, ((_a = perFile.get(e.file)) !== null && _a !== void 0 ? _a : 0) + 1);
-        for (const [file, count] of perFile) {
-            if (typeof fixture.seed[file] === "string" && (best === null || count > best.count)) {
-                best = { fixture, file, count };
-            }
-        }
-    }
-    if (best === null)
-        return null;
-    const { fixture, file: originalFile, count: expectedCount } = best;
-    // Rule-less expectations (no `rule` field) can only be matched by
-    // rule-less findings — key those as "" so the count filter keeps them.
-    const rules = new Set(fixture.expected
-        .filter((e) => e.file === originalFile)
-        .map((e) => { var _a; return (_a = e.rule) !== null && _a !== void 0 ? _a : ""; }));
-    const twinFile = "__probe_twin__/" + originalFile.split("/").pop();
-    const pairFile = "__probe_pair__/" + originalFile.split("/").pop();
-    if (typeof fixture.seed[twinFile] === "string" || typeof fixture.seed[pairFile] === "string")
-        return null;
-    const pairContent = pairFileContent(fixture.seed[originalFile]);
-    if (pairContent === null)
-        return null;
-    const seed = { ...fixture.seed, [twinFile]: fixture.seed[originalFile], [pairFile]: pairContent };
-    return {
-        seed,
-        fixtureName: fixture.name,
-        analysisOff: fixture.analysis === "off",
-        originalFile,
-        twinFile,
-        pairFile,
-        expectedCount,
-        rules,
-    };
-}
-// The in-file pair: the original content twice, each copy wrapped in a
-// function (module-level declarations cannot repeat, and both copies get
-// the identical transform so they stay byte-equal to each other).
-function pairFileContent(original) {
-    const lines = original.split("\n").filter((l) => !/^\s*import\b/.test(l) && !/^\s*export\s*\{/.test(l)
-        && !/^\s*export\s+type\s*\{/.test(l) && !/^\s*export\s+\*\s*from/.test(l));
-    const body = lines.map((l) => l
-        .replace(/^(\s*)export default (?=(?:async\s+)?(?:function|class)\b)/, "$1")
-        .replace(/^(\s*)export default /, "$1const __probeDefault = ")
-        .replace(/^(\s*)export (?=(?:async\s+)?(?:function|class|const|let|var|type|interface|enum|abstract|declare)\b)/, "$1")).join("\n");
-    if (body.trim().length === 0)
-        return null;
-    const imports = original.split("\n").filter((l) => /^\s*import\b/.test(l)).join("\n");
-    return [
-        imports,
-        imports ? "" : null,
-        "// any-doctor duplicate-location probe — copy 1",
-        "function __anyDoctorProbeA() {",
-        body,
-        "}",
-        "// copy 2 — same violation, different location, same file",
-        "function __anyDoctorProbeB() {",
-        body,
-        "}",
-        "",
-    ].filter((l) => l !== null).join("\n");
-}
 // The certification entry point: every policy, in gate order, as result
 // rows a verify frame can carry.
 export async function certify(mod, fixtures) {
-    var _a;
+    var _a, _b, _c, _d;
     validateClaimContract(mod);
     const results = [];
     // Only a doctor whose checks declare analysis needs can have
@@ -275,41 +173,45 @@ export async function certify(mod, fixtures) {
             results.push(errorRow("shared innocent corpus", e));
         }
     }
-    // The duplicate-location sensitivity probe (D24).
-    const probe = buildDuplicateLocationProbe(fixtures);
-    if (probe !== null) {
-        const name = `duplicate-location sensitivity (from "${probe.fixtureName}")` + (probe.expectedCount < 2
-            ? " — no two-in-one-file witness: same-file collapse unpolicied"
-            : "");
-        if (await skipFor(!probe.analysisOff)) {
-            results.push(skipRow(name));
+    // Explicit, context-preserving witnesses per check replace source rewriting.
+    // One sibling's fixture cannot establish another check's location coverage.
+    for (const check of (_a = mod.meta.checks) !== null && _a !== void 0 ? _a : []) {
+        const name = `location coverage: ${check.id}`;
+        if (!check.reportingUnit) {
+            results.push({ ...okRow(name), skipped: "reporting unit undeclared — location coverage not exercised" });
+            continue;
         }
+        if (((_b = check.needs) === null || _b === void 0 ? void 0 : _b.length) && await skipFor(true)) {
+            results.push(skipRow(name));
+            continue;
+        }
+        const witness = fixtures.find((fixture, index) => {
+            var _a, _b, _c, _d, _e;
+            if (!((_a = results[index]) === null || _a === void 0 ? void 0 : _a.ok) || ((_b = results[index]) === null || _b === void 0 ? void 0 : _b.skipped) || (((_c = check.needs) === null || _c === void 0 ? void 0 : _c.length) && fixture.analysis === "off"))
+                return false;
+            const hits = fixture.expected.filter(f => f.rule === check.id);
+            if (check.reportingUnit !== "occurrence")
+                return hits.length > 0;
+            const files = new Map();
+            for (const hit of hits) {
+                const lines = (_d = files.get(hit.file)) !== null && _d !== void 0 ? _d : new Map();
+                const columns = (_e = lines.get(hit.line)) !== null && _e !== void 0 ? _e : new Set();
+                columns.add(hit.column);
+                lines.set(hit.line, columns);
+                files.set(hit.file, lines);
+            }
+            // A line-only expectation overlaps every column on that line.
+            return [...files.values()].some(lines => [...lines.values()]
+                .reduce((count, columns) => count + (columns.has(undefined) ? 1 : columns.size), 0) >= 2);
+        });
+        if (witness)
+            results.push(okRow(name));
         else {
-            try {
-                setAnalysisDisabled(probe.analysisOff);
-                const findings = await inSandbox(probe.seed, (tmp) => runOnce(tmp, mod, { includeTests: true }))
-                    .then((r) => r.findings);
-                const at = (file) => findings.filter((f) => { var _a; return f.file === file && probe.rules.has((_a = f.rule) !== null && _a !== void 0 ? _a : ""); }).length;
-                const problems = [];
-                if (at(probe.originalFile) < probe.expectedCount) {
-                    problems.push(`the untouched original no longer produces its ${probe.expectedCount} finding(s) — got ${at(probe.originalFile)}`);
-                }
-                if (at(probe.twinFile) < probe.expectedCount) {
-                    problems.push(`the byte-identical twin module produces ${at(probe.twinFile)} finding(s) where ${probe.expectedCount} expected — a dedup keyed on statement text collapses distinct violations sharing a body`);
-                }
-                if (probe.expectedCount >= 2 && at(probe.pairFile) > 0 && at(probe.pairFile) < probe.expectedCount * 2) {
-                    problems.push(`the same violation planted twice in ONE file yields ${at(probe.pairFile)} finding(s) — the collapse signature (N identical violations reduced to one; the billing.ts bug class)`);
-                }
-                results.push(problems.length === 0
-                    ? okRow(name)
-                    : { ...errorRow(name, problems.join("; ")), missing: [], unexpected: [] });
-            }
-            catch (e) {
-                results.push(errorRow(name, e));
-            }
-            finally {
-                setAnalysisDisabled(false);
-            }
+            const reason = check.reportingUnit === "occurrence"
+                ? "requires a passing fixture with two distinct locations of this check in one file"
+                : "requires a passing positive fixture for this check";
+            const severity = (_c = check.severity) !== null && _c !== void 0 ? _c : mod.meta.severity;
+            results.push(severity === "info" ? { ...okRow(name), skipped: reason } : errorRow(name, reason));
         }
     }
     // The sensitivity corpus (D24): the innocent corpus's complement —
@@ -335,7 +237,7 @@ export async function certify(mod, fixtures) {
                 results.push({ ...okRow(name), ok: false, error: "unreadable expect.json: " + (e instanceof Error ? e.message : String(e)) });
                 continue;
             }
-            const expected = (_a = manifest === null || manifest === void 0 ? void 0 : manifest.expect) === null || _a === void 0 ? void 0 : _a[String(mod.meta.id)];
+            const expected = (_d = manifest === null || manifest === void 0 ? void 0 : manifest.expect) === null || _d === void 0 ? void 0 : _d[String(mod.meta.id)];
             if (!Array.isArray(expected))
                 continue;
             try {

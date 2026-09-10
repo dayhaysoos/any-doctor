@@ -167,6 +167,7 @@ export function renderJson(input, summary, gate, diff) {
                 findings: b.findings.map(f => ({
                     file: f.file,
                     line: f.line,
+                    ...(f.column !== undefined ? { column: f.column } : {}),
                     ...(f.severity !== undefined ? { severity: f.severity } : {}),
                     ...(f.message !== undefined ? { message: f.message } : {}),
                 })),
@@ -195,7 +196,7 @@ export function renderJson(input, summary, gate, diff) {
 // A diff entry's location includes its rule when it has one — the gate is
 // rule-aware (D20), so the line must say which check was missing or extra.
 function where(f) {
-    return (f.rule ? f.rule + " " : "") + f.file + ":" + f.line;
+    return (f.rule ? f.rule + " " : "") + f.file + ":" + f.line + (f.column === undefined ? "" : ":" + f.column);
 }
 // The narrowed notice's one wording (D20 Stage 2) — one source for every
 // branch that renders it (clean, findings, and empty-scan).
@@ -239,7 +240,7 @@ export function renderVerifyResult(result, useColor) {
             for (const u of fixture.unexpected)
                 lines.push("    " + c("unexpected finding", RED) + " " + where(u));
             if (fixture.error)
-                lines.push("    " + c("crashed: ", RED) + fixture.error);
+                lines.push("    " + c("failed: ", RED) + fixture.error);
         }
     }
     return lines.join("\n");

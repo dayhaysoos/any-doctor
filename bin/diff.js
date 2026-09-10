@@ -18,8 +18,8 @@ function git(args, cwd) {
     }
     return { ok: true, out: String(r.stdout).trim() };
 }
-function findingKey(rule, file, line) {
-    return `${rule !== null && rule !== void 0 ? rule : ""}:${file}:${line}`;
+function findingKey(rule, file, line, column) {
+    return `${rule !== null && rule !== void 0 ? rule : ""}:${file}:${line}:${column !== null && column !== void 0 ? column : ""}`;
 }
 // Join each unexpected diff entry back to the rich HEAD finding it
 // corresponds to (same key, in scan order) — the multiset diff counts
@@ -29,19 +29,20 @@ function joinAdded(unexpected, headGroups) {
     const byKey = new Map();
     for (const g of headGroups) {
         for (const f of g.findings) {
-            const q = (_a = byKey.get(findingKey(f.rule, f.file, f.line))) !== null && _a !== void 0 ? _a : [];
+            const q = (_a = byKey.get(findingKey(f.rule, f.file, f.line, f.column))) !== null && _a !== void 0 ? _a : [];
             q.push({ f, g });
-            byKey.set(findingKey(f.rule, f.file, f.line), q);
+            byKey.set(findingKey(f.rule, f.file, f.line, f.column), q);
         }
     }
     const out = [];
     for (const u of unexpected) {
-        const pair = (_b = byKey.get(findingKey(u.rule, u.file, u.line))) === null || _b === void 0 ? void 0 : _b.shift();
+        const pair = (_b = byKey.get(findingKey(u.rule, u.file, u.line, u.column))) === null || _b === void 0 ? void 0 : _b.shift();
         if (pair === undefined)
             continue; // unreachable: the entry came from those findings
         out.push({
             doctorId: pair.g.meta.id,
             ...(pair.f.rule !== undefined ? { rule: pair.f.rule } : {}),
+            ...(pair.f.column !== undefined ? { column: pair.f.column } : {}),
             file: pair.f.file,
             line: pair.f.line,
             severity: resolveFinding(pair.g.meta, pair.f).severity,

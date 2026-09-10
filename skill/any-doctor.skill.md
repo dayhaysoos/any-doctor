@@ -25,6 +25,10 @@ export const meta = {
       id: "<check-id>",               // short kebab noun phrase, [a-z0-9-], unique per doctor; name the defect
       description: "<finding text>",
       severity: "warning",
+      claim: "<observable condition established>",
+      lookalikes: ["<valid similar-looking case>"],
+      reportingUnit: "occurrence",        // occurrence | file | project
+      // needs: ["calls"], onUnknown: "skip", // when using optional analysis
       impact: "<one line: what goes wrong for the user if this ships>",
       why: "<one line: what in the code triggers this>",
       fix: "<one line: the corrective action>",
@@ -84,6 +88,13 @@ export const fixtures = [
   brace-counting span scans — semicolons in multi-line callbacks and
   braces in strings truncate them (two audit bug classes). Degrade like
   bindings: declare `needs: ["spans"]`, narrow without the engine.
+- `ctx.analysis.calls(file)` → generic AST facts: calls with immediate usage
+  (`discarded`, `awaited`, `returned`, `stored`, `passed`, `unknown`), receiver
+  binding identity, inline callback registration, linked query-call extents,
+  and subtraction operands. See the exported `AnalysisCalls` contract.
+  Declare `needs: ["calls"]` and a degraded policy. Stored/passed/returned
+  is not proof that a promise eventually settles; a nearby combiner is not
+  evidence about a particular promise.
 - `ctx.report.finding({ rule, file, line, column?, message?, severity? })`
 
 Zero dependencies, zero imports — a doctor is one self-contained file;
@@ -237,7 +248,10 @@ own `severity` only for exceptions.
 
 ## Hard workflow
 
-1. Write both files.
+1. State each check's observable claim, reporting unit, required facts, and
+   unsupported cases. Write both files. Use the engine's facts; if it cannot
+   establish the condition, narrow the check instead of extending text windows.
+   The maintainer regression protocol is in `docs/doctor-reliability.md`.
 2. Run: `any-doctor verify doctors/<slug>.mjs` (or `node bin/cli.js verify doctors/<slug>.mjs`,
    or with no install at all: `npx any-doctor@latest verify doctors/<slug>.mjs`).
    The per-fixture `missing`/`unexpected` lines are your error list — treat
@@ -293,30 +307,26 @@ Verify also runs every doctor against the **shared innocent corpus**
 the audit counterexamples). A finding there is a false positive by
 definition, whoever wrote the check.
 
-Verify also runs two automatic reliability probes beyond your fixtures:
+Verify also checks reliability beyond the author's individual examples:
 
-- **The duplicate-location sensitivity probe.** Your strongest
-  flag-shaped fixture is re-planted at three locations: untouched, as a
-  byte-identical twin module, and doubled inside one file. Each location
-  must independently reproduce the fixture's findings — a dedup keyed on
-  statement text (the billing.ts bug, three identical chains collapsed
-  into one finding) fails this deterministically. Never dedup findings
-  by normalized text; every distinct location is a distinct finding.
-  Seed at least one fixture with TWO violations in one file (expected:
-  two findings there) so the probe can police same-file collapse —
-  a witness with one violation per file cannot distinguish per-violation
-  reporting from a one-verdict-per-file claim, and the probe will not
-  guess.
-- **The shared sensitivity corpus** (`fixtures/sensitivity/` —
-  confirmed-real patterns from the audits, each with per-doctor expected
-  findings in `expect.json`). These MUST produce their findings; a
-  doctor with stakes in a case runs it like a normal fixture.
+- **Per-check location coverage.** Declare `reportingUnit` on every new check.
+  An `occurrence` warning/error needs a passing fixture containing two distinct
+  locations of that check in one file. Use explicit, context-preserving seeds;
+  identical violations in separate functions are an important regression case.
+  For two occurrences on the same line, specify both columns (zero-based).
+  A line-only expectation cannot prove a separate occurrence from a column on
+  that same line. `file` and `project` units require a positive witness, not a
+  two-occurrence fixture. Legacy undeclared units are visibly not exercised.
+- **The shared sensitivity corpus** (`fixtures/sensitivity/`): independently
+  reviewed examples of useful findings, with per-doctor `expect.json` stakes.
+  Existing real findings must survive attempts to suppress innocent lookalikes.
 
 ## Fixture discipline
 
-- Matching is exact multiset on (rule, file, line): each expected finding
+- Matching is a multiset on (rule, file, line, optional column): each expected finding
   must be emitted by the check that carries its rule, each actual finding
-  must be expected, and duplicates count — a finding twice needs the
+  must be expected. A specified column must match; omitted columns retain
+  legacy line-only matching. Duplicates count — a finding twice needs the
   expectation twice. A missing expected finding fails recall; an
   unexpected finding fails precision. Get both sides right.
 - Every doctor needs at least one `expected: []` fixture containing code that

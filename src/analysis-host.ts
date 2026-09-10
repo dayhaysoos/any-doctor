@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, Mode } from "./contract.js";
-import { analysisStatus, analyzeBindings, analyzeSpans, AnalysisResult, AnalysisStatusResult, SpansResult } from "./analysis.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, Mode } from "./contract.js";
+import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls, AnalysisResult, AnalysisStatusResult, SpansResult } from "./analysis.js";
 import { searchBase, withinBase } from "./search-host.js";
 
 // The analysis host: the identity engine's side of the channel, a sibling
@@ -21,6 +21,7 @@ type Status = typeof analysisStatus;
 // the lifetime is the any-doctor invocation; across a cohort's doctors
 // the same unchanged file answers from memory.
 const modelCache = new Map<string, { mtimeMs: number; size: number; file: AnalysisFile }>();
+const callsCache = new Map<string, { mtimeMs: number; size: number; file: AnalysisCalls }>();
 const spansCache = new Map<string, { mtimeMs: number; size: number; file: AnalysisSpans }>();
 
 // Test seam: the model cache is keyed by mtime+size for the process
@@ -29,6 +30,7 @@ const spansCache = new Map<string, { mtimeMs: number; size: number; file: Analys
 export function clearAnalysisCache(): void {
   modelCache.clear();
   spansCache.clear();
+  callsCache.clear();
 }
 
 export interface AnalysisRequestBody {
@@ -41,6 +43,7 @@ export type AnalysisResponse =
   | { available: boolean; reason?: string }
   | { file: AnalysisFile }
   | { file: AnalysisSpans }
+  | { file: AnalysisCalls }
   | { error: string };
 
 export function handleAnalysisRequest(
@@ -49,6 +52,7 @@ export function handleAnalysisRequest(
   analyzer: Analyzer = analyzeBindings,
   status: Status = analysisStatus,
   spansAnalyzer: SpansAnalyzer = analyzeSpans,
+  callsAnalyzer: typeof analyzeCalls = analyzeCalls,
 ): AnalysisResponse {
   const base = searchBase(mode);
   const root = typeof req.root === "string" ? path.resolve(req.root) : "";
@@ -59,7 +63,7 @@ export function handleAnalysisRequest(
     const s: AnalysisStatusResult = status();
     return s.available ? { available: true } : { available: false, reason: s.reason };
   }
-  if (req.kind === "bindings" || req.kind === "spans") {
+  if (req.kind === "bindings" || req.kind === "spans" || req.kind === "calls") {
     if (typeof req.file !== "string" || req.file === "") {
       return { error: `ctx.analysis.${req.kind} needs a "file" path` };
     }
@@ -70,9 +74,10 @@ export function handleAnalysisRequest(
     if (req.kind === "bindings") {
       return cachedModel(abs, root, modelCache, analyzer, req.file);
     }
+    if (req.kind === "calls") return cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
     return cachedModel(abs, root, spansCache, spansAnalyzer, req.file);
   }
-  return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans` };
+  return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans, calls` };
 }
 
 // The shared per-file model lifecycle: stat (cache hit on mtime+size),
