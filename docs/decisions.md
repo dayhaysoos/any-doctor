@@ -904,6 +904,38 @@ gate — the probe and corpus are reliability floors beneath it.
 
 ---
 
+## D25 — The Certification harness: verify-mode policies leave the loader
+
+**Date:** 2026-09-09
+
+**Context:** The architecture review after tier 2 found the doctor
+loader accreting: its verify branch inlined five policies (claim
+contract, fixture gate, innocent corpus, duplicate-location probe,
+sensitivity corpus), with the sandbox scaffolding repeated 3×, the
+corpus walk 2×, and the analysis-skip block 3×. The loader's stated
+job is Doctor-run choreography — decode, confine, frame — and every
+future prevention tier (the release diff is next) was on a path to
+growing a 400-line main().
+
+**Decision:** Extracted `src/certify.ts` — the Certification harness —
+behind one interface: `certify(mod, fixtures) -> FixtureResult[]`,
+plus `runOnce` (shared with the loader's run mode) and
+`validateClaimContract` (throws `ClaimContractViolation`; the loader
+renders it and exits 3). One sandbox helper (`inSandbox`), one corpus
+walker (`collectSeed`), one skip policy constant. The loader shrank to
+decode/confine/import/frame choreography. Confinement holds: the
+harness is a static import resolved before `confineProcess()` registers
+the guard, exactly like sdk and contract before it.
+
+**Consequences:** Certification policies are testable through one
+in-process seam (test/certify.test.mjs runs the full gate without a
+loader spawn); the release diff (tier-2 item 3) lands as a policy in
+the harness. Candidate 2 from the same review — host-side span
+primitives replacing the doctors' private text surgery — remains open
+and is the next deliberate staging.
+
+---
+
 ## Open questions
 
 - Opt-in metrics/score API (parked, D19): count doctors run and findings
