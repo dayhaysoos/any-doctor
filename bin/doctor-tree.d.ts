@@ -1,5 +1,6 @@
 import { Finding, JoinedFinding, ReportGroup, Severity } from "./contract.js";
 import { ScoreResult } from "./score.js";
+import type { GroupChecks } from "./summary.js";
 export type SiteFinding = {
     readKey: string;
     site: Finding;
@@ -45,7 +46,7 @@ export interface DoctorGroup {
 }
 export type DoctorTree = DoctorGroup[];
 export declare const FINDINGS_PER_CHECK = 50;
-export declare function buildTree(items: SiteFinding[], filesTotal: number): DoctorTree;
+export declare function buildTree(groupChecks: GroupChecks[], filesTotal: number): DoctorTree;
 export declare function summarizeCheck(checkKey: string, groupItems: SiteFinding[]): CheckSummary;
 export declare function summarizeDoctor(d: DoctorGroup): DoctorSummary;
 export declare function initialExpanded(tree: DoctorTree): Set<string>;

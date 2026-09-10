@@ -1,5 +1,13 @@
 import * as os from "os";
 import * as path from "path";
+// The one severity ordering — worst first. Display rollups (report),
+// derivation sorts (summary), and view-model triage (doctor tree) all
+// rank through this; score weights and the gate's fail-on bar are
+// different questions and keep their own tables.
+export const SEVERITY_ORDER = ["error", "warning", "info"];
+export function severityRank(s) {
+    return SEVERITY_ORDER.indexOf(s);
+}
 // The default walk's extensions — the empty-scan warning names them in
 // prose; composing from the array is what keeps the copy honest the day
 // this list changes.

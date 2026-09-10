@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
 import { runCommandFor } from "./contract.js";
-import { buildItems, buildTree, FINDINGS_PER_CHECK, initialExpanded, summarizeCheck, summarizeDoctor, } from "./doctor-tree.js";
+import { buildTree, FINDINGS_PER_CHECK, initialExpanded, summarizeCheck, summarizeDoctor, } from "./doctor-tree.js";
 import { checkFixPrompt, doctorFixPrompt, fixPrompt } from "./prompts.js";
 import { isEmptyScan, scoreFromFileHealth, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
@@ -396,9 +396,10 @@ export async function runDashboardOn(env, input, deps = {}) {
     const useColor = input.useColor;
     // One RunOutcome, one story on every surface: the tree AND the report
     // render the same Summary — the derivation lives in summary.ts, so
-    // counts and score can never disagree between surfaces.
+    // counts and score can never disagree between surfaces. The tree
+    // consumes the Summary's check buckets directly; it never re-groups.
     const summary = deriveSummary(input.outcome);
-    const tree = buildTree(buildItems(summary.groups), input.outcome.fileCount);
+    const tree = buildTree(summary.groupChecks, input.outcome.fileCount);
     const expanded = initialExpanded(tree);
     const readKeys = new Set();
     let notice;

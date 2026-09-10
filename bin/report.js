@@ -1,5 +1,5 @@
-import { DEFAULT_EXTS } from "./contract.js";
-import { SEVERITY_ORDER, deriveSummary } from "./summary.js";
+import { DEFAULT_EXTS, SEVERITY_ORDER } from "./contract.js";
+import { deriveSummary } from "./summary.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 // The one place the skip-note copy lives; report, dashboard, and the CLI
 // all render this sentence so the story is identical everywhere. The count

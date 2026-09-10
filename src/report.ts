@@ -1,5 +1,5 @@
-import { DEFAULT_EXTS, ExpectedFinding, ReportGroup, RunOutcome, VerifyRunResult } from "./contract.js";
-import { SEVERITY_ORDER, deriveSummary, RunSummary } from "./summary.js";
+import { DEFAULT_EXTS, ExpectedFinding, ReportGroup, RunOutcome, SEVERITY_ORDER, VerifyRunResult } from "./contract.js";
+import { deriveSummary, RunSummary } from "./summary.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import type { DiffResult } from "./diff.js";
 import type { GateVerdict } from "./gate.js";

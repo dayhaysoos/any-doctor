@@ -1,25 +1,33 @@
-import { Finding, JoinedFinding, ReportGroup, resolveFinding, Severity } from "./contract.js";
+import { DoctorMeta, Finding, JoinedFinding, ReportGroup, resolveFinding, Severity, severityRank } from "./contract.js";
 import { scoreFromFileHealth, ScoreResult } from "./score.js";
+import type { GroupChecks } from "./summary.js";
 
-// The Doctor tree: the dashboard's view-model, computed once from the
-// Summary's groups and named — doctor → checks → findings, ordered for
-// triage (worst severity first, count descending). Every consumer —
-// expansion defaults, row flattening, the detail pane, the task prompts —
-// flattens or reads it without rebuilding it. Extracted from the dashboard
-// (with the prompts that consume its types) so the TUI loop renders the
-// tree without owning its shape, and M2's review state can key off
-// SiteFinding.readKey without piercing the loop.
+// The Doctor tree: the dashboard's view-model, computed once and named —
+// doctor → checks → findings, ordered for triage (worst severity first,
+// count descending). It CONSUMES the Summary's per-doctor check buckets
+// (groupChecks) rather than re-bucketing the groups: one derivation, N
+// adapters — the tree flattens and joins (Finding↔Meta), it never
+// re-groups. Extracted from the dashboard (with the prompts that consume
+// its types) so the TUI loop renders the tree without owning its shape,
+// and M2's review state can key off SiteFinding.readKey without piercing
+// the loop.
 
 // A JoinedFinding pinned to one dashboard row: the join supplies every
 // field; site replaces finding for the frame code.
 export type SiteFinding = { readKey: string; site: Finding } & Omit<JoinedFinding, "finding">;
 
+// The Finding↔Meta join, one shape for every consumer of a flat item
+// list (buildTree's buckets, the prompts' tests).
+function siteOf(meta: DoctorMeta, f: Finding): SiteFinding {
+  const j = resolveFinding(meta, f);
+  return { ...j, readKey: j.checkKey + "@" + f.file + ":" + f.line, site: f };
+}
+
 export function buildItems(groups: ReportGroup[]): SiteFinding[] {
   const items: SiteFinding[] = [];
   for (const g of groups) {
     for (const f of g.findings) {
-      const j = resolveFinding(g.meta, f);
-      items.push({ ...j, readKey: j.checkKey + "@" + f.file + ":" + f.line, site: f });
+      items.push(siteOf(g.meta, f));
     }
   }
   return items;
@@ -67,38 +75,30 @@ export type DoctorTree = DoctorGroup[];
 // then an affordance to fix a few and run again.
 export const FINDINGS_PER_CHECK = 50;
 
-const SEVERITY_RANK: Record<Severity, number> = { error: 0, warning: 1, info: 2 };
-
-export function buildTree(items: SiteFinding[], filesTotal: number): DoctorTree {
-  const byDoctor = new Map<string, Map<string, SiteFinding[]>>();
-  for (const it of items) {
-    let checks = byDoctor.get(it.doctorId);
-    if (!checks) {
-      checks = new Map();
-      byDoctor.set(it.doctorId, checks);
-    }
-    const group = checks.get(it.checkKey) ?? [];
-    group.push(it);
-    checks.set(it.checkKey, group);
-  }
-  const doctors: DoctorGroup[] = [...byDoctor.entries()].map(([doctorId, checks]) => {
-    const entries = [...checks.entries()].map(([checkKey, list]) => ({
-      checkKey,
-      items: [...list].sort((a, b) => a.site.file === b.site.file
-        ? a.site.line - b.site.line
-        : a.site.file < b.site.file ? -1 : 1),
-    })).sort((a, b) => {
-      const sa = SEVERITY_RANK[a.items[0].declaredSeverity];
-      const sb = SEVERITY_RANK[b.items[0].declaredSeverity];
+export function buildTree(groupChecks: GroupChecks[], filesTotal: number): DoctorTree {
+  // One GroupChecks entry is one doctor's deduped findings, already
+  // bucketed per check by the Summary — the tree joins and orders, it
+  // never re-groups.
+  const doctors: DoctorGroup[] = groupChecks.map((gc) => {
+    const entries = gc.checks.map((bucket) => {
+      const items = bucket.findings
+        .map((f) => siteOf(gc.group.meta, f))
+        .sort((a, b) => a.site.file === b.site.file
+          ? a.site.line - b.site.line
+          : a.site.file < b.site.file ? -1 : 1);
+      return { checkKey: items[0].checkKey, items };
+    }).sort((a, b) => {
+      const sa = severityRank(a.items[0].declaredSeverity);
+      const sb = severityRank(b.items[0].declaredSeverity);
       return sa !== sb ? sa - sb : b.items.length - a.items.length || (a.checkKey < b.checkKey ? -1 : 1);
     });
     return {
-      doctorId,
+      doctorId: gc.group.meta.id,
       checks: entries,
       multiCheck: entries.length > 1,
       count: entries.reduce((n, g) => n + g.items.length, 0),
       worst: entries.reduce((w, g) => (
-        SEVERITY_RANK[g.items[0].severity] < SEVERITY_RANK[w] ? g.items[0].severity : w
+        severityRank(g.items[0].severity) < severityRank(w) ? g.items[0].severity : w
       ), "info" as Severity),
       score: scoreFromFileHealth(
         entries.flatMap(g => g.items.map(it => ({ file: it.site.file, severity: it.severity }))),
@@ -108,7 +108,7 @@ export function buildTree(items: SiteFinding[], filesTotal: number): DoctorTree 
   });
   // Triage order: worst severity first, then most findings, then name.
   return doctors.sort((a, b) =>
-    SEVERITY_RANK[a.worst] - SEVERITY_RANK[b.worst]
+    severityRank(a.worst) - severityRank(b.worst)
     || b.count - a.count
     || (a.doctorId < b.doctorId ? -1 : 1));
 }

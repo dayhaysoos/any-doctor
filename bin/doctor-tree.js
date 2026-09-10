@@ -1,11 +1,16 @@
-import { resolveFinding } from "./contract.js";
+import { resolveFinding, severityRank } from "./contract.js";
 import { scoreFromFileHealth } from "./score.js";
+// The Finding↔Meta join, one shape for every consumer of a flat item
+// list (buildTree's buckets, the prompts' tests).
+function siteOf(meta, f) {
+    const j = resolveFinding(meta, f);
+    return { ...j, readKey: j.checkKey + "@" + f.file + ":" + f.line, site: f };
+}
 export function buildItems(groups) {
     const items = [];
     for (const g of groups) {
         for (const f of g.findings) {
-            const j = resolveFinding(g.meta, f);
-            items.push({ ...j, readKey: j.checkKey + "@" + f.file + ":" + f.line, site: f });
+            items.push(siteOf(g.meta, f));
         }
     }
     return items;
@@ -13,42 +18,34 @@ export function buildItems(groups) {
 // The re-scan loop is the pagination: a check shows its first N findings,
 // then an affordance to fix a few and run again.
 export const FINDINGS_PER_CHECK = 50;
-const SEVERITY_RANK = { error: 0, warning: 1, info: 2 };
-export function buildTree(items, filesTotal) {
-    var _a;
-    const byDoctor = new Map();
-    for (const it of items) {
-        let checks = byDoctor.get(it.doctorId);
-        if (!checks) {
-            checks = new Map();
-            byDoctor.set(it.doctorId, checks);
-        }
-        const group = (_a = checks.get(it.checkKey)) !== null && _a !== void 0 ? _a : [];
-        group.push(it);
-        checks.set(it.checkKey, group);
-    }
-    const doctors = [...byDoctor.entries()].map(([doctorId, checks]) => {
-        const entries = [...checks.entries()].map(([checkKey, list]) => ({
-            checkKey,
-            items: [...list].sort((a, b) => a.site.file === b.site.file
+export function buildTree(groupChecks, filesTotal) {
+    // One GroupChecks entry is one doctor's deduped findings, already
+    // bucketed per check by the Summary — the tree joins and orders, it
+    // never re-groups.
+    const doctors = groupChecks.map((gc) => {
+        const entries = gc.checks.map((bucket) => {
+            const items = bucket.findings
+                .map((f) => siteOf(gc.group.meta, f))
+                .sort((a, b) => a.site.file === b.site.file
                 ? a.site.line - b.site.line
-                : a.site.file < b.site.file ? -1 : 1),
-        })).sort((a, b) => {
-            const sa = SEVERITY_RANK[a.items[0].declaredSeverity];
-            const sb = SEVERITY_RANK[b.items[0].declaredSeverity];
+                : a.site.file < b.site.file ? -1 : 1);
+            return { checkKey: items[0].checkKey, items };
+        }).sort((a, b) => {
+            const sa = severityRank(a.items[0].declaredSeverity);
+            const sb = severityRank(b.items[0].declaredSeverity);
             return sa !== sb ? sa - sb : b.items.length - a.items.length || (a.checkKey < b.checkKey ? -1 : 1);
         });
         return {
-            doctorId,
+            doctorId: gc.group.meta.id,
             checks: entries,
             multiCheck: entries.length > 1,
             count: entries.reduce((n, g) => n + g.items.length, 0),
-            worst: entries.reduce((w, g) => (SEVERITY_RANK[g.items[0].severity] < SEVERITY_RANK[w] ? g.items[0].severity : w), "info"),
+            worst: entries.reduce((w, g) => (severityRank(g.items[0].severity) < severityRank(w) ? g.items[0].severity : w), "info"),
             score: scoreFromFileHealth(entries.flatMap(g => g.items.map(it => ({ file: it.site.file, severity: it.severity }))), filesTotal),
         };
     });
     // Triage order: worst severity first, then most findings, then name.
-    return doctors.sort((a, b) => SEVERITY_RANK[a.worst] - SEVERITY_RANK[b.worst]
+    return doctors.sort((a, b) => severityRank(a.worst) - severityRank(b.worst)
         || b.count - a.count
         || (a.doctorId < b.doctorId ? -1 : 1));
 }

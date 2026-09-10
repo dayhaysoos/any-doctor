@@ -3,6 +3,16 @@ import * as path from "path";
 
 export type Severity = "error" | "warning" | "info";
 
+// The one severity ordering — worst first. Display rollups (report),
+// derivation sorts (summary), and view-model triage (doctor tree) all
+// rank through this; score weights and the gate's fail-on bar are
+// different questions and keep their own tables.
+export const SEVERITY_ORDER: Severity[] = ["error", "warning", "info"];
+
+export function severityRank(s: Severity): number {
+  return SEVERITY_ORDER.indexOf(s);
+}
+
 export interface CheckMeta {
   id: string;
   description: string;

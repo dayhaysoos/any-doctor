@@ -1,4 +1,6 @@
 export type Severity = "error" | "warning" | "info";
+export declare const SEVERITY_ORDER: Severity[];
+export declare function severityRank(s: Severity): number;
 export interface CheckMeta {
     id: string;
     description: string;
