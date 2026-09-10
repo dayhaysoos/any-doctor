@@ -104,6 +104,23 @@ function collectSeed(dir, prefix, seed, skip) {
             seed[rel] = fs.readFileSync(abs, "utf8");
     }
 }
+// doctor-reliability's witness law as one named predicate: an occurrence
+// check needs two distinct positions of that check in one file. A line-only
+// expectation overlaps every column on its line, so it counts once no
+// matter how many column-exact siblings share the line (D28's overlap fix).
+function distinctLocationsInFile(hits) {
+    var _a, _b;
+    const files = new Map();
+    for (const hit of hits) {
+        const lines = (_a = files.get(hit.file)) !== null && _a !== void 0 ? _a : new Map();
+        const columns = (_b = lines.get(hit.line)) !== null && _b !== void 0 ? _b : new Set();
+        columns.add(hit.column);
+        lines.set(hit.line, columns);
+        files.set(hit.file, lines);
+    }
+    return [...files.values()].some((lines) => [...lines.values()]
+        .reduce((count, columns) => count + (columns.has(undefined) ? 1 : columns.size), 0) >= 2);
+}
 // The certification entry point: every policy, in gate order, as result
 // rows a verify frame can carry.
 export async function certify(mod, fixtures) {
@@ -115,6 +132,9 @@ export async function certify(mod, fixtures) {
     // direct invocation fail fixtures that never touch analysis at all.
     const declaresNeeds = contract.narrowedCheckIds(mod.meta).length > 0;
     let analysisAvailable;
+    // The fixture loop's own rows, keyed by fixture — the location-coverage
+    // witness asks "did THIS fixture pass", never "which row is this index".
+    const rowByFixture = new Map();
     // The one skip policy (D25): an analysis-on sandbox whose engine is not
     // installed here is an honest skip, not a failure — expectations belong
     // to the full-power path. One decision for every policy that asks.
@@ -143,7 +163,9 @@ export async function certify(mod, fixtures) {
             // test data (effect-v4-doctor's sleep-in-test depends on it).
             const result = await inSandbox(fixture.seed, (tmp) => runOnce(tmp, mod, { includeTests: true }));
             const diff = contract.compareFindings(fixture.expected, result.findings);
-            results.push({ name: fixture.name, ok: diff.missing.length === 0 && diff.unexpected.length === 0, ...diff });
+            const row = { name: fixture.name, ok: diff.missing.length === 0 && diff.unexpected.length === 0, ...diff };
+            results.push(row);
+            rowByFixture.set(fixture, row);
         }
         catch (e) {
             results.push(errorRow(fixture.name, e));
@@ -185,24 +207,16 @@ export async function certify(mod, fixtures) {
             results.push(skipRow(name));
             continue;
         }
-        const witness = fixtures.find((fixture, index) => {
-            var _a, _b, _c, _d, _e;
-            if (!((_a = results[index]) === null || _a === void 0 ? void 0 : _a.ok) || ((_b = results[index]) === null || _b === void 0 ? void 0 : _b.skipped) || (((_c = check.needs) === null || _c === void 0 ? void 0 : _c.length) && fixture.analysis === "off"))
+        const witness = fixtures.find((fixture) => {
+            const row = rowByFixture.get(fixture);
+            if (row === undefined || !row.ok || row.skipped !== undefined)
+                return false;
+            if (check.needs !== undefined && check.needs.length > 0 && fixture.analysis === "off")
                 return false;
             const hits = fixture.expected.filter(f => f.rule === check.id);
             if (check.reportingUnit !== "occurrence")
                 return hits.length > 0;
-            const files = new Map();
-            for (const hit of hits) {
-                const lines = (_d = files.get(hit.file)) !== null && _d !== void 0 ? _d : new Map();
-                const columns = (_e = lines.get(hit.line)) !== null && _e !== void 0 ? _e : new Set();
-                columns.add(hit.column);
-                lines.set(hit.line, columns);
-                files.set(hit.file, lines);
-            }
-            // A line-only expectation overlaps every column on that line.
-            return [...files.values()].some(lines => [...lines.values()]
-                .reduce((count, columns) => count + (columns.has(undefined) ? 1 : columns.size), 0) >= 2);
+            return distinctLocationsInFile(hits);
         });
         if (witness)
             results.push(okRow(name));

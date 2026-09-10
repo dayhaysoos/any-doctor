@@ -53,6 +53,20 @@ export function buildCtx(root, opts = {}) {
                 out.push(rel);
         }
     }
+    // The one per-kind fetch with the one guard: availability check (the
+    // loud failure names the kind and the needs declaration), channel call,
+    // structural unwrap. bindings/spans/calls differ only in kind.
+    const analysisFile = (kind, file) => {
+        var _a;
+        if (analysisForcedOff || !ctx.analysis.available) {
+            throw new Error(`ctx.analysis.${kind} requires the analysis engine and it is unavailable`
+                + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.");
+        }
+        const r = runAnalysis({ kind, file }, root);
+        if (r.file === undefined || !(kind in r.file))
+            throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
+        return r.file;
+    };
     const ctx = {
         root,
         files: {
@@ -100,37 +114,13 @@ export function buildCtx(root, opts = {}) {
                 return availabilityCache && !analysisForcedOff;
             },
             bindings(file) {
-                var _a;
-                if (analysisForcedOff || !this.available) {
-                    throw new Error("ctx.analysis.bindings requires the analysis engine and it is unavailable"
-                        + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.");
-                }
-                const r = runAnalysis({ kind: "bindings", file }, root);
-                if (r.file === undefined || !("bindings" in r.file))
-                    throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
-                return r.file;
+                return analysisFile("bindings", file);
             },
             spans(file) {
-                var _a;
-                if (analysisForcedOff || !this.available) {
-                    throw new Error("ctx.analysis.spans requires the analysis engine and it is unavailable"
-                        + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.");
-                }
-                const r = runAnalysis({ kind: "spans", file }, root);
-                if (r.file === undefined || !("spans" in r.file))
-                    throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
-                return r.file;
+                return analysisFile("spans", file);
             },
             calls(file) {
-                var _a;
-                if (analysisForcedOff || !this.available) {
-                    throw new Error("ctx.analysis.calls requires the analysis engine and it is unavailable"
-                        + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.");
-                }
-                const r = runAnalysis({ kind: "calls", file }, root);
-                if (r.file === undefined || !("calls" in r.file))
-                    throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
-                return r.file;
+                return analysisFile("calls", file);
             },
         },
         report: {

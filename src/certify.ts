@@ -120,6 +120,21 @@ function collectSeed(dir: string, prefix: string, seed: Record<string, string>, 
   }
 }
 
+// doctor-reliability's witness law as one named predicate: an occurrence
+// check needs two distinct positions of that check in one file. A line-only
+// expectation overlaps every column on its line, so it counts once no
+// matter how many column-exact siblings share the line (D28's overlap fix).
+function distinctLocationsInFile(hits: ExpectedFinding[]): boolean {
+  const files = new Map<string, Map<number, Set<number | undefined>>>();
+  for (const hit of hits) {
+    const lines = files.get(hit.file) ?? new Map<number, Set<number | undefined>>();
+    const columns = lines.get(hit.line) ?? new Set<number | undefined>();
+    columns.add(hit.column); lines.set(hit.line, columns); files.set(hit.file, lines);
+  }
+  return [...files.values()].some((lines) => [...lines.values()]
+    .reduce((count, columns) => count + (columns.has(undefined) ? 1 : columns.size), 0) >= 2);
+}
+
 // The certification entry point: every policy, in gate order, as result
 // rows a verify frame can carry.
 export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<FixtureResult[]> {
@@ -130,6 +145,9 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
   // direct invocation fail fixtures that never touch analysis at all.
   const declaresNeeds = contract.narrowedCheckIds(mod.meta as DoctorMeta).length > 0;
   let analysisAvailable: boolean | undefined;
+  // The fixture loop's own rows, keyed by fixture — the location-coverage
+  // witness asks "did THIS fixture pass", never "which row is this index".
+  const rowByFixture = new Map<Fixture, FixtureResult>();
   // The one skip policy (D25): an analysis-on sandbox whose engine is not
   // installed here is an honest skip, not a failure — expectations belong
   // to the full-power path. One decision for every policy that asks.
@@ -157,7 +175,8 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
       // test data (effect-v4-doctor's sleep-in-test depends on it).
       const result = await inSandbox(fixture.seed, (tmp) => runOnce(tmp, mod, { includeTests: true }));
       const diff = contract.compareFindings(fixture.expected, result.findings);
-      results.push({ name: fixture.name, ok: diff.missing.length === 0 && diff.unexpected.length === 0, ...diff });
+      const row = { name: fixture.name, ok: diff.missing.length === 0 && diff.unexpected.length === 0, ...diff };
+      results.push(row); rowByFixture.set(fixture, row);
     } catch (e) {
       results.push(errorRow(fixture.name, e));
     } finally {
@@ -196,19 +215,13 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
       results.push(skipRow(name));
       continue;
     }
-    const witness = fixtures.find((fixture, index) => {
-      if (!results[index]?.ok || results[index]?.skipped || (check.needs?.length && fixture.analysis === "off")) return false;
+    const witness = fixtures.find((fixture) => {
+      const row = rowByFixture.get(fixture);
+      if (row === undefined || !row.ok || row.skipped !== undefined) return false;
+      if (check.needs !== undefined && check.needs.length > 0 && fixture.analysis === "off") return false;
       const hits = fixture.expected.filter(f => f.rule === check.id);
       if (check.reportingUnit !== "occurrence") return hits.length > 0;
-      const files = new Map<string, Map<number, Set<number | undefined>>>();
-      for (const hit of hits) {
-        const lines = files.get(hit.file) ?? new Map<number, Set<number | undefined>>();
-        const columns = lines.get(hit.line) ?? new Set<number | undefined>();
-        columns.add(hit.column); lines.set(hit.line, columns); files.set(hit.file, lines);
-      }
-      // A line-only expectation overlaps every column on that line.
-      return [...files.values()].some(lines => [...lines.values()]
-        .reduce((count, columns) => count + (columns.has(undefined) ? 1 : columns.size), 0) >= 2);
+      return distinctLocationsInFile(hits);
     });
     if (witness) results.push(okRow(name));
     else {

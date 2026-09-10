@@ -67,16 +67,31 @@ export type SpansResult = { ok: true; file: AnalysisSpans } | { ok: false; error
 // Semicolons inside multi-line callbacks, strings containing braces, JSX —
 // none of it can truncate a span that the parser already knows. Named
 // declarations carry their id; arrows and anonymous expressions carry null.
-export function analyzeSpans(file: string, source: string): SpansResult {
-  const stack = loadStack();
-  if (stack.error !== undefined) return { ok: false, error: stack.error };
+// The one parse prologue: engine check, parse (with oxc's own error
+// reporting when present), and the range fields eslint-scope expects.
+type ParsedProgram = { ok: true; program: Node } | { ok: false; error: string };
 
-  let program: unknown;
+function parseProgram(stack: LoadedStack, file: string, source: string): ParsedProgram {
+  if (stack.error !== undefined) return { ok: false, error: stack.error };
   try {
-    program = stack.parseSync(file, source, { sourceType: "module" }).program;
+    const parsed = stack.parseSync(file, source, { sourceType: "module" }) as { program: unknown; errors?: { message: string }[] };
+    if (parsed.errors !== undefined && parsed.errors.length > 0) {
+      return { ok: false, error: `analysis failed to parse ${file}: ${parsed.errors[0].message}` };
+    }
+    const program = parsed.program as Node;
+    addRanges(program as Record<string, unknown>);
+    return { ok: true, program };
   } catch (e) {
     return { ok: false, error: `analysis failed to parse ${file}: ${e instanceof Error ? e.message : String(e)}` };
   }
+}
+
+export function analyzeSpans(file: string, source: string): SpansResult {
+  const stack = loadStack();
+  if (stack.error !== undefined) return { ok: false, error: stack.error };
+  const parsed = parseProgram(stack, file, source);
+  if (!parsed.ok) return { ok: false, error: parsed.error };
+  const program = parsed.program;
 
   const pos = positioner(source);
   const spans: SpanInfo[] = [];
@@ -145,15 +160,10 @@ function isNode(v: unknown): v is Node {
 export function analyzeBindings(file: string, source: string): AnalysisResult {
   const stack = loadStack();
   if (stack.error !== undefined) return { ok: false, error: stack.error };
+  const parsed = parseProgram(stack, file, source);
+  if (!parsed.ok) return { ok: false, error: parsed.error };
+  const program = parsed.program;
 
-  let program: unknown;
-  try {
-    program = stack.parseSync(file, source, { sourceType: "module" }).program;
-  } catch (e) {
-    return { ok: false, error: `analysis failed to parse ${file}: ${e instanceof Error ? e.message : String(e)}` };
-  }
-
-  addRanges(program as Record<string, unknown>);
   let scopeManager: import("@typescript-eslint/scope-manager").ScopeManager;
   try {
     scopeManager = stack.analyze(program as never, {
@@ -354,11 +364,10 @@ function lowerBound(sorted: number[], value: number): number {
 export function analyzeCalls(file: string, source: string): CallsResult {
   const stack = loadStack();
   if (stack.error !== undefined) return { ok: false, error: stack.error };
+  const parsed = parseProgram(stack, file, source);
+  if (!parsed.ok) return { ok: false, error: parsed.error };
+  const program = parsed.program;
   try {
-    const parsed = stack.parseSync(file, source, { sourceType: "module" });
-    if (parsed.errors.length) return { ok: false, error: `analysis failed to parse ${file}: ${parsed.errors[0].message}` };
-    const program = parsed.program as unknown as Node;
-    addRanges(program);
     const manager = stack.analyze(program as never, { sourceType: "module" });
     const positions = positioner(source);
     const parents = new Map<Node, Node>();
