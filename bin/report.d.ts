@@ -28,6 +28,9 @@ export interface ReportDiff {
     continuing: number;
     noLongerDetected: number;
     contextFallback: number;
+    ambiguous: number;
+    stale: number;
+    unreadable: number;
 }
 export declare function renderReport(input: RunOutcome, useColor: boolean, diff?: ReportDiff): string;
 export declare function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult): string;

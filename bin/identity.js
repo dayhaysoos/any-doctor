@@ -143,7 +143,9 @@ export function extractEvidence(findings, readSource, spansFor) {
 // Stable identity for each function-like span: kind + name + its ordinal
 // among same-named same-kind spans in positional order. Ordinals shift only
 // when an identically-named sibling is inserted above — a conservative
-// break, never a false continuity.
+// break, never a false continuity. Anonymous spans carry a NUL separator —
+// no identifier contains one, so a function literally named "anon" can
+// never collide with an anonymous arrow's bucket.
 function contextIds(spans) {
     var _a, _b;
     const ids = new Map();
@@ -153,25 +155,28 @@ function contextIds(spans) {
         const key = `${s.kind}:${(_a = s.name) !== null && _a !== void 0 ? _a : ""}`;
         const n = (_b = order.get(key)) !== null && _b !== void 0 ? _b : 0;
         order.set(key, n + 1);
-        ids.set(s, s.name === null ? `${s.kind}:anon#${n}` : `${s.kind}:${s.name}#${n}`);
+        ids.set(s, s.name === null ? `${s.kind}:\u0000${n}` : `${s.kind}:${s.name}#${n}`);
     }
     return ids;
+}
+// Narrower by (line extent, then column extent) compared as a tuple — a
+// mixed-radix scalar would misorder when columns exceed the radix (minified
+// single-line files).
+function narrower(a, b) {
+    const al = a.endLine - a.line;
+    const bl = b.endLine - b.line;
+    return al !== bl ? al < bl : a.endColumn - a.column < b.endColumn - b.column;
 }
 // The innermost span containing the position: a nested callback or shadowed
 // receiver binds to its own function, not the outer one.
 function enclosingContext(spans, ids, line, column) {
     var _a;
     let best = null;
-    let bestExtent = Number.POSITIVE_INFINITY;
     for (const s of spans) {
         const startsAtOrBefore = s.line < line || (s.line === line && s.column <= column);
         const endsAfter = s.endLine > line || (s.endLine === line && s.endColumn > column);
-        if (startsAtOrBefore && endsAfter) {
-            const extent = (s.endLine - s.line) * 1000000 + (s.endColumn - s.column);
-            if (extent < bestExtent) {
-                best = s;
-                bestExtent = extent;
-            }
+        if (startsAtOrBefore && endsAfter && (best === null || narrower(s, best))) {
+            best = s;
         }
     }
     return best !== null ? (_a = ids.get(best)) !== null && _a !== void 0 ? _a : null : null;

@@ -18,6 +18,8 @@ export interface DiffResult {
     contextFallback: number;
     ambiguous: number;
     stale: number;
+    unreadable: number;
+    contextUnavailable: number;
     identitySchema: number;
     provenance: {
         head: ScanProvenance;
@@ -25,4 +27,4 @@ export interface DiffResult {
         comparable: boolean;
     };
 }
-export declare function runDiff(spec: CohortSpec, baseRef: string, headGroups: ReportGroup[], headAnalysisAvailable?: boolean): Promise<DiffResult>;
+export declare function runDiff(spec: CohortSpec, baseRef: string, headGroups: ReportGroup[], headAnalysisAvailable: boolean): Promise<DiffResult>;

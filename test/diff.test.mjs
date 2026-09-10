@@ -190,6 +190,24 @@ function setupLineMarker() {
   return { repo, doctor, cleanup: () => { fs.rmSync(repo, { recursive: true, force: true }); fs.rmSync(doctorDir, { recursive: true, force: true }); } };
 }
 
+test("diff: a renamed file is absence plus addition — no unproven cross-file continuity", { skip: gitSkip }, async () => {
+  const { repo, doctor, cleanup } = setupLineMarker();
+  try {
+    fs.writeFileSync(path.join(repo, "f.ts"), "const BAD = 1;\n");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-m", "base"]);
+    git(repo, ["mv", "f.ts", "g.ts"]);
+    git(repo, ["commit", "-m", "rename"]);
+    const ran = await runCohort(specOf(repo, doctor));
+    const d = await runDiff(specOf(repo, doctor), "HEAD~1", deriveSummary(ran).groups, ran.analysisAvailable);
+    assert.equal(d.continuing, 0, "cross-file rename continuity is outside the initial guarantee");
+    assert.deepEqual(d.added.map(a => a.file), ["g.ts"], "the new path is added");
+    assert.deepEqual(d.noLongerDetected.map(a => a.file), ["f.ts"], "the old path is honestly absent");
+  } finally {
+    cleanup();
+  }
+});
+
 test("diff: a finding that moved with its code is continuing, not added plus absent", { skip: gitSkip }, async () => {
   const { repo, doctor, cleanup } = setupLineMarker();
   try {

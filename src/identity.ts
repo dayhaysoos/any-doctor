@@ -206,7 +206,9 @@ export function extractEvidence(
 // Stable identity for each function-like span: kind + name + its ordinal
 // among same-named same-kind spans in positional order. Ordinals shift only
 // when an identically-named sibling is inserted above — a conservative
-// break, never a false continuity.
+// break, never a false continuity. Anonymous spans carry a NUL separator —
+// no identifier contains one, so a function literally named "anon" can
+// never collide with an anonymous arrow's bucket.
 function contextIds(spans: SpanInfo[]): Map<SpanInfo, string> {
   const ids = new Map<SpanInfo, string>();
   const order = new Map<string, number>();
@@ -216,9 +218,18 @@ function contextIds(spans: SpanInfo[]): Map<SpanInfo, string> {
     const key = `${s.kind}:${s.name ?? ""}`;
     const n = order.get(key) ?? 0;
     order.set(key, n + 1);
-    ids.set(s, s.name === null ? `${s.kind}:anon#${n}` : `${s.kind}:${s.name}#${n}`);
+    ids.set(s, s.name === null ? `${s.kind}:\u0000${n}` : `${s.kind}:${s.name}#${n}`);
   }
   return ids;
+}
+
+// Narrower by (line extent, then column extent) compared as a tuple — a
+// mixed-radix scalar would misorder when columns exceed the radix (minified
+// single-line files).
+function narrower(a: SpanInfo, b: SpanInfo): boolean {
+  const al = a.endLine - a.line;
+  const bl = b.endLine - b.line;
+  return al !== bl ? al < bl : a.endColumn - a.column < b.endColumn - b.column;
 }
 
 // The innermost span containing the position: a nested callback or shadowed
@@ -230,16 +241,11 @@ function enclosingContext(
   column: number,
 ): string | null {
   let best: SpanInfo | null = null;
-  let bestExtent = Number.POSITIVE_INFINITY;
   for (const s of spans) {
     const startsAtOrBefore = s.line < line || (s.line === line && s.column <= column);
     const endsAfter = s.endLine > line || (s.endLine === line && s.endColumn > column);
-    if (startsAtOrBefore && endsAfter) {
-      const extent = (s.endLine - s.line) * 1_000_000 + (s.endColumn - s.column);
-      if (extent < bestExtent) {
-        best = s;
-        bestExtent = extent;
-      }
+    if (startsAtOrBefore && endsAfter && (best === null || narrower(s, best))) {
+      best = s;
     }
   }
   return best !== null ? ids.get(best) ?? null : null;

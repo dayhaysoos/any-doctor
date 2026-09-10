@@ -94,6 +94,9 @@ export interface ReportDiff {
   // Continuing matches that rested on content alone — kept visible so an
   // engine-off run never reads as structurally verified continuity.
   contextFallback: number;
+  ambiguous: number;
+  stale: number;
+  unreadable: number;
 }
 
 // The report is an adapter over the Summary: the derivation (dedupe,
@@ -120,9 +123,11 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
   }
   if (diff !== undefined) {
     let line = `vs ${diff.base} (merged base): ${diff.added} added · ${diff.continuing} continuing · ${diff.noLongerDetected} no longer detected`;
-    if (diff.contextFallback > 0) {
-      line += ` (${diff.contextFallback} matched without structural context)`;
-    }
+    const notes: string[] = [];
+    if (diff.contextFallback > 0) notes.push(`${diff.contextFallback} matched without structural context`);
+    if (diff.ambiguous > 0) notes.push(`${diff.ambiguous} matched among identical copies`);
+    if (diff.stale + diff.unreadable > 0) notes.push(`${diff.stale + diff.unreadable} unread or changed mid-scan`);
+    if (notes.length > 0) line += ` (${notes.join("; ")})`;
     lines.push(c(line, DIM));
   }
 
@@ -263,6 +268,8 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
         contextFallback: diff.contextFallback,
         ambiguous: diff.ambiguous,
         stale: diff.stale,
+        unreadable: diff.unreadable,
+        contextUnavailable: diff.contextUnavailable,
         identitySchema: diff.identitySchema,
         comparable: diff.provenance.comparable,
       },

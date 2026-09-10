@@ -5,8 +5,9 @@ import * as path from "path";
 import { Finding, resolveFinding, ReportGroup, Severity } from "./contract.js";
 import { CohortSpec, runCohort } from "./cohort.js";
 import { deriveSummary } from "./summary.js";
+import { withinBase } from "./search-host.js";
 import {
-  compareOccurrences, comparableScans, extractEvidence, EvidenceInput,
+  compareOccurrences, comparableScans, extractEvidence, EvidenceInput, EvidenceReport,
   IDENTITY_SCHEMA_VERSION, ScanComparison, ScanProvenance, scanProvenance, spansProvider,
 } from "./identity.js";
 
@@ -53,6 +54,12 @@ export interface DiffResult {
   contextFallback: number;
   ambiguous: number;
   stale: number;
+  // Occurrences whose file could not be read at comparison time, per side
+  // summed — evidence-less, so they can never continue.
+  unreadable: number;
+  // Occurrences in files the analysis engine could not parse for context,
+  // per side summed — matched on content alone or not matched.
+  contextUnavailable: number;
   identitySchema: number;
   provenance: { head: ScanProvenance; base: ScanProvenance; comparable: boolean };
 }
@@ -95,13 +102,14 @@ function evidenceInputOf(e: Entry): EvidenceInput {
 
 // Evidence reads stay inside the scanned root — a finding's file string is
 // doctor-supplied data, and the host's read must not become an escape hatch
-// the confined doctor itself could never take (the same withinBase policy
-// the search and analysis hosts enforce).
+// the confined doctor itself could never take. withinBase is the one home
+// of the containment law (the same predicate the search and analysis hosts
+// enforce).
 function readFileFrom(root: string): (rel: string) => string | null {
-  const base = path.resolve(root);
+  const containmentRoot = path.resolve(root);
   return (rel: string): string | null => {
     const abs = path.resolve(root, rel);
-    if (abs !== base && !abs.startsWith(base + path.sep)) return null;
+    if (!withinBase(abs, containmentRoot)) return null;
     try {
       return fs.readFileSync(abs, "utf8");
     } catch {
@@ -141,7 +149,7 @@ export async function runDiff(
   spec: CohortSpec,
   baseRef: string,
   headGroups: ReportGroup[],
-  headAnalysisAvailable = false,
+  headAnalysisAvailable: boolean,
 ): Promise<DiffResult> {
   const repoRootR = git(["rev-parse", "--show-toplevel"], spec.targetDir);
   if (!repoRootR.ok) {
@@ -202,10 +210,12 @@ export async function runDiff(
     // same programs execute on both sides, so this is the guard, not the
     // norm.
     let cmp: ScanComparison;
+    let headEvidence: EvidenceReport | undefined;
+    let baseEvidence: EvidenceReport | undefined;
     if (comparable) {
-      const baseEvidence = extractEvidence(
+      baseEvidence = extractEvidence(
         baseEntries.map(evidenceInputOf), readFileFrom(baseTarget), spansProvider(baseAnalysisAvailable));
-      const headEvidence = extractEvidence(
+      headEvidence = extractEvidence(
         headEntries.map(evidenceInputOf), readFileFrom(spec.targetDir), spansProvider(headAnalysisAvailable));
       cmp = compareOccurrences(baseEvidence.occurrences, headEvidence.occurrences);
     } else {
@@ -217,7 +227,6 @@ export async function runDiff(
         stale: 0,
       };
     }
-
     return {
       base: baseRef,
       baseSha,
@@ -227,6 +236,8 @@ export async function runDiff(
       contextFallback: cmp.pairs.filter(p => p.contextFallback).length,
       ambiguous: cmp.ambiguous,
       stale: cmp.stale,
+      unreadable: (baseEvidence?.unreadableFiles.length ?? 0) + (headEvidence?.unreadableFiles.length ?? 0),
+      contextUnavailable: (baseEvidence?.contextUnavailableFiles.length ?? 0) + (headEvidence?.contextUnavailableFiles.length ?? 0),
       identitySchema: IDENTITY_SCHEMA_VERSION,
       provenance: { ...provenance, comparable },
     };

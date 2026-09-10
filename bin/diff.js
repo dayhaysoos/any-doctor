@@ -5,6 +5,7 @@ import * as path from "path";
 import { resolveFinding } from "./contract.js";
 import { runCohort } from "./cohort.js";
 import { deriveSummary } from "./summary.js";
+import { withinBase } from "./search-host.js";
 import { compareOccurrences, comparableScans, extractEvidence, IDENTITY_SCHEMA_VERSION, scanProvenance, spansProvider, } from "./identity.js";
 // Raw causes, no flag prefixes: the caller attaches the context and the
 // remedy that actually matches (a missing binary wants "install git";
@@ -33,13 +34,14 @@ function evidenceInputOf(e) {
 }
 // Evidence reads stay inside the scanned root — a finding's file string is
 // doctor-supplied data, and the host's read must not become an escape hatch
-// the confined doctor itself could never take (the same withinBase policy
-// the search and analysis hosts enforce).
+// the confined doctor itself could never take. withinBase is the one home
+// of the containment law (the same predicate the search and analysis hosts
+// enforce).
 function readFileFrom(root) {
-    const base = path.resolve(root);
+    const containmentRoot = path.resolve(root);
     return (rel) => {
         const abs = path.resolve(root, rel);
-        if (abs !== base && !abs.startsWith(base + path.sep))
+        if (!withinBase(abs, containmentRoot))
             return null;
         try {
             return fs.readFileSync(abs, "utf8");
@@ -75,8 +77,8 @@ function joinFindings(entries, indices) {
 // The HEAD cohort has already run by the time diff mode starts — the
 // caller passes its (deduped) groups and analysis availability; only the
 // base side scans here.
-export async function runDiff(spec, baseRef, headGroups, headAnalysisAvailable = false) {
-    var _a;
+export async function runDiff(spec, baseRef, headGroups, headAnalysisAvailable) {
+    var _a, _b, _c, _d, _e;
     const repoRootR = git(["rev-parse", "--show-toplevel"], spec.targetDir);
     if (!repoRootR.ok) {
         throw new Error("--base failed: " + repoRootR.cause);
@@ -131,9 +133,11 @@ export async function runDiff(spec, baseRef, headGroups, headAnalysisAvailable =
         // same programs execute on both sides, so this is the guard, not the
         // norm.
         let cmp;
+        let headEvidence;
+        let baseEvidence;
         if (comparable) {
-            const baseEvidence = extractEvidence(baseEntries.map(evidenceInputOf), readFileFrom(baseTarget), spansProvider(baseAnalysisAvailable));
-            const headEvidence = extractEvidence(headEntries.map(evidenceInputOf), readFileFrom(spec.targetDir), spansProvider(headAnalysisAvailable));
+            baseEvidence = extractEvidence(baseEntries.map(evidenceInputOf), readFileFrom(baseTarget), spansProvider(baseAnalysisAvailable));
+            headEvidence = extractEvidence(headEntries.map(evidenceInputOf), readFileFrom(spec.targetDir), spansProvider(headAnalysisAvailable));
             cmp = compareOccurrences(baseEvidence.occurrences, headEvidence.occurrences);
         }
         else {
@@ -154,6 +158,8 @@ export async function runDiff(spec, baseRef, headGroups, headAnalysisAvailable =
             contextFallback: cmp.pairs.filter(p => p.contextFallback).length,
             ambiguous: cmp.ambiguous,
             stale: cmp.stale,
+            unreadable: ((_b = baseEvidence === null || baseEvidence === void 0 ? void 0 : baseEvidence.unreadableFiles.length) !== null && _b !== void 0 ? _b : 0) + ((_c = headEvidence === null || headEvidence === void 0 ? void 0 : headEvidence.unreadableFiles.length) !== null && _c !== void 0 ? _c : 0),
+            contextUnavailable: ((_d = baseEvidence === null || baseEvidence === void 0 ? void 0 : baseEvidence.contextUnavailableFiles.length) !== null && _d !== void 0 ? _d : 0) + ((_e = headEvidence === null || headEvidence === void 0 ? void 0 : headEvidence.contextUnavailableFiles.length) !== null && _e !== void 0 ? _e : 0),
             identitySchema: IDENTITY_SCHEMA_VERSION,
             provenance: { ...provenance, comparable },
         };

@@ -236,6 +236,7 @@ function exitAfterSurface(outcome, gate) {
     return outcome.skippedUnsafe.length > 0 ? 1 : 0;
 }
 async function cmdRun(args) {
+    var _a;
     const parsed = parseArgs(args);
     if (parsed.global) {
         fail("--global is a generate-only flag");
@@ -355,7 +356,7 @@ async function cmdRun(args) {
     let diff;
     if (parsed.base !== undefined && outcome.crashed.length === 0) {
         try {
-            diff = await runDiff(spec, parsed.base, summary.groups, outcome.analysisAvailable);
+            diff = await runDiff(spec, parsed.base, summary.groups, (_a = outcome.analysisAvailable) !== null && _a !== void 0 ? _a : false);
         }
         catch (e) {
             fail(e instanceof Error ? e.message : String(e));
@@ -379,7 +380,8 @@ async function cmdRun(args) {
     if (!interactive) {
         console.log(renderReport(outcome, useColor(), diff !== undefined
             ? { base: diff.base, added: diff.added.length, continuing: diff.continuing,
-                noLongerDetected: diff.noLongerDetected.length, contextFallback: diff.contextFallback }
+                noLongerDetected: diff.noLongerDetected.length, contextFallback: diff.contextFallback,
+                ambiguous: diff.ambiguous, stale: diff.stale, unreadable: diff.unreadable }
             : undefined));
         return exitAfterSurface(outcome, gate);
     }

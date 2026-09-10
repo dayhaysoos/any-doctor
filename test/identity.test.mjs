@@ -139,7 +139,7 @@ test("identity: the innermost span owns the occurrence — nested callbacks bind
   ];
   const occ = ev([f(2, 2), f(4, 4)], { "x.ts": SRC_NESTED }, () => spans);
   assert.equal(occ[0].contextId, "function:outer#0");
-  assert.equal(occ[1].contextId, "arrow:anon#0");
+  assert.equal(occ[1].contextId, "arrow:\u00000", "anonymous spans carry a NUL separator no identifier can collide with");
 });
 
 test("identity: top-level code has no enclosing span — context null, match still content-confident", () => {
@@ -233,6 +233,26 @@ test("identity: one-sided parse failure refuses continuity — unverified struct
   assert.equal(cmp.absentIndices.length, 1);
 });
 
+test("identity: a same-length edit is still a change — content, not size or timestamps, is the evidence", () => {
+  const base = ev([f(1)], { "x.ts": "const BAD = 1;\n" });
+  const head = ev([f(1)], { "x.ts": "const BAD = 2;\n" });
+  assert.equal(compareOccurrences(base, head).pairs.length, 0, "same byte length, different literal");
+});
+
+test("identity: a multiline expression's continuation lines are outside v1 evidence — pinned limitation", () => {
+  // v1 digests the flagged line only (D30): an edit on a CONTINUATION line
+  // of a multiline expression does not break continuity. This is the
+  // documented deferral — primary-expression ranges need Finding end
+  // coordinates or doctor-supplied ranges (the open M2 contract question).
+  const base = ev([f(1)], { "x.ts": "await doWork(BAD,\n  option(1),\n);\n" });
+  const continuationEdited = ev([f(1)], { "x.ts": "await doWork(BAD,\n  option(2),\n);\n" });
+  assert.equal(compareOccurrences(base, continuationEdited).pairs.length, 1,
+    "pinned: continuation-line edits do not currently invalidate");
+  const flaggedEdited = ev([f(1)], { "x.ts": "await doWork(WORSE,\n  option(1),\n);\n" });
+  assert.equal(compareOccurrences(base, flaggedEdited).pairs.length, 0,
+    "an edit on the flagged line itself still breaks continuity");
+});
+
 test("identity: provenance digests the exact program bytes; changed programs are incomparable", () => {
   const doctors = [{ id: "d", programPath: "/x/d.mjs" }];
   const read = (content) => () => content;
@@ -242,6 +262,11 @@ test("identity: provenance digests the exact program bytes; changed programs are
   assert.equal(p1.schema, IDENTITY_SCHEMA_VERSION);
   const p2 = scanProvenance(doctors, true, read("program v2"));
   assert.equal(comparableScans(p1, p2), false, "changed detector bytes refuse continuity");
+  // A metadata-only change (a comment) is still a byte change — the
+  // documented conservative churn of whole-program digests; per-check
+  // revisions are the open M2 refinement.
+  const commented = scanProvenance(doctors, true, read("program v1 // a harmless comment"));
+  assert.equal(comparableScans(p1, commented), false, "comment-only churn is conservative today, by design");
   const other = scanProvenance([{ id: "e", programPath: "/x/e.mjs" }], true, read("program v1"));
   assert.equal(comparableScans(p1, other), false, "a different doctor set is incomparable");
 });

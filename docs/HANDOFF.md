@@ -31,17 +31,23 @@ Those results must not be presented as a fresh test of later source or this plan
 
 **Delivered on `implement/analysis-a1-a2` (A1+A2, D30):** the `--base` diff now
 compares through the host-derived identity layer — added / continuing /
-no-longer-detected with contextFallback, ambiguous, and stale surfaced in
-report, JSON, and gate paths. `compareFindings` stays the strict fixture gate.
-Evidence: 313 tests green (25 new identity/diff cases incl. the acceptance
-matrix and two smoke-found regression pins), packed-artifact smoke on
-sift-skills (632 files, 5 doctors: single scan 8.1s; `--base HEAD~5` double scan
-7.2s, 402 continuing / 1 added, the added finding cross-checked against git as
-a gitignored working-tree artifact), and a synthetic identity benchmark
-(all-unmatched worst case: 10k ≈ 60ms, 100k ≈ 0.5s, 1M ≈ 5s, ~1.1GB heap — a
-layer limit, not scanner capacity; end-to-end pipeline costs remain unmeasured
-at that scale). The CLI still has no persistent decision store, SQLite layer,
-or finding history.
+no-longer-detected with contextFallback, ambiguous, stale, unreadable, and
+contextUnavailable surfaced in report, JSON, and gate paths. `compareFindings`
+stays the strict fixture gate. Evidence: 316 tests green (28 new identity/diff
+cases mapping the acceptance matrix — the matrix rows were authored in the plan
+before implementation, and the review-loop counterexamples supplemented them as
+the independent labels) plus a packed-artifact smoke on sift-skills (Apple M1
+Pro, 16 GB, Node 26.5.0; 632 files, 5 doctors: single scan 8.1s / 82.4KB JSON;
+`--base HEAD~5` double scan 7.2s / 82.9KB JSON, 402 continuing / 1 added, the
+added finding cross-checked against git as a gitignored working-tree artifact).
+Synthetic identity benchmark (all-unmatched worst case): 10k ≈ 60ms, 100k ≈
+0.5s, 1M ≈ 5s, ~1.1GB heap — a layer limit, not scanner capacity; end-to-end
+pipeline peak memory at that scale remains unmeasured. Documented v1 deferrals
+(D30): primary-expression evidence ranges (line digest only — continuation-line
+edits do not currently invalidate), receiver/declaration linkage beyond the
+innermost span, independently addressable same-line occurrences without
+doctor-supplied columns, and before/after pair display (M4). The CLI still has
+no persistent decision store, SQLite layer, or finding history.
 
 ## Next bounded scope
 

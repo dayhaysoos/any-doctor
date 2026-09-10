@@ -58,9 +58,15 @@ export function renderReport(input, useColor, diff) {
     }
     if (diff !== undefined) {
         let line = `vs ${diff.base} (merged base): ${diff.added} added · ${diff.continuing} continuing · ${diff.noLongerDetected} no longer detected`;
-        if (diff.contextFallback > 0) {
-            line += ` (${diff.contextFallback} matched without structural context)`;
-        }
+        const notes = [];
+        if (diff.contextFallback > 0)
+            notes.push(`${diff.contextFallback} matched without structural context`);
+        if (diff.ambiguous > 0)
+            notes.push(`${diff.ambiguous} matched among identical copies`);
+        if (diff.stale + diff.unreadable > 0)
+            notes.push(`${diff.stale + diff.unreadable} unread or changed mid-scan`);
+        if (notes.length > 0)
+            line += ` (${notes.join("; ")})`;
         lines.push(c(line, DIM));
     }
     // The empty scan is its own outcome, not a clean one: no findings
@@ -197,6 +203,8 @@ export function renderJson(input, summary, gate, diff) {
                 contextFallback: diff.contextFallback,
                 ambiguous: diff.ambiguous,
                 stale: diff.stale,
+                unreadable: diff.unreadable,
+                contextUnavailable: diff.contextUnavailable,
                 identitySchema: diff.identitySchema,
                 comparable: diff.provenance.comparable,
             },

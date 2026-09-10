@@ -1133,9 +1133,19 @@ were fixed with regression tests: evidence emission now preserves input order
 (a doctor's findings interleave files across checks, and regrouping
 misattributed comparison indices), and `resolveDoctorPath` stat-checks
 `isFile` (the verbatim-slug candidate resolved `.` to the bundled doctors
-directory, which then crashed under Confinement). Persistent identity for
-decisions (M2), per-check compatibility revisions, and doctor-supplied
-evidence remain open in the [design](plans/finding-lifecycle/design.md).
+directory, which then crashed under Confinement).
+
+Documented v1 deferrals: (1) evidence is the flagged **line**, not the
+primary-expression range — an edit on a continuation line of a multiline
+expression does not currently invalidate continuity (pinned by test; full
+ranges need Finding end coordinates or doctor-supplied ranges); (2) structural
+context is the innermost function-like span only — receiver/declaration
+linkage the analysis host already provides is unused; (3) two same-line
+occurrences are independently addressable only when the doctor supplies
+columns; (4) continuing is a count — before/after pairing display belongs to
+M4's history views. Persistent identity for decisions (M2), per-check
+compatibility revisions, and doctor-supplied evidence remain open in the
+[design](plans/finding-lifecycle/design.md).
 
 ---
 
