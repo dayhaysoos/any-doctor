@@ -77,9 +77,9 @@ export const meta = {
     {
       id: "index-filter-combo",
       needs: ["calls"], onUnknown: "skip", reportingUnit: "occurrence",
-      claim: "A range-narrowed .withIndex() followed by .filter() on the same chain.",
+      claim: "A .withIndex() chain - range-narrowed or result-bounded - whose same chain also calls .filter().",
       lookalikes: ["multi-field indexes serving both bounds"],
-      description: ".withIndex() narrowed, then .filter() on the same chain - a multi-field index candidate.",
+      description: "An indexed chain that also filters - a multi-field index candidate whether the index is range-narrowed or the results are bounded.",
       severity: "warning",
       impact: "The index range still reads every document the filter then discards; when the discarded slice is large, the query pays for it on every call.",
       why: "When one index field plus a filter still reads too much, Convex's guidance is to promote to a multi-field index so both conditions become range bounds instead of post-read filters.",
@@ -144,7 +144,7 @@ export const meta = {
       id: "unawaited-convex-call",
       description: "A known Promise-returning Convex context call is discarded as a standalone expression.",
       severity: "warning", needs: ["calls"], onUnknown: "skip", reportingUnit: "occurrence",
-      claim: "A direct discarded call to an async method of an import-resolved handler context, resolved by binding identity.",
+      claim: "A direct discarded call to a context method of an import-resolved handler's context parameter - db or storage, reads included - resolved by binding identity.",
       lookalikes: ["returned callbacks", "arguments to helpers", "stored promises", "query builders", "shadowed context bindings"],
       impact: "Discarding the promise can lose errors or leave work unfinished when the function returns.",
       why: "This call's result is an expression statement; nearby awaits do not receive it.",
@@ -503,13 +503,13 @@ function checkCallFacts(ctx, file, facts) {
 // operations, including separate operations on the same line.
 function checkQueryChains(ctx, file, facts) {
   const byEnd = new Map(facts.calls.map(c => [c.end, c]));
-  const inner = call => byEnd.get(call.receiverCall);
-  const receivers = new Set(facts.calls.map(inner).filter(Boolean));
+  const receiverOf = (call) => byEnd.get(call.receiverCall);
+  const receivers = new Set(facts.calls.map(receiverOf).filter(Boolean));
   for (const terminal of facts.calls) {
     if (receivers.has(terminal)) continue;
     const steps = [];
     let step = terminal;
-    while (step) { steps.unshift(step); step = step.receiverCall === undefined ? null : inner(step); }
+    while (step) { steps.unshift(step); step = step.receiverCall === undefined ? null : receiverOf(step); }
     const base = steps[0];
     if (!((base.target.root === "ctx" && base.target.members.join(".") === "db.query")
       || (base.target.root === "db" && base.target.members.join(".") === "query"))) continue;

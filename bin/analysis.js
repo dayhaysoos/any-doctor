@@ -20,22 +20,30 @@ export function analysisStatus() {
     const stack = loadStack();
     return stack.error !== undefined ? { available: false, reason: stack.error } : { available: true };
 }
-// One file in, every function-like span out (D26): an AST fact answering
-// what the doctors' private brace-counting copies could only approximate.
-// Semicolons inside multi-line callbacks, strings containing braces, JSX —
-// none of it can truncate a span that the parser already knows. Named
-// declarations carry their id; arrows and anonymous expressions carry null.
-export function analyzeSpans(file, source) {
-    const stack = loadStack();
+function parseProgram(stack, file, source) {
     if (stack.error !== undefined)
         return { ok: false, error: stack.error };
-    let program;
     try {
-        program = stack.parseSync(file, source, { sourceType: "module" }).program;
+        const parsed = stack.parseSync(file, source, { sourceType: "module" });
+        if (parsed.errors !== undefined && parsed.errors.length > 0) {
+            return { ok: false, error: `analysis failed to parse ${file}: ${parsed.errors[0].message}` };
+        }
+        const program = parsed.program;
+        addRanges(program);
+        return { ok: true, program };
     }
     catch (e) {
         return { ok: false, error: `analysis failed to parse ${file}: ${e instanceof Error ? e.message : String(e)}` };
     }
+}
+export function analyzeSpans(file, source) {
+    const stack = loadStack();
+    if (stack.error !== undefined)
+        return { ok: false, error: stack.error };
+    const parsed = parseProgram(stack, file, source);
+    if (!parsed.ok)
+        return { ok: false, error: parsed.error };
+    const program = parsed.program;
     const pos = positioner(source);
     const spans = [];
     const visit = (node) => {
@@ -114,14 +122,10 @@ export function analyzeBindings(file, source) {
     const stack = loadStack();
     if (stack.error !== undefined)
         return { ok: false, error: stack.error };
-    let program;
-    try {
-        program = stack.parseSync(file, source, { sourceType: "module" }).program;
-    }
-    catch (e) {
-        return { ok: false, error: `analysis failed to parse ${file}: ${e instanceof Error ? e.message : String(e)}` };
-    }
-    addRanges(program);
+    const parsed = parseProgram(stack, file, source);
+    if (!parsed.ok)
+        return { ok: false, error: parsed.error };
+    const program = parsed.program;
     let scopeManager;
     try {
         scopeManager = stack.analyze(program, {
@@ -332,12 +336,11 @@ export function analyzeCalls(file, source) {
     const stack = loadStack();
     if (stack.error !== undefined)
         return { ok: false, error: stack.error };
+    const parsed = parseProgram(stack, file, source);
+    if (!parsed.ok)
+        return { ok: false, error: parsed.error };
+    const program = parsed.program;
     try {
-        const parsed = stack.parseSync(file, source, { sourceType: "module" });
-        if (parsed.errors.length)
-            return { ok: false, error: `analysis failed to parse ${file}: ${parsed.errors[0].message}` };
-        const program = parsed.program;
-        addRanges(program);
         const manager = stack.analyze(program, { sourceType: "module" });
         const positions = positioner(source);
         const parents = new Map();
