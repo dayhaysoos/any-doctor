@@ -1,6 +1,6 @@
 {
   "name": "any-doctor",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Your agent writes the analyzer, fixtures prove it, CI reruns it forever.",
   "license": "MIT",
   "bin": {
