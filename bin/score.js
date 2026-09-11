@@ -64,7 +64,7 @@ export function scoreHeaderLines(s) {
         return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true, partialScan: false };
     }
     if (s.partialScan === true) {
-        return { scoreLine: "Score: n/a — partial scan (a doctor crashed; results above are incomplete)", cleanLine: null, emptyScan: false, partialScan: true };
+        return { scoreLine: "Score: n/a — partial scan (a doctor failed — crashed or broken; results above are incomplete)", cleanLine: null, emptyScan: false, partialScan: true };
     }
     return {
         scoreLine: `Score: ${s.score} / 100 — ${s.grade}`,

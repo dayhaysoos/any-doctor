@@ -307,18 +307,23 @@ function wantsTui(parsed) {
 // The exit law, once: crashes always fail (their lines name what's
 // partial), the gate's bar judges findings, skips fail quietly. Each
 // surface calls this where its timing wants the lines printed.
-function exitAfterSurface(outcome, gate, brokenCount = 0) {
-    var _a;
+function exitAfterSurface(outcome, gate) {
+    var _a, _b, _c, _d;
     if (outcome.crashed.length > 0) {
         for (const c of outcome.crashed)
             fail(`doctor crashed (results above are partial): ${c.id}`);
         return 1;
     }
-    if (gate.fails) {
-        fail((_a = gate.reason) !== null && _a !== void 0 ? _a : "gate failed");
+    if (((_b = (_a = outcome.broken) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0) > 0) {
+        for (const b of (_c = outcome.broken) !== null && _c !== void 0 ? _c : [])
+            fail(`broken doctor (not scanned): ${b.id}`);
         return 1;
     }
-    return outcome.skippedUnsafe.length > 0 || brokenCount > 0 ? 1 : 0;
+    if (gate.fails) {
+        fail((_d = gate.reason) !== null && _d !== void 0 ? _d : "gate failed");
+        return 1;
+    }
+    return outcome.skippedUnsafe.length > 0 ? 1 : 0;
 }
 async function cmdRun(args) {
     var _a, _b, _c;
@@ -375,8 +380,19 @@ async function cmdRun(args) {
     else {
         const cohort = await gatherDoctors();
         warnBrokenDoctors(cohort.broken);
-        if (cohortUnusable(cohort))
+        if (cohortUnusable(cohort)) {
+            // Structured failure even here: the JSON surface still gets its
+            // object with the broken array (agent-review probe: stdout was
+            // empty when every doctor was broken).
+            if (parsed.format === "json") {
+                const failed = {
+                    groups: [], crashed: [], broken: cohort.broken.map(b => ({ id: b.slug, detail: causeSummaryLine(b.cause) })),
+                    skippedUnsafe: cohort.skippedUnsafe, doctorPaths: new Map(), fileCount: 0, durationMs: 0, targetDir: parsed.targetDir,
+                };
+                console.log(renderJson(failed, deriveSummary(failed), gateVerdict(parsed.failOn, { error: 0, warning: 0, info: 0 }, "full")));
+            }
             return 1;
+        }
         let valid = cohort.valid;
         skippedUnsafe = cohort.skippedUnsafe;
         broken = cohort.broken;
@@ -498,8 +514,8 @@ async function cmdRun(args) {
             || review.reassessing.length > 0
             || review.ambiguous.length > 0);
     if (parsed.format === "json") {
-        console.log(renderJson(outcome, summary, gate, diff, review !== undefined ? jsonReviewOf(review) : undefined, broken.map(b => ({ id: b.slug, detail: causeSummaryLine(b.cause) }))));
-        return exitAfterSurface(outcome, gate, broken.length);
+        console.log(renderJson(outcome, summary, gate, diff, review !== undefined ? jsonReviewOf(review) : undefined));
+        return exitAfterSurface(outcome, gate);
     }
     if (!interactive) {
         // Agents and pipes get one pointer to the machine surface — stderr,
@@ -515,7 +531,7 @@ async function cmdRun(args) {
             ? { accepted: review.accepted, notApplicable: review.notApplicable,
                 reassessing: review.reassessing, ambiguous: review.ambiguous }
             : undefined));
-        return exitAfterSurface(outcome, gate, broken.length);
+        return exitAfterSurface(outcome, gate);
     }
     const invoker = process.argv[1] ? `node "${fs.realpathSync(process.argv[1])}"` : "any-doctor";
     // Crashes are named before the dashboard paints — the dashboard itself

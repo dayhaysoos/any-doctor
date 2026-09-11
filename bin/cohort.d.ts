@@ -9,12 +9,7 @@ export interface CohortSpec {
     targetDir: string;
     includeTests: boolean;
     skippedUnsafe?: readonly string[];
-    broken?: readonly {
-        slug: string;
-        cause?: {
-            _tag?: string;
-        };
-    }[];
+    broken?: readonly import("./discover.js").BrokenDoctor[];
 }
 export type DoctorExecutor = typeof runDoctorCohort;
 export declare function runCohort(spec: CohortSpec, onProgress?: (p: CohortProgress) => void, exec?: DoctorExecutor): Promise<RunOutcome>;

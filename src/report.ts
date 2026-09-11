@@ -227,7 +227,7 @@ export interface JsonReview {
   dormant: number;
 }
 
-export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult, review?: JsonReview, broken: { id: string; detail: string }[] = []): string {
+export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult, review?: JsonReview): string {
   return JSON.stringify({
     schema: 1,
     tool: "any-doctor",
@@ -266,7 +266,7 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
     crashed: input.crashed.map(cr => ({ id: cr.id, detail: cr.detail })),
     // Discovery failures — an unreadable program is infrastructure, not
     // a finding; it fails the run always and says so here.
-    broken: broken.map(b => ({ id: b.id, detail: b.detail })),
+    broken: (input.broken ?? []).map(b => ({ id: b.id, detail: b.detail })),
     skippedUnsafe: input.skippedUnsafe,
     gate: {
       failOn: gate.failOn,

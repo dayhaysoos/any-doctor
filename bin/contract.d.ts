@@ -50,6 +50,7 @@ export interface CrashedDoctor {
 export interface RunOutcome {
     groups: ReportGroup[];
     crashed: CrashedDoctor[];
+    broken?: CrashedDoctor[];
     skippedUnsafe: string[];
     doctorPaths: ReadonlyMap<string, string>;
     fileCount: number;

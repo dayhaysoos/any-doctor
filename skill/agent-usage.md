@@ -21,7 +21,10 @@ Each check carries `heading`, `severity`, and the explanation fields
 these to investigate. Each finding carries:
 
 - `file`, `line` — always; `column`, `severity`, `message` — optional
-- `decisionKey` — the finding's stable identity; use it to record decisions
+- `decisionKey` — the finding's stable identity; use it to record
+  decisions. ABSENT when `staleEvidence` is true (the source could not
+  be read): such findings are not decidable this run — report them, and
+  note that decisions never attach to unreadable evidence
 - `decision` — present only when a decision already applies (decided
   findings stay in this raw list, annotated; the human report hides them)
 

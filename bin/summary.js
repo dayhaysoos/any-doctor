@@ -54,14 +54,14 @@ function dedupeGroups(groups) {
     return { groups: out, hidden };
 }
 export function deriveSummary(outcome) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     const { groups, hidden } = dedupeGroups(outcome.groups);
     const total = groups.reduce((n, g) => n + g.findings.length, 0);
     const score = computeScore(groups, outcome.fileCount);
     // A crashed doctor contributes no findings, so the raw score reads its
     // silence as cleanliness — the derivation is where crashes are known,
     // and where the partial flag is set for every surface to honor.
-    if (((_b = (_a = outcome.crashed) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0) > 0)
+    if (((_b = (_a = outcome.crashed) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0) > 0 || ((_d = (_c = outcome.broken) === null || _c === void 0 ? void 0 : _c.length) !== null && _d !== void 0 ? _d : 0) > 0)
         score.partialScan = true;
     const header = scoreHeaderLines(score);
     const severityCounts = { error: 0, warning: 0, info: 0 };

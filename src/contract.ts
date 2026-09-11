@@ -87,6 +87,11 @@ export interface RunOutcome {
   // Doctors whose runs crashed: data, named with full detail, results
   // above are partial.
   crashed: CrashedDoctor[];
+  // Doctors whose programs could not even be read (discovery failures —
+  // a broken local file shadowing a bundled doctor): the same
+  // infrastructure-failure class as crashes — fails always, carried to
+  // every surface through this one outcome.
+  broken?: CrashedDoctor[];
   // Slugs Confinement refused to run — they ride along as the skip note.
   skippedUnsafe: string[];
   // Doctor id → program path, for composing re-run commands.

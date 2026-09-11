@@ -2,7 +2,7 @@ import * as path from "path";
 import { cohortFileCount } from "./contract.js";
 import { describeRunnerError, runDoctorCohort } from "./runner.js";
 export async function runCohort(spec, onProgress, exec = runDoctorCohort) {
-    var _a;
+    var _a, _b;
     const runStarted = Date.now();
     // The executor preserves options order; the fold pairs runs with
     // their doctor by index.
@@ -31,6 +31,10 @@ export async function runCohort(spec, onProgress, exec = runDoctorCohort) {
     return {
         groups,
         crashed,
+        broken: ((_b = spec.broken) !== null && _b !== void 0 ? _b : []).map(b => ({
+            id: b.slug,
+            detail: b.cause !== undefined ? describeRunnerError(b.cause) : `broken doctor ${b.slug}`,
+        })),
         skippedUnsafe: spec.skippedUnsafe ? [...spec.skippedUnsafe] : [],
         doctorPaths,
         fileCount: cohortFileCount(fileCounts),

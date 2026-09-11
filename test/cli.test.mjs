@@ -920,6 +920,7 @@ test("agent surface: a broken doctor fails ALWAYS and never corrupts JSON stdout
     const j = JSON.parse(text); // pure JSON — the warning rode stderr
     assert.ok(Array.isArray(j.broken) && j.broken.some(b => b.id === "async-doctor"),
       "the broken doctor is structured failure data in JSON");
+    assert.equal(j.score.partialScan, true, "a broken scan withholds the grade — no false 100/Excellent");
     const stderr = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
     assert.match(stderr, /skipping broken doctor async-doctor/, "the human warning is on stderr");
   } finally {
@@ -936,4 +937,36 @@ test("agent surface: JSON checks carry impact/why/fix when declared", async (t) 
   assert.ok(checks.some(c => c.impact !== undefined || c.why !== undefined || c.fix !== undefined),
     "at least one bundled check exposes its explanation fields");
   log.mock.restore();
+});
+
+
+test("agent surface: all-broken discovery still emits structured JSON", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  const log = t.mock.method(console, "log", () => {});
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-allbroken-"));
+  try {
+    fs.mkdirSync(path.join(dir, "doctors"), { recursive: true });
+    // Break every discoverable slug by shadowing the bundled names.
+    for (const slug of ["async-doctor", "convex-doctor", "effect-v4-doctor", "openrouter-doctor", "slop-doctor"]) {
+      fs.writeFileSync(path.join(dir, "doctors", slug + ".mjs"), "not a doctor\n");
+    }
+    fs.writeFileSync(path.join(dir, "a.ts"), "const x = 1;\n");
+    const cwd = process.cwd();
+    process.chdir(dir);
+    let code;
+    try {
+      code = await cli.main(["run", "--all", "--format", "json"]);
+    } finally {
+      process.chdir(cwd);
+    }
+    assert.equal(code, 1, "all-broken fails");
+    const text = log.mock.calls.map(c => c.arguments.join(" ")).join("");
+    const j = JSON.parse(text); // stdout is still one parseable object
+    assert.equal(j.broken.length, 5, "every broken doctor is structured data");
+    assert.equal(j.groups.length, 0);
+    err.mock.restore();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

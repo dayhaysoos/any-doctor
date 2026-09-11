@@ -34,7 +34,7 @@ export interface CohortSpec {
   skippedUnsafe?: readonly string[];
   // Discovery facts that gate the run even when nothing scanned: a
   // broken doctor (unreadable program) fails ALWAYS, like a crash.
-  broken?: readonly { slug: string; cause?: { _tag?: string } }[];
+  broken?: readonly import("./discover.js").BrokenDoctor[];
 }
 
 // The doctor executor: the seam the Cohort assembles outcomes from. The
@@ -81,6 +81,10 @@ export async function runCohort(
   return {
     groups,
     crashed,
+    broken: (spec.broken ?? []).map(b => ({
+      id: b.slug,
+      detail: b.cause !== undefined ? describeRunnerError(b.cause) : `broken doctor ${b.slug}`,
+    })),
     skippedUnsafe: spec.skippedUnsafe ? [...spec.skippedUnsafe] : [],
     doctorPaths,
     fileCount: cohortFileCount(fileCounts),

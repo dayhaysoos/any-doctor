@@ -321,16 +321,20 @@ function wantsTui(parsed: ParsedArgs): boolean {
 // The exit law, once: crashes always fail (their lines name what's
 // partial), the gate's bar judges findings, skips fail quietly. Each
 // surface calls this where its timing wants the lines printed.
-function exitAfterSurface(outcome: RunOutcome, gate: GateVerdict, brokenCount = 0): number {
+function exitAfterSurface(outcome: RunOutcome, gate: GateVerdict): number {
   if (outcome.crashed.length > 0) {
     for (const c of outcome.crashed) fail(`doctor crashed (results above are partial): ${c.id}`);
+    return 1;
+  }
+  if ((outcome.broken?.length ?? 0) > 0) {
+    for (const b of outcome.broken ?? []) fail(`broken doctor (not scanned): ${b.id}`);
     return 1;
   }
   if (gate.fails) {
     fail(gate.reason ?? "gate failed");
     return 1;
   }
-  return outcome.skippedUnsafe.length > 0 || brokenCount > 0 ? 1 : 0;
+  return outcome.skippedUnsafe.length > 0 ? 1 : 0;
 }
 
 async function cmdRun(args: string[]): Promise<number> {
@@ -387,7 +391,19 @@ async function cmdRun(args: string[]): Promise<number> {
   } else {
     const cohort = await gatherDoctors();
     warnBrokenDoctors(cohort.broken);
-    if (cohortUnusable(cohort)) return 1;
+    if (cohortUnusable(cohort)) {
+      // Structured failure even here: the JSON surface still gets its
+      // object with the broken array (agent-review probe: stdout was
+      // empty when every doctor was broken).
+      if (parsed.format === "json") {
+        const failed: RunOutcome = {
+          groups: [], crashed: [], broken: cohort.broken.map(b => ({ id: b.slug, detail: causeSummaryLine(b.cause) })),
+          skippedUnsafe: cohort.skippedUnsafe, doctorPaths: new Map(), fileCount: 0, durationMs: 0, targetDir: parsed.targetDir,
+        };
+        console.log(renderJson(failed, deriveSummary(failed), gateVerdict(parsed.failOn, { error: 0, warning: 0, info: 0 }, "full")));
+      }
+      return 1;
+    }
     let valid = cohort.valid;
     skippedUnsafe = cohort.skippedUnsafe;
     broken = cohort.broken;
@@ -522,8 +538,8 @@ async function cmdRun(args: string[]): Promise<number> {
       || review.ambiguous.length > 0);
 
   if (parsed.format === "json") {
-    console.log(renderJson(outcome, summary, gate, diff, review !== undefined ? jsonReviewOf(review) : undefined, broken.map(b => ({ id: b.slug, detail: causeSummaryLine(b.cause) }))));
-    return exitAfterSurface(outcome, gate, broken.length);
+    console.log(renderJson(outcome, summary, gate, diff, review !== undefined ? jsonReviewOf(review) : undefined));
+    return exitAfterSurface(outcome, gate);
   }
 
   if (!interactive) {
@@ -545,7 +561,7 @@ async function cmdRun(args: string[]): Promise<number> {
             reassessing: review.reassessing, ambiguous: review.ambiguous }
         : undefined,
     ));
-    return exitAfterSurface(outcome, gate, broken.length);
+    return exitAfterSurface(outcome, gate);
   }
 
   const invoker = process.argv[1] ? `node "${fs.realpathSync(process.argv[1])}"` : "any-doctor";

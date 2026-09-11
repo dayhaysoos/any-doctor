@@ -103,7 +103,7 @@ export function deriveSummary(outcome: RunOutcome): RunSummary {
   // A crashed doctor contributes no findings, so the raw score reads its
   // silence as cleanliness — the derivation is where crashes are known,
   // and where the partial flag is set for every surface to honor.
-  if ((outcome.crashed?.length ?? 0) > 0) score.partialScan = true;
+  if ((outcome.crashed?.length ?? 0) > 0 || (outcome.broken?.length ?? 0) > 0) score.partialScan = true;
   const header = scoreHeaderLines(score);
 
   const severityCounts: Record<Severity, number> = { error: 0, warning: 0, info: 0 };
