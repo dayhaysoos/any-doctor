@@ -275,3 +275,57 @@ test("identity: an unreadable doctor program is marked, not crashed", () => {
   const p = scanProvenance([{ id: "d", programPath: "/x/gone.mjs" }], false, () => null);
   assert.equal(p.doctors[0].digest, scanProvenance([{ id: "d", programPath: "/x/gone2.mjs" }], false, () => null).doctors[0].digest);
 });
+
+// ---- literal preservation (review finding 1: whitespace must not cross
+// literal boundaries) -----------------------------------------------
+
+const lineEv = (src) => ev([f(1)], { "k.ts": src });
+
+test("identity: whitespace inside string literals is semantic — no collapse across quotes", () => {
+  assert.equal(compareOccurrences(lineEv('const key = "a  b";\n'), lineEv('const key = "a b";\n')).pairs.length, 0,
+    "the review's exact case: a double space inside a literal is a change");
+  assert.equal(compareOccurrences(lineEv("const c = 'a  b';\n"), lineEv("const c = 'a b';\n")).pairs.length, 0,
+    "char literals too");
+  assert.equal(compareOccurrences(lineEv("const s = `x  ${a}  y`;\n"), lineEv("const s = `x ${a} y`;\n")).pairs.length, 0,
+    "template interiors too");
+});
+
+test("identity: regex literal interiors stay byte-exact; division still collapses", () => {
+  assert.equal(compareOccurrences(lineEv("return /a  b/.test(x);\n"), lineEv("return /a b/.test(x);\n")).pairs.length, 0,
+    "a regex after a keyword (return)");
+  assert.equal(compareOccurrences(lineEv("const r = /a  b/;\n"), lineEv("const r = /a b/;\n")).pairs.length, 0,
+    "a regex after an operator (=)");
+  assert.equal(compareOccurrences(lineEv("const r = x /  2;\n"), lineEv("const r = x / 2;\n")).pairs.length, 1,
+    "division is code — reformatting around it still matches");
+});
+
+test("identity: code-region whitespace still collapses; comments never open literals", () => {
+  assert.equal(compareOccurrences(lineEv("const  x  =  1;\n"), lineEv("const x = 1;\n")).pairs.length, 1,
+    "between-token reformat tolerance survives");
+  assert.equal(compareOccurrences(lineEv("const BAD = 1; // don't care here\n"), lineEv("const BAD = 1;  // don't care here\n")).pairs.length, 1,
+    "an apostrophe inside a line comment is not an unterminated string");
+});
+
+test("identity: an unterminated literal start falls back conservatively", () => {
+  // The opening line of a multiline template: the scanner cannot resolve
+  // it, so nothing collapses — byte-honest, merely less reformat-tolerant.
+  assert.equal(compareOccurrences(lineEv("const s = `abc  def\n"), lineEv("const s = `abc def\n")).pairs.length, 0);
+  assert.equal(compareOccurrences(lineEv("const s = `abc  def\n"), lineEv("const s = `abc  def\n")).pairs.length, 1);
+});
+
+// ---- duplicate matching is linear (review finding 4) ------------------
+
+test("identity: 20k identical occurrences match in linear time, cardinality honest", () => {
+  const occ = Array.from({ length: 20000 }, (_, i) => ({
+    checkKey: "d/r", file: "x.ts", line: i + 1, lineDigest: "same", relColumn: null, contextId: null,
+  }));
+  const t0 = process.hrtime.bigint();
+  const cmp = compareOccurrences(occ, occ);
+  const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+  assert.equal(cmp.pairs.length, 20000);
+  assert.equal(cmp.addedIndices.length, 0);
+  assert.equal(cmp.ambiguous, 1, "one duplicate bucket, reported");
+  // The old rows.find rescan took ~1.2s at this size; a ceiling keeps the
+  // quadratic class from ever returning (generous: CI machines vary).
+  assert.ok(ms < 500, `20k duplicates matched in ${ms.toFixed(0)}ms — the cursor must stay linear`);
+});

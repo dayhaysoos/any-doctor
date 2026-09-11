@@ -131,11 +131,104 @@ function digestOf(normalized: string): string {
   return createHash("sha256").update(normalized, "utf8").digest("hex");
 }
 
-// CR stripped, whitespace runs collapsed, ends trimmed: two spellings of the
-// same code (indentation, CRLF, aligned spacing) share one digest, while any
-// change to operators, literals, or identifiers on the line does not.
+// Token-aware normalization: whitespace runs collapse ONLY in code
+// regions. String, template, and regex interiors stay byte-exact —
+// `"a  b"` and `"a b"` are different literals, and formatting tolerance
+// must never erase a semantic change (A1's law). A one-pass quote-state
+// scanner decides what is code: apostrophes inside `//` comments never
+// open literals, escapes don't close, and a `/` after a position where
+// an expression cannot start (operators, `(`, `,`, `=`, keywords like
+// return) opens a regex literal. Any line the scanner cannot resolve —
+// an unterminated literal start (a multiline template's opening line)
+// or a guessed regex that never closes — falls back to end-trim-only
+// normalization: byte-honest, merely less reformat-tolerant. Wrong
+// guesses fail conservative: division misread as regex keeps content
+// verbatim (no collapse); the reverse is why regex detection requires
+// the cannot-start-an-expression context, the common regex positions.
+const REGEX_MAY_FOLLOW = new Set(["", "(", "[", "{", ",", ";", ":", "=", "!", "&", "|", "?", "+", "-", "*", "%", "~", "^", "<", ">", "=>"]);
+const REGEX_PRECEDING_KEYWORDS = new Set(["return", "typeof", "instanceof", "in", "of", "new", "delete", "void", "case", "do", "else", "yield", "await"]);
+
 function normalizeLine(raw: string): string {
-  return raw.replace(/\s+/g, " ").trim();
+  const out: string[] = [];
+  let spacePending = false;
+  let quote: "'" | '"' | "`" | "/" | null = null;
+  // prevToken is the last significant code token: a punctuation char or a
+  // completed identifier word. Whitespace never clears it — `return /a/`
+  // must keep the keyword context across the space.
+  let prevToken = "";
+  let word = "";
+  let ambiguous = false;
+  let i = 0;
+  const flushSpace = (): void => {
+    if (spacePending && out.length > 0) { out.push(" "); spacePending = false; }
+  };
+  const completeWord = (): void => {
+    if (word !== "") { prevToken = word; word = ""; }
+  };
+  while (i < raw.length) {
+    const ch = raw[i];
+    if (quote !== null) {
+      out.push(ch);
+      if (ch === "\\" && i + 1 < raw.length) { out.push(raw[i + 1]); i += 2; continue; }
+      if (quote === "/" && ch === "[") {
+        // Character class: everything (including '/') is verbatim until ].
+        let j = i + 1;
+        while (j < raw.length) {
+          out.push(raw[j]);
+          if (raw[j] === "\\") { out.push(raw[j + 1] ?? ""); j += 2; continue; }
+          if (raw[j] === "]") break;
+          j++;
+        }
+        i = j + 1;
+        continue;
+      }
+      if (ch === quote) quote = null;
+      i++;
+      continue;
+    }
+    if (/\s/.test(ch)) { spacePending = out.length > 0; completeWord(); i++; continue; }
+    if (ch === "/" && raw[i + 1] === "/") {
+      completeWord();
+      flushSpace();
+      out.push("//");
+      i += 2;
+      while (i < raw.length) {
+        const c = raw[i];
+        if (/\s/.test(c)) { spacePending = true; i++; continue; }
+        if (spacePending) { out.push(" "); spacePending = false; }
+        out.push(c);
+        i++;
+      }
+      break;
+    }
+    if (ch === "'" || ch === "`" || ch === '"') {
+      completeWord();
+      flushSpace();
+      out.push(ch);
+      quote = ch;
+      i++;
+      continue;
+    }
+    if (/[A-Za-z0-9_$]/.test(ch)) { word += ch; out.push(ch); spacePending = false; i++; continue; }
+    completeWord();
+    if (ch === "/" && (REGEX_MAY_FOLLOW.has(prevToken) || REGEX_PRECEDING_KEYWORDS.has(prevToken))) {
+      flushSpace();
+      out.push(ch);
+      quote = "/";
+      prevToken = "";
+      i++;
+      continue;
+    }
+    flushSpace();
+    out.push(ch);
+    prevToken = ch;
+    spacePending = false;
+    i++;
+  }
+  completeWord();
+  if (quote !== null) ambiguous = true;
+  if (ambiguous) return raw.trim();
+  return out.join("").trim();
 }
 
 export function extractEvidence(
@@ -283,14 +376,16 @@ export function compareOccurrences(base: OccurrenceEvidence[], head: OccurrenceE
   // Stale or unreadable evidence never enters matching: no content, no
   // confident identity — a stale head occurrence is added, a stale base
   // occurrence is absent. (Buckets hold only digested entries, so a stale
-  // pair can never collide into a false continuity.)
-  const baseBuckets = new Map<string, { index: number; used: boolean }[]>();
+  // pair can never collide into a false continuity.) Each bucket consumes
+  // through a cursor — identical duplicates match in linear time; the old
+  // rows.find rescan was quadratic (1.7s at 30k duplicates).
+  const baseBuckets = new Map<string, { indices: number[]; next: number }>();
   base.forEach((e, index) => {
     if (e.lineDigest === null) return;
     const key = fullKey(e);
-    const rows = baseBuckets.get(key) ?? [];
-    rows.push({ index, used: false });
-    baseBuckets.set(key, rows);
+    const bucket = baseBuckets.get(key) ?? { indices: [], next: 0 };
+    bucket.indices.push(index);
+    baseBuckets.set(key, bucket);
   });
 
   const consumedBase = new Set<number>();
@@ -301,17 +396,16 @@ export function compareOccurrences(base: OccurrenceEvidence[], head: OccurrenceE
       return;
     }
     const key = fullKey(e);
-    const rows = baseBuckets.get(key);
-    const free = rows?.find((r) => !r.used);
-    if (free !== undefined) {
-      free.used = true;
-      consumedBase.add(free.index);
+    const bucket = baseBuckets.get(key);
+    if (bucket !== undefined && bucket.next < bucket.indices.length) {
+      const baseIndex = bucket.indices[bucket.next++];
+      consumedBase.add(baseIndex);
       pairs.push({
-        baseIndex: free.index,
+        baseIndex,
         headIndex,
-        contextFallback: e.contextId === null || base[free.index].contextId === null,
+        contextFallback: e.contextId === null || base[baseIndex].contextId === null,
       });
-      if (rows!.length > 1) ambiguousBuckets.add(key);
+      if (bucket.indices.length > 1) ambiguousBuckets.add(key);
     } else {
       addedIndices.push(headIndex);
     }
