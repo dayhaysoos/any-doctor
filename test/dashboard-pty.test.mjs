@@ -27,7 +27,7 @@ expect {
 }
 send "a\\r"
 expect {
-  "async-doctor" {}
+  "async" {}
   timeout { puts ">FAIL dashboard-timeout"; exit 103 }
   eof { puts ">FAIL dashboard-eof"; exit 104 }
 }
@@ -36,7 +36,7 @@ expect {
   timeout { puts ">FAIL footer-timeout"; exit 110 }
   eof { puts ">FAIL footer-eof"; exit 111 }
 }
-# selection starts on the async-doctor row (top, expanded): down onto its
+# selection starts on the async row (top, expanded): down onto its
 # first check, then enter expands the check
 send "\\x1b\\[B"
 after 300
@@ -97,8 +97,8 @@ test("bare run opens the aggregate tree directly; enter walks doctor-check-findi
 
   const text = stripAnsi(transcript);
   assert.ok(text.includes("Select doctors to run"), "the cohort selector is the first screen");
-  assert.ok(text.includes("async-doctor"), "the aggregate tree follows one Enter");
-  assert.ok(text.includes("async-doctor"), "the aggregate tree is the first screen");
+  assert.ok(text.includes("async"), "the aggregate tree follows one Enter");
+  assert.ok(text.includes("async"), "the aggregate tree is the first screen");
   assert.ok(text.includes("a accept"), "dashboard footer in transcript");
   assert.ok(text.includes("copied finding"), "copy notice in transcript");
 

@@ -1,5 +1,5 @@
 export const meta = {
-  id: "convex-doctor",
+  id: "convex",
   description: "Convex discipline: indexed reads, bounded collects, query clocks, discarded promises, validated args, awaited writes, honest runtime boundaries.",
   severity: "warning",
   category: "convex",

@@ -11,7 +11,7 @@ import { runDoctor, verifyDoctor, metaDoctor, describeRunnerError } from "../bin
 // public interface is plain async that throws typed failures — no Effect
 // vocabulary here.
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DOCTOR = path.join(REPO, "doctors", "async-doctor.mjs");
+const DOCTOR = path.join(REPO, "doctors", "async.mjs");
 const TARGET = path.join(REPO, "fixtures", "sample-app");
 
 function tmpDoctor(lines) {
@@ -23,7 +23,7 @@ function tmpDoctor(lines) {
 
 test("runDoctor: executes the doctor against the sample app", async () => {
   const r = await runDoctor({ programPath: DOCTOR, targetDir: TARGET });
-  assert.equal(r.meta.id, "async-doctor");
+  assert.equal(r.meta.id, "async");
   assert.equal(r.findings.length, 4);
   assert.ok(r.durationMs >= 0);
 });
@@ -57,19 +57,19 @@ test("verifyDoctor: fixture gate green on the repo doctor", async () => {
 });
 
 test("verifyDoctor: fixture gate green on the repo convex doctor", async () => {
-  const r = await verifyDoctor({ programPath: path.join(REPO, "doctors", "convex-doctor.mjs") });
+  const r = await verifyDoctor({ programPath: path.join(REPO, "doctors", "convex.mjs") });
   assert.ok(r.results.length >= 42);
   assert.ok(r.results.every(x => x.ok));
 });
 
 test("verifyDoctor: fixture gate green on the repo openrouter doctor", async () => {
-  const r = await verifyDoctor({ programPath: path.join(REPO, "doctors", "openrouter-doctor.mjs") });
+  const r = await verifyDoctor({ programPath: path.join(REPO, "doctors", "openrouter.mjs") });
   assert.ok(r.results.length >= 11);
   assert.ok(r.results.every(x => x.ok));
 });
 
 test("verifyDoctor: fixture gate green on the repo effect-v4 doctor", async () => {
-  const r = await verifyDoctor({ programPath: path.join(REPO, "doctors", "effect-v4-doctor.mjs") });
+  const r = await verifyDoctor({ programPath: path.join(REPO, "doctors", "effect-v4-kitlangton.mjs") });
   assert.ok(r.results.length >= 29);
   assert.ok(r.results.every(x => x.ok));
 });
@@ -91,7 +91,7 @@ test("verifyDoctor: missing fixtures throws FixturesMissing carrying the expecte
 
 test("metaDoctor: reads meta; a broken doctor is data, not a throw", async () => {
   const good = await metaDoctor({ programPath: DOCTOR });
-  assert.equal(good.meta.id, "async-doctor");
+  assert.equal(good.meta.id, "async");
   assert.equal(good.cause, undefined);
 
   const t = tmpDoctor(["export async function doctor(ctx) {}"]);
@@ -118,10 +118,10 @@ test("runDoctorCohort: bounded pool, input order preserved, a crash is typed dat
       { programPath: DOCTOR, targetDir: TARGET },
     ]);
     assert.equal(runs.length, 3, "one run per option, in input order");
-    assert.ok(runs[0].ok && runs[0].result.meta.id === "async-doctor");
+    assert.ok(runs[0].ok && runs[0].result.meta.id === "async");
     assert.ok(!runs[1].ok && runs[1].cause._tag === "DoctorCrashed", "the crash arrives as typed data");
     assert.ok(runs[2].ok, "a sibling's crash never interrupts the cohort");
-    assert.equal(runs[2].result.meta.id, "async-doctor");
+    assert.equal(runs[2].result.meta.id, "async");
   } finally {
     crasher.cleanup();
   }
@@ -137,11 +137,11 @@ test("runDoctorCohort: onProgress fires once per doctor as they settle", async (
   const events = [];
   const runs = await runDoctorCohort([
     { programPath: DOCTOR, targetDir: TARGET },
-    { programPath: path.join(REPO, "doctors", "openrouter-doctor.mjs"), targetDir: TARGET },
+    { programPath: path.join(REPO, "doctors", "openrouter.mjs"), targetDir: TARGET },
   ], (p) => events.push(p));
   assert.equal(runs.length, 2);
   assert.equal(events.length, 2, "one event per doctor");
-  assert.deepEqual(events.map((e) => e.programPath).sort(), [DOCTOR, path.join(REPO, "doctors", "openrouter-doctor.mjs")].sort());
+  assert.deepEqual(events.map((e) => e.programPath).sort(), [DOCTOR, path.join(REPO, "doctors", "openrouter.mjs")].sort());
   assert.equal(events[0].total, 2);
   assert.ok(events.every((e) => e.ok), "both doctors healthy on the sample app");
   assert.ok(events.some((e) => e.durationMs >= 0), "durations reported");

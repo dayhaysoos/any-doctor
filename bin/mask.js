@@ -5,7 +5,7 @@
 //
 // Regex literals must be masked because they may contain quote
 // characters: an unmasked /["']/ opens a phantom string that swallows
-// every line after it (found by slop-doctor flagging imports whose
+// every line after it (found by slop flagging imports whose
 // type-position uses had been masked out of existence).
 //
 // Two host-side consumers share it: ctx.files.readMasked (the sdk — what

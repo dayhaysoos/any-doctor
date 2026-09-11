@@ -133,9 +133,9 @@ test("renderReport: degradation honesty survives an empty scan — narrowed stil
     fileCount: 0,
     analysisAvailable: false,
     groups: [{
-      programName: "async-doctor.mjs",
+      programName: "async.mjs",
       meta: {
-        id: "async-doctor",
+        id: "async",
         description: "Async discipline",
         severity: "warning",
         checks: [{ id: "unawaited-async-map", description: ".map(async ...) dropped", severity: "warning", needs: ["bindings"] }],
@@ -225,9 +225,9 @@ test("renderReport: a second check from the SAME doctor at one site survives ded
     fileCount: 6,
     durationMs: 111,
     groups: [{
-      programName: "convex-doctor.mjs",
+      programName: "convex.mjs",
       meta: {
-        id: "convex-doctor",
+        id: "convex",
         description: "x",
         severity: "warning",
         checks: [
@@ -251,9 +251,9 @@ test("renderReport: checks that need analysis say narrowed when the engine was a
     durationMs: 10,
     analysisAvailable,
     groups: [{
-      programName: "async-doctor.mjs",
+      programName: "async.mjs",
       meta: {
-        id: "async-doctor",
+        id: "async",
         description: "Async discipline",
         severity: "warning",
         checks: [

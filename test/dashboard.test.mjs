@@ -556,9 +556,9 @@ test("dashboard and report render the same finding count for one duplicate-laden
 
 test("dashboard tree keeps a same-doctor second check at one site (both diagnoses visible)", async () => {
   const twoChecks = [{
-    programName: "convex-doctor.mjs",
+    programName: "convex.mjs",
     meta: {
-      id: "convex-doctor", description: "x", severity: "warning",
+      id: "convex", description: "x", severity: "warning",
       checks: [
         { id: "filter-table-scan", description: "Filter scans the table", severity: "warning" },
         { id: "unbounded-collect", description: "Collect is unbounded", severity: "warning" },

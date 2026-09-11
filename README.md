@@ -32,7 +32,7 @@ each with impact, why, fix, and the honest blind spots. `enter` copies a
 fix prompt for your agent.
 
 ```bash
-npx any-doctor@latest run slop-doctor   # one doctor, straight to the report
+npx any-doctor@latest run slop   # one doctor, straight to the report
 ```
 
 Non-terminals and CI never see a prompt — output is stable and pipeable
@@ -42,11 +42,11 @@ Non-terminals and CI never see a prompt — output is stable and pipeable
 
 | Doctor | Discipline | Checks |
 |---|---|---:|
-| **slop-doctor** | The recurring failures of LLM-written code: identical helpers copied across modules, dead exports, unread bindings, hostname-sniffed environments, careless substring matching, collapsed boolean states | 8 |
-| **convex-doctor** | Convex discipline: indexed reads, bounded collects, validated args, awaited writes, honest runtime boundaries | 15 |
-| **effect-v4-doctor** | Effect v4 discipline — the mechanical rules of the [kitlangton Effect skill](https://www.ui-skills.com/skills/kitlangton/effect), enforced | 10 |
-| **openrouter-doctor** | OpenRouter discipline: stream errors surfaced, keep-alives skipped, cancellations that stop billing | 5 |
-| **async-doctor** | Async and concurrency: dropped promise results, uncleared timers, fetch hygiene | 3 |
+| **slop** | The recurring failures of LLM-written code: identical helpers copied across modules, dead exports, unread bindings, hostname-sniffed environments, careless substring matching, collapsed boolean states | 8 |
+| **convex** | Convex discipline: indexed reads, bounded collects, validated args, awaited writes, honest runtime boundaries | 15 |
+| **effect-v4-kitlangton** | Effect v4 discipline — the mechanical rules of the [kitlangton Effect skill](https://www.ui-skills.com/skills/kitlangton/effect), enforced | 10 |
+| **openrouter** | OpenRouter discipline: stream errors surfaced, keep-alives skipped, cancellations that stop billing | 5 |
+| **async** | Async and concurrency: dropped promise results, uncleared timers, fetch hygiene | 3 |
 
 Checks ship positive and innocent-lookalike fixtures. `verify` compares an
 exact multiset of rule/file/line and optional column, then runs shared innocent

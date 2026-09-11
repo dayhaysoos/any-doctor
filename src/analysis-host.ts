@@ -24,7 +24,7 @@ const callsCache = new Map<string, { mtimeMs: number; size: number; file: Analys
 const spansCache = new Map<string, { mtimeMs: number; size: number; file: AnalysisSpans }>();
 
 // Test seam: the model cache is keyed by mtime+size for the process
-// lifetime; tests bust it between cases. Invisible to slop-doctor's
+// lifetime; tests bust it between cases. Invisible to slop's
 // default run (test-file consumers are the documented narrowing).
 export function clearAnalysisCache(): void {
   modelCache.clear();

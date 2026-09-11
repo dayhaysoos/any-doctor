@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { selectDoctor } from "../bin/select.js";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DOCTOR = path.join(REPO, "doctors", "async-doctor.mjs");
+const DOCTOR = path.join(REPO, "doctors", "async.mjs");
 
 class FakeStdin extends EventEmitter {
   isTTY;
@@ -52,7 +52,7 @@ test("selectDoctor: explicit path resolves directly, no discovery", async () => 
 });
 
 test("selectDoctor: slug.mjs argument resolves via the repo scope", async () => {
-  const sel = await selectDoctor("async-doctor.mjs", {
+  const sel = await selectDoctor("async.mjs", {
     cwd: REPO,
     useColor: false,
     env: { stdin: new FakeStdin(false), stdout: new FakeStdout(false) },
@@ -80,7 +80,7 @@ test("selectDoctor: non-interactive session yields listing rows, not a picker", 
   });
   assert.equal(sel.kind, "non-interactive");
   assert.ok(sel.rows.length >= 4, "repo doctors listed");
-  const row = sel.rows.find(r => r.slug === "async-doctor");
+  const row = sel.rows.find(r => r.slug === "async");
   assert.ok(row, "known doctor present");
   assert.equal(row.scope, "repo");
 });
@@ -103,7 +103,7 @@ test("selectDoctor: enter on the picker yields the top doctor", async () => {
   const out = await settle(done);
   assert.ok(out.done, "picker resolves");
   assert.equal(out.value.kind, "doctor");
-  assert.ok(out.value.doctorPath.endsWith("async-doctor.mjs"), "alphabetically first valid doctor");
+  assert.ok(out.value.doctorPath.endsWith("async.mjs"), "alphabetically first valid doctor");
 });
 
 test("selectDoctor: esc during the pick is cancelled, distinct from non-interactive", async () => {

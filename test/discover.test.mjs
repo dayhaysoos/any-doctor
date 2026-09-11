@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 const { discoverDoctors } = (await import("../bin/discover.js"));
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const pilotSource = fs.readFileSync(path.join(repoRoot, "doctors", "async-doctor.mjs"), "utf8");
+const pilotSource = fs.readFileSync(path.join(repoRoot, "doctors", "async.mjs"), "utf8");
 
 function tmp() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-discover-"));
@@ -17,12 +17,12 @@ function tmp() {
 test("discoverDoctors: finds repo-scope doctor with real meta", async () => {
   const root = tmp();
   fs.mkdirSync(path.join(root, "doctors"));
-  fs.writeFileSync(path.join(root, "doctors", "async-doctor.mjs"), pilotSource);
+  fs.writeFileSync(path.join(root, "doctors", "async.mjs"), pilotSource);
   const found = await discoverDoctors(root, { globalDir: path.join(root, "no-global"), bundledDir: path.join(root, "no-bundled") });
   assert.equal(found.length, 1);
-  assert.equal(found[0].slug, "async-doctor");
+  assert.equal(found[0].slug, "async");
   assert.equal(found[0].scope, "repo");
-  assert.equal(found[0].meta.id, "async-doctor");
+  assert.equal(found[0].meta.id, "async");
   assert.ok(Array.isArray(found[0].meta.blindSpots));
   fs.rmSync(root, { recursive: true, force: true });
 });
@@ -32,16 +32,16 @@ test("discoverDoctors: global scope found, repo wins slug collisions", async () 
   const globalDir = path.join(root, "global");
   fs.mkdirSync(path.join(root, "doctors"), { recursive: true });
   fs.mkdirSync(globalDir, { recursive: true });
-  fs.writeFileSync(path.join(root, "doctors", "async-doctor.mjs"), pilotSource);
+  fs.writeFileSync(path.join(root, "doctors", "async.mjs"), pilotSource);
   fs.writeFileSync(path.join(globalDir, "other.mjs"), [
     "export const meta = { id: 'other', description: 'other', severity: 'info' }",
     "export async function doctor(ctx) {}",
   ].join("\n"));
-  fs.writeFileSync(path.join(globalDir, "async-doctor.mjs"), pilotSource);
+  fs.writeFileSync(path.join(globalDir, "async.mjs"), pilotSource);
 
   const found = await discoverDoctors(root, { globalDir, bundledDir: path.join(root, "no-bundled") });
   assert.equal(found.length, 2);
-  const pilot = found.find(d => d.slug === "async-doctor");
+  const pilot = found.find(d => d.slug === "async");
   assert.equal(pilot.scope, "repo");
   assert.equal(found.find(d => d.slug === "other").scope, "global");
   fs.rmSync(root, { recursive: true, force: true });
@@ -111,12 +111,12 @@ test("discoverDoctors: the bundled pack is discovered when repo and global are a
   const root = tmp();
   const bundledDir = path.join(root, "pack");
   fs.mkdirSync(bundledDir, { recursive: true });
-  fs.writeFileSync(path.join(bundledDir, "convex-doctor.mjs"), miniDoctor("convex-doctor"));
+  fs.writeFileSync(path.join(bundledDir, "convex.mjs"), miniDoctor("convex"));
   const cwd = path.join(root, "target");
   fs.mkdirSync(cwd, { recursive: true });
   const found = await discoverDoctors(cwd, { globalDir: path.join(root, "no-global"), bundledDir });
   assert.equal(found.length, 1);
-  assert.equal(found[0].slug, "convex-doctor");
+  assert.equal(found[0].slug, "convex");
   assert.equal(found[0].scope, "bundled");
   fs.rmSync(root, { recursive: true, force: true });
 });
@@ -145,10 +145,10 @@ test("discoverDoctors: repo beats global beats bundled on slug collisions (D15 o
 test("discoverDoctors: the bundled dir that IS the repo dir is scanned once", async () => {
   const root = tmp();
   fs.mkdirSync(path.join(root, "doctors"));
-  fs.writeFileSync(path.join(root, "doctors", "async-doctor.mjs"), pilotSource);
+  fs.writeFileSync(path.join(root, "doctors", "async.mjs"), pilotSource);
   // bundledDir deliberately equals the repo dir — the in-repo dev layout.
   const found = await discoverDoctors(root, { globalDir: path.join(root, "no-global"), bundledDir: path.join(root, "doctors") });
-  const pilots = found.filter(d => d.slug === "async-doctor");
+  const pilots = found.filter(d => d.slug === "async");
   assert.equal(pilots.length, 1);
   assert.equal(pilots[0].scope, "repo", "the repo scope owns it; bundled does not double-report");
   fs.rmSync(root, { recursive: true, force: true });
@@ -161,13 +161,13 @@ test("resolveDoctorPath: a bare slug resolves from the bundled pack last", async
   const bundledDir = path.join(root, "pack");
   fs.mkdirSync(globalDir, { recursive: true });
   fs.mkdirSync(bundledDir, { recursive: true });
-  fs.writeFileSync(path.join(bundledDir, "convex-doctor.mjs"), miniDoctor("convex-doctor"));
-  fs.writeFileSync(path.join(globalDir, "convex-doctor.mjs"), miniDoctor("global-copy"));
+  fs.writeFileSync(path.join(bundledDir, "convex.mjs"), miniDoctor("convex"));
+  fs.writeFileSync(path.join(globalDir, "convex.mjs"), miniDoctor("global-copy"));
   const cwd = path.join(root, "target");
   fs.mkdirSync(cwd, { recursive: true });
-  assert.equal(resolveDoctorPath("convex-doctor.mjs", cwd, { globalDir, bundledDir }), path.join(globalDir, "convex-doctor.mjs"), "global first");
-  fs.rmSync(path.join(globalDir, "convex-doctor.mjs"));
-  assert.equal(resolveDoctorPath("convex-doctor.mjs", cwd, { globalDir, bundledDir }), path.join(bundledDir, "convex-doctor.mjs"), "bundled catches it");
+  assert.equal(resolveDoctorPath("convex.mjs", cwd, { globalDir, bundledDir }), path.join(globalDir, "convex.mjs"), "global first");
+  fs.rmSync(path.join(globalDir, "convex.mjs"));
+  assert.equal(resolveDoctorPath("convex.mjs", cwd, { globalDir, bundledDir }), path.join(bundledDir, "convex.mjs"), "bundled catches it");
   fs.rmSync(root, { recursive: true, force: true });
 });
 
@@ -176,11 +176,11 @@ test("resolveDoctorPath: an extensionless bare slug resolves a scoped doctor (.m
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-slug-ext-"));
   const bundledDir = path.join(root, "pack");
   fs.mkdirSync(bundledDir, { recursive: true });
-  fs.writeFileSync(path.join(bundledDir, "slop-doctor.mjs"), "export const meta = {}");
+  fs.writeFileSync(path.join(bundledDir, "slop.mjs"), "export const meta = {}");
   const cwd = path.join(root, "target");
   fs.mkdirSync(cwd, { recursive: true });
-  assert.equal(resolveDoctorPath("slop-doctor", cwd, { bundledDir }), path.join(bundledDir, "slop-doctor.mjs"));
-  assert.equal(resolveDoctorPath("slop-doctor.mjs", cwd, { bundledDir }), path.join(bundledDir, "slop-doctor.mjs"));
+  assert.equal(resolveDoctorPath("slop", cwd, { bundledDir }), path.join(bundledDir, "slop.mjs"));
+  assert.equal(resolveDoctorPath("slop.mjs", cwd, { bundledDir }), path.join(bundledDir, "slop.mjs"));
   assert.equal(resolveDoctorPath("no-such-doctor", cwd, { bundledDir }), null, "unknown slug stays null");
   fs.rmSync(root, { recursive: true, force: true });
 });

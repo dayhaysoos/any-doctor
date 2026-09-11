@@ -1,5 +1,5 @@
 export const meta = {
-  id: "openrouter-doctor",
+  id: "openrouter",
   description: "OpenRouter discipline: stream errors surfaced, keep-alives skipped, cancellations that stop billing.",
   severity: "warning",
   category: "openrouter",

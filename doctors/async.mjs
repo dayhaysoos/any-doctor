@@ -1,5 +1,5 @@
 export const meta = {
-  id: "async-doctor",
+  id: "async",
   description: "Async and concurrency discipline: fetch hygiene, promise handling, timer cleanup.",
   severity: "warning",
   category: "async",

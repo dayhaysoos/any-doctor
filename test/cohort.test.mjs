@@ -15,20 +15,20 @@ import { fileURLToPath } from "node:url";
 const { runCohort } = await import("../bin/cohort.js");
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DOCTOR = path.join(REPO, "doctors", "async-doctor.mjs");
+const DOCTOR = path.join(REPO, "doctors", "async.mjs");
 const TARGET = path.join(REPO, "fixtures", "sample-app");
 
 test("runCohort: a single doctor is a cohort of one — the full RunOutcome", async () => {
   const outcome = await runCohort({
-    doctors: [{ id: "async-doctor", programPath: DOCTOR }],
+    doctors: [{ id: "async", programPath: DOCTOR }],
     targetDir: TARGET,
     includeTests: false,
   });
   assert.equal(outcome.groups.length, 1);
-  assert.equal(outcome.groups[0].meta.id, "async-doctor");
+  assert.equal(outcome.groups[0].meta.id, "async");
   assert.deepEqual(outcome.crashed, []);
   assert.ok(outcome.fileCount > 0, "the sample app has files");
-  assert.equal(outcome.doctorPaths.get("async-doctor"), DOCTOR);
+  assert.equal(outcome.doctorPaths.get("async"), DOCTOR);
   assert.equal(outcome.targetDir, TARGET);
   assert.ok(outcome.durationMs >= 0);
   assert.equal(typeof outcome.analysisAvailable, "boolean");
@@ -45,7 +45,7 @@ test("runCohort: a crash is data — id plus full detail, siblings still report"
     const outcome = await runCohort({
       doctors: [
         { id: "boom", programPath: boom },
-        { id: "async-doctor", programPath: DOCTOR },
+        { id: "async", programPath: DOCTOR },
       ],
       targetDir: TARGET,
       includeTests: false,
@@ -63,8 +63,8 @@ test("runCohort: a crash is data — id plus full detail, siblings still report"
 test("runCohort: analysis is a process-wide fold across the batch", async () => {
   const outcome = await runCohort({
     doctors: [
-      { id: "async-doctor", programPath: DOCTOR },
-      { id: "openrouter-doctor", programPath: path.join(REPO, "doctors", "openrouter-doctor.mjs") },
+      { id: "async", programPath: DOCTOR },
+      { id: "openrouter", programPath: path.join(REPO, "doctors", "openrouter.mjs") },
     ],
     targetDir: TARGET,
     includeTests: false,
@@ -76,7 +76,7 @@ test("runCohort: analysis is a process-wide fold across the batch", async () => 
 test("runCohort: progress events pass through untouched", async () => {
   const events = [];
   const outcome = await runCohort(
-    { doctors: [{ id: "async-doctor", programPath: DOCTOR }], targetDir: TARGET, includeTests: false },
+    { doctors: [{ id: "async", programPath: DOCTOR }], targetDir: TARGET, includeTests: false },
     (p) => events.push(p),
   );
   assert.equal(outcome.groups.length, 1);

@@ -173,7 +173,7 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
       }
       // Verify always lists everything (includeTestsFor): the sandbox is
       // the doctor's own world — a seed named *.test.ts is deliberate
-      // test data (effect-v4-doctor's sleep-in-test depends on it).
+      // test data (effect-v4-kitlangton's sleep-in-test depends on it).
       const result = await inSandbox(fixture.seed, (tmp) => runOnce(tmp, mod, { includeTests: true }));
       const diff = contract.compareFindings(fixture.expected, result.findings);
       const row = { name: fixture.name, ok: diff.missing.length === 0 && diff.unexpected.length === 0, ...diff };

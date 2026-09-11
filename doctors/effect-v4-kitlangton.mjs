@@ -1,5 +1,5 @@
 export const meta = {
-  id: "effect-v4-doctor",
+  id: "effect-v4-kitlangton",
   description: "Effect v4 discipline: typed errors over hand-rolled tags, Config over direct env reads, named Effect.fn, deterministic generators, validated boundaries, no casts that silence the type system. The mechanical rules of the kitlangton Effect skill, enforced.",
   severity: "warning",
   category: "effect",
@@ -312,7 +312,7 @@ function checkSchemaClass(ctx, file, lines) {
 
 // Two shapes: the Data.TaggedError class-builder (any usage), and any class
 // declaring its own _tag member - the body is brace-tracked from the class
-// line the same way convex-doctor tracks function bodies.
+// line the same way convex tracks function bodies.
 function checkTaggedError(ctx, file, lines) {
   for (let i = 0; i < lines.length; i++) {
     if (/\bData\.TaggedError\b/.test(lines[i])) {

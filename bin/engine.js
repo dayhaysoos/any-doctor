@@ -90,7 +90,7 @@ export function resolveAstGrepBinary() {
     return cachedBinary;
 }
 // One batched query over a real repo emits tens of megabytes of JSON (the
-// async-doctor pilot's ten patterns produce 24MB over a 979-file repo) —
+// async pilot's ten patterns produce 24MB over a 979-file repo) —
 // spawnSync's 1MB default truncates that mid-array, and the crash reads as
 // an ast-grep bug instead of a buffer bug. The ceiling exists so a runaway
 // pattern (matching near-every node of a monorepo) fails loudly here

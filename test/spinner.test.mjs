@@ -10,8 +10,8 @@ const { spinnerLine, startSpinner, formatMs } = await import("../bin/spinner.js"
 const strip = (s) => s.replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "").replace(/\r/g, "");
 
 test("spinnerLine: glyph cycles, counts and note render, elapsed formats", () => {
-  const line = spinnerLine(3, { label: "running doctors", done: 2, total: 4, elapsedMs: 1200, note: "async-doctor" });
-  assert.equal(strip(line), "⠸ running doctors · 2 of 4 done · async-doctor · 1.2s");
+  const line = spinnerLine(3, { label: "running doctors", done: 2, total: 4, elapsedMs: 1200, note: "async" });
+  assert.equal(strip(line), "⠸ running doctors · 2 of 4 done · async · 1.2s");
   assert.equal(strip(spinnerLine(4, { label: "x", done: 0, total: 1, elapsedMs: 40 })), "⠼ x · 0 of 1 done · 40ms");
   // cycles, never out of range
   for (const t of [0, 9, 10, 23]) assert.ok(spinnerLine(t, { label: "x", done: 0, total: 0, elapsedMs: 0 }).length > 0);
@@ -43,8 +43,8 @@ test("startSpinner: hides the cursor, repaints in place, update() reflects state
     assert.match(strip(out.last()), /^⠋ running doctors · 0 of 4 done · 0ms$/);
 
     clock = 1080;
-    spin.update({ done: 2, note: "async-doctor" });
-    assert.match(strip(out.last()), /^⠋ running doctors · 2 of 4 done · async-doctor · 80ms$/);
+    spin.update({ done: 2, note: "async" });
+    assert.match(strip(out.last()), /^⠋ running doctors · 2 of 4 done · async · 80ms$/);
     assert.ok(out.last().includes("\r\x1b[2K"), "repaints the single line in place");
     assert.ok(out.last().startsWith("\x1b[?2026h"), "synchronized output wraps the paint");
 

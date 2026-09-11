@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const cli = await import("../bin/cli.js");
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DOCTOR = path.join(REPO, "doctors", "async-doctor.mjs");
+const DOCTOR = path.join(REPO, "doctors", "async.mjs");
 const TARGET = path.join(REPO, "fixtures", "sample-app");
 
 function silentConsole(t) {
@@ -203,7 +203,7 @@ test("main: bare run partitions the cohort — healthy run, unsafe skipped and n
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cli-cohort-"));
   fs.mkdirSync(path.join(root, "doctors"));
   fs.mkdirSync(path.join(root, "src"));
-  // Slop-free seed (slop-doctor joined the pack and correctly flagged the
+  // Slop-free seed (slop joined the pack and correctly flagged the
   // old `const a = 1` as an unread local, deduping good's finding away):
   // index.ts is entry-exempt, and `a` is read by the export.
   fs.writeFileSync(path.join(root, "src", "index.ts"), "const a = 1;\nexport const b = a;\n");
@@ -325,7 +325,7 @@ test("gate: --format json puts one parseable schema-tagged object on stdout", as
   assert.equal(j.schema, 1);
   assert.equal(j.tool, "any-doctor");
   assert.ok(j.counts.total > 0, "findings counted");
-  assert.equal(j.groups[0].doctor, "async-doctor");
+  assert.equal(j.groups[0].doctor, "async");
   assert.deepEqual(j.crashed, []);
   assert.equal(j.gate.failOn, "none");
   assert.equal(j.gate.fails, false);
@@ -446,8 +446,8 @@ test("main: an extensionless bare slug resolves a scoped doctor and still takes 
   fs.writeFileSync(path.join(root, "src", "index.ts"), "const a = 1;\nexport const b = a;\n");
   process.chdir(root);
   try {
-    const code = await cli.main(["run", "slop-doctor", "src"]);
-    assert.equal(code, 0, "bundled slop-doctor resolved by bare slug, scanned the target");
+    const code = await cli.main(["run", "slop", "src"]);
+    assert.equal(code, 0, "bundled slop resolved by bare slug, scanned the target");
     const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n");
     assert.match(out, /Any Doctor — 1 doctor/, "exactly one doctor ran (a clean report never names it)");
   } finally {
@@ -903,7 +903,7 @@ test("agent surface: a broken doctor fails ALWAYS and never corrupts JSON stdout
     // A local broken doctor (no metadata) SHADOWS discovery; with an explicit
     // valid doctor path alongside, the run must still fail always.
     fs.mkdirSync(path.join(dir, "doctors"), { recursive: true });
-    fs.writeFileSync(path.join(dir, "doctors", "async-doctor.mjs"), "not a doctor\n");
+    fs.writeFileSync(path.join(dir, "doctors", "async.mjs"), "not a doctor\n");
     fs.writeFileSync(path.join(dir, "a.ts"), "const x = 1;\n");
     // Discovery walks from cwd — run from inside the target, as the
     // reviewer's probe did, so the local broken doctor is discovered.
@@ -918,13 +918,13 @@ test("agent surface: a broken doctor fails ALWAYS and never corrupts JSON stdout
     assert.equal(code, 1, "a broken doctor fails the run regardless of the bar");
     const text = log.mock.calls.map(c => c.arguments.join(" ")).join("");
     const j = JSON.parse(text); // pure JSON — the warning rode stderr
-    assert.ok(Array.isArray(j.broken) && j.broken.some(b => b.id === "async-doctor"),
+    assert.ok(Array.isArray(j.broken) && j.broken.some(b => b.id === "async"),
       "the broken doctor is structured failure data in JSON");
     assert.equal(j.score.partialScan, true, "a broken scan withholds the grade");
     assert.equal(j.score.score, null, "the invalidated number is nulled, not 100-with-a-flag");
     assert.equal(j.score.grade, null, "and the grade word too");
     const stderr = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
-    assert.match(stderr, /skipping broken doctor async-doctor/, "the human warning is on stderr");
+    assert.match(stderr, /skipping broken doctor async/, "the human warning is on stderr");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -950,7 +950,7 @@ test("agent surface: all-broken discovery still emits structured JSON", async (t
   try {
     fs.mkdirSync(path.join(dir, "doctors"), { recursive: true });
     // Break every discoverable slug by shadowing the bundled names.
-    for (const slug of ["async-doctor", "convex-doctor", "effect-v4-doctor", "openrouter-doctor", "slop-doctor"]) {
+    for (const slug of ["async", "convex", "effect-v4-kitlangton", "openrouter", "slop"]) {
       fs.writeFileSync(path.join(dir, "doctors", slug + ".mjs"), "not a doctor\n");
     }
     fs.writeFileSync(path.join(dir, "a.ts"), "const x = 1;\n");

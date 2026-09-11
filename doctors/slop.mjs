@@ -1,5 +1,5 @@
 export const meta = {
-  id: "slop-doctor",
+  id: "slop",
   description: "LLM slop discipline: duplicated helpers, dead exports and unread bindings, hostname-sniffed environments, careless text matching, collapsed boolean states. Born from 1,368 Bugbot findings across 182 reviewed PRs.",
   severity: "warning",
   category: "slop",
