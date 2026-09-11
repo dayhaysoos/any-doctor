@@ -477,3 +477,54 @@ test("main: a bare token that is a directory stays the target, not a slug", asyn
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("crash reporting: the error's reason line survives to the CLI surface", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-crash-msg-"));
+  try {
+    // The reason ("Error: <why>") lands at the TOP of the child's
+    // stderr with the stack trailing; a deep stack is exactly what the
+    // old last-8-lines capture threw away. The wording mirrors the
+    // engine's missing-binary explanation.
+    const doctor = path.join(dir, "deepboom.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'deepboom', description: 'x', severity: 'info' }",
+      "function f7() { throw new Error('ctx.search needs the ast-grep engine: it ships with any-doctor') }",
+      "function f6() { return f7() }",
+      "function f5() { return f6() }",
+      "function f4() { return f5() }",
+      "function f3() { return f4() }",
+      "function f2() { return f3() }",
+      "function f1() { return f2() }",
+      "export async function doctor(ctx) { f1() }",
+    ].join("\n"));
+    const code = await cli.main(["run", doctor, TARGET]);
+    assert.equal(code, 1, "the crash fails the run");
+    const printed = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.match(printed, /ctx\.search needs the ast-grep engine: it ships with any-doctor/,
+      "the reason line — not just stack tail — reaches the user");
+    assert.match(printed, /at f/, "and the stack tail survives alongside it");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+
+test("partial scans: the JSON score carries partialScan for machine consumers", async (t) => {
+  const log = t.mock.method(console, "log", () => {});
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-partial-json-"));
+  try {
+    const doctor = path.join(dir, "boom.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'boom', description: 'x', severity: 'info' }",
+      "export async function doctor(ctx) { throw new Error('kaboom json') }",
+    ].join("\n"));
+    await cli.main(["run", doctor, TARGET, "--format", "json"]);
+    const j = JSON.parse(log.mock.calls.map(c => c.arguments.join(" ")).join(""));
+    assert.equal(j.score.partialScan, true, "the machine surface sees the partial flag");
+    assert.equal(j.crashed.length, 1);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

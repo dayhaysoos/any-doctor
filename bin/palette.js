@@ -20,5 +20,5 @@ export function gradeColor(score) {
 // structurally typed: palette's score imports stay value-level
 // (gradeFor, isEmptyScan) — no type dependency rides along.
 export function scoreHeaderTone(score) {
-    return isEmptyScan(score) ? YELLOW : gradeColor(score.score);
+    return isEmptyScan(score) || score.partialScan === true ? YELLOW : gradeColor(score.score);
 }

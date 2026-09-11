@@ -8,4 +8,5 @@ export declare function gradeColor(score: number): string;
 export declare function scoreHeaderTone(score: {
     score: number;
     filesTotal: number;
+    partialScan?: boolean;
 }): string;

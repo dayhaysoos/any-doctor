@@ -29,6 +29,6 @@ export function gradeColor(score: number): string {
 // (D19: render the strings, never re-compose them). Param is
 // structurally typed: palette's score imports stay value-level
 // (gradeFor, isEmptyScan) — no type dependency rides along.
-export function scoreHeaderTone(score: { score: number; filesTotal: number }): string {
-  return isEmptyScan(score) ? YELLOW : gradeColor(score.score);
+export function scoreHeaderTone(score: { score: number; filesTotal: number; partialScan?: boolean }): string {
+  return isEmptyScan(score) || score.partialScan === true ? YELLOW : gradeColor(score.score);
 }

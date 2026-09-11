@@ -157,6 +157,17 @@ function spawnLoader(programPath, mode, timeoutMs, nodeFlags) {
 function lastLines(s, n = 8) {
     return s.trim().split("\n").slice(-n).join("\n");
 }
+// A crash's REASON lives at the top of stderr ("Error: <why>"), the
+// stack trails beneath it. Keeping only the tail showed frames and
+// swallowed the reason — including the engine's "ships with any-doctor"
+// explanation (review probe). Keep both ends: the leading lines that
+// state the cause, the trailing lines that locate it.
+function crashSummary(s) {
+    const lines = s.trim().split("\n");
+    if (lines.length <= 8)
+        return lines.join("\n");
+    return [...lines.slice(0, 3), "  …", ...lines.slice(-4)].join("\n");
+}
 // Loader frames are authored by our own doctor-loader — trusted construction.
 // The guards below separate "a usable frame" from "not a frame"; they are not
 // schema validation of the doctor contract.
@@ -186,7 +197,7 @@ const execLoader = (programPath, mode, timeoutMs = DEFAULT_TIMEOUT_MS) => Effect
                 findings: ["the runtime refused a forbidden capability:", ...lastLines(out.stderr, 2).split("\n")],
             });
         }
-        return yield* new DoctorCrashed({ programPath: abs, detail: lastLines(out.stderr || "exit " + out.status) });
+        return yield* new DoctorCrashed({ programPath: abs, detail: crashSummary(out.stderr || "exit " + out.status) });
     }
     const lines = out.stdout.split("\n");
     // The last sentinel line wins. A doctor writing directly to

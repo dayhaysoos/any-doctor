@@ -23,14 +23,51 @@ const require_ = createRequire(import.meta.url);
 
 let cachedBinary: string | null | undefined;
 
+// A candidate counts only if it is a NATIVE executable, never a script.
+// Under --ignore-scripts the postinstall never runs and @ast-grep/cli's
+// bin files remain #!/usr/bin/env node shims — spawning one where env
+// cannot find node fails confusingly (the review's probe). Native
+// binaries begin with magic bytes; every script begins "#!". The
+// platform package's binary is always the postinstall-copied original,
+// so it is tried FIRST and the shim can never shadow it.
+function isNativeExecutable(p: string): boolean {
+  try {
+    const fd = fs.openSync(p, "r");
+    try {
+      const buf = Buffer.alloc(2);
+      const n = fs.readSync(fd, buf, 0, 2, 0);
+      return n === 2 && !(buf[0] === 0x23 && buf[1] === 0x21);
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch {
+    return false;
+  }
+}
+
+// The picker, pure over its candidate list (ordered by preference) so
+// the shim-shadowing law is pinnable without a real stripped install.
+export function pickNativeBinary(candidates: string[]): string | null {
+  for (const candidate of candidates) {
+    try {
+      fs.accessSync(candidate, fs.constants.X_OK);
+      if (isNativeExecutable(candidate)) return candidate;
+    } catch {
+      // next candidate
+    }
+  }
+  return null;
+}
+
 export function resolveAstGrepBinary(): string | null {
   if (cachedBinary !== undefined) return cachedBinary;
   const candidates: string[] = [];
   try {
     const pkgRoot = path.dirname(require_.resolve("@ast-grep/cli/package.json"));
-    candidates.push(path.join(pkgRoot, "ast-grep"), path.join(pkgRoot, "ast-grep.exe"));
     const pkg = JSON.parse(fs.readFileSync(path.join(pkgRoot, "package.json"), "utf8")) as { optionalDependencies?: Record<string, string> };
     const platformSuffix = `-${process.platform}-${process.arch}`;
+    // 1. the platform package's own binary — native by construction,
+    //    present even under --ignore-scripts.
     for (const dep of Object.keys(pkg.optionalDependencies ?? {})) {
       if (dep.includes(platformSuffix)) {
         try {
@@ -41,20 +78,14 @@ export function resolveAstGrepBinary(): string | null {
         }
       }
     }
+    // 2. the postinstall copy inside @ast-grep/cli — same bytes after a
+    //    normal install; a shim (never native, never picked) before one.
+    candidates.push(path.join(pkgRoot, "ast-grep"), path.join(pkgRoot, "ast-grep.exe"));
   } catch {
     // @ast-grep/cli absent (unsupported install) — PATH is next
   }
-  for (const candidate of candidates) {
-    try {
-      fs.accessSync(candidate, fs.constants.X_OK);
-      cachedBinary = candidate;
-      return cachedBinary;
-    } catch {
-      // next candidate
-    }
-  }
-  cachedBinary = null;
-  return null;
+  cachedBinary = pickNativeBinary(candidates);
+  return cachedBinary;
 }
 //
 // Three query shapes, one interface: a bare pattern (ast-grep run), a

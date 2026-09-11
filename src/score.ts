@@ -5,6 +5,13 @@ export interface ScoreResult {
   grade: string;
   filesClean: number;
   filesTotal: number;
+  // True when doctors crashed during the scan: the computed score is a
+  // partial-scan artifact (crashed doctors contributed no findings), so
+  // every surface must withhold the grade — never render an inflated
+  // "Excellent" over incomplete results (the review's probe: a crashed
+  // doctor's absence RAISED the score). Set by the derivation, which is
+  // the only place that knows; per-doctor scores are never partial.
+  partialScan?: boolean;
 }
 
 // A file's burden by its worst finding: an error makes the file fully
@@ -68,21 +75,31 @@ export interface ScoreHeader {
   // True when the scan saw zero files: callers tone the header yellow,
   // never gradeColor — a vacuous 100 must not buy the Excellent-green.
   emptyScan: boolean;
+  // True when doctors crashed: same yellow tone, same n/a — a partial
+  // score is not a score.
+  partialScan: boolean;
 }
 
 // The one composer for the score's header lines (D19): report and
 // dashboard render these strings, never re-compose them. The clean line
 // is null for an empty scan — there is nothing to be clean against —
 // and so is any score claim: "100 — Excellent" over nothing checked is
-// a false green, so the header says n/a instead.
+// a false green, so the header says n/a instead. A PARTIAL scan (doctors
+// crashed) gets the same refusal: findings stay listed and the exit
+// stays failing, but the aggregate grade is withheld — the crashed
+// doctors' silence must never read as cleanliness.
 export function scoreHeaderLines(s: ScoreResult): ScoreHeader {
   if (isEmptyScan(s)) {
-    return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true };
+    return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true, partialScan: false };
+  }
+  if (s.partialScan === true) {
+    return { scoreLine: "Score: n/a — partial scan (a doctor crashed; results above are incomplete)", cleanLine: null, emptyScan: false, partialScan: true };
   }
   return {
     scoreLine: `Score: ${s.score} / 100 — ${s.grade}`,
     cleanLine: `${s.filesClean}/${s.filesTotal} files clean`,
     emptyScan: false,
+    partialScan: false,
   };
 }
 

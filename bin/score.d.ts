@@ -4,6 +4,7 @@ export interface ScoreResult {
     grade: string;
     filesClean: number;
     filesTotal: number;
+    partialScan?: boolean;
 }
 export declare function findingSeverity(g: ReportGroup, f: Finding): Severity;
 export declare function gradeFor(score: number): string;
@@ -19,6 +20,7 @@ export interface ScoreHeader {
     scoreLine: string;
     cleanLine: string | null;
     emptyScan: boolean;
+    partialScan: boolean;
 }
 export declare function scoreHeaderLines(s: ScoreResult): ScoreHeader;
 export declare function categoryRollup(groups: ReportGroup[]): {

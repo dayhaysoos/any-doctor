@@ -55,15 +55,22 @@ export function isEmptyScan(s) {
 // dashboard render these strings, never re-compose them. The clean line
 // is null for an empty scan — there is nothing to be clean against —
 // and so is any score claim: "100 — Excellent" over nothing checked is
-// a false green, so the header says n/a instead.
+// a false green, so the header says n/a instead. A PARTIAL scan (doctors
+// crashed) gets the same refusal: findings stay listed and the exit
+// stays failing, but the aggregate grade is withheld — the crashed
+// doctors' silence must never read as cleanliness.
 export function scoreHeaderLines(s) {
     if (isEmptyScan(s)) {
-        return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true };
+        return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true, partialScan: false };
+    }
+    if (s.partialScan === true) {
+        return { scoreLine: "Score: n/a — partial scan (a doctor crashed; results above are incomplete)", cleanLine: null, emptyScan: false, partialScan: true };
     }
     return {
         scoreLine: `Score: ${s.score} / 100 — ${s.grade}`,
         cleanLine: `${s.filesClean}/${s.filesTotal} files clean`,
         emptyScan: false,
+        partialScan: false,
     };
 }
 export function categoryRollup(groups) {

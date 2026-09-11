@@ -1,4 +1,5 @@
 import { NamedRuleQuery, RuleQuery } from "./contract.js";
+export declare function pickNativeBinary(candidates: string[]): string | null;
 export declare function resolveAstGrepBinary(): string | null;
 export type EngineQuery = {
     op: "pattern";

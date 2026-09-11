@@ -286,3 +286,30 @@ test("renderReport: a refused-continuity diff says so in the prose line", () => 
   assert.match(clean, /0 added · 1 continuing · 0 no longer detected/);
   assert.doesNotMatch(clean, /continuity refused/);
 });
+
+test("renderReport: a partial scan (crashed doctor + survivor findings) withholds the grade", async () => {
+  const { deriveSummary } = await import("../bin/summary.js");
+  const { renderJson } = await import("../bin/report.js");
+  // The review's probe shape: one doctor crashed, survivors found things
+  // — the raw score would RISE (the crashed doctor's silence read as
+  // cleanliness) and render "90 — Excellent" over incomplete results.
+  const outcome = {
+    groups: [JSON.parse(JSON.stringify(input.groups[0]))],
+    crashed: [{ id: "boom", detail: "doctor crashed:\nkaboom" }],
+    skippedUnsafe: [],
+    doctorPaths: new Map(),
+    fileCount: 6,
+    durationMs: 9,
+    targetDir: ".",
+  };
+  const summary = deriveSummary(outcome);
+  assert.equal(summary.score.partialScan, true, "the derivation marks the partial scan");
+  assert.match(summary.header.scoreLine, /^Score: n\/a — partial scan/, "the grade is refused");
+  assert.equal(summary.header.cleanLine, null, "no clean-fraction claim either");
+  const out = renderReport(outcome, false);
+  assert.doesNotMatch(out, /\/ 100/, "no numeric score over incomplete results");
+  assert.doesNotMatch(out, /Excellent|Good|Fair|Poor|Critical/, "no grade word at all");
+  assert.match(out, /1 finding/, "the survivors' findings stay listed");
+  const j = JSON.parse(renderJson(outcome, summary, { fails: true, reason: "x", failOn: "error", mode: "full" }));
+  assert.equal(j.score.partialScan, true, "the machine surface carries the flag");
+});
