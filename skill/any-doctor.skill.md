@@ -105,7 +105,12 @@ export const fixtures = [
   Declare `needs: ["calls"]` and a degraded policy. Stored/passed/returned
   is not proof that a promise eventually settles; a nearby combiner is not
   evidence about a particular promise.
-- `ctx.report.finding({ rule, file, line, column?, message?, severity? })`
+- `ctx.report.finding({ rule, file, line, column?, message?, severity?, evidence? })`
+  - `evidence: { endLine, endColumn? }` (optional): the flagged expression's
+    full range when it spans lines — the host validates it and the diff's
+    identity matching then catches edits on ANY line of the expression.
+    Omit it and the finding matches on its flagged line only (line-scoped,
+    reported as weaker). One-line findings don't need it.
 
 Zero dependencies, zero imports — a doctor is one self-contained file;
 everything reaches it through `ctx`. Node >= 18.

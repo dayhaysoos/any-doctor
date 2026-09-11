@@ -1135,16 +1135,36 @@ misattributed comparison indices), and `resolveDoctorPath` stat-checks
 `isFile` (the verbatim-slug candidate resolved `.` to the bundled doctors
 directory, which then crashed under Confinement).
 
-Documented v1 deferrals: (1) evidence is the flagged **line**, not the
-primary-expression range — an edit on a continuation line of a multiline
-expression does not currently invalidate continuity (pinned by test; full
-ranges need Finding end coordinates or doctor-supplied ranges); (2) structural
-context is the innermost function-like span only — receiver/declaration
-linkage the analysis host already provides is unused; (3) two same-line
-occurrences are independently addressable only when the doctor supplies
-columns; (4) continuing is a count — before/after pairing display belongs to
-M4's history views. Persistent identity for decisions (M2), per-check
-compatibility revisions, and doctor-supplied evidence remain open in the
+**Amendment (identity repairs, same branch):** an independent adversarial
+review found four defects, all reproduced and repaired. (1) The
+whitespace normalization collapsed string/template/regex interiors —
+`"a  b"` and `"a b"` compared equal; normalization is now a quote-state
+scanner that collapses only code regions, with a conservative end-trim
+fallback for lines it cannot resolve. (2) Provenance and evidence were
+read after both scans — a doctor mutated between executions still
+reported comparable, and a file restored after the head scan lent the
+base its old bytes for a false continuity. Doctor digests are now
+captured before each side's scan, evidence is captured at
+scan-adjacency from an immutable source map, and a consistency recheck
+marks post-capture changes stale. **The original snapshot-policy claim
+that the failure mode was conservative is withdrawn** — the restore
+direction produced false continuity, the dangerous class. (3) Multiline
+expressions: the line-only deferral is superseded by the A1 hybrid —
+`Finding` carries an optional host-validated evidence range (bounded at
+50 lines; invalid shapes fall back visibly), continuation-line edits now
+break identity, and matches are scoped (`range` vs `line`) with
+line-scoped matches surfaced as `lineScoped` so dismissal reuse can
+refuse them. (4) Duplicate matching was quadratic; per-bucket cursors
+make it linear (100k identical pairs in ~58ms — dev/identity-bench.mjs
+is the benchmark of record).
+
+Remaining limitations, explicitly not guarantees: an edit during a scan
+itself remains undetectable (adjacency narrows the window, it cannot
+close it); receiver/declaration linkage beyond the innermost span is
+still unused; same-line occurrences need doctor-supplied columns; bundled
+doctors do not yet emit evidence ranges (all current matches are
+line-scoped and say so); per-check compatibility revisions remain open
+for M2. Persistent identity for decisions (M2) still open in the
 [design](plans/finding-lifecycle/design.md).
 
 ---

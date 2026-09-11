@@ -29,25 +29,28 @@ by additional review commits. Its [audit](repair-audit-007.md) records the exact
 older candidate tested, including 286 tests and 100 Convex verification rows.
 Those results must not be presented as a fresh test of later source or this plan.
 
-**Delivered on `implement/analysis-a1-a2` (A1+A2, D30):** the `--base` diff now
-compares through the host-derived identity layer — added / continuing /
-no-longer-detected with contextFallback, ambiguous, stale, unreadable, and
-contextUnavailable surfaced in report, JSON, and gate paths. `compareFindings`
-stays the strict fixture gate. Evidence: 316 tests green (28 new identity/diff
-cases mapping the acceptance matrix — the matrix rows were authored in the plan
-before implementation, and the review-loop counterexamples supplemented them as
-the independent labels) plus a packed-artifact smoke on sift-skills (Apple M1
-Pro, 16 GB, Node 26.5.0; 632 files, 5 doctors: single scan 8.1s / 82.4KB JSON;
-`--base HEAD~5` double scan 7.2s / 82.9KB JSON, 402 continuing / 1 added, the
-added finding cross-checked against git as a gitignored working-tree artifact).
-Synthetic identity benchmark (all-unmatched worst case): 10k ≈ 60ms, 100k ≈
-0.5s, 1M ≈ 5s, ~1.1GB heap — a layer limit, not scanner capacity; end-to-end
-pipeline peak memory at that scale remains unmeasured. Documented v1 deferrals
-(D30): primary-expression evidence ranges (line digest only — continuation-line
-edits do not currently invalidate), receiver/declaration linkage beyond the
-innermost span, independently addressable same-line occurrences without
-doctor-supplied columns, and before/after pair display (M4). The CLI still has
-no persistent decision store, SQLite layer, or finding history.
+**Delivered on `implement/analysis-a1-a2` (A1+A2, D30 + identity-repair
+amendment):** the `--base` diff compares through the host-derived identity
+layer — added / continuing / no-longer-detected with contextFallback,
+ambiguous, stale, lineScoped, unreadable, and contextUnavailable surfaced in
+report, JSON, and gate paths. `compareFindings` stays the strict fixture gate.
+An adversarial review's four findings are repaired with its probes as
+regression tests: literal-preserving normalization (quote-state scanner;
+string/template/regex interiors byte-exact), execution-bound provenance and
+evidence (pre-scan doctor digests, scan-adjacent immutable source capture,
+post-capture consistency recheck), optional host-validated Finding evidence
+ranges (multiline continuation edits break identity; scope surfaced as
+lineScoped), and linear duplicate matching (per-bucket cursors; 100k
+identical pairs ~58ms — dev/identity-bench.mjs is the benchmark of record).
+Evidence: 332 tests green plus a packed-artifact smoke on sift-skills (Apple
+M1 Pro, 16 GB, Node 26.5.0; full-pack `--base HEAD~5`: 402 continuing / 1
+added — the added finding cross-checked against git as a gitignored
+working-tree artifact — 402 lineScoped honestly reported because no bundled
+doctor emits ranges yet). Remaining limitations (D30 amendment, explicitly
+not guarantees): edits during a scan itself remain undetectable;
+receiver/declaration linkage unused; same-line occurrences need columns;
+bundled doctors emit no evidence ranges yet. The CLI still has no persistent
+decision store, SQLite layer, or finding history.
 
 **Architecture pass (same branch):** the dashboard split into its three
 concerns — src/doctor-tree.ts (the view-model: SiteFinding, buildTree,

@@ -1,9 +1,14 @@
 # Analysis improvements before persistent decisions
 
 Status: A1 + A2 (the first delivery below) is implemented on branch
-`implement/analysis-a1-a2` — see D30 in [decisions](../../decisions.md) for the
-accepted v1 choices and evidence. Later analysis capabilities remain separate
-work, not prerequisites for local decisions or team sharing.
+`implement/analysis-a1-a2` — see D30 (including its identity-repair
+amendment) in [decisions](../../decisions.md) for the accepted choices,
+evidence, and remaining limitations. An adversarial review's four findings
+(literal-preserving normalization, execution-bound provenance/evidence,
+evidence ranges for multiline expressions, linear duplicate matching) are
+repaired with the review's probes as regression tests. Later analysis
+capabilities remain separate work, not prerequisites for local decisions
+or team sharing.
 Read [vision](../vision.md), [reliability](../doctor-reliability.md), and the
 [lifecycle design](finding-lifecycle/design.md) for the surrounding contract.
 

@@ -138,7 +138,12 @@ lives in the program's meta, not in individual findings.
 
 A finding may establish a defect, flag a project convention, or identify a
 contextual review candidate. Its existence alone does not establish that a code
-change is appropriate. Current locations are not durable lifecycle identities.
+change is appropriate. Current locations are not durable lifecycle identities,
+but a finding may carry an optional `evidence` range (`endLine`, exclusive
+`endColumn`) covering its whole expression: the host validates it against the
+scanned source and the identity layer digests the covered span, so edits on
+continuation lines still break identity. Findings without a range match on
+their flagged line alone — line-scoped, surfaced as such.
 
 ## Check
 
