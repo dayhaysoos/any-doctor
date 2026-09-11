@@ -88,6 +88,45 @@ changed doctor can support an explicit detector comparison, not a code-fix claim
 Expired detailed history must be identified as unavailable, not reconstructed as
 complete from summary counters.
 
+## Doctor identity across authors and renames (planned, M3)
+
+Decisions crossing trust boundaries — committed project records shared
+through Git — need doctor identity that is unique across authors and
+stable across display renames. Two mechanisms, both visible, both
+authored; no hidden self-asserted IDs:
+
+- **Namespace/id.** A doctor's full key is `namespace/id` when it
+  declares a `namespace` (kebab-case author or origin), bare `id`
+  otherwise. Bundled doctors stay bare forever — the curated first-party
+  pack — so the 0.1.2 rename never churns again; third-party doctors
+  MUST declare a namespace, making `alice/convex` and `bob/convex`
+  distinct by construction while keys stay human-readable (surfaces may
+  show the friendly id; machine surfaces carry the full key). A copy
+  that keeps the same namespace/id is honestly the same doctor; a fork
+  that changes meaning diverges through provenance (revision/digest).
+  Self-generated UUIDs are ruled out: they travel with file copies,
+  producing invisible collisions — worse than name collisions because
+  nobody can read the key. The doctor identity key never drops its
+  namespace component: matching decisions on code evidence alone would
+  let one doctor's decision suppress another doctor's finding at the
+  same location — the cross-doctor suppression the identity layer
+  exists to prevent.
+- **`supersedes` for renames.** Renaming is a semantic event only the
+  doctor's owner can assert: `supersedes: "convex-doctor"` (old full
+  key). On load, the state layer migrates decisions from superseded
+  keys to the new ones, gated on provenance continuity — revision or
+  program digest must still match; a rename combined with a meaning
+  change resurfaces decisions for reassessment rather than silently
+  carrying. This is the explicit, authored version of "identity
+  survives renames": no invisible magic, and the migration is visible
+  in state.
+
+Both land with M3 (they are load-bearing only once decisions are
+committed and shared); the doctor contract and the authoring skill
+teach the declaration from day one so authored doctors arrive
+namespaced. The 0.1.1→0.1.2 bundled rename churns once, deliberately,
+while exposure is near zero; `supersedes` is not retrofitted for it.
+
 ## Team convergence
 
 For the same source, compatible doctors/engines, configuration, and committed
