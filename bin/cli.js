@@ -46,6 +46,19 @@ function skillText() {
         return null;
     }
 }
+// The agent usage doc — the machine-facing interface, printable on demand
+// (`any-doctor help agents`) so npx-only users need no installation to
+// discover it. Shipped in the package; always in sync with the version
+// that printed it.
+function agentUsageText() {
+    const p = fileURLToPath(new URL("../skill/agent-usage.md", import.meta.url));
+    try {
+        return fs.readFileSync(p, "utf8");
+    }
+    catch {
+        return null;
+    }
+}
 function useColor() {
     return Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
 }
@@ -477,6 +490,12 @@ async function cmdRun(args) {
         return exitAfterSurface(outcome, gate);
     }
     if (!interactive) {
+        // Agents and pipes get one pointer to the machine surface — stderr,
+        // so JSON purity and report pipes are untouched. The TTY check keeps
+        // terminal humans (whose stdout IS a tty) free of it.
+        if (parsed.format === "report" && !process.stdout.isTTY) {
+            warn(dim("any-doctor: non-interactive output — agents: run with --format json (findings carry decisionKey); the full workflow: any-doctor help agents"));
+        }
         // The report renders the ACTIVE list: decided findings are hidden,
         // with the reviewed line keeping the hiding honest. The gate above
         // still judged the raw findings — local decisions never change CI.
@@ -815,6 +834,7 @@ async function cmdDecide(args) {
     // blob as checkKey and the decision would sit dormant forever
     // (loop-4's catch).
     const [keyCheck, keyFile] = key.split("\u0000");
+    const stateExistedBefore = fs.existsSync(decisionsPath(parsed.targetDir));
     const recorded = recordDecision(parsed.targetDir, {
         key: key,
         checkKey: checkKey !== "" ? checkKey : keyCheck,
@@ -833,6 +853,12 @@ async function cmdDecide(args) {
         return 1;
     }
     ok(`decision recorded (${parsed.disposition}): ${truncReason(parsed.reason)} — hidden from the active list on the next scan; any-doctor decisions --reverse <key> to undo`);
+    if (!stateExistedBefore) {
+        // The one-time adoption nudge: the highest-trust channel for agents
+        // is the repo's own AGENTS.md — we never write it; we point at the
+        // paste source.
+        console.log(dim("tip: add the agent workflow to this repo's AGENTS.md so your agents use decisions — 'any-doctor help agents' prints ready-to-paste markdown"));
+    }
     return 0;
 }
 function truncReason(s) {
@@ -947,6 +973,7 @@ function usage() {
     console.log("");
     console.log(dim("doctors live in ./doctors/ (repo), ~/.any-doctor/doctors/ (global), and the bundled pack (lowest priority)."));
     console.log(dim("generation delegates to your installed agent — run and verify never touch a model."));
+    console.log(dim("agents: 'any-doctor help agents' prints the machine interface (JSON scan, decide, decisions)."));
 }
 export async function main(argv = process.argv.slice(2)) {
     const major = Number(process.versions.node.split(".")[0]);
@@ -957,6 +984,15 @@ export async function main(argv = process.argv.slice(2)) {
     const cmd = argv[0];
     const rest = argv.slice(1);
     if (cmd === "help" || cmd === "--help") {
+        if (rest[0] === "agents") {
+            const doc = agentUsageText();
+            if (doc === null) {
+                fail("agent usage doc not found (skill/agent-usage.md missing).");
+                return 1;
+            }
+            console.log(doc.trimEnd());
+            return 0;
+        }
         usage();
         return 0;
     }

@@ -829,3 +829,65 @@ test("decisions: unknown flags refuse; ambiguous decisions surface in the report
   assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /unknown flag --revrse/);
   err.mock.restore();
 });
+
+// ---- the agent interface (help agents, piped hint, adoption tip) ---------
+
+test("agent surface: help agents prints the machine-interface doc", async (t) => {
+  const log = t.mock.method(console, "log", () => {});
+  const code = await cli.main(["help", "agents"]);
+  assert.equal(code, 0);
+  const doc = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+  assert.match(doc, /--format json/, "the scan command");
+  assert.match(doc, /decisionKey/, "the identity key");
+  assert.match(doc, /decide --key/, "the decision verb");
+  assert.match(doc, /delegated authority/, "the authority rule");
+  log.mock.restore();
+});
+
+test("agent surface: the piped hint rides stderr, never JSON stdout, never a TTY", async (t) => {
+  // The test harness's stdout is not a TTY — exactly the piped condition.
+  const err = t.mock.method(console, "error", () => {});
+  const log = t.mock.method(console, "log", () => {});
+  await cli.main(["run", DOCTOR, TARGET]);
+  const stderr = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+  assert.match(stderr, /--format json/, "the hint points at the machine surface");
+  assert.match(stderr, /help agents/, "and at the doc");
+  // JSON mode: no hint anywhere near stdout
+  err.mock.reset?.(); log.mock.reset?.();
+  const err2 = t.mock.method(console, "error", () => {});
+  const log2 = t.mock.method(console, "log", () => {});
+  await cli.main(["run", DOCTOR, TARGET, "--format", "json"]);
+  const jsonText = log2.mock.calls.map(c => c.arguments.join(" ")).join("");
+  assert.doesNotMatch(jsonText, /help agents/, "stdout JSON is pure");
+  assert.ok(JSON.parse(jsonText).schema === 1, "still parseable");
+  void err; void log; err2.mock.restore(); log2.mock.restore();
+});
+
+test("agent surface: the AGENTS.md tip fires once, on the first decision", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  const log = t.mock.method(console, "log", () => {});
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-tip-"));
+  const docDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-tip-doc-"));
+  try {
+    const doctor = path.join(docDir, "m.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'm', description: 'x', severity: 'warning' }",
+      "export async function doctor(ctx) { ctx.report.finding({ file: 'a.ts', line: 1 }) }",
+    ].join("\n"));
+    fs.writeFileSync(path.join(dir, "a.ts"), "const BAD = 1;\n");
+    await cli.main(["decide", "--file", "a.ts", "--line", "1", "--accepted", "--reason", "first", doctor, dir]);
+    let out = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.match(out, /add the agent workflow to this repo's AGENTS\.md/, "the tip fires on the first decision");
+    assert.match(out, /help agents/, "and names the paste source");
+    log.mock.restore();
+    const log2 = t.mock.method(console, "log", () => {});
+    await cli.main(["decide", "--file", "a.ts", "--line", "1", "--not-applicable", "--reason", "second", doctor, dir]);
+    out = log2.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.doesNotMatch(out, /AGENTS\.md/, "the second decision is tip-free");
+    log2.mock.restore();
+    err.mock.restore();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true }); fs.rmSync(docDir, { recursive: true, force: true });
+  }
+});
