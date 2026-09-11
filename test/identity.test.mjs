@@ -279,7 +279,7 @@ test("identity: an unreadable doctor program is marked, not crashed", () => {
 // ---- literal preservation (review finding 1: whitespace must not cross
 // literal boundaries) -----------------------------------------------
 
-const lineEv = (src) => ev([f(1)], { "k.ts": src });
+const lineEv = (src) => ev([f(1)], { "x.ts": src });
 
 test("identity: whitespace inside string literals is semantic — no collapse across quotes", () => {
   assert.equal(compareOccurrences(lineEv('const key = "a  b";\n'), lineEv('const key = "a b";\n')).pairs.length, 0,
