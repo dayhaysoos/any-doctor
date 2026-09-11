@@ -17,6 +17,44 @@ export interface ReportDiff {
     comparable: boolean;
 }
 export declare function reportDiffOf(diff: DiffResult): ReportDiff;
-export declare function renderReport(input: RunOutcome, useColor: boolean, diff?: ReportDiff): string;
-export declare function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult): string;
+export interface ReportReview {
+    accepted: number;
+    notApplicable: number;
+    reassessing: {
+        checkKey: string;
+        file: string;
+        reason: string;
+    }[];
+    ambiguous: {
+        checkKey: string;
+        file: string;
+        occurrences: number;
+        reason: string;
+    }[];
+}
+export declare function renderReport(input: RunOutcome, useColor: boolean, diff?: ReportDiff, review?: ReportReview): string;
+export interface JsonReview {
+    annotations: Map<string, {
+        decisionKey?: string;
+        decision?: {
+            disposition: string;
+            reason: string;
+            actor: string;
+            updatedAt: string;
+        };
+        stale?: boolean;
+    }>;
+    reassessing: {
+        checkKey: string;
+        file: string;
+        reason: string;
+    }[];
+    ambiguous: {
+        checkKey: string;
+        file: string;
+        occurrences: number;
+    }[];
+    dormant: number;
+}
+export declare function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult, review?: JsonReview): string;
 export declare function renderVerifyResult(result: VerifyRunResult, useColor: boolean): string;

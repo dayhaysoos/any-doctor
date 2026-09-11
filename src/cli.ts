@@ -4,11 +4,14 @@ import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { DOCTOR_FILE_RE } from "./contract.js";
 import { renderJson, renderReport, renderVerifyResult, reportDiffOf, unsafeSkipLine } from "./report.js";
-import { RunOutcome } from "./contract.js";
+import { readKeyFor, resolveFinding, RunOutcome } from "./contract.js";
 import { CohortSpec, runCohort } from "./cohort.js";
 import { countsOfSeverities, FailOn, gateVerdict, GateVerdict, isFailOn } from "./gate.js";
-import { DiffResult, captureHeadScan, runDiff } from "./diff.js";
+import { DiffResult, runDiff } from "./diff.js";
 import { digestTextFile, doctorDigests } from "./identity.js";
+import { decisionsPath, loadDecisions, DecisionRecord, recordDecision, reverseDecision, decodeDecisionKey, encodeDecisionKey } from "./finding-state.js";
+import { ReviewView, reviewOf, ScanProvenance } from "./review.js";
+import { captureScan, identityKeyOf } from "./scan-capture.js";
 import { deriveSummary } from "./summary.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
@@ -61,6 +64,74 @@ class ExitCode extends Error {
   constructor(public code: number) {
     super("exit " + code);
   }
+}
+
+// ---- remembered decisions (M2) ------------------------------------------
+//
+// Local decisions suppress findings from the ACTIVE list (report display,
+// dashboard tree) when the identity key matches exactly; gates and exit
+// codes stay on the RAW findings — a private decision never changes CI
+// (that is M3's project scope). Evidence-changed findings resurface with
+// a reassessment warning; a corrupt decisions file fails the run loudly
+// rather than silently ignoring the user's records.
+
+
+
+// The JSON adapter over the view: per-readKey rows carry the printable
+// key (decision only where applied); the decisions block renders only
+// when it has content — renderJson decides from this payload.
+function jsonReviewOf(view: ReviewView): import("./report.js").JsonReview {
+  const annotations: import("./report.js").JsonReview["annotations"] = new Map();
+  for (const [readKey, row] of view.rows) {
+    annotations.set(readKey, {
+      ...(row.key !== undefined ? { decisionKey: row.key } : {}),
+      ...(row.decision !== undefined ? { decision: row.decision } : {}),
+      ...(row.stale === true ? { stale: true } : {}),
+    });
+  }
+  return {
+    annotations,
+    reassessing: view.reassessing,
+    ambiguous: view.ambiguous.map((a) => ({ checkKey: a.checkKey, file: a.file, occurrences: a.occurrences })),
+    dormant: view.dormant,
+  };
+}
+
+// The command layer's adapter: one ReviewView, surfaces read it. The
+// derivation lives in review.ts — one derivation, N adapters.
+function computeReview(targetDir: string, capture: ReturnType<typeof captureScan>, provenance: ScanProvenance, load = loadDecisions): { ok: true; review: ReviewView } | { ok: false; error: string } {
+  const loaded = load(targetDir);
+  if (!loaded.ok) return loaded;
+  return { ok: true, review: reviewOf(capture, loaded.decisions, encodeDecisionKey, provenance) };
+}
+
+// The scan's doctor provenance: program digests from the spec (the same
+// pre-scan digest discipline the diff uses) — the command layer alone
+// holds program paths.
+function scanProvenanceOf(spec: CohortSpec, groups: { meta: { id: string; checks?: { id: string; revision?: number }[] } }[]): ScanProvenance {
+  const digests = doctorDigests(spec.doctors, digestTextFile);
+  const programDigests = new Map(digests.map((d) => [d.doctorId, d.digest]));
+  const revisions = new Map<string, number>();
+  for (const g of groups) {
+    for (const check of g.meta.checks ?? []) {
+      if (check.revision !== undefined) revisions.set(`${g.meta.id}/${check.id}`, check.revision);
+    }
+  }
+  return { revisions, programDigests };
+}
+
+// The display outcome: decided findings removed, everything else the raw
+// truth. The report and dashboard render this; the gate renders raw.
+function outcomeWithoutDecided(outcome: RunOutcome, suppressedReadKeys: Set<string>): RunOutcome {
+  if (suppressedReadKeys.size === 0) return outcome;
+  const groups = outcome.groups.map((g) => ({
+    ...g,
+    findings: g.findings.filter((f) => {
+      const j = resolveFinding(g.meta, f);
+      return !suppressedReadKeys.has(readKeyFor(j.checkKey, f.file, f.line, f.column));
+    }),
+  }));
+  return { ...outcome, groups };
 }
 
 // Verify's crossing of the Runner seam: a failure there is a failure of
@@ -376,12 +447,34 @@ async function cmdRun(args: string[]): Promise<number> {
   let diff: DiffResult | undefined;
   if (parsed.base !== undefined && outcome.crashed.length === 0) {
     try {
-      const head = captureHeadScan(spec.targetDir, summary.groups, outcome.analysisAvailable ?? false, headDigests!);
+      const head = captureScan(spec.targetDir, summary.groups, outcome.analysisAvailable ?? false, headDigests!);
       diff = await runDiff(spec, parsed.base, head);
     } catch (e) {
       fail(e instanceof Error ? e.message : String(e));
       return 1;
     }
+  }
+
+  // Report-vs-dashboard policy: --all is the batch/report mode; JSON is
+  // a machine surface and never opens a TUI; otherwise a real terminal
+  // with room and no headless override gets the tree.
+  const interactive = wantsTui(parsed);
+
+  // Remembered decisions: computed when state exists (headless) or when
+  // the dashboard may record one (it needs the identity keys either way).
+  // A corrupt file fails the run loudly — never ignored, never reset.
+  let review: ReviewView | undefined;
+  // JSON is the agent surface: findings carry decisionKey from the very
+  // first run, so agents decide without a resolving scan.
+  if (fs.existsSync(decisionsPath(parsed.targetDir)) || interactive || parsed.format === "json") {
+    const capture = captureScan(parsed.targetDir, summary.groups, outcome.analysisAvailable ?? false, []);
+    const provenance = scanProvenanceOf(spec, summary.groups);
+    const r = computeReview(parsed.targetDir, capture, provenance);
+    if (!r.ok) {
+      fail(r.error);
+      return 1;
+    }
+    review = r.review;
   }
 
   // The Gate: advisory findings by default (--fail-on none), crashes
@@ -393,20 +486,33 @@ async function cmdRun(args: string[]): Promise<number> {
     diff !== undefined ? "diff" : "full",
   );
 
-  // Report-vs-dashboard policy: --all is the batch/report mode; JSON is
-  // a machine surface and never opens a TUI; otherwise a real terminal
-  // with room and no headless override gets the tree.
-  const interactive = wantsTui(parsed);
-
   // The machine surface: exactly one JSON object on stdout, diagnostics
   // on stderr, the gate verdict data not prose.
+  // Surfaces carry decision info only when there is any — an emptied
+  // store (last decision reversed) leaves no machinery behind.
+  const reviewActive = review !== undefined
+    && (review.accepted + review.notApplicable > 0
+      || review.reassessing.length > 0
+      || review.ambiguous.length > 0);
+
   if (parsed.format === "json") {
-    console.log(renderJson(outcome, summary, gate, diff));
+    console.log(renderJson(outcome, summary, gate, diff, review !== undefined ? jsonReviewOf(review) : undefined));
     return exitAfterSurface(outcome, gate);
   }
 
   if (!interactive) {
-    console.log(renderReport(outcome, useColor(), diff !== undefined ? reportDiffOf(diff) : undefined));
+    // The report renders the ACTIVE list: decided findings are hidden,
+    // with the reviewed line keeping the hiding honest. The gate above
+    // still judged the raw findings — local decisions never change CI.
+    console.log(renderReport(
+      outcomeWithoutDecided(outcome, review?.suppressedReadKeys ?? new Set()),
+      useColor(),
+      diff !== undefined ? reportDiffOf(diff) : undefined,
+      reviewActive && review !== undefined
+        ? { accepted: review.accepted, notApplicable: review.notApplicable,
+            reassessing: review.reassessing, ambiguous: review.ambiguous }
+        : undefined,
+    ));
     return exitAfterSurface(outcome, gate);
   }
 
@@ -416,7 +522,12 @@ async function cmdRun(args: string[]): Promise<number> {
   // renders findings and skips, not crashes — and the dashboard ignores
   // diff mode: it is the review experience, not the gate.
   const code = exitAfterSurface(outcome, gate);
-  await runDashboard({ outcome, invoker, useColor: useColor() });
+  await runDashboard({
+    outcome,
+    invoker,
+    useColor: useColor(),
+    ...(review !== undefined ? { view: review } : {}),
+  });
   return code;
 }
 
@@ -579,6 +690,265 @@ async function cmdGenerate(args: string[]): Promise<number> {
   return 0;
 }
 
+// ---- decide / decisions: remembering and reversing -----------------------
+
+interface DecideArgs {
+  key?: string;
+  file?: string;
+  line?: number;
+  check?: string;
+  disposition?: "accepted" | "not-applicable";
+  reason?: string;
+  actor: string;
+  doctorPath?: string;
+  targetDir: string;
+  all: boolean;
+}
+
+function parseDecideArgs(args: string[]): DecideArgs | { error: string } {
+  const out: DecideArgs = { actor: "cli", targetDir: path.resolve("."), all: false };
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    const v = args[i + 1];
+    if (a === "--key" || a === "--file" || a === "--check" || a === "--reason" || a === "--actor") {
+      if (v === undefined || v.startsWith("--")) return { error: `${a} needs a value` };
+      if (a === "--key") out.key = v;
+      else if (a === "--file") out.file = v;
+      else if (a === "--check") out.check = v;
+      else if (a === "--reason") out.reason = v;
+      else out.actor = v;
+      i += 1;
+    } else if (a === "--line") {
+      if (v === undefined || !/^\d+$/.test(v)) return { error: "--line needs a numeric value" };
+      out.line = Number(v);
+      i += 1;
+    } else if (a === "--accepted") out.disposition = "accepted";
+    else if (a === "--not-applicable") out.disposition = "not-applicable";
+    else if (a === "--all") out.all = true;
+    else if (out.doctorPath === undefined && (DOCTOR_FILE_RE.test(a) || isBareDoctorSlug(a))) out.doctorPath = a;
+    else if (out.targetDir === path.resolve(".")) out.targetDir = path.resolve(a);
+    else return { error: `unexpected argument: ${a}` };
+  }
+  if (out.disposition === undefined) return { error: "choose --accepted or --not-applicable" };
+  if (out.reason === undefined || out.reason.trim() === "") return { error: "--reason is required — a decision without a reason is a suppression" };
+  if (out.key === undefined && (out.file === undefined || out.line === undefined)) {
+    return { error: "pass --key <decisionKey from a scan's JSON>, or --file and --line to resolve against a fresh scan" };
+  }
+  return out;
+}
+
+async function cmdDecide(args: string[]): Promise<number> {
+  const parsed = parseDecideArgs(args);
+  if ("error" in parsed) {
+    fail("any-doctor decide: " + parsed.error);
+    return 1;
+  }
+  let key = parsed.key;
+  let scanProvenanceAtDecide: { revision?: number; programDigest?: string } | undefined;
+  if (key !== undefined) {
+    // Keys cross shells as base64url (raw keys contain NUL separators
+    // that cannot traverse argv). A non-decodable value only matches if
+    // some record literally holds it — otherwise refuse loudly.
+    const decoded = decodeDecisionKey(key);
+    if (decoded === null) {
+      const raw = loadDecisions(parsed.targetDir);
+      const exact = raw.ok && raw.decisions.some((d) => d.key === key);
+      if (!exact) {
+        fail("any-doctor decide: --key expects the base64url decisionKey a scan's JSON or 'any-doctor decisions' prints");
+        return 1;
+      }
+    } else {
+      key = decoded;
+    }
+  }
+
+  if (scanProvenanceAtDecide === undefined && parsed.key !== undefined && key !== undefined) {
+    // --key decisions still record what runs NOW: the decision names a
+    // checkKey, whose doctor is discoverable by id — digest its current
+    // program so a later changed doctor resurfaces this decision (the
+    // agent flow's version of the resolving scan's provenance).
+    const doctorId = key.split("\u0000")[0]?.split("/")[0];
+    // An explicit doctor path wins (the caller knows what ran); else
+    // discover by the id the checkKey names.
+    const slug = parsed.doctorPath !== undefined
+      ? path.resolve(process.cwd(), parsed.doctorPath)
+      : doctorId !== undefined ? resolveDoctorPath(doctorId, process.cwd()) : null;
+    if (slug !== null) {
+      const bytes = digestTextFile(slug);
+      scanProvenanceAtDecide = { programDigest: doctorDigests([{ id: doctorId ?? "x", programPath: slug }], () => bytes)[0].digest };
+    }
+  }
+  let checkKey = "";
+  if (key === undefined) {
+    // Resolve by scanning: the decision must attach to the evidence a
+    // finding has NOW, so --file/--line re-runs the doctors first.
+    const badTarget = unusableTargetReason(parsed.targetDir);
+    if (badTarget !== null) {
+      fail(badTarget);
+      return 1;
+    }
+    let doctors: { id: string; programPath: string }[];
+    if (parsed.doctorPath) {
+      const sel = await selectDoctor(parsed.doctorPath, { cwd: process.cwd(), useColor: useColor(), env: processTtyEnv() });
+      const selection = selectionOutcome(sel);
+      if ("exit" in selection) return selection.exit;
+      doctors = [{ id: path.basename(selection.doctorPath, ".mjs"), programPath: selection.doctorPath }];
+    } else {
+      const cohort = await gatherDoctors();
+      warnBrokenDoctors(cohort.broken);
+      if (cohortUnusable(cohort)) return 1;
+      let valid = cohort.valid;
+      if (!parsed.all && valid.length > 1) {
+        fail("multiple doctors discovered — pass a doctor path (or --all) so the resolving scan matches what you ran");
+        return 1;
+      }
+      doctors = valid.map((d) => ({ id: d.meta!.id, programPath: d.path }));
+    }
+    const spec: CohortSpec = { doctors, targetDir: parsed.targetDir, includeTests: false, skippedUnsafe: [] };
+    const ran = await runCohort(spec);
+    if (ran.crashed.length > 0) {
+      for (const c of ran.crashed) fail(c.detail);
+      fail("any-doctor decide: the resolving scan crashed — a decision attaches to evidence, and there is none");
+      return 1;
+    }
+    const groups = deriveSummary(ran).groups;
+    const capture = captureScan(parsed.targetDir, groups, ran.analysisAvailable ?? false, []);
+    const scanProv = scanProvenanceOf(spec, deriveSummary(ran).groups);
+    const view = reviewOf(capture, [], encodeDecisionKey, scanProv);
+    const candidates = capture.entries
+      .map((e) => ({ e, key: view.rawKeyByReadKey.get(readKeyFor(e.checkKey, e.f.file, e.f.line, e.f.column)) ?? "", row: view.rows.get(readKeyFor(e.checkKey, e.f.file, e.f.line, e.f.column)) }))
+      .filter((c2) => c2.row?.stale !== true)
+      .filter(({ e }) => e.f.file === parsed.file && e.f.line === parsed.line
+        && (parsed.check === undefined || e.checkKey === parsed.check || e.f.rule === parsed.check || e.checkKey.endsWith("/" + parsed.check)));
+    if (candidates.length === 0) {
+      fail(`no current finding at ${parsed.file}:${parsed.line}${parsed.check !== undefined ? " for " + parsed.check : ""} — findings move; run a scan and use its decisionKey`);
+      return 1;
+    }
+    const distinct = new Set(candidates.map((c) => c.e.checkKey));
+    if (distinct.size > 1) {
+      fail(`multiple findings at ${parsed.file}:${parsed.line} — pass --check: ${[...distinct].join(", ")}`);
+      return 1;
+    }
+    key = candidates[0].key;
+    checkKey = candidates[0].e.checkKey;
+    const rev = scanProv.revisions.get(checkKey);
+    const doctorId = checkKey.split("/")[0];
+    scanProvenanceAtDecide = {
+      ...(rev !== undefined ? { revision: rev } : { programDigest: scanProv.programDigests.get(doctorId) }),
+    };
+  }
+  // With --key, checkKey and file come from the DECODED key itself (its
+  // first two NUL-separated fields); line is display-only and unknown
+  // here (0). Splitting the encoded argv form would store the whole
+  // blob as checkKey and the decision would sit dormant forever
+  // (loop-4's catch).
+  const [keyCheck, keyFile] = key!.split("\u0000");
+  const recorded = recordDecision(parsed.targetDir, {
+    key: key!,
+    checkKey: checkKey !== "" ? checkKey : keyCheck,
+    file: parsed.file ?? keyFile ?? "",
+    line: parsed.line ?? 0,
+    disposition: parsed.disposition!,
+    reason: parsed.reason!,
+    actor: parsed.actor,
+    // Scan-resolved decisions record what ran (revision-or-digest);
+    // --key decisions carry no provenance the command can see — later
+    // scans treat absence as incompatible until re-decided (visible).
+    ...(scanProvenanceAtDecide !== undefined ? { provenance: scanProvenanceAtDecide } : {}),
+  });
+  if (!recorded.ok) {
+    fail(recorded.error);
+    return 1;
+  }
+  ok(`decision recorded (${parsed.disposition}): ${truncReason(parsed.reason!)} — hidden from the active list on the next scan; any-doctor decisions --reverse <key> to undo`);
+  return 0;
+}
+
+function truncReason(s: string): string {
+  return s.length <= 60 ? s : s.slice(0, 59) + "…";
+}
+
+async function cmdDecisions(args: string[]): Promise<number> {
+  let targetDir = path.resolve(".");
+  let reverse: string | undefined;
+  let json = false;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === "--json") json = true;
+    else if (a === "--reverse") {
+      const v = args[i + 1];
+      if (v === undefined || v.startsWith("--")) { fail("--reverse needs a decision key (any-doctor decisions lists them)"); return 1; }
+      reverse = v;
+      i += 1;
+    } else if (a.startsWith("--")) {
+      fail(`any-doctor decisions: unknown flag ${a} (known: --json, --reverse <key>)`);
+      return 1;
+    } else targetDir = path.resolve(a);
+  }
+  const loaded = loadDecisions(targetDir);
+  if (!loaded.ok) {
+    fail(loaded.error);
+    return 1;
+  }
+  if (reverse !== undefined) {
+    const r = reverseByKey(targetDir, reverse);
+    if (!r.ok) {
+      fail(r.error);
+      return 1;
+    }
+    ok("decision reversed — the finding returns to the active list on the next scan");
+    return 0;
+  }
+  if (json) {
+    // Machine surface: JSON in EVERY state (empty included — prose here
+    // broke parsers), keys shell-safe (base64url, matching decisionKey —
+    // raw keys hold NULs argv cannot carry).
+    console.log(JSON.stringify({
+      schema: 1,
+      decisions: loaded.decisions.map((d) => ({ ...d, key: encodeDecisionKey(d.key) })),
+    }, null, 2));
+    return 0;
+  }
+  if (loaded.decisions.length === 0) {
+    console.log(dim("no decisions recorded — they are created from the dashboard (a/x) or any-doctor decide"));
+    return 0;
+  }
+  // Bounded output: a wall of decisions is a denial of service on the
+  // reader; --json is the unbounded export path.
+  const LIST_CAP = 500;
+  for (const d of loaded.decisions.slice(0, LIST_CAP)) {
+    console.log(`${d.disposition === "accepted" ? "✓ accepted" : "⊘ not-applicable"}  ${d.checkKey}  ${d.file}:${d.line}`);
+    console.log(dim(`  reason: ${d.reason}`));
+    console.log(dim(`  actor: ${d.actor} · updated ${d.updatedAt} · key: ${encodeDecisionKey(d.key)}`));
+  }
+  if (loaded.decisions.length > LIST_CAP) {
+    console.log(dim(`… and ${loaded.decisions.length - LIST_CAP} more — any-doctor decisions --json`));
+  }
+  return 0;
+}
+
+// Reverse by exact key or a unique prefix (full identity keys are long).
+function reverseByKey(targetDir: string, key: string): { ok: true } | { ok: false; error: string } {
+  const loaded = loadDecisions(targetDir);
+  if (!loaded.ok) return loaded;
+  // The printed keys are base64url-encoded (raw keys hold NULs argv
+  // cannot carry); match encoded-prefix-unique, encoded-exact, or raw.
+  const candidates: string[] = [];
+  const decoded = decodeDecisionKey(key);
+  if (decoded !== null) candidates.push(decoded);
+  candidates.push(key);
+  for (const candidate of candidates) {
+    const exact = loaded.decisions.find((d) => d.key === candidate);
+    if (exact !== undefined) return reverseDecision(targetDir, exact.key);
+  }
+  for (const candidate of candidates) {
+    const prefixed = loaded.decisions.filter((d) => encodeDecisionKey(d.key).startsWith(candidate) || d.key.startsWith(candidate));
+    if (prefixed.length === 1) return reverseDecision(targetDir, prefixed[0].key);
+    if (prefixed.length > 1) return { ok: false, error: `key prefix is ambiguous (${prefixed.length} decisions) — use more characters` };
+  }
+  return { ok: false, error: "no decision matches that key — any-doctor decisions lists them (copy the printed key)" };
+}
+
 const STOP_WORDS = new Set(["a", "an", "the", "find", "flag", "all", "that", "which", "is", "are", "in", "on", "of", "to", "and", "or", "not"]);
 
 function slugify(intent: string): string {
@@ -593,6 +963,9 @@ function usage(): void {
   console.log('  generate "<intent>" [--global]      print the exact prompt for your agent to build a doctor');
   console.log("  run [--all] [--include-tests] [doctor.(m)js] [dir]   scan; no argument = every doctor in one review tree");
   console.log("  verify [--all] [doctor.(m)js]     fixture gate (no doctor: fuzzy picker; --all: every doctor)");
+  console.log("  decide (--key K | --file F --line N [--check C]) (--accepted|--not-applicable) --reason R");
+  console.log("                                    record a decision on a finding (resolves by scanning unless --key)");
+  console.log("  decisions [dir] [--json] [--reverse K]   list remembered decisions; reverse one");
   console.log("");
   console.log(dim("doctors live in ./doctors/ (repo), ~/.any-doctor/doctors/ (global), and the bundled pack (lowest priority)."));
   console.log(dim("generation delegates to your installed agent — run and verify never touch a model."));
@@ -618,6 +991,8 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
     if (cmd === "generate") return await cmdGenerate(rest);
     if (cmd === "run") return await cmdRun(rest);
     if (cmd === "verify") return await cmdVerify(rest);
+    if (cmd === "decide") return await cmdDecide(rest);
+    if (cmd === "decisions") return await cmdDecisions(rest);
   } catch (e) {
     if (e instanceof ExitCode) return e.code;
     throw e;

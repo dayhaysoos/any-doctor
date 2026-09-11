@@ -1,7 +1,11 @@
 import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
-import { runCommandFor, Severity } from "./contract.js";
+import { resolveFinding, runCommandFor, Severity } from "./contract.js";
+import { recordDecision, reverseDecision, Disposition, encodeDecisionKey } from "./finding-state.js";
+import { withDecision, withoutDecision } from "./review.js";
+import { captureScan } from "./scan-capture.js";
+import { readKeyFor } from "./contract.js";
 import {
   buildTree, CheckSummary, DoctorSummary, DoctorTree,
   FINDINGS_PER_CHECK, initialExpanded, SiteFinding, summarizeCheck, summarizeDoctor,
@@ -46,6 +50,10 @@ export interface DashboardInput {
   outcome: RunOutcome;
   invoker?: string;
   useColor: boolean;
+  // The ReviewView (review.ts): the one derivation of capture + decisions;
+  // a/x/u mutate THROUGH it (withDecision/withoutDecision return the next
+  // view) so the loop never maintains a parallel copy of the laws.
+  view?: import("./review.js").ReviewView;
 }
 
 export function scoreBar(score: number, width: number): string {
@@ -130,6 +138,11 @@ interface ListRow {
   check?: CheckSummary;
   doctor?: DoctorSummary;
   toggleKey?: string;
+  // The decision suppressing this item (review view renders it dim with
+  // its disposition) — absent on active rows.
+  reviewed?: Disposition;
+  // The finding resurfaced because its decided evidence changed.
+  reassess?: boolean;
 }
 
 // The one way to ask what a row toggles — doctor rows answer their
@@ -144,6 +157,7 @@ export function buildListRows(
   selectedRow: number,
   readKeys: Set<string>,
   expanded?: ReadonlySet<string>,
+  review?: { dispositionByReadKey?: Map<string, Disposition>; reassessPairs?: Set<string>; ambiguousReadKeys?: Map<string, number> },
 ): ListRow[] {
   const c = colorizer(useColor);
   const open = expanded ?? new Set<string>();
@@ -204,10 +218,12 @@ export function buildListRows(
         const rowIndex = rows.length;
         rows.push({
           kind: "item",
-          text: childPrefix(ci, flat.length - 1 + (all.length > flat.length ? 1 : 0)) + itemRowText(it, selectedRow === rowIndex, readKeys, c, !multiDoctor),
+          text: childPrefix(ci, flat.length - 1 + (all.length > flat.length ? 1 : 0)) + itemRowText(it, selectedRow === rowIndex, readKeys, c, !multiDoctor, review?.dispositionByReadKey?.get(it.readKey), review?.reassessPairs?.has(`${it.checkKey}\u0000${it.site.file}`), review?.ambiguousReadKeys?.has(it.readKey)),
           severity: it.severity,
           selectable: true,
           item: it,
+          reviewed: review?.dispositionByReadKey?.get(it.readKey),
+          reassess: review?.reassessPairs?.has(`${it.checkKey}\u0000${it.site.file}`),
         });
       });
       if (all.length > flat.length) {
@@ -245,12 +261,15 @@ export function buildListRows(
       const shown = g.items.slice(0, FINDINGS_PER_CHECK);
       shown.forEach(it => {
         const rowIndex = rows.length;
+        const readKey = it.readKey;
         rows.push({
           kind: "item",
-          text: guidePrefix(ci, d.checks.length - 1) + itemRowText(it, selectedRow === rowIndex, readKeys, c, false),
+          text: guidePrefix(ci, d.checks.length - 1) + itemRowText(it, selectedRow === rowIndex, readKeys, c, false, review?.dispositionByReadKey?.get(readKey), review?.reassessPairs?.has(`${it.checkKey}\u0000${it.site.file}`), review?.ambiguousReadKeys?.has(readKey)),
           severity: it.severity,
           selectable: true,
           item: it,
+          reviewed: review?.dispositionByReadKey?.get(readKey),
+          reassess: review?.reassessPairs?.has(`${it.checkKey}\u0000${it.site.file}`),
         });
       });
       if (g.items.length > shown.length) {
@@ -274,12 +293,24 @@ function itemRowText(
   readKeys: Set<string>,
   c: (s: string, wrap?: string) => string,
   showCheckId = true,
+  reviewed?: Disposition,
+  reassess?: boolean,
+  ambiguous?: boolean,
 ): string {
   const isRead = readKeys.has(it.readKey);
   const glyph = c(GLYPH[it.severity], SEVERITY_COLOR[it.severity]);
-  const wrap = isSelected ? BOLD : isRead ? DIM : undefined;
+  // A decided row renders dim with its disposition — present tense, never
+  // a fix claim — and a resurfaced decision warns with the reassess mark.
+  const wrap = reviewed !== undefined ? DIM : isSelected ? BOLD : isRead ? DIM : undefined;
   const suffix = showCheckId && it.checkId !== it.doctorId ? c("  " + it.checkId, DIM) : "";
-  return `${isSelected ? c("›", BOLD) : " "}${glyph} ${c(it.site.file + ":" + it.site.line, wrap)}${suffix}`;
+  const mark = reviewed !== undefined
+    ? c(reviewed === "accepted" ? "  ✓ accepted" : "  ⊘ not applicable", DIM)
+    : reassess === true
+      ? c("  ⚠ decision needs reassessment", YELLOW)
+      : ambiguous === true
+        ? c("  ⚠ identical copies share this identity", YELLOW)
+        : "";
+  return `${isSelected ? c("›", BOLD) : " "}${glyph} ${c(it.site.file + ":" + it.site.line, wrap)}${suffix}${mark}`;
 }
 
 export interface FrameSource {
@@ -288,6 +319,17 @@ export interface FrameSource {
 
 export interface DashboardFrameState {
   tree: DoctorTree;
+  // Review rendering: decided items carry their disposition; resurfaced
+  // decisions carry the reassessment mark.
+  dispositionByReadKey?: Map<string, Disposition>;
+  reassessPairs?: Set<string>;
+  // The reason prompt, when a decision is being composed; `error` marks
+  // a refused empty submit so the complaint renders IN the prompt line.
+  prompt?: { disposition: Disposition; buffer: string; file: string; line: number; error?: boolean };
+  // readKey -> the recorded reason (the review view's detail pane).
+  reasonByReadKey?: Map<string, string>;
+  // readKeys whose identity is shared by identical copies.
+  ambiguousReadKeys?: Map<string, number>;
   selectedRow: number;
   readKeys: Set<string>;
   readSource: FrameSource;
@@ -312,7 +354,10 @@ export function dashboardFrame(state: DashboardFrameState): string {
   // The header is the SELECTED doctor's report — never a cohort total,
   // which read as belonging to whichever row was on screen. Rows are
   // needed first: the selection's payload names the doctor.
-  const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded);
+  const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded,
+    state.dispositionByReadKey !== undefined || state.reassessPairs !== undefined || state.prompt !== undefined
+      ? { dispositionByReadKey: state.dispositionByReadKey, reassessPairs: state.reassessPairs, ambiguousReadKeys: state.ambiguousReadKeys }
+      : undefined);
   const sel = rowsData[selectedRow];
   const scopedId = sel?.doctor?.doctorId ?? sel?.check?.doctorId ?? sel?.item?.doctorId ?? tree[0]?.doctorId;
   const scoped = tree.find(d => d.doctorId === scopedId);
@@ -364,7 +409,17 @@ export function dashboardFrame(state: DashboardFrameState): string {
 
   const detail: string[] = [];
   const selRow = rowsData[selectedRow];
-  if (selRow?.item) {
+  // A DECIDED row tells the decision's story first — the reason is what
+  // a reviewer needs, and u to reverse is the action.
+  if (selRow?.item && selRow.reviewed !== undefined && state.reasonByReadKey?.has(selRow.item.readKey) === true) {
+    const sel = selRow.item;
+    detail.push(c(`${sel.site.file}:${sel.site.line}`, BOLD));
+    detail.push(c(selRow.reviewed === "accepted" ? "✓ accepted" : "⊘ not applicable", DIM));
+    detail.push("");
+    proseSection(detail, "Reason", state.reasonByReadKey.get(sel.readKey) ?? "", layout.detailWidth - 2, c);
+    detail.push("");
+    proseSection(detail, "Undo", "u reverses this decision — the finding returns to the active list", layout.detailWidth - 2, c);
+  } else if (selRow?.item) {
     const sel = selRow.item;
     detail.push(c(`${sel.site.file}:${sel.site.line}`, BOLD));
     detail.push(c(`${cap(sel.category)} · ${sel.severity}`, DIM));
@@ -432,8 +487,12 @@ export function dashboardFrame(state: DashboardFrameState): string {
   // Fixed-shape footer: the notice line is always present (blank when idle)
   // so showing or clearing a notice never changes the frame height.
   const footer: string[] = [
-    state.notice ? c("✔ " + state.notice, GREEN) : "",
-    c("↑↓ move · →← expand · enter copy finding · c copy group · q quit", DIM),
+    state.prompt !== undefined
+      ? c(state.prompt.error === true
+        ? `a reason is required — type one (esc cancels): ${state.prompt.buffer}▏`
+        : `Reason for ${state.prompt.disposition === "accepted" ? "accepting" : "not-applicable"} ${state.prompt.file}:${state.prompt.line}: ${state.prompt.buffer}▏ (enter records · esc cancels)`, YELLOW)
+      : state.notice ? c("✔ " + state.notice, GREEN) : "",
+    c("↑↓ move · →← expand · enter copy · c copy group · a accept · x n/a · u undo · v review · q quit", DIM),
   ];
 
   return [...headerLines, "", ...body, "", ...footer].join("\n");
@@ -480,6 +539,11 @@ export async function runDashboard(input: DashboardInput): Promise<void> {
 
 export interface DashboardDeps {
   copy?: (text: string) => boolean;
+  // Decision recording is injected like the clipboard: tests drive the
+  // full key flow without touching disk; production defaults write the
+  // local decisions file beside the scanned target.
+  decide?: (input: { key: string; checkKey: string; file: string; line: number; disposition: Disposition; reason: string; actor: string; provenance?: { revision?: number; programDigest?: string } }) => { ok: true } | { ok: false; error: string };
+  reverse?: (key: string) => { ok: true } | { ok: false; error: string };
 }
 
 export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }, input: DashboardInput, deps: DashboardDeps = {}): Promise<void> {
@@ -492,14 +556,88 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
   // counts and score can never disagree between surfaces. The tree
   // consumes the Summary's check buckets directly; it never re-groups.
   const summary = deriveSummary(input.outcome);
-  const tree = buildTree(summary.groupChecks, input.outcome.fileCount);
-  const expanded = initialExpanded(tree);
+
+  // ---- review state (M2): decided items leave the active tree; the
+  // review view (v) shows them dim with their disposition and reason.
+  // The ReviewView owns every decision law; this loop only reads its
+  // rows and swaps in the next view when a/x/u record or reverse —
+  // no parallel copies of suppression/ambiguity bookkeeping.
+  const encodeForView = (raw: string): string => Buffer.from(raw, "utf8").toString("base64url");
+  let view = input.view;
+  // The capture the view derives from, rebuilt the same way the command
+  // layer built it — a/x/u swap in the next view re-derived from it.
+  const captureForView = view !== undefined
+    ? captureScan(input.outcome.targetDir, deriveSummary(input.outcome).groups, input.outcome.analysisAvailable ?? false, [])
+    : undefined;
+  const deriveViewMaps = (): { dispositionByReadKey: Map<string, Disposition>; reasonByReadKey: Map<string, string>; reassessPairs: Set<string>; ambiguousReadKeys: Map<string, number> } => {
+    const dispositionByReadKey = new Map<string, Disposition>();
+    const reasonByReadKey = new Map<string, string>();
+    const reassessPairs = new Set((view?.reassessing ?? []).map((ra) => `${ra.checkKey}\u0000${ra.file}`));
+    const ambiguousReadKeys = new Map<string, number>();
+    if (view !== undefined) {
+      for (const [readKey, row] of view.rows) {
+        if (row.decision !== undefined && view.suppressedReadKeys.has(readKey)) {
+          dispositionByReadKey.set(readKey, row.decision.disposition);
+          reasonByReadKey.set(readKey, row.decision.reason);
+        }
+        if (row.ambiguous !== undefined) ambiguousReadKeys.set(readKey, row.ambiguous);
+      }
+    }
+    return { dispositionByReadKey, reasonByReadKey, reassessPairs, ambiguousReadKeys };
+  };
+  let { dispositionByReadKey, reasonByReadKey, reassessPairs, ambiguousReadKeys } = deriveViewMaps();
+  const rawKeyOf = (readKey: string): string | undefined => view?.rawKeyByReadKey.get(readKey);
+  const readKeyShares = (readKey: string): number => ambiguousReadKeys.get(readKey) ?? 1;
+  let showReviewed = false;
+  let prompt: { disposition: Disposition; buffer: string; item: SiteFinding; error?: boolean } | undefined;
+
+  const decide = deps.decide ?? ((d) => recordDecision(input.outcome.targetDir, d));
+  const reverse = deps.reverse ?? ((key) => reverseDecision(input.outcome.targetDir, key));
+
+  // The readKey of a finding inside the Summary's buckets — the same
+  // join the identity layer namespaces by.
+  const readKeyOf = (meta: import("./contract.js").DoctorMeta, f: import("./contract.js").Finding): string =>
+    readKeyFor(resolveFinding(meta, f).checkKey, f.file, f.line, f.column);
+
+  const groupCountsFor = (withReviewed: boolean) => {
+    const suppressedReadKeys = view?.suppressedReadKeys ?? new Set<string>();
+    if (withReviewed || suppressedReadKeys.size === 0) return summary.groupChecks;
+    return summary.groupChecks
+      .map((gc) => ({
+        ...gc,
+        checks: gc.checks
+          .map((b) => ({ ...b, findings: b.findings.filter((f) => !suppressedReadKeys.has(readKeyOf(gc.group.meta, f))) }))
+          .filter((b) => b.findings.length > 0),
+      }))
+      .filter((gc2) => gc2.checks.length > 0);
+  };
+
+  const rebuildTrees = (): void => {
+    const decided = view?.suppressedReadKeys.size ?? 0;
+    trees = {
+      active: buildTree(groupCountsFor(false), input.outcome.fileCount),
+      full: decided === 0
+        ? trees.active
+        : buildTree(groupCountsFor(true), input.outcome.fileCount),
+    };
+    expanded.clear();
+    initialExpanded(trees.active).forEach((k) => expanded.add(k));
+  };
+  let trees = {
+    active: buildTree(groupCountsFor(false), input.outcome.fileCount),
+    full: buildTree(groupCountsFor(true), input.outcome.fileCount),
+  };
+  const tree = (): DoctorTree => (showReviewed ? trees.full : trees.active);
+
+  const expanded = new Set<string>();
+  initialExpanded(trees.active).forEach((k) => expanded.add(k));
   const readKeys = new Set<string>();
   let notice: string | undefined;
 
-  const currentRows = () => buildListRows(tree, useColor, selectedRow, readKeys, expanded);
+  const currentRows = () => buildListRows(tree(), useColor, selectedRow, readKeys, expanded,
+    { dispositionByReadKey, reassessPairs, ambiguousReadKeys });
   let selectedRow = (() => {
-    const rows = buildListRows(tree, useColor, 0, new Set<string>(), expanded);
+    const rows = buildListRows(trees.active, useColor, 0, new Set<string>(), expanded);
     const first = rows.findIndex(r => r.selectable);
     return first === -1 ? 0 : first;
   })();
@@ -519,6 +657,13 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
     return lines;
   };
 
+  const decideCommandFor = (item: SiteFinding): string | undefined => {
+    const idKey = rawKeyOf(item.readKey);
+    return idKey !== undefined
+      ? `any-doctor decide --key ${encodeDecisionKey(idKey)} --accepted|--not-applicable --reason "…"`
+      : undefined;
+  };
+
   const verifyCmdFor = (doctorId: string): string => {
     const doctorPath = input.outcome.doctorPaths.get(doctorId);
     if (doctorPath === undefined) return "(doctor path unknown — re-run from the CLI)";
@@ -536,11 +681,18 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
       const selRow = currentRows()[selectedRow];
       if (selRow?.item) readKeys.add(selRow.item.readKey);
       return dashboardFrame({
-        tree,
+        tree: tree(),
         selectedRow,
         readKeys,
         readSource,
         expanded,
+        dispositionByReadKey,
+        reassessPairs,
+        reasonByReadKey,
+        ambiguousReadKeys,
+        prompt: prompt !== undefined
+          ? { disposition: prompt.disposition, buffer: prompt.buffer, file: prompt.item.site.file, line: prompt.item.site.line, ...(prompt.error === true ? { error: true } : {}) }
+          : undefined,
         filesTotal: input.outcome.fileCount,
         durationMs: input.outcome.durationMs,
         useColor,
@@ -557,6 +709,15 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
     }
   };
 
+  const clampSelection = (): void => {
+    const rows = currentRows();
+    if (selectedRow >= rows.length) {
+      let next = rows.length - 1;
+      while (next >= 0 && !rows[next].selectable) next--;
+      selectedRow = Math.max(0, next);
+    }
+  };
+
   const step = (dir: 1 | -1): void => {
     const rows = currentRows();
     let next = selectedRow + dir;
@@ -570,28 +731,115 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
     stdout,
     frame,
     onKey: (key, finish) => {
-      if (key === "q" || key === "\x03" || key === "esc") return finish();
       if (key === "ignore") return;
+      // The reason prompt consumes every key until submitted or cancelled.
+      if (prompt !== undefined) {
+        if (key === "esc" || key === "\x03") { prompt = undefined; notice = undefined; return; }
+        if (key === "\r" || key === "\n") {
+          const reason = prompt.buffer.trim();
+          if (reason === "") { prompt = { ...prompt, error: true }; return; }
+          const p = prompt;
+          prompt = undefined;
+          const idKey = rawKeyOf(p.item.readKey);
+          if (idKey === undefined) { notice = "cannot record: no identity key for this finding (rescan)"; return; }
+          if (readKeyShares(p.item.readKey) > 1) {
+            notice = `held back: ${ambiguousReadKeys.get(p.item.readKey)} identical occurrences share this identity — they must diverge before a decision applies`;
+            return;
+          }
+          // Provenance is computed BEFORE the write and passed INTO it, so
+          // the disk record carries it — adding it only to the in-memory
+          // copy made the decision resurface as "doctor changed" after
+          // restart (review probe).
+          const provRecorded = view !== undefined
+            ? (() => {
+              const rev = view.provenance.revisions.get(p.item.checkKey);
+              return rev !== undefined
+                ? { revision: rev }
+                : { programDigest: view.provenance.programDigests.get(p.item.checkKey.split("/")[0]) };
+            })()
+            : undefined;
+          const r = decide({ key: idKey, checkKey: p.item.checkKey, file: p.item.site.file, line: p.item.site.line, disposition: p.disposition, reason, actor: "dashboard",
+            ...(provRecorded !== undefined ? { provenance: provRecorded } : {}) });
+          if (!r.ok) { notice = r.error; return; }
+          // The next view re-derives every law from the updated list.
+          if (view !== undefined && captureForView !== undefined) {
+            const prior = view.decisions.find((d) => d.key === idKey);
+            const now = new Date().toISOString();
+            const record = {
+              key: idKey, checkKey: p.item.checkKey, file: p.item.site.file, line: p.item.site.line,
+              disposition: p.disposition, reason, scope: "local" as const, actor: "dashboard",
+              createdAt: prior?.createdAt ?? now, updatedAt: now,
+              ...(provRecorded !== undefined ? { provenance: provRecorded } : {}),
+            };
+            view = withDecision(view, record, encodeForView, captureForView, view.provenance);
+            ({ dispositionByReadKey, reasonByReadKey, reassessPairs, ambiguousReadKeys } = deriveViewMaps());
+          }
+          notice = `${p.disposition === "accepted" ? "accepted" : "not applicable"} — hidden from the active list (v reviews, u undoes)`;
+          rebuildTrees();
+          clampSelection();
+          return;
+        }
+        if (key === "backspace" || key === "\x7f" || key === "\b") {
+          prompt = { ...prompt, buffer: prompt.buffer.slice(0, -1), error: undefined };
+          return;
+        }
+        if (key.length === 1 && prompt.buffer.length < 200) {
+          prompt = { ...prompt, buffer: prompt.buffer + key, error: undefined };
+          return;
+        }
+        return;
+      }
+      if (key === "q" || key === "\x03" || key === "esc") return finish();
       if (key === "up" || key === "k") return step(-1);
       if (key === "down" || key === "j") return step(1);
       const rows = currentRows();
       const row = rows[selectedRow];
       const rowKey = toggleKeyOf(row);
 
+      if (key === "v") {
+        showReviewed = !showReviewed;
+        const decidedCount = view?.suppressedReadKeys.size ?? 0;
+        notice = showReviewed && decidedCount > 0
+          ? `review view — ${decidedCount} decided finding${decidedCount === 1 ? "" : "s"} shown dim`
+          : undefined;
+        selectedRow = 0;
+        step(1);
+        return;
+      }
+      if ((key === "a" || key === "x") && row?.item !== undefined && row.reviewed === undefined) {
+        prompt = { disposition: key === "a" ? "accepted" : "not-applicable", buffer: "", item: row.item };
+        notice = undefined;
+        return;
+      }
+      if (key === "u" && row?.item !== undefined && row.reviewed !== undefined) {
+        const idKey = rawKeyOf(row.item.readKey);
+        if (idKey === undefined) { notice = "cannot reverse: no identity key (rescan)"; return; }
+        const r = reverse(idKey);
+        if (!r.ok) { notice = r.error; return; }
+        if (view !== undefined && captureForView !== undefined) {
+          view = withoutDecision(view, idKey, encodeForView, captureForView, view.provenance);
+          ({ dispositionByReadKey, reasonByReadKey, reassessPairs, ambiguousReadKeys } = deriveViewMaps());
+        }
+        notice = "decision reversed — the finding returns to the active list";
+        rebuildTrees();
+        clampSelection();
+        return;
+      }
+
       if (key === "c") {
         // Copy at the level you're on: one finding, a whole check, or an
         // entire doctor — the bulk task is the natural agent unit.
         if (row?.item) {
-          copy(fixPrompt(row.item, verifyCmdFor(row.item.doctorId)), "copied finding");
+          copy(fixPrompt(row.item, verifyCmdFor(row.item.doctorId), decideCommandFor(row.item)), "copied finding");
         } else if (row?.check) {
           const check = row.check;
-          const items = tree.find(d => d.doctorId === check.doctorId)
+          const items = tree().find(d => d.doctorId === check.doctorId)
             ?.checks.find(g => g.checkKey === check.checkKey)?.items ?? [];
           copy(checkFixPrompt(items, verifyCmdFor(check.doctorId)),
             `copied ${items.length} findings from ${check.checkKey}`);
         } else if (row?.doctor) {
           const doctor = row.doctor;
-          const group = tree.find(d => d.doctorId === doctor.doctorId);
+          const group = tree().find(d => d.doctorId === doctor.doctorId);
           copy(doctorFixPrompt(doctor, group, verifyCmdFor(doctor.doctorId)),
             `copied ${doctor.count} findings from ${doctor.doctorId}`);
         }
@@ -636,7 +884,7 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
           return;
         }
         if (!row?.item) return;
-        copy(fixPrompt(row.item, verifyCmdFor(row.item.doctorId)), "copied finding");
+        copy(fixPrompt(row.item, verifyCmdFor(row.item.doctorId), decideCommandFor(row.item)), "copied finding");
         return;
       }
     },

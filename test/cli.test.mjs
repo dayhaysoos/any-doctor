@@ -528,3 +528,304 @@ test("partial scans: the JSON score carries partialScan for machine consumers", 
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// ---- remembered decisions (M2): the CLI end to end ----------------------
+
+test("decisions: decide by scan-resolution, hide on next run, reverse restores", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2-"));
+  const docDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2-doc-"));
+  try {
+    // A tiny doctor with a stable finding: file a.ts line 1. The doctor
+    // lives OUTSIDE the target (its own source contains the trigger).
+    const doctor = path.join(docDir, "marker.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'marker', description: 'flags BAD', severity: 'warning' }",
+      "export async function doctor(ctx) {",
+      "  for (const f of ctx.files.list()) {",
+      "    if (ctx.files.read(f).includes('BAD')) ctx.report.finding({ file: f, line: 1 })",
+      "  }",
+      "}",
+    ].join("\n"));
+    fs.writeFileSync(path.join(dir, "a.ts"), "const BAD = 1;\n");
+
+    // 1. run before any decision: raw finding, no decisions block
+    let log = t.mock.method(console, "log", () => {});
+    await cli.main(["run", doctor, dir, "--format", "json"]);
+    let j = JSON.parse(log.mock.calls.map(c => c.arguments.join(" ")).join(""));
+    assert.equal(j.counts.total, 1);
+    assert.equal(j.decisions, undefined, "no decisions block before any decision");
+    log.mock.restore();
+
+    // 2. decide with scan resolution (--file/--line)
+    let err = t.mock.method(console, "error", () => {});
+    let okFn = t.mock.method(console, "log", () => {});
+    const code = await cli.main(["decide", "--file", "a.ts", "--line", "1", "--accepted", "--reason", "intentional placeholder", doctor, dir]);
+    assert.equal(code, 0, decideErr(err));
+    err.mock.restore(); okFn.mock.restore();
+
+    // 3. rescan: the finding is hidden from the report, reviewed line shown,
+    //    JSON annotates it and lists the decision; the gate still sees raw.
+    log = t.mock.method(console, "log", () => {});
+    await cli.main(["run", doctor, dir]);
+    const report = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.doesNotMatch(report, /a\.ts:1/, "the decided finding is hidden from the active list");
+    assert.match(report, /1 finding reviewed and hidden \(1 accepted, 0 not applicable\)/);
+    assert.match(report, /any-doctor decisions to inspect/);
+    log.mock.restore();
+
+    log = t.mock.method(console, "log", () => {});
+    const silent = t.mock.method(console, "error", () => {});
+    const runCode = await cli.main(["run", doctor, dir, "--format", "json", "--fail-on", "warning"]);
+    const exitCode = runCode; // gate still on raw: decided warning still fails
+    j = JSON.parse(log.mock.calls.map(c => c.arguments.join(" ")).join(""));
+    assert.equal(j.decisions.applied.length, 1);
+    assert.equal(j.decisions.applied[0].disposition, "accepted");
+    assert.equal(j.decisions.applied[0].reason, "intentional placeholder");
+    const f = j.groups[0].checks[0].findings[0];
+    assert.equal(f.decision.disposition, "accepted", "the finding carries its decision");
+    assert.ok(f.decisionKey.length > 0, "and its identity key for agents");
+    assert.equal(j.gate.fails, true, "local decisions never change CI");
+    assert.equal(exitCode, 1, "and the process exit agrees");
+    log.mock.restore(); silent.mock.restore();
+    void exitCode;
+
+    // 4. decisions list + reverse
+    okFn = t.mock.method(console, "log", () => {});
+    await cli.main(["decisions", dir]);
+    let listed = okFn.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.match(listed, /✓ accepted  marker\/marker  a\.ts:1/);
+    assert.match(listed, /intentional placeholder/);
+    await cli.main(["decisions", dir, "--reverse", j.decisions.applied[0].key]); // already the printed (encoded) key
+    okFn.mock.restore();
+
+    log = t.mock.method(console, "log", () => {});
+    await cli.main(["run", doctor, dir, "--format", "json"]);
+    j = JSON.parse(log.mock.calls.map(c => c.arguments.join(" ")).join(""));
+    assert.equal(j.counts.total, 1, "reversed: the finding is active again");
+    assert.equal(j.decisions, undefined, "no decisions remain");
+    log.mock.restore();
+    assert.equal(exitCode, 1);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+function decideErr(errMock) {
+  return errMock.mock.calls.map(c => c.arguments.join(" ")).join(" ");
+}
+
+test("decisions: changed evidence resurfaces the finding with a reassessment warning", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2-2"));
+  const docDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2-2-doc-"));
+  try {
+    const doctor = path.join(docDir, "marker.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'marker', description: 'flags BAD', severity: 'warning' }",
+      "export async function doctor(ctx) {",
+      "  for (const f of ctx.files.list()) {",
+      "    if (ctx.files.read(f).includes('BAD')) ctx.report.finding({ file: f, line: 1 })",
+      "  }",
+      "}",
+    ].join("\n"));
+    fs.writeFileSync(path.join(dir, "a.ts"), "const BAD = 1;\n");
+    const err = t.mock.method(console, "error", () => {});
+    const log = t.mock.method(console, "log", () => {});
+    assert.equal(await cli.main(["decide", "--file", "a.ts", "--line", "1", "--not-applicable", "--reason", "test fixture", doctor, dir]), 0);
+    // the flagged line's content changes — same file:line, different evidence
+    fs.writeFileSync(path.join(dir, "a.ts"), "const BAD = 2;\n");
+    await cli.main(["run", doctor, dir]);
+    const report = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.match(report, /a\.ts:1/, "the finding resurfaces — the decision does not carry");
+    assert.match(report, /⚠ decision needs reassessment — marker\/marker a\.ts: the evidence changed/);
+    err.mock.restore(); log.mock.restore();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("decisions: corrupt state fails the run loudly, never resets", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2-3"));
+  const docDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2-3-doc-"));
+  try {
+    const doctor = path.join(docDir, "marker.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'marker', description: 'flags BAD', severity: 'warning' }",
+      "export async function doctor(ctx) { ctx.report.finding({ file: 'a.ts', line: 1 }) }",
+    ].join("\n"));
+    fs.writeFileSync(path.join(dir, "a.ts"), "const BAD = 1;\n");
+    fs.mkdirSync(path.join(dir, ".any-doctor"));
+    fs.writeFileSync(path.join(dir, ".any-doctor", "decisions.local.json"), "{ broken");
+    silentConsole(t);
+    const err = t.mock.method(console, "error", () => {});
+    const code = await cli.main(["run", doctor, dir]);
+    assert.equal(code, 1);
+    assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /not valid JSON/);
+    assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /NOT reset/);
+    assert.equal(fs.readFileSync(path.join(dir, ".any-doctor", "decisions.local.json"), "utf8"), "{ broken");
+    err.mock.restore();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("decisions: an identity shared by identical copies holds the decision back visibly", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2-4"));
+  const docDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2-4-doc-"));
+  try {
+    const doctor = path.join(docDir, "marker.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'marker', description: 'flags BAD', severity: 'warning' }",
+      "export async function doctor(ctx) {",
+      "  for (const f of ctx.files.list()) {",
+      "    const src = ctx.files.read(f)",
+      "    src.split('\\n').forEach((l, i) => { if (l.includes('BAD')) ctx.report.finding({ file: f, line: i + 1 }) })",
+      "  }",
+      "}",
+    ].join("\n"));
+    // two IDENTICAL lines: same check, same file, same digest/context — one shared identity
+    fs.writeFileSync(path.join(dir, "a.ts"), "const BAD = 1;\nconst pad = 2;\nconst BAD = 1;\n");
+    const err = t.mock.method(console, "error", () => {});
+    const log = t.mock.method(console, "log", () => {});
+    assert.equal(await cli.main(["decide", "--file", "a.ts", "--line", "1", "--accepted", "--reason", "one of them", doctor, dir]), 0);
+    await cli.main(["run", doctor, dir]);
+    const report = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.match(report, /a\.ts:1/, "the copies stay active");
+    assert.match(report, /a\.ts:3/, "both of them");
+    assert.match(report, /⚠ decision held back — marker\/marker a\.ts: 2 identical occurrences share this identity/);
+    err.mock.restore(); log.mock.restore();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true }); fs.rmSync(docDir, { recursive: true, force: true });
+  }
+});
+
+test("decisions: keys cross the shell — encoded decide --key and --reverse work; mangled keys refuse", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2-5"));
+  const docDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2-5-doc-"));
+  try {
+    const doctor = path.join(docDir, "marker.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'marker', description: 'flags BAD', severity: 'warning' }",
+      "export async function doctor(ctx) {",
+      "  for (const f of ctx.files.list()) {",
+      "    if (ctx.files.read(f).includes('BAD')) ctx.report.finding({ file: f, line: 1 })",
+      "  }",
+      "}",
+    ].join("\n"));
+    fs.writeFileSync(path.join(dir, "a.ts"), "const BAD = 1;\n");
+    silentConsole(t);
+    const err = t.mock.method(console, "error", () => {});
+    const log = t.mock.method(console, "log", () => {});
+    // first run: get the encoded key from JSON (raw keys hold NULs argv cannot carry)
+    await cli.main(["run", doctor, dir, "--format", "json"]);
+    const j = JSON.parse(log.mock.calls.map(c => c.arguments.join(" ")).join(""));
+    const encoded = j.groups[0].checks[0].findings[0].decisionKey;
+    assert.ok(/^[A-Za-z0-9_-]+$/.test(encoded), "the exposed key is base64url — no NULs, copy-paste safe");
+    // decide --key with the encoded form — and the recorded decision must
+    // APPLY on rescan (loop 4 caught it recording a forever-dormant blob)
+    assert.equal(await cli.main(["decide", "--key", encoded, "--accepted", "--reason", "via encoded key", doctor, dir]), 0);
+    const beforeReverse = log.mock.calls.length;
+    await cli.main(["run", doctor, dir, "--format", "json"]);
+    const j2 = JSON.parse(log.mock.calls.slice(beforeReverse).map(c => c.arguments.join(" ")).join(""));
+    assert.equal(j2.decisions.applied.length, 1, "the encoded-key decision applies on rescan");
+    assert.equal(j2.decisions.dormant, 0, "not dormant");
+    assert.equal(j2.groups[0].checks[0].findings[0].decision?.reason, "via encoded key");
+    // the listing shows the same encoded key, and --reverse accepts it
+    await cli.main(["decisions", dir]);
+    const listed = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.ok(listed.includes(encoded), "the printed key round-trips");
+    assert.equal(await cli.main(["decisions", dir, "--reverse", encoded]), 0);
+    // a mangled key refuses loudly, records nothing — inspect only the
+    // listing AFTER the reverse (the mock transcript is cumulative)
+    const callsBefore = log.mock.calls.length;
+    assert.equal(await cli.main(["decide", "--key", encoded.slice(0, -2) + "!!", "--accepted", "--reason", "x", dir]), 1);
+    await cli.main(["decisions", dir]);
+    const after = log.mock.calls.slice(callsBefore).map(c => c.arguments.join(" ")).join("\n");
+    assert.ok(!after.includes("via encoded key"), "the refused key recorded nothing");
+    err.mock.restore(); log.mock.restore();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true }); fs.rmSync(docDir, { recursive: true, force: true });
+  }
+});
+
+test("decisions: --json is JSON in EVERY state; keys are shell-safe", async (t) => {
+  silentConsole(t);
+  const log = t.mock.method(console, "log", () => {});
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-jsoncons-"));
+  try {
+    await cli.main(["decisions", dir, "--json"]);
+    const empty = JSON.parse(log.mock.calls[0].arguments[0]);
+    assert.deepEqual(empty, { schema: 1, decisions: [] }, "empty state is JSON, not prose");
+    const docDir2 = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-jsoncons-doc-"));
+    const doctor = path.join(docDir2, "m.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'm', description: 'x', severity: 'warning' }",
+      "export async function doctor(ctx) { ctx.report.finding({ file: 'a.ts', line: 1 }) }",
+    ].join("\n"));
+    fs.writeFileSync(path.join(dir, "a.ts"), "const BAD = 1;\n");
+    const err = t.mock.method(console, "error", () => {});
+    await cli.main(["decide", "--file", "a.ts", "--line", "1", "--accepted", "--reason", "r", doctor, dir]);
+    await cli.main(["decisions", dir, "--json"]);
+    const j = JSON.parse(log.mock.calls.at(-1).arguments[0]);
+    assert.equal(j.decisions.length, 1);
+    assert.ok(/^[A-Za-z0-9_-]+$/.test(j.decisions[0].key), "the exported key is base64url — usable in a shell");
+    assert.ok(!j.decisions[0].key.includes("\u0000"), "no NULs in machine output");
+    err.mock.restore();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("decisions: a columned finding decides and hides precisely (scan→decide→rescan)", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-col-"));
+  const docDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-col-doc-"));
+  try {
+    const doctor = path.join(docDir, "twins.mjs");
+    fs.writeFileSync(doctor, [
+      "export const meta = { id: 'twins', description: 'flags BAD', severity: 'warning' }",
+      "export async function doctor(ctx) {",
+      "  for (const f of ctx.files.list()) {",
+      "    const src = ctx.files.read(f)",
+      "    src.split('\\n').forEach((l, i) => {",
+      "      let c = -1",
+      "      while ((c = l.indexOf('BAD', c + 1)) !== -1) ctx.report.finding({ file: f, line: i + 1, column: c })",
+      "    })",
+      "  }",
+      "}",
+    ].join("\n"));
+    fs.writeFileSync(path.join(dir, "a.ts"), "const x = wrap(BAD, BAD);\n");
+    silentConsole(t);
+    const err = t.mock.method(console, "error", () => {});
+    const log = t.mock.method(console, "log", () => {});
+    // decide the FIRST columned occurrence only
+    assert.equal(await cli.main(["decide", "--file", "a.ts", "--line", "1", "--accepted", "--reason", "first only", doctor, dir]), 0);
+    const stored = JSON.parse(fs.readFileSync(path.join(dir, ".any-doctor", "decisions.local.json"), "utf8")).decisions[0];
+    assert.ok(stored.key.includes("a.ts"), "the key resolved (not empty)");
+    assert.ok(stored.provenance !== undefined, "the record carries provenance");
+    // rescan: ONE of the two same-line findings hides; the other stays
+    await cli.main(["run", doctor, dir]);
+    const report = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.match(report, /1 finding reviewed and hidden/);
+    assert.match(report, /a\.ts:1/, "the second same-line finding stays active");
+    const jsonLog = t.mock.method(console, "log", () => {});
+    await cli.main(["run", doctor, dir, "--format", "json"]);
+    const json = JSON.parse(jsonLog.mock.calls.map(c => c.arguments.join(" ")).join(""));
+    jsonLog.mock.restore();
+    // JSON carries the RAW picture with annotations (agents see everything):
+    // both same-line findings present, exactly one decided.
+    const findings = json.groups.flatMap(g => g.checks.flatMap(c => c.findings));
+    assert.equal(findings.length, 2, "raw JSON keeps both occurrences");
+    assert.equal(findings.filter(f => f.decision !== undefined).length, 1, "exactly one carries the decision");
+    assert.ok(findings.every(f => f.decisionKey !== undefined), "both carry their own distinct keys");
+    err.mock.restore(); log.mock.restore();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true }); fs.rmSync(docDir, { recursive: true, force: true });
+  }
+});
+
+test("decisions: unknown flags refuse; ambiguous decisions surface in the report", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  assert.equal(await cli.main(["decisions", ".", "--revrse", "abc"]), 1, "a typo'd flag refuses, never silently no-ops");
+  assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /unknown flag --revrse/);
+  err.mock.restore();
+});

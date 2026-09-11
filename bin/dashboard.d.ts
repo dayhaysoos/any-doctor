@@ -1,4 +1,5 @@
 import { Severity } from "./contract.js";
+import { Disposition } from "./finding-state.js";
 import { CheckSummary, DoctorSummary, DoctorTree, SiteFinding } from "./doctor-tree.js";
 import { TtyStdin, TtyStdout } from "./tty.js";
 import { RunOutcome } from "./contract.js";
@@ -7,6 +8,7 @@ export interface DashboardInput {
     outcome: RunOutcome;
     invoker?: string;
     useColor: boolean;
+    view?: import("./review.js").ReviewView;
 }
 export declare function scoreBar(score: number, width: number): string;
 export interface DashboardLayout {
@@ -28,13 +30,30 @@ interface ListRow {
     check?: CheckSummary;
     doctor?: DoctorSummary;
     toggleKey?: string;
+    reviewed?: Disposition;
+    reassess?: boolean;
 }
-export declare function buildListRows(tree: DoctorTree, useColor: boolean, selectedRow: number, readKeys: Set<string>, expanded?: ReadonlySet<string>): ListRow[];
+export declare function buildListRows(tree: DoctorTree, useColor: boolean, selectedRow: number, readKeys: Set<string>, expanded?: ReadonlySet<string>, review?: {
+    dispositionByReadKey?: Map<string, Disposition>;
+    reassessPairs?: Set<string>;
+    ambiguousReadKeys?: Map<string, number>;
+}): ListRow[];
 export interface FrameSource {
     (file: string): string[] | null;
 }
 export interface DashboardFrameState {
     tree: DoctorTree;
+    dispositionByReadKey?: Map<string, Disposition>;
+    reassessPairs?: Set<string>;
+    prompt?: {
+        disposition: Disposition;
+        buffer: string;
+        file: string;
+        line: number;
+        error?: boolean;
+    };
+    reasonByReadKey?: Map<string, string>;
+    ambiguousReadKeys?: Map<string, number>;
     selectedRow: number;
     readKeys: Set<string>;
     readSource: FrameSource;
@@ -51,6 +70,30 @@ export declare function dashboardFrame(state: DashboardFrameState): string;
 export declare function runDashboard(input: DashboardInput): Promise<void>;
 export interface DashboardDeps {
     copy?: (text: string) => boolean;
+    decide?: (input: {
+        key: string;
+        checkKey: string;
+        file: string;
+        line: number;
+        disposition: Disposition;
+        reason: string;
+        actor: string;
+        provenance?: {
+            revision?: number;
+            programDigest?: string;
+        };
+    }) => {
+        ok: true;
+    } | {
+        ok: false;
+        error: string;
+    };
+    reverse?: (key: string) => {
+        ok: true;
+    } | {
+        ok: false;
+        error: string;
+    };
 }
 export declare function runDashboardOn(env: {
     stdin: TtyStdin;

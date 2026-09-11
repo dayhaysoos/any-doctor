@@ -61,3 +61,15 @@ export interface ScanComparison {
 export declare function compareOccurrences(base: OccurrenceEvidence[], head: OccurrenceEvidence[]): ScanComparison;
 export declare function spansProvider(engineOn: boolean): (file: string, source: string) => SpanInfo[] | null;
 export declare function analysisEngineAvailable(): boolean;
+export declare function computeScanProvenance(groups: {
+    meta: {
+        id: string;
+        checks?: {
+            id: string;
+            revision?: number;
+        }[];
+    };
+}[], programDigests: Map<string, string>): {
+    revisions: Map<string, number>;
+    programDigests: Map<string, string>;
+};

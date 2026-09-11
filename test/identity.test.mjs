@@ -239,18 +239,35 @@ test("identity: a same-length edit is still a change — content, not size or ti
   assert.equal(compareOccurrences(base, head).pairs.length, 0, "same byte length, different literal");
 });
 
-test("identity: a multiline expression's continuation lines are outside v1 evidence — pinned limitation", () => {
-  // v1 digests the flagged line only (D30): an edit on a CONTINUATION line
-  // of a multiline expression does not break continuity. This is the
-  // documented deferral — primary-expression ranges need Finding end
-  // coordinates or doctor-supplied ranges (the open M2 contract question).
+test("identity: line-scoped evidence conservatively covers multiline continuations", () => {
+  // The conservative span (review-probe fix): a line-scoped finding's
+  // digest includes continuation lines until brackets balance, so an
+  // edit on a CONTINUATION line of a multiline expression now breaks
+  // identity. Strictly conservative — extra compared content can only
+  // turn same into different.
   const base = ev([f(1)], { "x.ts": "await doWork(BAD,\n  option(1),\n);\n" });
   const continuationEdited = ev([f(1)], { "x.ts": "await doWork(BAD,\n  option(2),\n);\n" });
-  assert.equal(compareOccurrences(base, continuationEdited).pairs.length, 1,
-    "pinned: continuation-line edits do not currently invalidate");
+  assert.equal(compareOccurrences(base, continuationEdited).pairs.length, 0,
+    "a continuation-line edit invalidates (the review's probe)");
   const flaggedEdited = ev([f(1)], { "x.ts": "await doWork(WORSE,\n  option(1),\n);\n" });
   assert.equal(compareOccurrences(base, flaggedEdited).pairs.length, 0,
     "an edit on the flagged line itself still breaks continuity");
+  // Balanced single line: no span, unchanged behavior
+  const b2 = ev([f(1)], { "x.ts": "const BAD = doWork(1);\n" });
+  const h2 = ev([f(1)], { "x.ts": "const BAD = doWork(2);\n" });
+  assert.equal(compareOccurrences(b2, h2).pairs.length, 0);
+  const same = ev([f(1)], { "x.ts": "const BAD = doWork(1);\n" });
+  assert.equal(compareOccurrences(b2, same).pairs.length, 1, "identical single lines still match");
+  // Deeply nested spans stop at the cap and fall back honestly — the
+  // span only grows to SPAN_MAX_CONTINUATION_LINES; unbalanced stays
+  // line-scoped (a document, conservative limit).
+  const deep = Array.from({ length: 30 }, (_, i) => "const pad" + i + " = " + i + ";").join("\n");
+  const opened = deep + "\nflag((\n";
+  const openedEdited = deep + "\nflag((\n";
+  const a3 = ev([f(31)], { "x.ts": opened + "  arg(1),\n" });
+  const b3 = ev([f(31)], { "x.ts": openedEdited + "  arg(2),\n" });
+  // the continuation sits within the cap → still compared
+  assert.equal(compareOccurrences(a3, b3).pairs.length, 0, "capped spans still compare their covered lines");
 });
 
 test("identity: provenance digests the exact program bytes; changed programs are incomparable", () => {
@@ -382,4 +399,23 @@ test("identity: invalid evidence ranges fall back to the line digest, visibly", 
   assert.equal(degenerate[0].scope, "line", "an end before the start column on one line");
   const valid = rangeEv(src, { endLine: 3 });
   assert.equal(valid[0].scope, "range", "the honest range is accepted");
+});
+
+test("identity: nested multiline spans run to the OUTER closing bracket (running depth)", () => {
+  const src = (inner) => `outer(arg1,\n  inner(${inner},\n  b),\n  arg2);`;
+  const base = ev([f(1)], { "x.ts": src("a") + "\n" });
+  // an edit inside the NESTED call — a per-line break at the inner ')' misses it
+  const nestedEdited = ev([f(1)], { "x.ts": src("CHANGED") + "\n" });
+  assert.equal(compareOccurrences(base, nestedEdited).pairs.length, 0, "nested-call edits invalidate");
+  const untouched = ev([f(1)], { "x.ts": src("a") + "\n" });
+  assert.equal(compareOccurrences(base, untouched).pairs.length, 1);
+});
+
+test("identity: the final line without a trailing newline is part of the span", () => {
+  // No trailing newline: the closing line is the last physical line.
+  const base = ev([f(1)], { "x.ts": "flag(BAD,\n  option(1));" });
+  const edited = ev([f(1)], { "x.ts": "flag(BAD,\n  option(2));" });
+  assert.equal(compareOccurrences(base, edited).pairs.length, 0, "an edit on the final unnewline'd line invalidates");
+  const same = ev([f(1)], { "x.ts": "flag(BAD,\n  option(1));" });
+  assert.equal(compareOccurrences(base, same).pairs.length, 1);
 });

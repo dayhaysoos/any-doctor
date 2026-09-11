@@ -32,7 +32,7 @@ expect {
   eof { puts ">FAIL dashboard-eof"; exit 104 }
 }
 expect {
-  "enter copy finding" {}
+  "a accept" {}
   timeout { puts ">FAIL footer-timeout"; exit 110 }
   eof { puts ">FAIL footer-eof"; exit 111 }
 }
@@ -99,12 +99,12 @@ test("bare run opens the aggregate tree directly; enter walks doctor-check-findi
   assert.ok(text.includes("Select doctors to run"), "the cohort selector is the first screen");
   assert.ok(text.includes("async-doctor"), "the aggregate tree follows one Enter");
   assert.ok(text.includes("async-doctor"), "the aggregate tree is the first screen");
-  assert.ok(text.includes("enter copy finding"), "dashboard footer in transcript");
+  assert.ok(text.includes("a accept"), "dashboard footer in transcript");
   assert.ok(text.includes("copied finding"), "copy notice in transcript");
 
   // Anti-jitter: after the dashboard's first paint (the one containing the
   // footer marker), repaints are in-place — no further full-screen erases.
-  const firstDash = transcript.indexOf("enter copy finding");
+  const firstDash = transcript.indexOf("a accept");
   assert.equal(transcript.indexOf("\x1b[2J", firstDash + 1), -1,
     "no full-screen erase after the dashboard's first paint");
 

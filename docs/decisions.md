@@ -1169,6 +1169,111 @@ for M2. Persistent identity for decisions (M2) still open in the
 
 ---
 
+## D31 — Remembered decisions, locally (M2): flat state, exact identity, gates stay raw
+
+**Date:** 2026-09-11
+
+**Context:** M2 ("remember one decision end to end") was implemented on
+`implement/m2-decisions`, on top of the identity layer (D30 + repairs):
+decisions attach to a finding's identity key, never a line number.
+
+**Decision:** Local decisions are a flat, versioned JSON file
+(`<target>/.any-doctor/decisions.local.json`) with atomic replacement —
+NOT SQLite. Rationale: decisions-only volume is tiny; the temp+rename
+gives interruption safety; the native-binding matrix is avoided; and the
+documented coupling rule is auto-history ⇒ a database — so SQLite is
+reconsidered when M4's observations/history arrive. Recording merges
+per-key with disk (concurrent writers keep each other's records);
+reversal overwrites (a union would resurrect the deleted key). No file
+exists before the first decision; scans never require state; corrupt
+state fails loudly and is never reset.
+
+A decision requires a non-empty reason, carries a disposition (accepted /
+not-applicable), attribution (actor as supplied, not verified identity),
+and local scope only — project scope (Git-tracked, CI-visible) is M3.
+Application is exact-identity-key: same check+file with different
+evidence is surfaced reassessment, never a carried suppression. Decided
+findings leave the ACTIVE list (report line, dashboard tree with a v
+review view); gates and exit codes stay on RAW findings — a private
+decision never changes CI. Surfaces: `any-doctor decide` (scan-resolving
+--file/--line or exact --key), `any-doctor decisions` (list/--json/
+--reverse), dashboard a/x with a reason prompt and u to undo. Copied
+prompts are investigation-first and name the decide command with the
+finding's key; JSON findings carry decisionKey + decision.
+
+**Memory-review repairs (same branch, pre-publication):** an independent
+adversarial review of the unstaged M2 snapshot found five defects plus
+two agent-interface inconsistencies, all reproduced, all fixed with the
+probes as permanent fixtures: (1) readKey dropped columns, so one
+decision could hide two same-line findings — readKeyFor is now
+column-precise everywhere; (2) a present-but-unreadable decisions file
+read as absent and the next record REPLACED it — ENOENT is the only
+absence, everything else refuses loudly; (3) decisions carried silently
+across doctor changes — every record now stores provenance
+(authored check revision when declared, else whole-program digest) and a
+mismatch resurfaces the decision as reassessment, with `--key` decisions
+resolving the current doctor by id or explicit path; (4) line-scoped
+evidence ignored continuation lines — the digest now spans
+bracket-unbalanced continuations (capped at 10), strictly conservative;
+(5) stale evidence produced a repeatable location key that could
+authorize hiding — stale findings carry no decidable key; (6+7)
+`decisions --json` is JSON in every state (empty included) and exports
+base64url keys. One fix-order bug was caught in verification: the --key
+provenance block ran before base64url decoding and resolved a garbage
+doctor id — moved after decode, pinned by the packed smoke.
+
+**Second repair round (the repair-review findings, same branch):** (1)
+the two remaining column-blind entry points — doctor-tree's SiteFinding
+join and decide's scan resolution — now pass the column, so dashboard
+acceptance resolves identity keys and --file/--line decisions store real
+keys (pinned by a two-same-line-findings e2e: decide one, the other stays
+active; JSON keeps both raw with per-finding annotations); (2) the
+dashboard records provenance INTO the write instead of only its in-memory
+copy — decisions survive restart without a false "doctor changed"
+(pinned); (3) a null record in the store is the loud schema error, not a
+TypeError; (4) conservative spans track RUNNING bracket depth — an inner
+closing bracket no longer truncates the span — and include the final
+physical line when the file lacks a trailing newline (both pinned);
+(5) provenance compatibility is now revision-match OR digest-match — a
+byte-identical program is compatible regardless of declarations, fixing
+--key for revision-declaring checks while preserving revision churn
+protection (pinned at the unit boundary). 370 tests; packed smoke: 632
+files / 403 findings / zero crashes, and the scan→decide→rescan workflow
+green end to end with restart parity.
+
+**Consequences:** Verified end to end through a packed install on a real
+repo: decide (scan-resolved) → fresh-process rescan hides the finding and
+annotates it → inspect → reverse → decisions machinery gone. Review loop
+1 sharpened three laws, now pinned by tests: (1) identical occurrences
+sharing one identity are NEVER suppressed by one decision — the decision
+is held back as ambiguous until the copies diverge (design.md's
+"identical text in two places is not one finding," cardinality applied
+to decisions); (2) the report's score renders over the ACTIVE list
+(decided findings excluded) while JSON and every gate stay raw — an
+explicit M2 choice recorded here, revisitable at M3's score-display
+resolution; (3) a direct save onto corrupt state throws rather than
+silently resetting. Known residuals, documented not hidden: sequential
+writers merge safely, but a cross-process read-modify-write
+interleaving can still drop one record (a lock arrives when real usage
+justifies it); decision listing caps at 500 with --json as the
+unbounded export; the review capture on diff runs is a second disk read
+after the diff — the same residual class the identity layer documents.
+Review loop 3 found a real boundary defect: identity keys contain NUL
+separators and cannot traverse argv, so decide --key and decisions
+--reverse were unusable from any shell — keys now cross shells as
+base64url (encodeDecisionKey), printed by listings, carried by JSON and
+dashboard prompts, decoded at every --key/--reverse boundary, with
+mangled keys refused loudly. Loop 3 also corrected this log's honesty:
+loop-1's commit message claimed a flags refusal that had not landed, and
+"surfaced in report/JSON/dashboard" was then only partially true — the
+corrections landed in loops 2 and 3, and this entry records that the
+commit messages between D31 and here overclaimed twice. 359 tests.
+Agent authority resolves as: whoever runs the command in the repo
+decides; finer policy arrives with M3's project scope. Open for M3:
+project-scope storage layout, Git convergence, CI application.
+
+---
+
 ## Historical open questions
 
 Retained from earlier planning. The active lifecycle questions and their owning

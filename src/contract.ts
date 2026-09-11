@@ -39,6 +39,12 @@ export interface CheckMeta {
   onUnknown?: "narrow" | "skip";
   /** Unit counted by certification; occurrence checks require a two-location witness. */
   reportingUnit?: "occurrence" | "file" | "project";
+  /** Semantic revision of this check's MEANING, authored by hand: bump it
+   *  when the check detects something different; cosmetic doctor edits do
+   *  not bump it. Recorded decisions stay compatible while the revision is
+   *  unchanged; without a revision, the whole-program digest governs (and
+   *  any doctor edit resurfaces decisions — the churn revision prevents). */
+  revision?: number;
 }
 
 export interface DoctorMeta {
@@ -527,6 +533,16 @@ export function compareFindings(expected: ExpectedFinding[], actual: Finding[]):
 // analysis-on fixtures apply.
 export function narrowedCheckIds(meta: DoctorMeta): string[] {
   return (meta.checks ?? []).filter((c) => c.needs !== undefined && c.needs.length > 0).map((c) => c.id);
+}
+
+// The within-run occurrence handle: checkKey plus coordinates, COLUMN
+// INCLUDED — two findings on one line are two occurrences, and one
+// decision must never hide both (the review-probe bug: this key dropped
+// columns, so display filters suppressed by line). One home — the
+// identity layer keys evidence by it, decisions address findings by it,
+// and every surface composes it from these parts.
+export function readKeyFor(checkKey: string, file: string, line: number, column?: number): string {
+  return `${checkKey}@${file}:${line}${column !== undefined ? `:${column}` : ""}`;
 }
 
 // The single home of the Finding↔Meta join. Every consumer — score, report,

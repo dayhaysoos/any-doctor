@@ -62,6 +62,20 @@ sources updated); glossary entries added (Dashboard, Doctor tree, Task
 prompt). M2's decision workflow now lands in the loop's state and the
 prompt family without piercing the tree.
 
+**Delivered on `implement/m2-decisions` (M2, D31):** local remembered
+decisions end to end — flat atomic state (no SQLite; the coupling rule
+is auto-history ⇒ database, reconsidered at M4), decide/decisions
+commands, dashboard a/x/v/u with a reason prompt, exact-identity
+application with visible reassessment, gates on raw findings, packed-
+install acceptance on sift-skills (decide → fresh-process rescan hides
+and annotates → inspect → reverse), 370 tests. Five review loops plus two adversarial repair rounds closed
+the findings: the loops caught and fixed a duplicate-suppression
+defect (identical occurrences now hold decisions back as ambiguous), an
+unreachable reason pane, a falsely-claimed flag refusal, NUL-bearing
+keys that could not cross argv (now base64url everywhere a shell can
+see them), and an encoded-key recording regression — all pinned by
+tests, with D31 recording the overclaims honestly.
+
 ## Next bounded scope
 
 M2 — remember one decision end to end — is next, per the
@@ -75,8 +89,9 @@ independently scoped capabilities. They do not all block M2/M3. Measure the real
 scanner separately from synthetic identity records; report current limits and
 assign scanner-scale work explicitly before claiming massive-codebase capacity.
 
-M2 adds local decisions; M3 adds Git convergence; M4 adds bounded history. These are
-planning increments, not authorization to run all four or publish a version.
+M3 (share decisions through Git, CI application) is next; M4 adds bounded
+history. These are planning increments, not authorization to run all four
+or publish a version.
 Resolve open choices in their milestone and write accepted decisions back to the
 design and decision log. Maintain one-off read-only scans and doctor confinement.
 

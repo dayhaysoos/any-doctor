@@ -46,6 +46,17 @@ Planned capabilities:
 None of these lifecycle capabilities is implemented by this documentation update.
 Command names, storage schemas, and automatic-history defaults remain open.
 
+## Just landed (M2, on `implement/m2-decisions`)
+
+- Remembered local decisions: accepted / not-applicable with a required
+  reason, reversible, attached to finding identity (D31) — created from
+  the dashboard (a/x + reason prompt, v review view, u undo) or the CLI
+  (`decide`, `decisions --reverse`).
+- Decided findings leave the active list on later scans; evidence changes
+  resurface them with an explicit reassessment warning; raw findings stay
+  inspectable and the gate never counts a decision as a fix.
+- Investigation-first copy prompts carrying the exact decide command.
+
 ## Deferred
 
 Hosted team history, a public doctor registry, mandatory adoption/init workflows,

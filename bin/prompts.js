@@ -13,18 +13,22 @@ import { summarizeCheck } from "./doctor-tree.js";
 function promptHeading(severity, description, checkKey) {
     return `${severity.toUpperCase()} · ${description} (${checkKey})`;
 }
-function scopeTail(scopeLine, verifyCommand, plural = false) {
-    return [
+function scopeTail(scopeLine, verifyCommand, plural = false, decideCommand) {
+    const lines = [
         "",
         "Scope:",
         scopeLine,
-        `- Fix the root cause; do not suppress, disable, or silence ${plural ? "any of these checks" : "the check"}.`,
+        "- Investigate first; fix the root cause when the finding is real.",
+        "- If it is intentional or misread for this code, record a decision instead — never silence or disable the check itself.",
         "- Keep unrelated refactors out of this pass.",
-        "",
-        `Verify with \`${verifyCommand}\` and confirm the finding${plural ? "s are" : " is"} gone before moving on.`,
     ];
+    if (decideCommand !== undefined) {
+        lines.push(`- Record the decision with: \`${decideCommand}\``);
+    }
+    lines.push("", `Verify with \`${verifyCommand}\` and confirm the finding${plural ? "s are" : " is"} gone before moving on.`);
+    return lines;
 }
-export function fixPrompt(item, verifyCommand) {
+export function fixPrompt(item, verifyCommand, decideCommand) {
     const site = item.site;
     const lines = [
         "Fix exactly one any-doctor finding:",
@@ -39,7 +43,7 @@ export function fixPrompt(item, verifyCommand) {
         lines.push("", "Why " + item.why);
     if (item.fix)
         lines.push("", "Suggested fix: " + item.fix);
-    lines.push(...scopeTail(`- Fix only ${item.checkKey} at this site.`, verifyCommand));
+    lines.push(...scopeTail(`- Fix only ${item.checkKey} at this site.`, verifyCommand, false, decideCommand));
     return lines.join("\n");
 }
 // The re-scan loop is the pagination for display; a copied task still

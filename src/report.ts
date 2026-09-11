@@ -1,4 +1,4 @@
-import { DEFAULT_EXTS, ExpectedFinding, ReportGroup, RunOutcome, SEVERITY_ORDER, VerifyRunResult } from "./contract.js";
+import { DEFAULT_EXTS, ExpectedFinding, readKeyFor, ReportGroup, RunOutcome, SEVERITY_ORDER, VerifyRunResult } from "./contract.js";
 import { deriveSummary, RunSummary } from "./summary.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import type { DiffResult } from "./diff.js";
@@ -79,7 +79,21 @@ export function reportDiffOf(diff: DiffResult): ReportDiff {
 // score, rollups, check buckets, narrowed ids) lives in summary.ts,
 // shared with the dashboard and the future JSON surface — rendering
 // here means prose and color, nothing else.
-export function renderReport(input: RunOutcome, useColor: boolean, diff?: ReportDiff): string {
+// What a run's report says about remembered decisions: suppressed
+// findings never render as findings; the reviewed line keeps the hiding
+// from reading as clean-by-luck; reassessments (evidence changed) are
+// warnings, because the finding they refer to IS in the active list.
+export interface ReportReview {
+  accepted: number;
+  notApplicable: number;
+  reassessing: { checkKey: string; file: string; reason: string }[];
+  // Decisions held back because identical occurrences share one
+  // identity: one decision must not suppress every copy (design.md's
+  // "identical text in two places is not one finding").
+  ambiguous: { checkKey: string; file: string; occurrences: number; reason: string }[];
+}
+
+export function renderReport(input: RunOutcome, useColor: boolean, diff?: ReportDiff, review?: ReportReview): string {
   const c = colorizer(useColor);
   const lines: string[] = [];
   const summary = deriveSummary(input);
@@ -142,6 +156,7 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
     // narrowed notice renders here too, exactly as it does under
     // findings (D20 Stage 2's own words).
     pushNarrowedNotices(lines, summary, c);
+    pushReviewNotices(lines, review, c);
     return lines.join("\n");
   }
 
@@ -194,6 +209,7 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
     lines.push(c(`${hidden} duplicate finding${hidden === 1 ? "" : "s"} hidden (same location, different doctor)`, DIM));
   }
 
+  pushReviewNotices(lines, review, c);
   return lines.join("\n").replace(/\n+$/, "");
 }
 
@@ -202,7 +218,16 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
 // --format json is set — human diagnostics (crash detail, gate
 // reasons) stay on stderr, so pipes stay parseable. Same Summary the
 // prose and the dashboard render; the same facts, no re-derivation.
-export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult): string {
+export interface JsonReview {
+  // readKey (checkKey@file:line) -> the argv-safe encoded identity key
+  // (base64url — raw keys contain NUL separators) and applied decision
+  annotations: Map<string, { decisionKey?: string; decision?: { disposition: string; reason: string; actor: string; updatedAt: string }; stale?: boolean }>;
+  reassessing: { checkKey: string; file: string; reason: string }[];
+  ambiguous: { checkKey: string; file: string; occurrences: number }[];
+  dormant: number;
+}
+
+export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult, review?: JsonReview): string {
   return JSON.stringify({
     schema: 1,
     tool: "any-doctor",
@@ -219,13 +244,18 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
         ...(b.ruleId !== null ? { rule: b.ruleId } : {}),
         heading: b.heading,
         severity: b.severity,
-        findings: b.findings.map(f => ({
-          file: f.file,
-          line: f.line,
-          ...(f.column !== undefined ? { column: f.column } : {}),
-          ...(f.severity !== undefined ? { severity: f.severity } : {}),
-          ...(f.message !== undefined ? { message: f.message } : {}),
-        })),
+        findings: b.findings.map(f => {
+          const readKey = readKeyFor(`${gc.group.meta.id}/${b.ruleId ?? gc.group.meta.id}`, f.file, f.line, f.column);
+          const ann = review?.annotations.get(readKey);
+          return {
+            file: f.file,
+            line: f.line,
+            ...(f.column !== undefined ? { column: f.column } : {}),
+            ...(f.severity !== undefined ? { severity: f.severity } : {}),
+            ...(f.message !== undefined ? { message: f.message } : {}),
+            ...(ann !== undefined ? { ...(ann.decisionKey !== undefined ? { decisionKey: ann.decisionKey } : {}), ...(ann.decision !== undefined ? { decision: ann.decision } : {}), ...(ann.stale === true ? { staleEvidence: true } : {}) } : {}),
+          };
+        }),
       })),
       ...(gc.narrowedIds.length > 0 ? { narrowed: gc.narrowedIds } : {}),
       ...(gc.group.meta.blindSpots !== undefined && gc.group.meta.blindSpots.length > 0 ? { blindSpots: gc.group.meta.blindSpots } : {}),
@@ -238,6 +268,18 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
       fails: gate.fails,
       ...(gate.reason !== null ? { reason: gate.reason } : {}),
     },
+    ...(review !== undefined
+      && (review.reassessing.length > 0 || review.ambiguous.length > 0 || review.dormant > 0
+        || [...review.annotations.values()].some((a) => a.decision !== undefined))
+      ? {
+        decisions: {
+          applied: [...new Map([...review.annotations.values()].filter((a) => a.decision !== undefined).map((a) => [a.decisionKey, { key: a.decisionKey, ...a.decision! }])).values()],
+          reassessing: review.reassessing,
+          ambiguous: review.ambiguous,
+          dormant: review.dormant,
+        },
+      }
+      : {}),
     ...(diff !== undefined ? {
       diff: {
         base: diff.base,
@@ -264,6 +306,32 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
 // rule-aware (D20), so the line must say which check was missing or extra.
 function where(f: ExpectedFinding): string {
   return (f.rule ? f.rule + " " : "") + f.file + ":" + f.line + (f.column === undefined ? "" : ":" + f.column);
+}
+
+function truncated(s: string, n: number): string {
+  return s.length <= n ? s : s.slice(0, n - 1) + "…";
+}
+
+// Remembered-decision notices — one wording, rendered on every report
+// shape (findings, clean, empty): the reviewed line keeps hidden findings
+// from reading as clean-by-luck, and reassessments warn that a decided
+// finding's evidence changed and it has resurfaced.
+function pushReviewNotices(
+  lines: string[],
+  review: ReportReview | undefined,
+  c: (s: string, wrap?: string) => string,
+): void {
+  if (review === undefined) return;
+  const reviewed = review.accepted + review.notApplicable;
+  if (reviewed > 0) {
+    lines.push(c(`${reviewed} finding${reviewed === 1 ? "" : "s"} reviewed and hidden (${review.accepted} accepted, ${review.notApplicable} not applicable) — any-doctor decisions to inspect`, DIM));
+  }
+  for (const ra of review.reassessing) {
+    lines.push(c(`⚠ decision needs reassessment — ${ra.checkKey} ${ra.file}: the evidence changed since "${truncated(ra.reason, 60)}"`, YELLOW));
+  }
+  for (const am of review.ambiguous) {
+    lines.push(c(`⚠ decision held back — ${am.checkKey} ${am.file}: ${am.occurrences} identical occurrences share this identity; they must diverge before a decision applies`, YELLOW));
+  }
 }
 
 // The narrowed notice's one wording (D20 Stage 2) — one source for every

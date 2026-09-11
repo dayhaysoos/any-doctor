@@ -5,8 +5,8 @@ import * as path from "path";
 import { resolveFinding } from "./contract.js";
 import { runCohort } from "./cohort.js";
 import { deriveSummary } from "./summary.js";
-import { withinDir } from "./contract.js";
-import { compareOccurrences, comparableScans, digestTextFile, doctorDigests, extractEvidence, IDENTITY_SCHEMA_VERSION, scanProvenance, spansProvider, } from "./identity.js";
+import { captureScan, entriesOf, invalidateChangedFiles, } from "./scan-capture.js";
+import { compareOccurrences, comparableScans, digestTextFile, doctorDigests, IDENTITY_SCHEMA_VERSION, scanProvenance, } from "./identity.js";
 // Raw causes, no flag prefixes: the caller attaches the context and the
 // remedy that actually matches (a missing binary wants "install git";
 // a not-a-repo exit wants git's own stderr, which already says so).
@@ -19,42 +19,6 @@ function git(args, cwd) {
         return { ok: false, cause: "git " + args.slice(0, 2).join(" ") + " failed: " + String(r.stderr).trim() };
     }
     return { ok: true, out: String(r.stdout).trim() };
-}
-function entriesOf(groups) {
-    const out = [];
-    for (const g of groups) {
-        for (const f of g.findings) {
-            out.push({ f, g, checkKey: resolveFinding(g.meta, f).checkKey });
-        }
-    }
-    return out;
-}
-function evidenceInputOf(e) {
-    return {
-        checkKey: e.checkKey,
-        file: e.f.file,
-        line: e.f.line,
-        ...(e.f.column !== undefined ? { column: e.f.column } : {}),
-        ...(e.f.evidence !== undefined ? { evidence: e.f.evidence } : {}),
-    };
-}
-// Evidence reads stay inside the scanned root — a finding's file string is
-// doctor-supplied data, and the host's read must not become an escape hatch
-// the confined doctor itself could never take. withinDir is the strict
-// containment form's one home (a scan root is a directory, not a prefix).
-function readFileFrom(root) {
-    const containmentRoot = path.resolve(root);
-    return (rel) => {
-        const abs = path.resolve(root, rel);
-        if (!withinDir(abs, containmentRoot))
-            return null;
-        try {
-            return fs.readFileSync(abs, "utf8");
-        }
-        catch {
-            return null;
-        }
-    };
 }
 // The rich projection of chosen entries — severities and doctor ids for the
 // gate and the report, joined back through the identity layer's indices.
@@ -70,45 +34,6 @@ function joinFindings(entries, indices) {
             severity: resolveFinding(g.meta, f).severity,
         };
     });
-}
-export function captureHeadScan(targetDir, headGroups, analysisAvailable, digests) {
-    const entries = entriesOf(headGroups);
-    const reader = readFileFrom(targetDir);
-    const sources = new Map();
-    for (const input of entries.map(evidenceInputOf)) {
-        if (!sources.has(input.file)) {
-            const source = reader(input.file);
-            if (source !== null)
-                sources.set(input.file, source);
-        }
-    }
-    const fromCapture = (file) => { var _a; return (_a = sources.get(file)) !== null && _a !== void 0 ? _a : null; };
-    const evidence = extractEvidence(entries.map(evidenceInputOf), fromCapture, spansProvider(analysisAvailable));
-    return { groups: headGroups, analysisAvailable, digests, evidence, sources };
-}
-// The HEAD side's consistency recheck: if a file changed on disk since
-// its scan-adjacent capture, the capture no longer describes the working
-// tree this diff is reporting on — every occurrence in that file goes
-// stale (never a false continuity through borrowed bytes). The base side
-// needs no recheck: its worktree is materialized once by git and removed
-// at the end, so its bytes cannot change under the scan. What this
-// cannot catch is an edit DURING a scan itself — a documented residual,
-// never a guarantee.
-function invalidateChangedHeadFiles(head, targetDir) {
-    if (head.sources.size === 0)
-        return;
-    const reader = readFileFrom(targetDir);
-    const changed = new Set();
-    for (const [file, captured] of head.sources) {
-        if (reader(file) !== captured)
-            changed.add(file);
-    }
-    if (changed.size === 0)
-        return;
-    for (const o of head.evidence.occurrences) {
-        if (changed.has(o.file))
-            o.lineDigest = null;
-    }
 }
 // The HEAD cohort has already run and its capture has been taken at
 // scan-adjacency by the caller; only the base side scans here.
@@ -172,22 +97,14 @@ export async function runDiff(spec, baseRef, head) {
             baseGroups = deriveSummary(baseRun).groups;
             baseAnalysisAvailable = (_a = baseRun.analysisAvailable) !== null && _a !== void 0 ? _a : false;
             baseDigestsPost = baseDigests;
-            const baseReader = readFileFrom(baseTarget);
-            const baseScanEntries = entriesOf(baseGroups);
-            for (const input of baseScanEntries.map(evidenceInputOf)) {
-                if (!baseSources.has(input.file)) {
-                    const source = baseReader(input.file);
-                    if (source !== null)
-                        baseSources.set(input.file, source);
-                }
-            }
-            const fromBaseCapture = (file) => { var _a; return (_a = baseSources.get(file)) !== null && _a !== void 0 ? _a : null; };
-            baseEvidence = extractEvidence(baseScanEntries.map(evidenceInputOf), fromBaseCapture, spansProvider(baseAnalysisAvailable));
+            const baseCapture = captureScan(baseTarget, baseGroups, baseAnalysisAvailable, baseDigests);
+            baseSources = baseCapture.sources;
+            baseEvidence = baseCapture.evidence;
         }
         else {
             baseDigestsPost = baseDigests;
         }
-        const headEntries = entriesOf(head.groups);
+        const headEntries = head.entries;
         const baseEntries = entriesOf(baseGroups);
         const provenance = {
             head: scanProvenance(spec.doctors, head.analysisAvailable, head.digests),
@@ -201,7 +118,7 @@ export async function runDiff(spec, baseRef, head) {
         // describes the bytes that were about to run when it ran.
         let cmp;
         if (comparable) {
-            invalidateChangedHeadFiles(head, spec.targetDir);
+            invalidateChangedFiles(head, spec.targetDir);
             cmp = compareOccurrences(baseEvidence.occurrences, head.evidence.occurrences);
         }
         else {
