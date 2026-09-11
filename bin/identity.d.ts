@@ -8,12 +8,17 @@ export interface OccurrenceEvidence {
     lineDigest: string | null;
     relColumn: number | null;
     contextId: string | null;
+    scope: "range" | "line";
 }
 export interface EvidenceInput {
     checkKey: string;
     file: string;
     line: number;
     column?: number;
+    evidence?: {
+        endLine: number;
+        endColumn?: number;
+    };
 }
 export interface EvidenceReport {
     occurrences: OccurrenceEvidence[];
@@ -51,6 +56,7 @@ export interface ScanComparison {
     absentIndices: number[];
     ambiguous: number;
     stale: number;
+    lineScoped: number;
 }
 export declare function compareOccurrences(base: OccurrenceEvidence[], head: OccurrenceEvidence[]): ScanComparison;
 export declare function spansProvider(engineOn: boolean): (file: string, source: string) => SpanInfo[] | null;

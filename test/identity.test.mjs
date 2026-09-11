@@ -332,3 +332,54 @@ test("identity: 20k identical occurrences match in linear time, cardinality hone
   // quadratic class from ever returning (generous: CI machines vary).
   assert.ok(ms < 500, `20k duplicates matched in ${ms.toFixed(0)}ms — the cursor must stay linear`);
 });
+
+// ---- evidence ranges (review finding 3: multiline expressions) --------
+
+const rangeEv = (src, evidence) => extractEvidence(
+  [{ checkKey: "d/r", file: "x.ts", line: 1, ...(evidence !== undefined ? { evidence } : {}) }],
+  (f) => (f === "x.ts" ? src : null),
+  () => null,
+).occurrences;
+
+test("identity: a validated evidence range covers continuation lines — edits there break identity", () => {
+  const base = rangeEv("await doWork(BAD,\n  option(1),\n);\n", { endLine: 3 });
+  const continuationEdited = rangeEv("await doWork(BAD,\n  option(2),\n);\n", { endLine: 3 });
+  assert.equal(compareOccurrences(base, continuationEdited).pairs.length, 0,
+    "an edit on a continuation line now invalidates — the review's multiline case");
+  const flaggedEdited = rangeEv("await doWork(WORSE,\n  option(1),\n);\n", { endLine: 3 });
+  assert.equal(compareOccurrences(base, flaggedEdited).pairs.length, 0);
+});
+
+test("identity: a moved multiline expression still continues under its range", () => {
+  const base = rangeEv("function w() {\n  await doWork(BAD,\n    option(1),\n  );\n}\n", { endLine: 4 });
+  const moved = rangeEv("function w() {\n\n  await doWork(BAD,\n    option(1),\n  );\n}\n", { endLine: 5 });
+  const cmp = compareOccurrences(base, moved);
+  assert.equal(cmp.pairs.length, 1, "blank lines above the expression preserve identity");
+  assert.equal(cmp.lineScoped, 0, "the match is range-verified, not line-scoped");
+});
+
+test("identity: line-scoped fallback is explicit — legacy findings never masquerade as range-verified", () => {
+  const withRange = rangeEv("await doWork(BAD, 1);\n", { endLine: 1 });
+  const withoutRange = rangeEv("await doWork(BAD, 1);\n");
+  // Same content, but scope is part of the key: a range-evidenced
+  // occurrence and a line-evidenced one never accidentally pair.
+  const cmp = compareOccurrences(withRange, withoutRange);
+  assert.equal(cmp.pairs.length, 0, "range and line scopes stay distinct");
+  const bothLine = compareOccurrences(withoutRange, withoutRange);
+  assert.equal(bothLine.pairs.length, 1);
+  assert.equal(bothLine.lineScoped, 1, "line-only matches are counted as line-scoped");
+});
+
+test("identity: invalid evidence ranges fall back to the line digest, visibly", () => {
+  const src = "await doWork(BAD,\n  option(1),\n);\n";
+  const endBeforeStart = rangeEv(src, { endLine: 0 });
+  assert.equal(endBeforeStart[0].scope, "line", "endLine before the finding line");
+  const beyondEof = rangeEv(src, { endLine: 99 });
+  assert.equal(beyondEof[0].scope, "line", "endLine past end of file");
+  const unbounded = rangeEv(Array.from({ length: 60 }, (_, i) => "l" + i).join("\n") + "\n", { endLine: 60 });
+  assert.equal(unbounded[0].scope, "line", "a 60-line span is a whole-file hash in miniature, refused");
+  const degenerate = rangeEv(src, { endLine: 1, endColumn: 0 });
+  assert.equal(degenerate[0].scope, "line", "an end before the start column on one line");
+  const valid = rangeEv(src, { endLine: 3 });
+  assert.equal(valid[0].scope, "range", "the honest range is accepted");
+});

@@ -40,6 +40,7 @@ export function reportDiffOf(diff) {
         contextFallback: diff.contextFallback,
         ambiguous: diff.ambiguous,
         stale: diff.stale,
+        lineScoped: diff.lineScoped,
         comparable: diff.provenance.comparable,
     };
 }
@@ -76,6 +77,8 @@ export function renderReport(input, useColor, diff) {
             notes.push(`${diff.ambiguous} matched among identical copies`);
         if (diff.stale > 0)
             notes.push(`${diff.stale} unread or changed mid-scan`);
+        if (diff.lineScoped > 0)
+            notes.push(`${diff.lineScoped} matched on line-scoped evidence only`);
         if (notes.length > 0)
             line += ` (${notes.join("; ")})`;
         lines.push(c(line, DIM));
@@ -216,6 +219,7 @@ export function renderJson(input, summary, gate, diff) {
                 contextFallback: diff.contextFallback,
                 ambiguous: diff.ambiguous,
                 stale: diff.stale,
+                lineScoped: diff.lineScoped,
                 unreadable: diff.unreadable,
                 contextUnavailable: diff.contextUnavailable,
                 identitySchema: diff.identitySchema,

@@ -106,6 +106,13 @@ export function cohortFileCount(counts: number[]): number {
   return counts.reduce((m, n) => Math.max(m, n), 0);
 }
 
+export interface FindingEvidence {
+  /** The expression's last line (1-based, same convention as `line`). */
+  endLine: number;
+  /** Exclusive end column on that line (0-based); omitted = through EOL. */
+  endColumn?: number;
+}
+
 export interface Finding {
   rule?: string;
   file: string;
@@ -113,6 +120,12 @@ export interface Finding {
   column?: number;
   message?: string;
   severity?: Severity;
+  /** Optional evidence range covering the whole flagged expression — the
+   *  host validates it against the source and digests the covered span, so
+   *  an edit on a continuation line of a multiline expression still breaks
+   *  identity. Omit it and identity falls back to the flagged line alone
+   *  (line-scoped: explicitly weaker, surfaced as such). */
+  evidence?: FindingEvidence;
 }
 
 export interface Match {

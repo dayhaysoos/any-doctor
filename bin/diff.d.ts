@@ -20,6 +20,7 @@ export interface DiffResult {
     contextFallback: number;
     ambiguous: number;
     stale: number;
+    lineScoped: number;
     unreadable: number;
     contextUnavailable: number;
     identitySchema: number;

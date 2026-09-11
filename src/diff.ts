@@ -64,6 +64,9 @@ export interface DiffResult {
   // Occurrences with no confident content (unreadable file or a line past
   // end-of-content) — evidence-less, so they can never continue.
   stale: number;
+  // Continuing matches that rested on line-scoped evidence (no validated
+  // range) — weaker continuity, surfaced for future dismissal reuse.
+  lineScoped: number;
   // FILES that could not be read at comparison time, per side summed
   // (their occurrences are already counted in stale).
   unreadable: number;
@@ -106,7 +109,13 @@ function entriesOf(groups: ReportGroup[]): Entry[] {
 }
 
 function evidenceInputOf(e: Entry): EvidenceInput {
-  return { checkKey: e.checkKey, file: e.f.file, line: e.f.line, ...(e.f.column !== undefined ? { column: e.f.column } : {}) };
+  return {
+    checkKey: e.checkKey,
+    file: e.f.file,
+    line: e.f.line,
+    ...(e.f.column !== undefined ? { column: e.f.column } : {}),
+    ...(e.f.evidence !== undefined ? { evidence: e.f.evidence } : {}),
+  };
 }
 
 // Evidence reads stay inside the scanned root — a finding's file string is
@@ -305,6 +314,7 @@ export async function runDiff(
         absentIndices: baseEntries.map((_, i) => i),
         ambiguous: 0,
         stale: 0,
+        lineScoped: 0,
       };
     }
     return {
@@ -318,6 +328,7 @@ export async function runDiff(
       contextFallback: cmp.pairs.filter(p => p.contextFallback).length,
       ambiguous: cmp.ambiguous,
       stale: cmp.stale,
+      lineScoped: cmp.lineScoped,
       unreadable: baseEvidence.unreadableFiles.length + head.evidence.unreadableFiles.length,
       contextUnavailable: baseEvidence.contextUnavailableFiles.length + head.evidence.contextUnavailableFiles.length,
       identitySchema: IDENTITY_SCHEMA_VERSION,

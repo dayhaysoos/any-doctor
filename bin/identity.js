@@ -98,6 +98,54 @@ export function comparableScans(base, head) {
         return false;
     return base.doctors.every((d, i) => d.doctorId === head.doctors[i].doctorId && d.digest === head.doctors[i].digest);
 }
+// A doctor-supplied evidence range is trusted only when the host can
+// validate it against the captured source: it must start at the finding,
+// lie within the file, be non-degenerate, and stay bounded (a whole-file
+// "range" is not evidence — it is the whole-file-hash mistake in
+// miniature). Anything else falls back to the line digest, line-scoped.
+const EVIDENCE_MAX_LINES = 50;
+function validatedRange(f, lines) {
+    var _a, _b;
+    const e = f.evidence;
+    if (e === undefined)
+        return null;
+    if (!Number.isInteger(e.endLine))
+        return null;
+    if (e.endLine < f.line || e.endLine > lines.length)
+        return null;
+    if (e.endLine - f.line + 1 > EVIDENCE_MAX_LINES)
+        return null;
+    if (e.endColumn !== undefined) {
+        if (!Number.isInteger(e.endColumn) || e.endColumn < 0)
+            return null;
+        const lastLine = stripCr((_a = lines[e.endLine - 1]) !== null && _a !== void 0 ? _a : "");
+        if (e.endColumn > lastLine.length)
+            return null;
+        if (e.endLine === f.line && ((_b = f.column) !== null && _b !== void 0 ? _b : 0) >= e.endColumn)
+            return null;
+    }
+    return e;
+}
+function stripCr(raw) {
+    return raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+}
+// The covered span's text: from the finding's start position (or the
+// line's start when no column) through the exclusive end.
+function rangeText(lines, f, range) {
+    var _a, _b;
+    const startCol = (_a = f.column) !== null && _a !== void 0 ? _a : 0;
+    const first = stripCr(lines[f.line - 1]).slice(startCol);
+    if (range.endLine === f.line) {
+        const end = (_b = range.endColumn) !== null && _b !== void 0 ? _b : stripCr(lines[f.line - 1]).length;
+        return first.slice(0, Math.max(0, end - startCol));
+    }
+    const middles = [];
+    for (let l = f.line + 1; l < range.endLine; l++)
+        middles.push(stripCr(lines[l - 1]));
+    const last = stripCr(lines[range.endLine - 1]);
+    const lastText = range.endColumn !== undefined ? last.slice(0, range.endColumn) : last;
+    return [first, ...middles, lastText].join("\n");
+}
 // ---- extraction ---------------------------------------------------------
 function digestOf(normalized) {
     return createHash("sha256").update(normalized, "utf8").digest("hex");
@@ -268,21 +316,25 @@ export function extractEvidence(findings, readSource, spansFor) {
     for (const f of findings) {
         const facts = fileFacts.get(f.file);
         if (facts.lines === null) {
-            occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
+            occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null, scope: "line" });
             continue;
         }
         const raw = facts.lines[f.line - 1];
         if (raw === undefined) {
-            occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
+            occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null, scope: "line" });
             continue;
         }
         const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
         const indent = line.length - line.trimStart().length;
+        const range = validatedRange(f, facts.lines);
         occurrences.push({
             ...f,
-            lineDigest: digestOf(normalizeLine(line)),
+            lineDigest: range !== null
+                ? digestOf(normalizeLine(rangeText(facts.lines, f, range)))
+                : digestOf(normalizeLine(line)),
             relColumn: f.column !== undefined ? Math.max(0, f.column - indent) : null,
             contextId: facts.ids !== null ? enclosingContext(facts.spans, facts.ids, f.line, (_a = f.column) !== null && _a !== void 0 ? _a : 0) : null,
+            scope: range !== null ? "range" : "line",
         });
     }
     return { occurrences, unreadableFiles, contextUnavailableFiles };
@@ -330,11 +382,12 @@ function enclosingContext(spans, ids, line, column) {
 }
 function fullKey(e) {
     var _a, _b;
-    return [e.checkKey, e.file, e.lineDigest, (_a = e.contextId) !== null && _a !== void 0 ? _a : "\u0000none", (_b = e.relColumn) !== null && _b !== void 0 ? _b : "-"].join("\u0000");
+    return [e.checkKey, e.file, e.lineDigest, (_a = e.contextId) !== null && _a !== void 0 ? _a : "\u0000none", (_b = e.relColumn) !== null && _b !== void 0 ? _b : "-", e.scope].join("\u0000");
 }
 export function compareOccurrences(base, head) {
     const pairs = [];
     const ambiguousBuckets = new Set();
+    let lineScopedPairs = 0;
     // Stale or unreadable evidence never enters matching: no content, no
     // confident identity — a stale head occurrence is added, a stale base
     // occurrence is absent. (Buckets hold only digested entries, so a stale
@@ -368,6 +421,8 @@ export function compareOccurrences(base, head) {
                 headIndex,
                 contextFallback: e.contextId === null || base[baseIndex].contextId === null,
             });
+            if (e.scope === "line" || base[baseIndex].scope === "line")
+                lineScopedPairs++;
             if (bucket.indices.length > 1)
                 ambiguousBuckets.add(key);
         }
@@ -382,6 +437,7 @@ export function compareOccurrences(base, head) {
         absentIndices,
         ambiguous: ambiguousBuckets.size,
         stale: base.filter((e) => e.lineDigest === null).length + head.filter((e) => e.lineDigest === null).length,
+        lineScoped: lineScopedPairs,
     };
 }
 // The spans provider the diff path uses: the same analysis stack the doctor

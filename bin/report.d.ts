@@ -13,6 +13,7 @@ export interface ReportDiff {
     contextFallback: number;
     ambiguous: number;
     stale: number;
+    lineScoped: number;
     comparable: boolean;
 }
 export declare function reportDiffOf(diff: DiffResult): ReportDiff;

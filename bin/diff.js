@@ -30,7 +30,13 @@ function entriesOf(groups) {
     return out;
 }
 function evidenceInputOf(e) {
-    return { checkKey: e.checkKey, file: e.f.file, line: e.f.line, ...(e.f.column !== undefined ? { column: e.f.column } : {}) };
+    return {
+        checkKey: e.checkKey,
+        file: e.f.file,
+        line: e.f.line,
+        ...(e.f.column !== undefined ? { column: e.f.column } : {}),
+        ...(e.f.evidence !== undefined ? { evidence: e.f.evidence } : {}),
+    };
 }
 // Evidence reads stay inside the scanned root — a finding's file string is
 // doctor-supplied data, and the host's read must not become an escape hatch
@@ -205,6 +211,7 @@ export async function runDiff(spec, baseRef, head) {
                 absentIndices: baseEntries.map((_, i) => i),
                 ambiguous: 0,
                 stale: 0,
+                lineScoped: 0,
             };
         }
         return {
@@ -218,6 +225,7 @@ export async function runDiff(spec, baseRef, head) {
             contextFallback: cmp.pairs.filter(p => p.contextFallback).length,
             ambiguous: cmp.ambiguous,
             stale: cmp.stale,
+            lineScoped: cmp.lineScoped,
             unreadable: baseEvidence.unreadableFiles.length + head.evidence.unreadableFiles.length,
             contextUnavailable: baseEvidence.contextUnavailableFiles.length + head.evidence.contextUnavailableFiles.length,
             identitySchema: IDENTITY_SCHEMA_VERSION,

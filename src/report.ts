@@ -51,6 +51,8 @@ export interface ReportDiff {
   ambiguous: number;
   // Occurrences with no confident content (unreadable or past end-of-file).
   stale: number;
+  // Matches resting on line-scoped evidence (no validated range).
+  lineScoped: number;
   // False when the doctor programs differed between the two sides — every
   // occurrence is then counted as added and the prose must say so.
   comparable: boolean;
@@ -68,6 +70,7 @@ export function reportDiffOf(diff: DiffResult): ReportDiff {
     contextFallback: diff.contextFallback,
     ambiguous: diff.ambiguous,
     stale: diff.stale,
+    lineScoped: diff.lineScoped,
     comparable: diff.provenance.comparable,
   };
 }
@@ -103,6 +106,7 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
     if (diff.contextFallback > 0) notes.push(`${diff.contextFallback} matched without structural context`);
     if (diff.ambiguous > 0) notes.push(`${diff.ambiguous} matched among identical copies`);
     if (diff.stale > 0) notes.push(`${diff.stale} unread or changed mid-scan`);
+    if (diff.lineScoped > 0) notes.push(`${diff.lineScoped} matched on line-scoped evidence only`);
     if (notes.length > 0) line += ` (${notes.join("; ")})`;
     lines.push(c(line, DIM));
   }
@@ -246,6 +250,7 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
         contextFallback: diff.contextFallback,
         ambiguous: diff.ambiguous,
         stale: diff.stale,
+        lineScoped: diff.lineScoped,
         unreadable: diff.unreadable,
         contextUnavailable: diff.contextUnavailable,
         identitySchema: diff.identitySchema,

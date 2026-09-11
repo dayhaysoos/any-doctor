@@ -73,6 +73,12 @@ export interface OccurrenceEvidence {
   lineDigest: string | null;
   relColumn: number | null;
   contextId: string | null;
+  // "range": the digest covers a validated doctor-supplied evidence range —
+  // an edit anywhere in the covered expression breaks identity. "line": the
+  // flagged line alone (no range supplied, or the supplied range failed
+  // validation) — explicitly weaker; comparison surfaces these matches so
+  // nothing line-scoped can masquerade as range-verified continuity.
+  scope: "range" | "line";
 }
 
 // The neutral input the caller zips with its own rich findings.
@@ -81,6 +87,7 @@ export interface EvidenceInput {
   file: string;
   line: number;
   column?: number;
+  evidence?: { endLine: number; endColumn?: number };
 }
 
 export interface EvidenceReport {
@@ -153,6 +160,48 @@ export function comparableScans(base: ScanProvenance, head: ScanProvenance): boo
   if (base.doctors.length !== head.doctors.length) return false;
   return base.doctors.every((d, i) =>
     d.doctorId === head.doctors[i].doctorId && d.digest === head.doctors[i].digest);
+}
+
+// A doctor-supplied evidence range is trusted only when the host can
+// validate it against the captured source: it must start at the finding,
+// lie within the file, be non-degenerate, and stay bounded (a whole-file
+// "range" is not evidence — it is the whole-file-hash mistake in
+// miniature). Anything else falls back to the line digest, line-scoped.
+const EVIDENCE_MAX_LINES = 50;
+
+function validatedRange(f: EvidenceInput, lines: string[]): { endLine: number; endColumn?: number } | null {
+  const e = f.evidence;
+  if (e === undefined) return null;
+  if (!Number.isInteger(e.endLine)) return null;
+  if (e.endLine < f.line || e.endLine > lines.length) return null;
+  if (e.endLine - f.line + 1 > EVIDENCE_MAX_LINES) return null;
+  if (e.endColumn !== undefined) {
+    if (!Number.isInteger(e.endColumn) || e.endColumn < 0) return null;
+    const lastLine = stripCr(lines[e.endLine - 1] ?? "");
+    if (e.endColumn > lastLine.length) return null;
+    if (e.endLine === f.line && (f.column ?? 0) >= e.endColumn) return null;
+  }
+  return e;
+}
+
+function stripCr(raw: string): string {
+  return raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+}
+
+// The covered span's text: from the finding's start position (or the
+// line's start when no column) through the exclusive end.
+function rangeText(lines: string[], f: EvidenceInput, range: { endLine: number; endColumn?: number }): string {
+  const startCol = f.column ?? 0;
+  const first = stripCr(lines[f.line - 1]).slice(startCol);
+  if (range.endLine === f.line) {
+    const end = range.endColumn ?? stripCr(lines[f.line - 1]).length;
+    return first.slice(0, Math.max(0, end - startCol));
+  }
+  const middles: string[] = [];
+  for (let l = f.line + 1; l < range.endLine; l++) middles.push(stripCr(lines[l - 1]));
+  const last = stripCr(lines[range.endLine - 1]);
+  const lastText = range.endColumn !== undefined ? last.slice(0, range.endColumn) : last;
+  return [first, ...middles, lastText].join("\n");
 }
 
 // ---- extraction ---------------------------------------------------------
@@ -302,21 +351,25 @@ export function extractEvidence(
   for (const f of findings) {
     const facts = fileFacts.get(f.file)!;
     if (facts.lines === null) {
-      occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
+      occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null, scope: "line" });
       continue;
     }
     const raw = facts.lines[f.line - 1];
     if (raw === undefined) {
-      occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null });
+      occurrences.push({ ...f, lineDigest: null, relColumn: null, contextId: null, scope: "line" });
       continue;
     }
     const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
     const indent = line.length - line.trimStart().length;
+    const range = validatedRange(f, facts.lines);
     occurrences.push({
       ...f,
-      lineDigest: digestOf(normalizeLine(line)),
+      lineDigest: range !== null
+        ? digestOf(normalizeLine(rangeText(facts.lines, f, range)))
+        : digestOf(normalizeLine(line)),
       relColumn: f.column !== undefined ? Math.max(0, f.column - indent) : null,
       contextId: facts.ids !== null ? enclosingContext(facts.spans!, facts.ids, f.line, f.column ?? 0) : null,
+      scope: range !== null ? "range" : "line",
     });
   }
   return { occurrences, unreadableFiles, contextUnavailableFiles };
@@ -393,15 +446,20 @@ export interface ScanComparison {
   // not claimed.
   ambiguous: number;
   stale: number;
+  // Matches that rest on line-scoped evidence (no validated range on
+  // either side) — weaker continuity, surfaced so future dismissal reuse
+  // can refuse to treat them as range-verified.
+  lineScoped: number;
 }
 
 function fullKey(e: OccurrenceEvidence): string {
-  return [e.checkKey, e.file, e.lineDigest!, e.contextId ?? "\u0000none", e.relColumn ?? "-"].join("\u0000");
+  return [e.checkKey, e.file, e.lineDigest!, e.contextId ?? "\u0000none", e.relColumn ?? "-", e.scope].join("\u0000");
 }
 
 export function compareOccurrences(base: OccurrenceEvidence[], head: OccurrenceEvidence[]): ScanComparison {
   const pairs: MatchedPair[] = [];
   const ambiguousBuckets = new Set<string>();
+  let lineScopedPairs = 0;
 
   // Stale or unreadable evidence never enters matching: no content, no
   // confident identity — a stale head occurrence is added, a stale base
@@ -435,6 +493,7 @@ export function compareOccurrences(base: OccurrenceEvidence[], head: OccurrenceE
         headIndex,
         contextFallback: e.contextId === null || base[baseIndex].contextId === null,
       });
+      if (e.scope === "line" || base[baseIndex].scope === "line") lineScopedPairs++;
       if (bucket.indices.length > 1) ambiguousBuckets.add(key);
     } else {
       addedIndices.push(headIndex);
@@ -448,6 +507,7 @@ export function compareOccurrences(base: OccurrenceEvidence[], head: OccurrenceE
     absentIndices,
     ambiguous: ambiguousBuckets.size,
     stale: base.filter((e) => e.lineDigest === null).length + head.filter((e) => e.lineDigest === null).length,
+    lineScoped: lineScopedPairs,
   };
 }
 

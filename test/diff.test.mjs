@@ -351,3 +351,63 @@ test("diff: a doctor mutated between the two executions refuses comparability", 
     cleanup();
   }
 });
+
+// A doctor that reports the START line of each BAD call with a validated
+// evidence range covering the whole multiline expression — the A1 hybrid
+// exercising the full pipeline.
+const RANGE_MARKER = [
+  "export const meta = { id: 'rangemarker', description: 'flags BAD calls with expression ranges', severity: 'warning' }",
+  "export async function doctor(ctx) {",
+  "  for (const file of ctx.files.list()) {",
+  "    const lines = ctx.files.read(file).split('\\n')",
+  "    lines.forEach((l, i) => {",
+  "      if (l.includes('BAD')) {",
+  "        // cover through the expression's closing line: the next line ending in ';' at depth 0",
+  "        let end = i + 1",
+  "        while (end < lines.length && !/^\\);?\\s*$/.test(lines[end])) end++",
+  "        ctx.report.finding({ file, line: i + 1, evidence: { endLine: Math.min(end + 1, lines.length) } })",
+  "      }",
+  "    })",
+  "  }",
+  "}",
+].join("\n");
+
+function setupRangeMarker() {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-diff-rng-"));
+  const doctorDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-doctor-rng-"));
+  const doctor = path.join(doctorDir, "rangemarker.mjs");
+  fs.writeFileSync(doctor, RANGE_MARKER);
+  git(repo, ["init", "-b", "main"]);
+  git(repo, ["config", "user.email", "test@any-doctor"]);
+  git(repo, ["config", "user.name", "any-doctor test"]);
+  return { repo, doctor, cleanup: () => { fs.rmSync(repo, { recursive: true, force: true }); fs.rmSync(doctorDir, { recursive: true, force: true }); } };
+}
+
+test("diff: a continuation-line edit of a range-evidenced multiline expression is added, not continuing", { skip: gitSkip }, async () => {
+  const { repo, doctor, cleanup } = setupRangeMarker();
+  try {
+    fs.writeFileSync(path.join(repo, "f.ts"), "const x = call(BAD,\n  option(1),\n);\n");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-m", "base"]);
+
+    // Only the continuation line changes — invisible to a line digest,
+    // visible to the validated range.
+    fs.writeFileSync(path.join(repo, "f.ts"), "const x = call(BAD,\n  option(2),\n);\n");
+    const spec = specOf(repo, doctor);
+    const ran = await runCohort(spec);
+    const d = await runDiff(spec, "main", headOf(spec, ran));
+    assert.equal(d.continuing, 0, "the range covers the edited continuation line");
+    assert.equal(d.added.length, 1, "the changed expression surfaces as added and gates");
+    assert.equal(d.noLongerDetected.length, 1);
+
+    // The same expression merely MOVED still continues — the range follows it.
+    fs.writeFileSync(path.join(repo, "f.ts"), "const pad = 0;\nconst x = call(BAD,\n  option(1),\n);\n");
+    const ran2 = await runCohort(spec);
+    const d2 = await runDiff(spec, "main", headOf(spec, ran2));
+    assert.equal(d2.continuing, 1, "movement under a validated range is continuity");
+    assert.deepEqual(d2.added, []);
+    assert.equal(d2.lineScoped, 0, "the continuing match is range-verified, not line-scoped");
+  } finally {
+    cleanup();
+  }
+});
