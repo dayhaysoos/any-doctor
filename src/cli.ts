@@ -16,7 +16,7 @@ import { deriveSummary } from "./summary.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
 import { brokenDoctors, BrokenDoctor, discoverDoctors, DiscoveredDoctor, globalDoctorsDir, resolveDoctorPath, unsafeSlugs, scopeLabel } from "./discover.js";
-import { causeSummaryLine, describeRunnerError, isRunnerError, verifyDoctor } from "./runner.js";
+import { causeSummaryLine, describeRunnerError, isRunnerError, metaDoctor, verifyDoctor } from "./runner.js";
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor, Selection } from "./select.js";
 import { pickItemsOn } from "./picker.js";
@@ -811,7 +811,15 @@ async function cmdDecide(args: string[]): Promise<number> {
       : doctorId !== undefined ? resolveDoctorPath(doctorId, process.cwd()) : null;
     if (slug !== null) {
       const bytes = digestTextFile(slug);
-      scanProvenanceAtDecide = { programDigest: doctorDigests([{ id: doctorId ?? "x", programPath: slug }], () => bytes)[0].digest };
+      // Prefer the check's declared semantic revision (the churn escape):
+      // a --key decision must survive cosmetic doctor edits exactly like
+      // a scan-resolved one — digest-only recording churned (smoke catch).
+      const metaRead = await metaDoctor({ programPath: slug });
+      const checkId = key.split("\u0000")[0]?.split("/")[1];
+      const declared = metaRead.meta?.checks?.find(ch => ch.id === checkId)?.revision;
+      scanProvenanceAtDecide = declared !== undefined
+        ? { revision: declared }
+        : { programDigest: doctorDigests([{ id: doctorId ?? "x", programPath: slug }], () => bytes)[0].digest };
     }
   }
   let checkKey = "";

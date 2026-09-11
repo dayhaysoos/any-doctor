@@ -16,7 +16,7 @@ import { deriveSummary } from "./summary.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
 import { brokenDoctors, discoverDoctors, globalDoctorsDir, resolveDoctorPath, unsafeSlugs, scopeLabel } from "./discover.js";
-import { causeSummaryLine, describeRunnerError, isRunnerError, verifyDoctor } from "./runner.js";
+import { causeSummaryLine, describeRunnerError, isRunnerError, metaDoctor, verifyDoctor } from "./runner.js";
 import { scanDoctorFile, capabilitySummary } from "./capabilities.js";
 import { selectDoctor } from "./select.js";
 import { pickItemsOn } from "./picker.js";
@@ -740,7 +740,7 @@ function parseDecideArgs(args) {
     return out;
 }
 async function cmdDecide(args) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     const parsed = parseDecideArgs(args);
     if ("error" in parsed) {
         fail("any-doctor decide: " + parsed.error);
@@ -778,7 +778,15 @@ async function cmdDecide(args) {
             : doctorId !== undefined ? resolveDoctorPath(doctorId, process.cwd()) : null;
         if (slug !== null) {
             const bytes = digestTextFile(slug);
-            scanProvenanceAtDecide = { programDigest: doctorDigests([{ id: doctorId !== null && doctorId !== void 0 ? doctorId : "x", programPath: slug }], () => bytes)[0].digest };
+            // Prefer the check's declared semantic revision (the churn escape):
+            // a --key decision must survive cosmetic doctor edits exactly like
+            // a scan-resolved one — digest-only recording churned (smoke catch).
+            const metaRead = await metaDoctor({ programPath: slug });
+            const checkId = (_b = key.split("\u0000")[0]) === null || _b === void 0 ? void 0 : _b.split("/")[1];
+            const declared = (_e = (_d = (_c = metaRead.meta) === null || _c === void 0 ? void 0 : _c.checks) === null || _d === void 0 ? void 0 : _d.find(ch => ch.id === checkId)) === null || _e === void 0 ? void 0 : _e.revision;
+            scanProvenanceAtDecide = declared !== undefined
+                ? { revision: declared }
+                : { programDigest: doctorDigests([{ id: doctorId !== null && doctorId !== void 0 ? doctorId : "x", programPath: slug }], () => bytes)[0].digest };
         }
     }
     let checkKey = "";
@@ -819,7 +827,7 @@ async function cmdDecide(args) {
             return 1;
         }
         const groups = deriveSummary(ran).groups;
-        const capture = captureScan(parsed.targetDir, groups, (_b = ran.analysisAvailable) !== null && _b !== void 0 ? _b : false, []);
+        const capture = captureScan(parsed.targetDir, groups, (_f = ran.analysisAvailable) !== null && _f !== void 0 ? _f : false, []);
         const scanProv = scanProvenanceOf(spec, deriveSummary(ran).groups);
         const view = reviewOf(capture, [], encodeDecisionKey, scanProv);
         const candidates = capture.entries
@@ -854,8 +862,8 @@ async function cmdDecide(args) {
     const recorded = recordDecision(parsed.targetDir, {
         key: key,
         checkKey: checkKey !== "" ? checkKey : keyCheck,
-        file: (_d = (_c = parsed.file) !== null && _c !== void 0 ? _c : keyFile) !== null && _d !== void 0 ? _d : "",
-        line: (_e = parsed.line) !== null && _e !== void 0 ? _e : 0,
+        file: (_h = (_g = parsed.file) !== null && _g !== void 0 ? _g : keyFile) !== null && _h !== void 0 ? _h : "",
+        line: (_j = parsed.line) !== null && _j !== void 0 ? _j : 0,
         disposition: parsed.disposition,
         reason: parsed.reason,
         actor: parsed.actor,
