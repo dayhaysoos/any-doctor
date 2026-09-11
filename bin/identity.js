@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import * as fs from "fs";
 import { analysisStatus, analyzeSpans } from "./analysis.js";
 // The identity layer (analysis-improvements A1): host-derived occurrence
 // evidence and a versioned, conservative matching scheme, consumed by the
@@ -56,16 +57,35 @@ import { analysisStatus, analyzeSpans } from "./analysis.js";
 // unmatched occurrence is added/absent, so the gate only ever sees more
 // findings, never fewer.
 export const IDENTITY_SCHEMA_VERSION = 1;
-export function scanProvenance(doctors, analysisAvailable, readProgram) {
+// Digest the exact program bytes that are ABOUT to run. Captured before
+// the scan it will describe — a digest read after both scans sees only
+// the latest bytes and cannot tell the two executions apart (review
+// finding 2: a doctor mutated between head and base execution still
+// reported comparable). Within one diff the two captures bracket their
+// own scans; a change between them makes the digests differ, refusing
+// continuity — the correct verdict for two different detectors.
+export function doctorDigests(doctors, readProgram) {
+    return doctors.map((d) => {
+        var _a;
+        return ({
+            doctorId: d.id,
+            digest: digestOf((_a = readProgram(d.programPath)) !== null && _a !== void 0 ? _a : "<unreadable>"),
+        });
+    });
+}
+// A plain file read for digesting: null, never a throw.
+export function digestTextFile(programPath) {
+    try {
+        return fs.readFileSync(programPath, "utf8");
+    }
+    catch {
+        return null;
+    }
+}
+export function scanProvenance(doctors, analysisAvailable, digests) {
     return {
         schema: IDENTITY_SCHEMA_VERSION,
-        doctors: doctors.map((d) => {
-            var _a;
-            return ({
-                doctorId: d.id,
-                digest: digestOf((_a = readProgram(d.programPath)) !== null && _a !== void 0 ? _a : "<unreadable>"),
-            });
-        }),
+        doctors: digests,
         analysisAvailable,
     };
 }

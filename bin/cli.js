@@ -6,7 +6,8 @@ import { DOCTOR_FILE_RE } from "./contract.js";
 import { renderJson, renderReport, renderVerifyResult, reportDiffOf, unsafeSkipLine } from "./report.js";
 import { runCohort } from "./cohort.js";
 import { countsOfSeverities, gateVerdict, isFailOn } from "./gate.js";
-import { runDiff } from "./diff.js";
+import { captureHeadScan, runDiff } from "./diff.js";
+import { digestTextFile, doctorDigests } from "./identity.js";
 import { deriveSummary } from "./summary.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
@@ -326,6 +327,10 @@ async function cmdRun(args) {
         : runSpinner(explicitSingle ? `scanning with ${doctors[0].id}` : "running doctors", explicitSingle ? 0 : doctors.length);
     let done = 0;
     let ran;
+    // Diff provenance is captured BEFORE the head scan: the digests must
+    // describe the bytes that were about to run (a post-hoc read cannot
+    // tell two executions apart — see identity.ts).
+    const headDigests = parsed.base !== undefined ? doctorDigests(spec.doctors, digestTextFile) : undefined;
     try {
         ran = await runCohort(spec, spin && !explicitSingle
             ? (p) => {
@@ -352,11 +357,14 @@ async function cmdRun(args) {
     // Diff mode exists iff --base was passed AND the HEAD scan is whole:
     // a crashed HEAD doctor contributes no findings, so its base findings
     // would surface as "resolved" — the same dishonesty as a partial
-    // base, on the other side. The crash already fails the run.
+    // base, on the other side. The crash already fails the run. The head
+    // capture is taken HERE, at scan-adjacency: evidence bytes are read
+    // once, before anything else can touch the working tree.
     let diff;
     if (parsed.base !== undefined && outcome.crashed.length === 0) {
         try {
-            diff = await runDiff(spec, parsed.base, summary.groups, (_a = outcome.analysisAvailable) !== null && _a !== void 0 ? _a : false);
+            const head = captureHeadScan(spec.targetDir, summary.groups, (_a = outcome.analysisAvailable) !== null && _a !== void 0 ? _a : false, headDigests);
+            diff = await runDiff(spec, parsed.base, head);
         }
         catch (e) {
             fail(e instanceof Error ? e.message : String(e));

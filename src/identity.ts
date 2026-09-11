@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import * as fs from "fs";
 import { SpanInfo } from "./contract.js";
 import { analysisStatus, analyzeSpans } from "./analysis.js";
 
@@ -90,27 +91,56 @@ export interface EvidenceReport {
   contextUnavailableFiles: string[];
 }
 
+export interface DoctorDigest {
+  doctorId: string;
+  digest: string;
+}
+
+// Digest the exact program bytes that are ABOUT to run. Captured before
+// the scan it will describe — a digest read after both scans sees only
+// the latest bytes and cannot tell the two executions apart (review
+// finding 2: a doctor mutated between head and base execution still
+// reported comparable). Within one diff the two captures bracket their
+// own scans; a change between them makes the digests differ, refusing
+// continuity — the correct verdict for two different detectors.
+export function doctorDigests(
+  doctors: readonly { id: string; programPath: string }[],
+  readProgram: (programPath: string) => string | null,
+): DoctorDigest[] {
+  return doctors.map((d) => ({
+    doctorId: d.id,
+    digest: digestOf(readProgram(d.programPath) ?? "<unreadable>"),
+  }));
+}
+
+// A plain file read for digesting: null, never a throw.
+export function digestTextFile(programPath: string): string | null {
+  try {
+    return fs.readFileSync(programPath, "utf8");
+  } catch {
+    return null;
+  }
+}
+
 export interface ScanProvenance {
   schema: number;
-  // Digest of the exact program bytes that ran, per doctor. Within one diff
-  // both sides execute the same files, so these match; recording them makes
-  // a doctor change between the two scans a visible comparability fact
-  // instead of a silent assumption.
-  doctors: { doctorId: string; digest: string }[];
+  // Digest of the exact program bytes that ran, per doctor, captured
+  // before that side's scan. Analysis availability may differ per side
+  // (per-file parse failures degrade visibly); doctor programs may not —
+  // a changed detector supports a detector comparison, not a
+  // code-movement claim.
+  doctors: DoctorDigest[];
   analysisAvailable: boolean;
 }
 
 export function scanProvenance(
   doctors: readonly { id: string; programPath: string }[],
   analysisAvailable: boolean,
-  readProgram: (programPath: string) => string | null,
+  digests: DoctorDigest[],
 ): ScanProvenance {
   return {
     schema: IDENTITY_SCHEMA_VERSION,
-    doctors: doctors.map((d) => ({
-      doctorId: d.id,
-      digest: digestOf(readProgram(d.programPath) ?? "<unreadable>"),
-    })),
+    doctors: digests,
     analysisAvailable,
   };
 }

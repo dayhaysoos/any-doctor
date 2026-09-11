@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 // its own pins in certify.test.mjs and must never become movement-tolerant.
 
 const {
-  extractEvidence, compareOccurrences, scanProvenance, comparableScans, IDENTITY_SCHEMA_VERSION,
+  extractEvidence, compareOccurrences, scanProvenance, comparableScans, doctorDigests, IDENTITY_SCHEMA_VERSION,
 } = await import("../bin/identity.js");
 
 const mem = (files) => (file) => (Object.prototype.hasOwnProperty.call(files, file) ? files[file] : null);
@@ -256,24 +256,27 @@ test("identity: a multiline expression's continuation lines are outside v1 evide
 test("identity: provenance digests the exact program bytes; changed programs are incomparable", () => {
   const doctors = [{ id: "d", programPath: "/x/d.mjs" }];
   const read = (content) => () => content;
-  const p1 = scanProvenance(doctors, true, read("program v1"));
-  const p1again = scanProvenance(doctors, false, read("program v1"));
+  const dig = (content) => doctorDigests(doctors, read(content));
+  const p1 = scanProvenance(doctors, true, dig("program v1"));
+  const p1again = scanProvenance(doctors, false, dig("program v1"));
   assert.equal(comparableScans(p1, p1again), true, "analysis availability differs; programs do not");
   assert.equal(p1.schema, IDENTITY_SCHEMA_VERSION);
-  const p2 = scanProvenance(doctors, true, read("program v2"));
+  const p2 = scanProvenance(doctors, true, dig("program v2"));
   assert.equal(comparableScans(p1, p2), false, "changed detector bytes refuse continuity");
   // A metadata-only change (a comment) is still a byte change — the
   // documented conservative churn of whole-program digests; per-check
   // revisions are the open M2 refinement.
-  const commented = scanProvenance(doctors, true, read("program v1 // a harmless comment"));
+  const commented = scanProvenance(doctors, true, dig("program v1 // a harmless comment"));
   assert.equal(comparableScans(p1, commented), false, "comment-only churn is conservative today, by design");
-  const other = scanProvenance([{ id: "e", programPath: "/x/e.mjs" }], true, read("program v1"));
+  const other = scanProvenance([{ id: "e", programPath: "/x/e.mjs" }], true, doctorDigests([{ id: "e", programPath: "/x/e.mjs" }], read("program v1")));
   assert.equal(comparableScans(p1, other), false, "a different doctor set is incomparable");
 });
 
 test("identity: an unreadable doctor program is marked, not crashed", () => {
-  const p = scanProvenance([{ id: "d", programPath: "/x/gone.mjs" }], false, () => null);
-  assert.equal(p.doctors[0].digest, scanProvenance([{ id: "d", programPath: "/x/gone2.mjs" }], false, () => null).doctors[0].digest);
+  const gone = [{ id: "d", programPath: "/x/gone.mjs" }];
+  const p = scanProvenance(gone, false, doctorDigests(gone, () => null));
+  const gone2 = [{ id: "d", programPath: "/x/gone2.mjs" }];
+  assert.equal(p.doctors[0].digest, scanProvenance(gone2, false, doctorDigests(gone2, () => null)).doctors[0].digest);
 });
 
 // ---- literal preservation (review finding 1: whitespace must not cross

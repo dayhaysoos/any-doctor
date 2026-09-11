@@ -20,18 +20,24 @@ export interface EvidenceReport {
     unreadableFiles: string[];
     contextUnavailableFiles: string[];
 }
+export interface DoctorDigest {
+    doctorId: string;
+    digest: string;
+}
+export declare function doctorDigests(doctors: readonly {
+    id: string;
+    programPath: string;
+}[], readProgram: (programPath: string) => string | null): DoctorDigest[];
+export declare function digestTextFile(programPath: string): string | null;
 export interface ScanProvenance {
     schema: number;
-    doctors: {
-        doctorId: string;
-        digest: string;
-    }[];
+    doctors: DoctorDigest[];
     analysisAvailable: boolean;
 }
 export declare function scanProvenance(doctors: readonly {
     id: string;
     programPath: string;
-}[], analysisAvailable: boolean, readProgram: (programPath: string) => string | null): ScanProvenance;
+}[], analysisAvailable: boolean, digests: DoctorDigest[]): ScanProvenance;
 export declare function comparableScans(base: ScanProvenance, head: ScanProvenance): boolean;
 export declare function extractEvidence(findings: EvidenceInput[], readSource: (file: string) => string | null, spansFor: (file: string, source: string) => SpanInfo[] | null): EvidenceReport;
 export interface MatchedPair {

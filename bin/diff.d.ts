@@ -1,6 +1,6 @@
 import { ReportGroup, Severity } from "./contract.js";
 import { CohortSpec } from "./cohort.js";
-import { ScanProvenance } from "./identity.js";
+import { DoctorDigest, EvidenceReport, ScanProvenance } from "./identity.js";
 export interface DiffFinding {
     doctorId: string;
     rule?: string;
@@ -29,4 +29,12 @@ export interface DiffResult {
         comparable: boolean;
     };
 }
-export declare function runDiff(spec: CohortSpec, baseRef: string, headGroups: ReportGroup[], headAnalysisAvailable: boolean): Promise<DiffResult>;
+export interface HeadScanCapture {
+    groups: ReportGroup[];
+    analysisAvailable: boolean;
+    digests: DoctorDigest[];
+    evidence: EvidenceReport;
+    sources: Map<string, string>;
+}
+export declare function captureHeadScan(targetDir: string, headGroups: ReportGroup[], analysisAvailable: boolean, digests: DoctorDigest[]): HeadScanCapture;
+export declare function runDiff(spec: CohortSpec, baseRef: string, head: HeadScanCapture): Promise<DiffResult>;
