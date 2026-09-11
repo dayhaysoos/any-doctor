@@ -271,3 +271,18 @@ test("renderReport: checks that need analysis say narrowed when the engine was a
   const fullPower = renderReport(outcome(true), false);
   assert.doesNotMatch(fullPower, /narrowed/);
 });
+
+test("renderReport: a refused-continuity diff says so in the prose line", () => {
+  const out = renderReport(input, false, {
+    base: "main", added: 3, continuing: 0, noLongerDetected: 0,
+    contextFallback: 0, ambiguous: 0, stale: 0, comparable: false,
+  });
+  assert.match(out, /vs main \(merged base\): 3 added · 0 continuing · 0 no longer detected/);
+  assert.match(out, /doctor programs changed between the two sides — continuity refused/, "the human surface explains an all-added diff");
+  const clean = renderReport(input, false, {
+    base: "main", added: 0, continuing: 1, noLongerDetected: 0,
+    contextFallback: 0, ambiguous: 0, stale: 0, comparable: true,
+  });
+  assert.match(clean, /0 added · 1 continuing · 0 no longer detected/);
+  assert.doesNotMatch(clean, /continuity refused/);
+});

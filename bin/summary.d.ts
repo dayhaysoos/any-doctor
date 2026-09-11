@@ -1,7 +1,5 @@
-import { Finding, ReportGroup, Severity } from "./contract.js";
-import type { RunOutcome } from "./report.js";
+import { Finding, ReportGroup, RunOutcome, Severity } from "./contract.js";
 import { ScoreHeader, ScoreResult } from "./score.js";
-export declare const SEVERITY_ORDER: Severity[];
 export interface CheckBucket {
     ruleId: string | null;
     heading: string;

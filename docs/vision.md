@@ -1,83 +1,101 @@
-# Vision
+# Vision and direction
 
-## The problem
+Updated September 10, 2026. This is the current product direction. Feature
+availability lives in [features.md](features.md); implementation planning lives
+in the [finding lifecycle proposal](plans/finding-lifecycle/proposal.md).
 
-Every team has a dozen conventions nobody ever wrote a linter for: things
-that keep going wrong, enforced by code review and Slack threads and
-senior-dev memory. Hand-writing lint rules is the friction that kills
-adoption — so the rules never get written. Meanwhile "just have the LLM
-read the codebase and find violations" is non-deterministic, costs
-inference on every run, and can't gate a CI pipeline.
+## Purpose
 
-## The core inversion
+Any Doctor helps people and their agents find recurring problems in AI-written
+code that ordinary lint configurations do not adequately cover. Users bring
+their own agents to create inspectable, deterministic doctors tailored to their
+codebases, architecture, and preferences.
 
-> The LLM writes the analyzer. Fixtures prove it. CI reruns it forever.
+Three priorities guide the work:
 
-One LLM invocation compiles your one-sentence convention into a doctor
-program — real code written against our typed `ctx` SDK (the pattern
-Cloudflare calls Code Mode; we run it entirely locally, no vendor). After
-that: same repo + same commit = same findings, forever, at zero inference
-cost.
+1. **Find AI slop beyond ordinary linting.** Surface concrete concerns such as
+   duplicated logic, unnecessary abstractions, inconsistent project conventions,
+   or framework-specific mistakes when a doctor can support the stated claim.
+   These are categories to investigate, not promises that every example is
+   statically detectable or that every pattern is a defect.
+2. **Make the agent's after-coding review useful.** Give agents source evidence,
+   clear limitations, structured findings, and a repeatable scan/review/fix/rescan
+   loop. Remember intentional choices so later runs can respect them.
+3. **Let users author their own doctors with their own agents.** A project-specific
+   convention can be valuable without being a universal rule. Keep authoring,
+   fixtures, and analysis artifacts local, inspectable, and shareable.
 
-## The experience
+## How the tool earns trust
 
-```bash
-any-doctor generate "find fetch calls without an AbortSignal"
-any-doctor run .        # report, then walk the findings interactively
-any-doctor verify --all # the trust gate, for every doctor you own
-```
+The agent writes an analyzer; fixtures test its claims; people and agents review
+its findings; the same analyzer can be rerun without model inference.
 
-The bar is React Doctor's CLI: fast scan line, grouped findings with
-file:line evidence, severity glyphs, declared blind spots, and a
-hand-off point where the findings feed your LLM to fix. The analyzer
-itself is generated on demand and scoped to exactly what you asked about.
+A finding is an observed condition plus an explanation of why it may matter.
+It can establish a defect, flag a project-policy violation, or identify a
+contextual review candidate. The wording must distinguish those meanings.
+Perfect pattern recognition does not prove that changing the pattern is useful.
 
-## The novel axis: lifecycle, not domain
+Contextual suggestions remain part of the product. The goal is useful code
+review, not maximizing interruptions, demanding a zero-finding report, or
+restricting the entire tool to universally bad code. CI enforcement remains an
+explicit project choice.
 
-Existing linters assume rules are permanent artifacts written by experts
-and shipped in a registry. Any Doctor's moves:
+Trust comes from bounded claims, inspectable evidence, independent evaluation,
+visible coverage limits, and remembered decisions. Passing author-written tests
+establishes behavior on those cases; it is not a general precision measurement.
+Confirmed false positives become regression evidence and trigger rule repair or
+narrowing. Dismissals must not replace detector improvements.
 
-1. **Authoring cost → a sentence.** From intent to fixture-gated doctor
-   in one agent session.
-2. **Rules can be temporary.** Migration audits ("find every remaining
-   import of the old design-system Button") are write-one-run-once-delete.
-   Upgrade doctors compile a library changelog into pre-upgrade detection
-   rules — `tsc` catches mechanical breaks *after* you upgrade; this
-   estimates the cost *before*.
-3. **Doctors encode *your* architecture**, not a framework's — the
-   opinionated house rules that could never live in a public plugin.
+Repeatability depends on the same source snapshot, doctor implementation, engine
+versions, configuration, and available capabilities. An npm upgrade or a changed
+working tree can change results. See [doctor reliability](doctor-reliability.md).
 
-The JS family (TS/JS/JSX/Vue/Svelte) is the native range; Effect was the
-first dogfood domain because its idioms are regular and underserved.
+## Finding lifecycle direction
 
-## Trust model
+Scanning stays accessible through npx without a required initialization step.
+When someone records a decision, the CLI can create state lazily. Doctors stay
+focused on analysis; the CLI owns persistence and applies decisions afterward.
 
-- Every doctor ships fixtures (seeded files + exact-set expected findings).
-  `verify` is the gate: missing expected findings fail recall, unexpected
-  findings fail precision.
-- Generated programs declare blind spots as data; reports print them.
-- The CLI independently re-verifies anything an agent produces — an
-  agent's output is never trusted on its own word.
-- Doctors are boring files in your repo: auditable, diffable, reviewable
-  in PRs. The runner seam (today a node child process) is where a
-  technical sandbox plugs in when doctors become third-party.
+Local SQLite storage will support decisions, finding observations, and bounded
+history. Git-tracked files will be authoritative for shared project decisions
+and configuration. SQLite indexes the checked-out shared state; teams converge
+through ordinary Git review and merge, not by merging database files.
 
-## Two modes, opposite tolerances
+The lifecycle distinguishes accepted concerns, non-applicable findings, observed
+disappearance, and claimed fixes. Changed code, changed rules, uncertain identity,
+or incomplete scans must not silently preserve an invalid dismissal or claim a fix.
 
-- **Audit scanner** ("find every external HTTP endpoint we call"): recall
-  matters; humans triage.
-- **CI guard** (saved doctors gating PRs): precision is king — a rule with
-  a few percent false-positive rate gets muted within a week.
+Massive codebases and concurrent agents are design inputs from the beginning:
+bounded storage, selective queries, limited output, and measured memory behavior
+belong in every implementation milestone. A database alone does not establish
+scanner scalability.
 
-The funnel is audit → save → CI, and the tolerances flip mid-funnel.
+## Scope and non-goals
 
-## Non-goals (v0)
+Any Doctor is an open-source developer tool. It complements normal linters and
+code review. It does not infer that code was AI-written from a finding, replace
+product judgment, or certify that an entire codebase is safe.
 
-- ~~Scores/dashboards until precision justifies them~~ — revisited: the
-  score header and review browser shipped, because findings carry
-  file/line evidence and fixture-proven precision, so the number
-  summarizes rather than substitutes.
-- Languages beyond the JS family.
-- Hand-rolled parser/engine internals — engines live behind `ctx` as
-  replaceable primitives (ast-grep today, oxc-backed semantics later).
-- Cloudflare or any hosted component. The Code Mode pattern, fully local.
+No hosted service, account, mandatory init, or built-in LLM provider is required
+for the planned local lifecycle. Shared cross-machine scan analytics, an issue
+tracker, registry expansion, and automatic code modification are separate future
+work. They are not prerequisites for remembering a finding.
+
+Language-general structural analysis remains useful alongside JS/TS-specific
+semantic facts. A doctor declares its supported languages and capabilities rather
+than promising every analysis everywhere.
+
+## What success looks like
+
+- An agent finds a useful concern after coding, explains it accurately, and
+  verifies an applicable correction with a comparable rescan.
+- An intentional decision survives routine code movement and reaches teammates
+  through Git, while uncertain matches request reassessment.
+- A user-created doctor enforces the user's stated convention with independent
+  positive and negative evidence and honest unsupported cases.
+- Large-repository runs expose coverage and resource limits instead of reporting
+  partial analysis as a clean result.
+
+The next work is the [finding lifecycle plan](plans/finding-lifecycle/milestones.md).
+Its open questions must be resolved in the relevant milestone, not silently
+treated as implemented behavior.

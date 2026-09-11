@@ -3,6 +3,14 @@
 Canonical vocabulary for any-doctor. Glossary only — no implementation.
 When a term here conflicts with language elsewhere, this file wins.
 
+Current product intent lives in [docs/vision.md](docs/vision.md). For work on
+persistent decisions, history, identity, or team convergence, read the
+[lifecycle design](docs/plans/finding-lifecycle/design.md); the first identity
+delivery (lifecycle M1, slices A1+A2) is planned in
+[analysis improvements](docs/plans/analysis-improvements.md). Their proposed records
+are not implemented interfaces; the glossary below describes current behavior
+unless a term is explicitly marked planned.
+
 ## Doctor program
 
 The artifact an LLM writes: a JavaScript module that inspects a target
@@ -57,6 +65,33 @@ deriving twice from one RunOutcome yields one Summary; rendering
 derivation. The facts a gate needs (`--fail-on` severity counts,
 baseline-diffable shapes) live here as data, not inside rendering.
 
+## Dashboard
+
+The interactive review surface over a RunOutcome: one module
+(src/dashboard.ts) that owns layout, the frame renderer, the TUI loop, and
+the per-finding read state — composing the Doctor tree as its view-model
+and the Task prompts it copies. Selection, expansion, keymap, and the
+clipboard notice live here; the tree's shape and the prompt copy do not.
+
+## Doctor tree
+
+The dashboard's view-model: DoctorGroup → checks → SiteFinding, computed
+once from the Summary's per-doctor check buckets (src/doctor-tree.ts —
+the tree joins and orders, it never re-groups) and ordered for triage —
+worst severity first, then finding count, then name. Every consumer (the
+list rows, the detail pane, the task prompts) flattens or reads the one
+tree without rebuilding it. A SiteFinding's readKey
+(`checkKey@file:line`) is the within-run identity the read state keys on.
+
+## Task prompt
+
+Text the dashboard copies to the clipboard as one unit of agent work: one
+finding (fixPrompt), every finding of one check (checkFixPrompt), or a
+doctor's whole batch (doctorFixPrompt) — pure functions of Doctor-tree
+types plus the verify command, no terminal required. The lifecycle plan
+(M2) reworks this family toward investigation-first framing and
+authorized decision paths.
+
 ## Gate
 
 A run's exit policy — one module (src/gate.ts), one law. Findings are
@@ -69,13 +104,15 @@ infrastructure failure is not a finding and must never paint a run
 green. Diff mode (`--base <ref>`) judges only what a change ADDED: the
 same cohort scans the merge base of the ref and HEAD (a stateless
 baseline — nothing committed, nothing stale), the two deduped finding
-sets compare through the verify gate's own rule-aware multiset, and the
+sets compare through the identity layer (movement-aware — a finding
+that moved with its code is Continuing; `compareFindings` remains the
+fixture gate's exact multiset, never the diff's), and the
 bar counts added findings only; a change is not blamed for the debt it
 was born into. A partial base never gates: any base-scan crash aborts
 the run loudly (exit 1, no report, no JSON), because a baseline
 missing findings would dress pre-existing debt up as "added" — and a
 crashed HEAD doctor skips the diff for the same reason: its findings
-are absent, and absence must never read as "resolved". Machine
+are absent, and absence must never read as "no longer detected". Machine
 output rides `--format json` — one schema-tagged object on stdout,
 diagnostics on stderr.
 
@@ -93,11 +130,20 @@ runs. There is no override in any mode.
 
 ## Finding
 
-One emitted finding: a location (file, line, optional zero-based column) plus optional per-finding
+One emitted finding: an observed condition, represented by a location (file, line, optional zero-based column) plus optional per-finding
 message or severity override. "Issue" and "instance" are retired
 synonyms — Finding is the term in code, copy, and prompts. The
 doctor-level truth (id, description, default severity, blind spots)
 lives in the program's meta, not in individual findings.
+
+A finding may establish a defect, flag a project convention, or identify a
+contextual review candidate. Its existence alone does not establish that a code
+change is appropriate. Current locations are not durable lifecycle identities,
+but a finding may carry an optional `evidence` range (`endLine`, exclusive
+`endColumn`) covering its whole expression: the host validates it against the
+scanned source and the identity layer digests the covered span, so edits on
+continuation lines still break identity. Findings without a range match on
+their flagged line alone — line-scoped, surfaced as such.
 
 ## Check
 
@@ -107,7 +153,7 @@ and, when the check uses the identity engine at full power, its
 declaration of that need (`needs`), which is what renders "narrowed"
 when the engine is absent; the doctor's meta supplies the defaults when
 a finding names no check. A check id is a short kebab-case noun phrase
-over [a-z0-9-], unique within its doctor, naming the defect
+over [a-z0-9-], unique within its doctor, naming the detected concern
 (fetch-calls-without-abortsignal, filter-table-scan). One doctor
 program, many checks.
 
@@ -232,7 +278,8 @@ known input.
 One seed plus the findings expected from running a doctor program against
 it. Expected findings match on (rule, file, line, optional column), duplicates
 counted: a missing expected finding is a recall failure; an unexpected
-finding is a precision failure. The rule in an expectation is part of the
+finding is a precision failure within these labeled cases, not a population
+accuracy measurement. The rule in an expectation is part of the
 match — a wrong-check finding at the right line fails the gate. A fixture
 also declares its analysis mode (D20 Stage 2): "on" (default) pins the
 full-power path and skips with a named notice where the engine is not
@@ -280,7 +327,8 @@ the consuming repo), user-global (`~/.any-doctor/doctors/`, available
 in every repo), or bundled (the first-party pack inside the package,
 read-only — a starting point, not a dependency). Repo-local wins slug
 collisions, then user-global, then bundled. Scanning a target repo
-never writes to any scope.
+currently does not persist state in any scope. Planned CLI-owned state is
+separate from doctor discovery and does not grant doctors write capabilities.
 
 ## Skill
 
@@ -299,3 +347,27 @@ distinct locations of that check in one file. File/project checks need a
 positive witness. Unspecified legacy units and unavailable analysis are
 reported as not exercised, not counted as passing. Fixture expectations
 establish tested coverage, not general correctness or independence of labels.
+
+## Lifecycle vocabulary (planned, except where marked landed)
+
+These terms describe the accepted direction, not current fields on Finding or
+DoctorCtx. The [design](docs/plans/finding-lifecycle/design.md) owns their data
+and applicability rules.
+
+- **Finding identity** *(landed in the diff path, D30)*: continuity of one
+  occurrence across comparable scans, distinct from its current source
+  coordinates. Host-derived today — check key, file, normalized flagged-line
+  digest, indentation-relative column, and innermost enclosing function span —
+  computed per comparison from one post-scan read, never persisted.
+- **Observation:** evidence that a finding was detected in a particular scan.
+- **Decision:** a reasoned accepted/not-applicable disposition with local or project
+  scope; it changes review state, not the raw observation.
+- **Continuing** *(landed in the diff path)*: a head occurrence matched to a
+  compatible base occurrence by identity — movement is not addition. Matches
+  resting on content alone are flagged contextFallback; identical copies
+  matched by cardinality are flagged ambiguous.
+- **No longer detected** *(landed in the diff path)*: absence established by
+  compatible, completed coverage.
+- **Claimed fix:** a recorded explanation of remediation, separate from rescan evidence.
+- **Reassessment:** a decision requires review because identity or applicability is
+  changed, conflicting, or uncertain.

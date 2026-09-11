@@ -2,9 +2,11 @@ import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { compareFindings, resolveFinding } from "./contract.js";
+import { resolveFinding } from "./contract.js";
 import { runCohort } from "./cohort.js";
 import { deriveSummary } from "./summary.js";
+import { withinDir } from "./contract.js";
+import { compareOccurrences, comparableScans, digestTextFile, doctorDigests, extractEvidence, IDENTITY_SCHEMA_VERSION, scanProvenance, spansProvider, } from "./identity.js";
 // Raw causes, no flag prefixes: the caller attaches the context and the
 // remedy that actually matches (a missing binary wants "install git";
 // a not-a-repo exit wants git's own stderr, which already says so).
@@ -18,41 +20,100 @@ function git(args, cwd) {
     }
     return { ok: true, out: String(r.stdout).trim() };
 }
-function findingKey(rule, file, line, column) {
-    return `${rule !== null && rule !== void 0 ? rule : ""}:${file}:${line}:${column !== null && column !== void 0 ? column : ""}`;
-}
-// Join each unexpected diff entry back to the rich HEAD finding it
-// corresponds to (same key, in scan order) — the multiset diff counts
-// keys; the report and the gate need severities and doctor ids.
-function joinAdded(unexpected, headGroups) {
-    var _a, _b;
-    const byKey = new Map();
-    for (const g of headGroups) {
-        for (const f of g.findings) {
-            const q = (_a = byKey.get(findingKey(f.rule, f.file, f.line, f.column))) !== null && _a !== void 0 ? _a : [];
-            q.push({ f, g });
-            byKey.set(findingKey(f.rule, f.file, f.line, f.column), q);
-        }
-    }
+function entriesOf(groups) {
     const out = [];
-    for (const u of unexpected) {
-        const pair = (_b = byKey.get(findingKey(u.rule, u.file, u.line, u.column))) === null || _b === void 0 ? void 0 : _b.shift();
-        if (pair === undefined)
-            continue; // unreachable: the entry came from those findings
-        out.push({
-            doctorId: pair.g.meta.id,
-            ...(pair.f.rule !== undefined ? { rule: pair.f.rule } : {}),
-            ...(pair.f.column !== undefined ? { column: pair.f.column } : {}),
-            file: pair.f.file,
-            line: pair.f.line,
-            severity: resolveFinding(pair.g.meta, pair.f).severity,
-        });
+    for (const g of groups) {
+        for (const f of g.findings) {
+            out.push({ f, g, checkKey: resolveFinding(g.meta, f).checkKey });
+        }
     }
     return out;
 }
-// The HEAD cohort has already run by the time diff mode starts — the
-// caller passes its (deduped) groups; only the base side scans here.
-export async function runDiff(spec, baseRef, headGroups) {
+function evidenceInputOf(e) {
+    return {
+        checkKey: e.checkKey,
+        file: e.f.file,
+        line: e.f.line,
+        ...(e.f.column !== undefined ? { column: e.f.column } : {}),
+        ...(e.f.evidence !== undefined ? { evidence: e.f.evidence } : {}),
+    };
+}
+// Evidence reads stay inside the scanned root — a finding's file string is
+// doctor-supplied data, and the host's read must not become an escape hatch
+// the confined doctor itself could never take. withinDir is the strict
+// containment form's one home (a scan root is a directory, not a prefix).
+function readFileFrom(root) {
+    const containmentRoot = path.resolve(root);
+    return (rel) => {
+        const abs = path.resolve(root, rel);
+        if (!withinDir(abs, containmentRoot))
+            return null;
+        try {
+            return fs.readFileSync(abs, "utf8");
+        }
+        catch {
+            return null;
+        }
+    };
+}
+// The rich projection of chosen entries — severities and doctor ids for the
+// gate and the report, joined back through the identity layer's indices.
+function joinFindings(entries, indices) {
+    return indices.map((i) => {
+        const { f, g } = entries[i];
+        return {
+            doctorId: g.meta.id,
+            ...(f.rule !== undefined ? { rule: f.rule } : {}),
+            file: f.file,
+            line: f.line,
+            ...(f.column !== undefined ? { column: f.column } : {}),
+            severity: resolveFinding(g.meta, f).severity,
+        };
+    });
+}
+export function captureHeadScan(targetDir, headGroups, analysisAvailable, digests) {
+    const entries = entriesOf(headGroups);
+    const reader = readFileFrom(targetDir);
+    const sources = new Map();
+    for (const input of entries.map(evidenceInputOf)) {
+        if (!sources.has(input.file)) {
+            const source = reader(input.file);
+            if (source !== null)
+                sources.set(input.file, source);
+        }
+    }
+    const fromCapture = (file) => { var _a; return (_a = sources.get(file)) !== null && _a !== void 0 ? _a : null; };
+    const evidence = extractEvidence(entries.map(evidenceInputOf), fromCapture, spansProvider(analysisAvailable));
+    return { groups: headGroups, analysisAvailable, digests, evidence, sources };
+}
+// The HEAD side's consistency recheck: if a file changed on disk since
+// its scan-adjacent capture, the capture no longer describes the working
+// tree this diff is reporting on — every occurrence in that file goes
+// stale (never a false continuity through borrowed bytes). The base side
+// needs no recheck: its worktree is materialized once by git and removed
+// at the end, so its bytes cannot change under the scan. What this
+// cannot catch is an edit DURING a scan itself — a documented residual,
+// never a guarantee.
+function invalidateChangedHeadFiles(head, targetDir) {
+    if (head.sources.size === 0)
+        return;
+    const reader = readFileFrom(targetDir);
+    const changed = new Set();
+    for (const [file, captured] of head.sources) {
+        if (reader(file) !== captured)
+            changed.add(file);
+    }
+    if (changed.size === 0)
+        return;
+    for (const o of head.evidence.occurrences) {
+        if (changed.has(o.file))
+            o.lineDigest = null;
+    }
+}
+// The HEAD cohort has already run and its capture has been taken at
+// scan-adjacency by the caller; only the base side scans here.
+export async function runDiff(spec, baseRef, head) {
+    var _a;
     const repoRootR = git(["rev-parse", "--show-toplevel"], spec.targetDir);
     if (!repoRootR.ok) {
         throw new Error("--base failed: " + repoRootR.cause);
@@ -70,8 +131,20 @@ export async function runDiff(spec, baseRef, headGroups) {
         throw new Error(`--base failed to resolve "${baseRef}": ` + baseShaR.cause);
     }
     const baseSha = baseShaR.out;
+    // Head-side provenance: the commit the working tree sits on, and whether
+    // the scan's real input (the working tree) differed from it.
+    const headShaR = git(["rev-parse", "HEAD"], repoRoot);
+    if (!headShaR.ok) {
+        throw new Error("--base failed to read HEAD: " + headShaR.cause);
+    }
+    const headSha = headShaR.out;
+    const statusR = git(["status", "--porcelain"], repoRoot);
+    const headDirty = statusR.ok ? statusR.out.length > 0 : true;
     const worktree = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-base-"));
     try {
+        // Base-side provenance is captured BEFORE its scan — bracketing the
+        // execution it describes, the same law the head capture follows.
+        const baseDigests = doctorDigests(spec.doctors, digestTextFile);
         const addR = git(["worktree", "add", "--detach", worktree, baseSha], repoRoot);
         if (!addR.ok) {
             throw new Error("--base failed to materialize the base tree: " + addR.cause);
@@ -79,11 +152,12 @@ export async function runDiff(spec, baseRef, headGroups) {
         // A subpath that doesn't exist at the base is a directory HEAD
         // invented — its base findings are honestly empty, not a failure.
         const baseTarget = path.join(worktree, rel);
-        let baseFindings;
-        if (!fs.existsSync(baseTarget)) {
-            baseFindings = [];
-        }
-        else {
+        let baseGroups = [];
+        let baseAnalysisAvailable = false;
+        let baseDigestsPost = [];
+        let baseSources = new Map();
+        let baseEvidence = { occurrences: [], unreadableFiles: [], contextUnavailableFiles: [] };
+        if (fs.existsSync(baseTarget)) {
             const baseRun = await runCohort({ ...spec, targetDir: baseTarget });
             if (baseRun.crashed.length > 0) {
                 // The loud abort: never gate on a partial base.
@@ -92,15 +166,70 @@ export async function runDiff(spec, baseRef, headGroups) {
                     + baseRun.crashed.map(c => c.detail).join("\n"));
             }
             // Deduped like the HEAD side — both sets read through the one
-            // derivation, so the gate counts what the report shows.
-            baseFindings = deriveSummary(baseRun).groups.flatMap(g => g.findings);
+            // derivation, so the gate counts what the report shows. Evidence is
+            // captured immediately after this scan, from an immutable source
+            // map, mirroring the head capture.
+            baseGroups = deriveSummary(baseRun).groups;
+            baseAnalysisAvailable = (_a = baseRun.analysisAvailable) !== null && _a !== void 0 ? _a : false;
+            baseDigestsPost = baseDigests;
+            const baseReader = readFileFrom(baseTarget);
+            const baseScanEntries = entriesOf(baseGroups);
+            for (const input of baseScanEntries.map(evidenceInputOf)) {
+                if (!baseSources.has(input.file)) {
+                    const source = baseReader(input.file);
+                    if (source !== null)
+                        baseSources.set(input.file, source);
+                }
+            }
+            const fromBaseCapture = (file) => { var _a; return (_a = baseSources.get(file)) !== null && _a !== void 0 ? _a : null; };
+            baseEvidence = extractEvidence(baseScanEntries.map(evidenceInputOf), fromBaseCapture, spansProvider(baseAnalysisAvailable));
         }
-        const diff = compareFindings(baseFindings, headGroups.flatMap(g => g.findings));
+        else {
+            baseDigestsPost = baseDigests;
+        }
+        const headEntries = entriesOf(head.groups);
+        const baseEntries = entriesOf(baseGroups);
+        const provenance = {
+            head: scanProvenance(spec.doctors, head.analysisAvailable, head.digests),
+            base: scanProvenance(spec.doctors, baseAnalysisAvailable, baseDigestsPost),
+        };
+        const comparable = comparableScans(provenance.base, provenance.head);
+        // A changed doctor between the two executions refuses continuity
+        // outright — every head occurrence added, every base occurrence
+        // absent — instead of guessing movement through a changed detector.
+        // The pre-scan digests make this verdict trustworthy: each side
+        // describes the bytes that were about to run when it ran.
+        let cmp;
+        if (comparable) {
+            invalidateChangedHeadFiles(head, spec.targetDir);
+            cmp = compareOccurrences(baseEvidence.occurrences, head.evidence.occurrences);
+        }
+        else {
+            cmp = {
+                pairs: [],
+                addedIndices: headEntries.map((_, i) => i),
+                absentIndices: baseEntries.map((_, i) => i),
+                ambiguous: 0,
+                stale: 0,
+                lineScoped: 0,
+            };
+        }
         return {
             base: baseRef,
             baseSha,
-            added: joinAdded(diff.unexpected, headGroups),
-            resolved: diff.missing,
+            headSha,
+            headDirty,
+            added: joinFindings(headEntries, cmp.addedIndices),
+            continuing: cmp.pairs.length,
+            noLongerDetected: joinFindings(baseEntries, cmp.absentIndices),
+            contextFallback: cmp.pairs.filter(p => p.contextFallback).length,
+            ambiguous: cmp.ambiguous,
+            stale: cmp.stale,
+            lineScoped: cmp.lineScoped,
+            unreadable: baseEvidence.unreadableFiles.length + head.evidence.unreadableFiles.length,
+            contextUnavailable: baseEvidence.contextUnavailableFiles.length + head.evidence.contextUnavailableFiles.length,
+            identitySchema: IDENTITY_SCHEMA_VERSION,
+            provenance: { ...provenance, comparable },
         };
     }
     finally {

@@ -1,4 +1,6 @@
 export type Severity = "error" | "warning" | "info";
+export declare const SEVERITY_ORDER: Severity[];
+export declare function severityRank(s: Severity): number;
 export interface CheckMeta {
     id: string;
     description: string;
@@ -34,6 +36,30 @@ export interface ReportGroup {
     meta: DoctorMeta;
     findings: Finding[];
 }
+export declare const DEFAULT_EXTS: string[];
+export interface CrashedDoctor {
+    id: string;
+    detail: string;
+}
+export interface RunOutcome {
+    groups: ReportGroup[];
+    crashed: CrashedDoctor[];
+    skippedUnsafe: string[];
+    doctorPaths: ReadonlyMap<string, string>;
+    fileCount: number;
+    durationMs: number;
+    targetDir: string;
+    /** Could the identity engine power this run? (D20 Stage 2) — checks
+     * that declared `needs` render "narrowed" when false. */
+    analysisAvailable?: boolean;
+}
+export declare function cohortFileCount(counts: number[]): number;
+export interface FindingEvidence {
+    /** The expression's last line (1-based, same convention as `line`). */
+    endLine: number;
+    /** Exclusive end column on that line (0-based); omitted = through EOL. */
+    endColumn?: number;
+}
 export interface Finding {
     rule?: string;
     file: string;
@@ -41,6 +67,12 @@ export interface Finding {
     column?: number;
     message?: string;
     severity?: Severity;
+    /** Optional evidence range covering the whole flagged expression — the
+     *  host validates it against the source and digests the covered span, so
+     *  an edit on a continuation line of a multiline expression still breaks
+     *  identity. Omit it and identity falls back to the flagged line alone
+     *  (line-scoped: explicitly weaker, surfaced as such). */
+    evidence?: FindingEvidence;
 }
 export interface Match {
     file: string;
@@ -279,6 +311,9 @@ export declare const DOCTOR_FILE_RE: RegExp;
 export declare const FIXTURES_FILE_RE: RegExp;
 export declare function fixturesPathFor(programPath: string): string;
 export declare function isTestPath(relativePath: string): boolean;
+export declare function withinDir(p: string, dir: string): boolean;
+export declare function withinBase(root: string, base: string): boolean;
+export declare function searchBase(mode: Mode): string;
 export declare function includeTestsFor(mode: Mode): boolean;
 export declare function runCommandFor(doctorPath: string, root: string, invoker?: string): string;
 export declare function compareFindings(expected: ExpectedFinding[], actual: Finding[]): FixtureDiff;

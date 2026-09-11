@@ -1,3 +1,24 @@
+import * as os from "os";
+import * as path from "path";
+// The one severity ordering — worst first. Display rollups (report),
+// derivation sorts (summary), and view-model triage (doctor tree) all
+// rank through this; score weights and the gate's fail-on bar are
+// different questions and keep their own tables.
+export const SEVERITY_ORDER = ["error", "warning", "info"];
+export function severityRank(s) {
+    return SEVERITY_ORDER.indexOf(s);
+}
+// The default walk's extensions — the empty-scan warning names them in
+// prose; composing from the array is what keeps the copy honest the day
+// this list changes.
+export const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
+// All doctors scan the same target, so the cohort's file count is any
+// doctor's count; the max is the honest pick when one crashed early. The
+// policy lives here, beside the RunOutcome field it fills and the Score
+// that divides by it.
+export function cohortFileCount(counts) {
+    return counts.reduce((m, n) => Math.max(m, n), 0);
+}
 export const PROTOCOL_VERSION = 1;
 export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 // ctx.search host protocol: doctor children cannot spawn (permission
@@ -45,7 +66,7 @@ export const FIXTURES_FILE_RE = /\.fixtures\.(m|c)?js$/;
 export function fixturesPathFor(programPath) {
     return programPath.replace(DOCTOR_FILE_RE, "") + ".fixtures.mjs";
 }
-// D18's one law, in the conventions' home: test files and test directories
+// One law, in the conventions' home: test files and test directories
 // are not production reads. Every read capability applies this predicate —
 // the sdk walk prunes by it, the search host filters matches by it. Test
 // FILES are test-named code files (.test./.spec. with a code extension);
@@ -56,6 +77,33 @@ export function isTestPath(relativePath) {
     if (TEST_FILE_RE.test(relativePath))
         return true;
     return relativePath.split(/[\\/]+/).some((seg) => TEST_DIR_NAMES.has(seg));
+}
+// The read-containment laws, one home each. withinDir is the strict
+// form — the path IS the directory or lies beneath it — and is what a
+// repo root, a sandbox dir, an evidence read, or a per-file check
+// enforces. withinBase guards BASES, which the channel hosts derive per
+// mode: a run's target directory, or verify's mkdtemp sandbox PREFIX
+// (any any-doctor-verify-* dir qualifies — hence the anchored form for
+// dash-suffixed bases). Private copies are how the `..`-resolution
+// subtlety gets forgotten (resolve() collapses it; a raw prefix check
+// would let /target/../../etc through). Fusing the two forms would WIDEN
+// strict roots whose path happens to end in "-" — found in review; kept
+// apart on purpose.
+export function withinDir(p, dir) {
+    return p === dir || p.startsWith(dir + path.sep);
+}
+export function withinBase(root, base) {
+    return base.endsWith("-") ? root.startsWith(base) : withinDir(root, base);
+}
+// The base a mode's reads must stay within: a run's target directory, a
+// verify's sandbox prefix under the temp dir, or nothing for meta (meta
+// may not read at all). Pure function of the Mode — placed with it.
+export function searchBase(mode) {
+    switch (mode.kind) {
+        case "verify": return path.join(os.tmpdir(), "any-doctor-verify-");
+        case "run": return mode.root;
+        case "meta": return "";
+    }
 }
 // One derivation, one home: a run scans test files only when --include-tests
 // asks; a verify always sees everything its fixtures seed (D18) — the

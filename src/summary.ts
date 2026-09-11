@@ -1,5 +1,4 @@
-import { Finding, narrowedCheckIds, ReportGroup, resolveFinding, Severity } from "./contract.js";
-import type { RunOutcome } from "./report.js";
+import { Finding, narrowedCheckIds, ReportGroup, resolveFinding, RunOutcome, SEVERITY_ORDER, severityRank, Severity } from "./contract.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines, ScoreHeader, ScoreResult } from "./score.js";
 
 // The Summary: the one derivation from a RunOutcome to everything its
@@ -15,10 +14,6 @@ import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines, ScoreH
 // Pure: derive twice from one RunOutcome, get one Summary. Rendering
 // (colors, prose, trees) belongs to the adapters, never here.
 
-// Worst-first display order — one home; the report's rollup rendering
-// imports it rather than re-listing severities.
-export const SEVERITY_ORDER: Severity[] = ["error", "warning", "info"];
-
 function groupSeverity(g: ReportGroup): Severity {
   const explicit = g.findings.find(f => f.severity);
   return (explicit ? findingSeverity(g, explicit) : undefined) ?? g.meta.severity;
@@ -33,7 +28,7 @@ function dedupeGroups(groups: ReportGroup[]): { groups: ReportGroup[]; hidden: n
   const owner = new Map<string, string>();
   const key = (f: Finding): string => `${f.file}:${f.line}:${f.column ?? ""}`;
   const ordered = [...groups].sort(
-    (a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
+    (a, b) => severityRank(groupSeverity(a)) - severityRank(groupSeverity(b)));
   const out: ReportGroup[] = [];
   let hidden = 0;
   for (const g of ordered) {

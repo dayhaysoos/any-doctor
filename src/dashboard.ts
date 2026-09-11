@@ -1,15 +1,28 @@
 import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
-import { Finding, JoinedFinding, ReportGroup, resolveFinding, runCommandFor, Severity } from "./contract.js";
-import { isEmptyScan, scoreFromFileHealth, ScoreResult, scoreHeaderLines } from "./score.js";
+import { runCommandFor, Severity } from "./contract.js";
+import {
+  buildTree, CheckSummary, DoctorSummary, DoctorTree,
+  FINDINGS_PER_CHECK, initialExpanded, SiteFinding, summarizeCheck, summarizeDoctor,
+} from "./doctor-tree.js";
+import { checkFixPrompt, doctorFixPrompt, fixPrompt } from "./prompts.js";
+import { isEmptyScan, scoreFromFileHealth, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
 import { runTty, truncateVisible, TtyStdin, TtyStdout, visibleWidth } from "./tty.js";
 
 import { BOLD, colorizer, DIM, GLYPH, GREEN, ORANGE, RESET, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
-import { RunOutcome, unsafeSkipLine } from "./report.js";
+import { RunOutcome } from "./contract.js";
+import { unsafeSkipLine } from "./report.js";
 import { deriveSummary } from "./summary.js";
+
+// The Dashboard: the interactive review surface over the Summary. It owns
+// layout, the frame renderer, and the TUI loop; the Doctor tree
+// (doctor-tree.ts) is its view-model, and the task prompts it copies come
+// from prompts.ts. Its per-finding review state is still just readKeys —
+// M2's decision workflow will grow that here, in the loop, without
+// piercing the tree or the prompts.
 
 const SPLIT_MIN_COLS = 100;
 
@@ -26,10 +39,6 @@ export function highlightCode(line: string, useColor: boolean): string {
   });
 }
 
-// A JoinedFinding pinned to one dashboard row: the join supplies every
-// field; site replaces finding for the frame code.
-export type SiteFinding = { readKey: string; site: Finding } & Omit<JoinedFinding, "finding">;
-
 export interface DashboardInput {
   // The whole batch result; the dashboard renders the same truth as the
   // report — groups, skips, counts, and the scanned target all come from
@@ -42,118 +51,6 @@ export interface DashboardInput {
 export function scoreBar(score: number, width: number): string {
   const filled = Math.round((score / 100) * width);
   return "█".repeat(filled) + "░".repeat(Math.max(0, width - filled));
-}
-
-export function buildItems(groups: ReportGroup[]): SiteFinding[] {
-  const items: SiteFinding[] = [];
-  for (const g of groups) {
-    for (const f of g.findings) {
-      const j = resolveFinding(g.meta, f);
-      items.push({ ...j, readKey: j.checkKey + "@" + f.file + ":" + f.line, site: f });
-    }
-  }
-  return items;
-}
-
-// ---- copy prompts ----
-//
-// Enter copies the selected finding; `c` copies at whatever level the
-// selection rests on — one finding, a whole check (the overarching
-// explanation plus every site), or an entire doctor. The bulk prompt is
-// the natural agent task: "fix this pattern everywhere it appears."
-
-function promptHeading(severity: Severity, description: string, checkKey: string): string {
-  return `${severity.toUpperCase()} · ${description} (${checkKey})`;
-}
-
-function scopeTail(scopeLine: string, verifyCommand: string, plural = false): string[] {
-  return [
-    "",
-    "Scope:",
-    scopeLine,
-    `- Fix the root cause; do not suppress, disable, or silence ${plural ? "any of these checks" : "the check"}.`,
-    "- Keep unrelated refactors out of this pass.",
-    "",
-    `Verify with \`${verifyCommand}\` and confirm the finding${plural ? "s are" : " is"} gone before moving on.`,
-  ];
-}
-
-export function fixPrompt(item: SiteFinding, verifyCommand: string): string {
-  const site = item.site;
-  const lines: string[] = [
-    "Fix exactly one any-doctor finding:",
-    "",
-    promptHeading(item.severity, item.description, item.checkKey),
-    "",
-    `Affected site: ${site.file}:${site.line}`,
-  ];
-  if (item.impact) lines.push("", "Impact " + item.impact);
-  if (item.why) lines.push("", "Why " + item.why);
-  if (item.fix) lines.push("", "Suggested fix: " + item.fix);
-  lines.push(...scopeTail(`- Fix only ${item.checkKey} at this site.`, verifyCommand));
-  return lines.join("\n");
-}
-
-// The re-scan loop is the pagination for display; a copied task still
-// lists generously, then defers the remainder to the next run.
-const PROMPT_SITES_CAP = 100;
-
-function sitesOf(items: SiteFinding[], cap: number): { lines: string[]; hidden: number } {
-  const shown = items.slice(0, cap);
-  return {
-    lines: shown.map(i => `- ${i.site.file}:${i.site.line}`),
-    hidden: items.length - shown.length,
-  };
-}
-
-function pushSites(lines: string[], sites: { lines: string[]; hidden: number }): void {
-  lines.push(...sites.lines);
-  if (sites.hidden > 0) {
-    lines.push(`- … and ${sites.hidden} more — fix this batch, then re-run for the rest`);
-  }
-}
-
-export function checkFixPrompt(items: SiteFinding[], verifyCommand: string): string {
-  const check = summarizeCheck(items[0].checkKey, items);
-  const lines: string[] = [
-    "Fix every finding of one any-doctor check:",
-    "",
-    promptHeading(check.severity, check.description, check.checkKey),
-    "",
-    `${check.count} finding${check.count === 1 ? "" : "s"} across ${check.files} file${check.files === 1 ? "" : "s"}:`,
-  ];
-  pushSites(lines, sitesOf(items, PROMPT_SITES_CAP));
-  if (check.impact) lines.push("", "Impact " + check.impact);
-  if (check.why) lines.push("", "Why " + check.why);
-  if (check.fix) lines.push("", "Suggested fix: " + check.fix);
-  lines.push(...scopeTail(`- Fix ${check.checkKey} at every listed site — as many as practical in one pass.`, verifyCommand, true));
-  return lines.join("\n");
-}
-
-// Doctor prompts list generously per check but not boundlessly; the
-// re-run note carries the remainder.
-const DOCTOR_PROMPT_SITES_PER_CHECK = 25;
-
-export function doctorFixPrompt(doc: DoctorSummary, group: DoctorGroup | undefined, verifyCommand: string): string {
-  const lines: string[] = [
-    "Fix the findings of one any-doctor program:",
-    "",
-    `${doc.worst.toUpperCase()} · ${doc.doctorId} — ${doc.count} finding${doc.count === 1 ? "" : "s"} across ${doc.files} file${doc.files === 1 ? "" : "s"}`,
-  ];
-  for (const g of group?.checks ?? []) {
-    {
-      const summary = summarizeCheck(g.checkKey, g.items);
-      lines.push(
-        "",
-        `${summary.severity.toUpperCase()} · ${summary.description} (${summary.checkKey}) — ${summary.count} finding${summary.count === 1 ? "" : "s"}`,
-      );
-      if (summary.why) lines.push("Why " + summary.why);
-      if (summary.fix) lines.push("Suggested fix: " + summary.fix);
-      pushSites(lines, sitesOf(g.items, DOCTOR_PROMPT_SITES_PER_CHECK));
-    }
-  }
-  lines.push(...scopeTail(`- Fix every check of ${doc.doctorId} at the listed sites — as many as practical in one pass.`, verifyCommand, true));
-  return lines.join("\n");
 }
 
 function padVisible(s: string, width: number): string {
@@ -206,157 +103,18 @@ export function resolveDashboardLayout(cols: number, rows: number, itemCount: nu
   };
 }
 
-// ---- the doctor tree ----
+// ---- the tree's flattening ----
 //
-// The tree is the module's load-bearing shape: doctor -> checks ->
-// findings, ordered for triage (worst severity first, count descending).
-// It is computed once from the immutable items and named; every consumer
-// — expansion defaults, row flattening, group prompts, the detail pane —
-// flattens or reads it without rebuilding it.
+// The Doctor tree (doctor-tree.ts) is computed once from the immutable
+// items and named; every consumer — expansion defaults, row flattening,
+// group prompts, the detail pane — flattens or reads it without
+// rebuilding it. What lives here is the flattening into selectable rows.
 
 export type RowKind = "section" | "check" | "item" | "more";
 
-export interface DoctorSummary {
-  doctorId: string;
-  description: string;
-  worst: Severity;
-  count: number;
-  files: number;
-  // This doctor's findings against the same denominator the repo-wide
-  // score uses — its own health, not a share of the header's number.
-  score: ScoreResult;
-  checks: { description: string; severity: Severity; count: number }[];
-  blindSpots?: string[];
-}
-
-export interface CheckSummary {
-  checkKey: string;
-  checkId: string;
-  doctorId: string;
-  description: string;
-  severity: Severity;
-  impact?: string;
-  why?: string;
-  fix?: string;
-  blindSpots?: string[];
-  count: number;
-  files: number;
-}
-
-export interface DoctorGroup {
-  doctorId: string;
-  checks: { checkKey: string; items: SiteFinding[] }[];
-  multiCheck: boolean;
-  count: number;
-  worst: Severity;
-  score: ScoreResult;
-}
-
-export type DoctorTree = DoctorGroup[];
-
 // The re-scan loop is the pagination: a check shows its first N findings,
 // then an affordance to fix a few and run again.
-export const FINDINGS_PER_CHECK = 50;
-
-const SEVERITY_RANK: Record<Severity, number> = { error: 0, warning: 1, info: 2 };
-
-export function buildTree(items: SiteFinding[], filesTotal: number): DoctorTree {
-  const byDoctor = new Map<string, Map<string, SiteFinding[]>>();
-  for (const it of items) {
-    let checks = byDoctor.get(it.doctorId);
-    if (!checks) {
-      checks = new Map();
-      byDoctor.set(it.doctorId, checks);
-    }
-    const group = checks.get(it.checkKey) ?? [];
-    group.push(it);
-    checks.set(it.checkKey, group);
-  }
-  const doctors: DoctorGroup[] = [...byDoctor.entries()].map(([doctorId, checks]) => {
-    const entries = [...checks.entries()].map(([checkKey, list]) => ({
-      checkKey,
-      items: [...list].sort((a, b) => a.site.file === b.site.file
-        ? a.site.line - b.site.line
-        : a.site.file < b.site.file ? -1 : 1),
-    })).sort((a, b) => {
-      const sa = SEVERITY_RANK[a.items[0].declaredSeverity];
-      const sb = SEVERITY_RANK[b.items[0].declaredSeverity];
-      return sa !== sb ? sa - sb : b.items.length - a.items.length || (a.checkKey < b.checkKey ? -1 : 1);
-    });
-    return {
-      doctorId,
-      checks: entries,
-      multiCheck: entries.length > 1,
-      count: entries.reduce((n, g) => n + g.items.length, 0),
-      worst: entries.reduce((w, g) => (
-        SEVERITY_RANK[g.items[0].severity] < SEVERITY_RANK[w] ? g.items[0].severity : w
-      ), "info" as Severity),
-      score: scoreFromFileHealth(
-        entries.flatMap(g => g.items.map(it => ({ file: it.site.file, severity: it.severity }))),
-        filesTotal,
-      ),
-    };
-  });
-  // Triage order: worst severity first, then most findings, then name.
-  return doctors.sort((a, b) =>
-    SEVERITY_RANK[a.worst] - SEVERITY_RANK[b.worst]
-    || b.count - a.count
-    || (a.doctorId < b.doctorId ? -1 : 1));
-}
-
-export function summarizeCheck(checkKey: string, groupItems: SiteFinding[]): CheckSummary {
-  const first = groupItems[0];
-  const files = new Set(groupItems.map(i => i.site.file));
-  return {
-    checkKey,
-    checkId: first.checkId,
-    doctorId: first.doctorId,
-    description: first.description,
-    severity: first.declaredSeverity,
-    impact: first.impact,
-    why: first.why,
-    fix: first.fix,
-    blindSpots: first.blindSpots,
-    count: groupItems.length,
-    files: files.size,
-  };
-}
-
-export function summarizeDoctor(d: DoctorGroup): DoctorSummary {
-  const first = d.checks[0]?.items[0];
-  const files = new Set<string>();
-  for (const g of d.checks) for (const i of g.items) files.add(i.site.file);
-  return {
-    doctorId: d.doctorId,
-    description: first ? first.description : d.doctorId,
-    worst: d.worst,
-    count: d.count,
-    files: files.size,
-    score: d.score,
-    checks: d.checks.map(g => ({
-      description: g.items[0].description,
-      severity: g.items[0].declaredSeverity,
-      count: g.items.length,
-    })),
-    blindSpots: first?.blindSpots,
-  };
-}
-
-// Errors open on entry: any doctor carrying error findings, any
-// error-severity check, and the top of the list so the first screen is
-// never an empty overview. Everything else starts collapsed.
-export function initialExpanded(tree: DoctorTree): Set<string> {
-  const expanded = new Set<string>();
-  const multiDoctor = tree.length > 1;
-  tree.forEach((d, i) => {
-    if (multiDoctor && (d.worst === "error" || i === 0)) expanded.add(d.doctorId);
-    if (!d.multiCheck) return;
-    for (const g of d.checks) {
-      if (g.items[0].declaredSeverity === "error") expanded.add(g.checkKey);
-    }
-  });
-  return expanded;
-}
+// (FINDINGS_PER_CHECK lives in doctor-tree.ts, beside the tree it caps.)
 
 // A row references the object it was built from — item, check summary, or
 // doctor summary — so consumers never index back into the items array.
@@ -731,9 +489,10 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
   const useColor = input.useColor;
   // One RunOutcome, one story on every surface: the tree AND the report
   // render the same Summary — the derivation lives in summary.ts, so
-  // counts and score can never disagree between surfaces.
+  // counts and score can never disagree between surfaces. The tree
+  // consumes the Summary's check buckets directly; it never re-groups.
   const summary = deriveSummary(input.outcome);
-  const tree = buildTree(buildItems(summary.groups), input.outcome.fileCount);
+  const tree = buildTree(summary.groupChecks, input.outcome.fileCount);
   const expanded = initialExpanded(tree);
   const readKeys = new Set<string>();
   let notice: string | undefined;

@@ -10,8 +10,8 @@ import * as path from "node:path";
 // security decision and gets direct tests, including the attack cases that
 // used to be reachable only through a real doctor child.
 
-const { handleSearchLine, searchBase } = await import("../bin/search-host.js");
-const { SEARCH_REQUEST } = await import("../bin/contract.js");
+const { handleSearchLine } = await import("../bin/search-host.js");
+const { SEARCH_REQUEST, searchBase } = await import("../bin/contract.js");
 
 const request = (body) => SEARCH_REQUEST + JSON.stringify(body);
 const parse = (line) => JSON.parse(line);

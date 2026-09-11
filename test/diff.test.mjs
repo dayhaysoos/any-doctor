@@ -15,7 +15,13 @@ import * as path from "node:path";
 
 const { runCohort } = await import("../bin/cohort.js");
 const { deriveSummary } = await import("../bin/summary.js");
-const { runDiff } = await import("../bin/diff.js");
+const { runDiff, captureHeadScan } = await import("../bin/diff.js");
+const { digestTextFile, doctorDigests } = await import("../bin/identity.js");
+
+// The cli-shaped capture flow: digests BEFORE the scan, evidence taken
+// immediately AFTER it — the same adjacency production honors.
+const headOf = (spec, ran) =>
+  captureHeadScan(spec.targetDir, deriveSummary(ran).groups, ran.analysisAvailable ?? false, doctorDigests(spec.doctors, digestTextFile));
 
 const hasGit = spawnSync("git", ["--version"]).status === 0;
 const gitSkip = hasGit ? false : "git not on PATH";
@@ -59,10 +65,10 @@ function specOf(repo, doctor) {
   return { doctors: [{ id: "marker", programPath: doctor }], targetDir: repo, includeTests: false };
 }
 
-async function headGroups(repo, doctor) {
+async function headRun(repo, doctor) {
   const ran = await runCohort(specOf(repo, doctor));
   assert.deepEqual(ran.crashed, [], "the HEAD scan is healthy in these fixtures");
-  return deriveSummary(ran).groups;
+  return ran;
 }
 
 test("diff: added and resolved against the merge base — never against main's tip", { skip: gitSkip }, async () => {
@@ -87,11 +93,15 @@ test("diff: added and resolved against the merge base — never against main's t
     git(repo, ["add", "."]);
     git(repo, ["commit", "-m", "the change"]);
 
-    const groups = await headGroups(repo, doctor);
-    assert.deepEqual(groups[0].findings.map(f => f.file).sort(), ["b.ts", "c.ts"], "HEAD sees b and c");
-    const d = await runDiff(specOf(repo, doctor), "main", groups);
+    const ran = await headRun(repo, doctor);
+    assert.deepEqual(deriveSummary(ran).groups[0].findings.map(f => f.file).sort(), ["b.ts", "c.ts"], "HEAD sees b and c");
+    const d = await runDiff(specOf(repo, doctor), "main", headOf(specOf(repo, doctor), ran));
     assert.deepEqual(d.added.map(a => a.file).sort(), ["b.ts", "c.ts"], "added: what the change introduced");
-    assert.deepEqual(d.resolved.map(r => r.file), ["a.ts"], "resolved: what it fixed");
+    assert.deepEqual(d.noLongerDetected.map(r => r.file), ["a.ts"], "no longer detected: the base occurrence without a head counterpart");
+    assert.equal(d.continuing, 0);
+    assert.equal(d.provenance.comparable, true, "same doctor programs ran on both sides");
+    assert.match(d.headSha, /^[0-9a-f]{40}$/, "the head side's source state is attributed");
+    assert.equal(typeof d.headDirty, "boolean");
     assert.ok(!JSON.stringify(d).includes("d.ts"), "main's post-branch finding is nobody's baseline");
     assert.match(d.base, /main/);
     assert.match(d.baseSha, /^[0-9a-f]{40}$/);
@@ -113,10 +123,10 @@ test("diff: a target subpath absent at base is an honestly empty baseline", { sk
     git(repo, ["commit", "-m", "invent sub/"]);
 
     const s = { ...specOf(repo, doctor), targetDir: path.join(repo, "sub") };
-    const groups = await headGroups(s.targetDir, doctor);
-    const d = await runDiff(s, "main", groups);
+    const ran = await headRun(s.targetDir, doctor);
+    const d = await runDiff(s, "main", headOf(s, ran));
     assert.deepEqual(d.added.map(a => a.file), ["x.ts"], "everything in the invented directory is added");
-    assert.deepEqual(d.resolved, []);
+    assert.deepEqual(d.noLongerDetected, []);
   } finally {
     cleanup();
   }
@@ -133,9 +143,9 @@ test("diff: a partial base never gates — a base crash aborts loudly", { skip: 
     git(repo, ["add", "."]);
     git(repo, ["commit", "-m", "HEAD removed it"]);
 
-    const groups = await headGroups(repo, doctor);
+    const ran = await headRun(repo, doctor);
     await assert.rejects(
-      () => runDiff(specOf(repo, doctor), "main", groups),
+      () => runDiff(specOf(repo, doctor), "main", headOf(specOf(repo, doctor), ran)),
       /--base aborted: the base scan crashed \(marker\).*would dress pre-existing findings up as added/s,
       "the abort names the doctor and the reason",
     );
@@ -148,14 +158,255 @@ test("diff: unresolvable refs and non-repo targets refuse honestly", { skip: git
   const { repo, doctor, cleanup } = setup();
   try {
     git(repo, ["commit", "--allow-empty", "-m", "base"]);
-    await assert.rejects(() => runDiff(specOf(repo, doctor), "no-such-ref", []), /--base failed to resolve/);
+    await assert.rejects(() => runDiff(specOf(repo, doctor), "no-such-ref", headOf(specOf(repo, doctor), { crashed: [], groups: [], skippedUnsafe: [], doctorPaths: new Map(), fileCount: 0, durationMs: 0, targetDir: repo, analysisAvailable: false })), /--base failed to resolve/);
     const nogit = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-nogit-"));
     try {
       fs.writeFileSync(path.join(nogit, "x.ts"), "const BAD = 1\n");
-      await assert.rejects(() => runDiff(specOf(nogit, doctor), "main", []), /--base failed: .*not a git repository/s);
+      await assert.rejects(() => runDiff(specOf(nogit, doctor), "main", headOf(specOf(nogit, doctor), { crashed: [], groups: [], skippedUnsafe: [], doctorPaths: new Map(), fileCount: 0, durationMs: 0, targetDir: nogit, analysisAvailable: false })), /--base failed: .*not a git repository/s);
     } finally {
       fs.rmSync(nogit, { recursive: true, force: true });
     }
+  } finally {
+    cleanup();
+  }
+});
+
+// ---- identity through the real diff path (A2) ---------------------------
+//
+// The line-marker doctor reports each BAD line at its actual position, so
+// base/head states compose precisely around movement.
+
+const LINE_MARKER = [
+  "export const meta = { id: 'linemarker', description: 'flags BAD lines where they are', severity: 'warning' }",
+  "export async function doctor(ctx) {",
+  "  for (const file of ctx.files.list()) {",
+  "    const src = ctx.files.read(file)",
+  '    if (src.includes("CRASH")) throw new Error("linemarker-boom")',
+  '    src.split("\\n").forEach((l, i) => { if (l.includes("BAD")) ctx.report.finding({ file, line: i + 1 }) })',
+  "  }",
+  "}",
+].join("\n");
+
+function setupLineMarker() {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-diff-id-"));
+  const doctorDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-doctor-id-"));
+  const doctor = path.join(doctorDir, "linemarker.mjs");
+  fs.writeFileSync(doctor, LINE_MARKER);
+  git(repo, ["init", "-b", "main"]);
+  git(repo, ["config", "user.email", "test@any-doctor"]);
+  git(repo, ["config", "user.name", "any-doctor test"]);
+  return { repo, doctor, cleanup: () => { fs.rmSync(repo, { recursive: true, force: true }); fs.rmSync(doctorDir, { recursive: true, force: true }); } };
+}
+
+test("diff: a renamed file is absence plus addition — no unproven cross-file continuity", { skip: gitSkip }, async () => {
+  const { repo, doctor, cleanup } = setupLineMarker();
+  try {
+    fs.writeFileSync(path.join(repo, "f.ts"), "const BAD = 1;\n");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-m", "base"]);
+    git(repo, ["mv", "f.ts", "g.ts"]);
+    git(repo, ["commit", "-m", "rename"]);
+    const ran = await runCohort(specOf(repo, doctor));
+    const d = await runDiff(specOf(repo, doctor), "HEAD~1", headOf(specOf(repo, doctor), ran));
+    assert.equal(d.continuing, 0, "cross-file rename continuity is outside the initial guarantee");
+    assert.deepEqual(d.added.map(a => a.file), ["g.ts"], "the new path is added");
+    assert.deepEqual(d.noLongerDetected.map(a => a.file), ["f.ts"], "the old path is honestly absent");
+  } finally {
+    cleanup();
+  }
+});
+
+test("diff: a finding that moved with its code is continuing, not added plus absent", { skip: gitSkip }, async () => {
+  const { repo, doctor, cleanup } = setupLineMarker();
+  try {
+    fs.writeFileSync(path.join(repo, "f.ts"), "function w() {\n  const BAD = 1;\n}\n");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-m", "base"]);
+    // The working tree (uncommitted, dirty) moves the flagged line down —
+    // the identity layer must follow the occurrence, not the coordinates.
+    fs.writeFileSync(path.join(repo, "f.ts"), "function w() {\n\n  const BAD = 1;\n}\n");
+    const ran = await runCohort(specOf(repo, doctor));
+    const groups = deriveSummary(ran).groups;
+    assert.equal(groups[0].findings[0].line, 3, "the finding's coordinates moved");
+    const d = await runDiff(specOf(repo, doctor), "main", headOf(specOf(repo, doctor), ran));
+    assert.equal(d.continuing, 1, "the occurrence continues");
+    assert.deepEqual(d.added, [], "movement is not addition");
+    assert.deepEqual(d.noLongerDetected, [], "movement is not disappearance");
+  } finally {
+    cleanup();
+  }
+});
+
+test("diff: a changed flagged line is added plus no-longer-detected, never continuing", { skip: gitSkip }, async () => {
+  const { repo, doctor, cleanup } = setupLineMarker();
+  try {
+    fs.writeFileSync(path.join(repo, "f.ts"), "const BAD = 1;\n");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-m", "base"]);
+    fs.writeFileSync(path.join(repo, "f.ts"), "const BAD = 2;\n");
+    const ran = await runCohort(specOf(repo, doctor));
+    const d = await runDiff(specOf(repo, doctor), "main", headOf(specOf(repo, doctor), ran));
+    assert.equal(d.continuing, 0, "changed content never continues");
+    assert.deepEqual(d.added.map(a => a.line), [1]);
+    assert.deepEqual(d.noLongerDetected.map(a => a.line), [1]);
+  } finally {
+    cleanup();
+  }
+});
+
+test("diff: a third identical occurrence cannot hide behind the two that existed", { skip: gitSkip }, async () => {
+  const { repo, doctor, cleanup } = setupLineMarker();
+  try {
+    fs.writeFileSync(path.join(repo, "f.ts"), "const BAD = 1;\nconst BAD = 1;\n");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-m", "base"]);
+    fs.writeFileSync(path.join(repo, "f.ts"), "const BAD = 1;\nconst BAD = 1;\nconst BAD = 1;\n");
+    const ran = await runCohort(specOf(repo, doctor));
+    const d = await runDiff(specOf(repo, doctor), "main", headOf(specOf(repo, doctor), ran));
+    assert.equal(d.continuing, 2);
+    assert.equal(d.added.length, 1, "the third copy is added and gates");
+    assert.equal(d.noLongerDetected.length, 0);
+    assert.equal(d.ambiguous, 1, "the duplicate bucket is reported");
+  } finally {
+    cleanup();
+  }
+});
+
+test("diff: identical text in two different functions does not share an identity when the engine is present", { skip: gitSkip }, async () => {
+  const { repo, doctor, cleanup } = setupLineMarker();
+  try {
+    fs.writeFileSync(path.join(repo, "f.ts"), "function a() {\n  doWork(BAD);\n}\nfunction b() {\n  doWork(BAD);\n}\n");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-m", "base"]);
+    // a() is deleted; the b() occurrence must continue, not be confused
+    // with a()'s identical text.
+    fs.writeFileSync(path.join(repo, "f.ts"), "function b() {\n  doWork(BAD);\n}\n");
+    const ran = await runCohort(specOf(repo, doctor));
+    const d = await runDiff(specOf(repo, doctor), "main", headOf(specOf(repo, doctor), ran));
+    if (ran.analysisAvailable) {
+      assert.equal(d.continuing, 1, "the b() occurrence continues by context");
+      assert.deepEqual(d.added, []);
+      assert.equal(d.noLongerDetected.length, 1, "the a() occurrence is gone");
+    } else {
+      // Engine off: the documented fallback matches identical content in
+      // the file — and says so.
+      assert.equal(d.continuing, 1);
+      assert.equal(d.contextFallback, 1);
+      assert.deepEqual(d.added, []);
+      assert.deepEqual(d.noLongerDetected, []);
+    }
+  } finally {
+    cleanup();
+  }
+});
+
+// ---- execution-bound provenance and evidence (review finding 2) --------
+//
+// Both probes from the independent review, as regression cases: evidence
+// must describe the bytes the scan saw, and doctor digests must bracket
+// their own executions.
+
+test("diff: a file restored after the head scan cannot borrow old bytes — occurrences go stale", { skip: gitSkip }, async () => {
+  const { repo, doctor, cleanup } = setupLineMarker();
+  try {
+    fs.writeFileSync(path.join(repo, "f.ts"), "const BAD = 1;\n");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-m", "base"]);
+    // The head scan runs on v2 (the finding's real content)...
+    fs.writeFileSync(path.join(repo, "f.ts"), "const BAD = 2;\n");
+    const ran = await runCohort(specOf(repo, doctor));
+    // ...the command layer captures evidence at scan-adjacency (v2)...
+    const head = headOf(specOf(repo, doctor), ran);
+    // ...and only THEN is the file restored to v1 — the review's probe.
+    fs.writeFileSync(path.join(repo, "f.ts"), "const BAD = 1;\n");
+    const d = await runDiff(specOf(repo, doctor), "main", head);
+    assert.equal(d.continuing, 0, "a v2-scanned finding never continues through v1 bytes");
+    assert.equal(d.added.length, 1, "the changed-after-scan occurrence surfaces as added and gates");
+    assert.equal(d.noLongerDetected.length, 1, "the base occurrence is honestly absent");
+    assert.ok(d.stale >= 1, "the changed file is reported stale");
+  } finally {
+    cleanup();
+  }
+});
+
+test("diff: a doctor mutated between the two executions refuses comparability", { skip: gitSkip }, async () => {
+  const { repo, doctor, cleanup } = setupLineMarker();
+  try {
+    fs.writeFileSync(path.join(repo, "f.ts"), "const BAD = 1;\n");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-m", "base"]);
+    fs.writeFileSync(path.join(repo, "f.ts"), "const BAD = 1;\nconst OTHER = 2;\n");
+    // Head digests are captured BEFORE the head scan, as the CLI does...
+    const headDigests = doctorDigests(specOf(repo, doctor).doctors, digestTextFile);
+    const ran = await runCohort(specOf(repo, doctor));
+    // ...then the doctor's bytes change before the base side captures its
+    // own pre-scan digests — the two executions ran different programs.
+    fs.appendFileSync(doctor, "\n// a valid edit, different bytes\n");
+    const head = captureHeadScan(specOf(repo, doctor).targetDir, deriveSummary(ran).groups, ran.analysisAvailable ?? false, headDigests);
+    const d = await runDiff(specOf(repo, doctor), "main", head);
+    assert.equal(d.provenance.comparable, false, "pre-scan digests bracket their executions and differ");
+    assert.equal(d.continuing, 0, "no continuity through a changed detector");
+    assert.ok(d.added.length >= 1 && d.noLongerDetected.length >= 1, "everything surfaces as added/absent");
+  } finally {
+    cleanup();
+  }
+});
+
+// A doctor that reports the START line of each BAD call with a validated
+// evidence range covering the whole multiline expression — the A1 hybrid
+// exercising the full pipeline.
+const RANGE_MARKER = [
+  "export const meta = { id: 'rangemarker', description: 'flags BAD calls with expression ranges', severity: 'warning' }",
+  "export async function doctor(ctx) {",
+  "  for (const file of ctx.files.list()) {",
+  "    const lines = ctx.files.read(file).split('\\n')",
+  "    lines.forEach((l, i) => {",
+  "      if (l.includes('BAD')) {",
+  "        // cover through the expression's closing line: the next line ending in ';' at depth 0",
+  "        let end = i + 1",
+  "        while (end < lines.length && !/^\\);?\\s*$/.test(lines[end])) end++",
+  "        ctx.report.finding({ file, line: i + 1, evidence: { endLine: Math.min(end + 1, lines.length) } })",
+  "      }",
+  "    })",
+  "  }",
+  "}",
+].join("\n");
+
+function setupRangeMarker() {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-diff-rng-"));
+  const doctorDir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-doctor-rng-"));
+  const doctor = path.join(doctorDir, "rangemarker.mjs");
+  fs.writeFileSync(doctor, RANGE_MARKER);
+  git(repo, ["init", "-b", "main"]);
+  git(repo, ["config", "user.email", "test@any-doctor"]);
+  git(repo, ["config", "user.name", "any-doctor test"]);
+  return { repo, doctor, cleanup: () => { fs.rmSync(repo, { recursive: true, force: true }); fs.rmSync(doctorDir, { recursive: true, force: true }); } };
+}
+
+test("diff: a continuation-line edit of a range-evidenced multiline expression is added, not continuing", { skip: gitSkip }, async () => {
+  const { repo, doctor, cleanup } = setupRangeMarker();
+  try {
+    fs.writeFileSync(path.join(repo, "f.ts"), "const x = call(BAD,\n  option(1),\n);\n");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-m", "base"]);
+
+    // Only the continuation line changes — invisible to a line digest,
+    // visible to the validated range.
+    fs.writeFileSync(path.join(repo, "f.ts"), "const x = call(BAD,\n  option(2),\n);\n");
+    const spec = specOf(repo, doctor);
+    const ran = await runCohort(spec);
+    const d = await runDiff(spec, "main", headOf(spec, ran));
+    assert.equal(d.continuing, 0, "the range covers the edited continuation line");
+    assert.equal(d.added.length, 1, "the changed expression surfaces as added and gates");
+    assert.equal(d.noLongerDetected.length, 1);
+
+    // The same expression merely MOVED still continues — the range follows it.
+    fs.writeFileSync(path.join(repo, "f.ts"), "const pad = 0;\nconst x = call(BAD,\n  option(1),\n);\n");
+    const ran2 = await runCohort(spec);
+    const d2 = await runDiff(spec, "main", headOf(spec, ran2));
+    assert.equal(d2.continuing, 1, "movement under a validated range is continuity");
+    assert.deepEqual(d2.added, []);
+    assert.equal(d2.lineScoped, 0, "the continuing match is range-verified, not line-scoped");
   } finally {
     cleanup();
   }

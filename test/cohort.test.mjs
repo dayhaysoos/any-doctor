@@ -102,3 +102,32 @@ test("runCohort: discovery skips ride in with the spec — the outcome is comple
   });
   assert.deepEqual(outcome.skippedUnsafe, ["/tmp/evil.mjs"]);
 });
+
+test("runCohort: the executor seam — the fold assembles the outcome without a spawn", async () => {
+  const okRun = (id, fileCount, analysis) => ({
+    ok: true,
+    result: {
+      protocolVersion: 1, kind: "run", root: "/t", fileCount, durationMs: 5,
+      meta: { id, description: "d", severity: "info" },
+      findings: [{ file: "a.ts", line: 1 }],
+      ...(analysis !== undefined ? { capabilities: { analysis } } : {}),
+    },
+  });
+  const crash = { ok: false, cause: { _tag: "DoctorCrashed", programPath: "/x/c.mjs", detail: "boom" } };
+  const spec = {
+    doctors: [{ id: "a", programPath: "/x/a.mjs" }, { id: "b", programPath: "/x/b.mjs" }, { id: "c", programPath: "/x/c.mjs" }],
+    targetDir: "/t",
+    includeTests: false,
+  };
+  const outcome = await runCohort(spec, undefined, async (options) => {
+    assert.equal(options.length, 3, "the executor sees one option per doctor, order preserved");
+    assert.deepEqual(options.map(o => o.programPath), ["/x/a.mjs", "/x/b.mjs", "/x/c.mjs"]);
+    return [okRun("a", 10, true), okRun("b", 7), crash];
+  });
+  assert.deepEqual(outcome.crashed.map(c => c.id), ["c"], "a crash is data, named by its doctor");
+  assert.match(outcome.crashed[0].detail, /doctor crashed:\nboom/);
+  assert.equal(outcome.fileCount, 10, "the max count is the honest pick when one crashed early");
+  assert.deepEqual([...outcome.doctorPaths.keys()], ["a", "b"]);
+  assert.equal(outcome.analysisAvailable, true, "the first capability answer is the process-wide fold");
+  assert.equal(outcome.groups.length, 2, "crashed doctors contribute no group");
+});

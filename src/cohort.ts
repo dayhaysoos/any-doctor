@@ -1,6 +1,5 @@
 import * as path from "path";
-import { ReportGroup } from "./contract.js";
-import { cohortFileCount, RunOutcome } from "./report.js";
+import { cohortFileCount, ReportGroup, RunOutcome } from "./contract.js";
 import { CohortProgress, describeRunnerError, runDoctorCohort } from "./runner.js";
 
 // The Cohort: doctor programs + target → RunOutcome, in one deep module.
@@ -35,11 +34,24 @@ export interface CohortSpec {
   skippedUnsafe?: readonly string[];
 }
 
-export async function runCohort(spec: CohortSpec, onProgress?: (p: CohortProgress) => void): Promise<RunOutcome> {
+// The doctor executor: the seam the Cohort assembles outcomes from. The
+// real adapter spawns doctor children through the runner; tests supply an
+// in-process adapter with canned results — two adapters, a real seam, and
+// the fold's laws (crash-as-data, the file-count max, the capability fold,
+// order preservation) get exercised without a single spawn. Confinement
+// claims keep their real-spawn tests; this seam is for the fold, not for
+// safety.
+export type DoctorExecutor = typeof runDoctorCohort;
+
+export async function runCohort(
+  spec: CohortSpec,
+  onProgress?: (p: CohortProgress) => void,
+  exec: DoctorExecutor = runDoctorCohort,
+): Promise<RunOutcome> {
   const runStarted = Date.now();
-  // runDoctorCohort preserves options order; the fold pairs runs with
+  // The executor preserves options order; the fold pairs runs with
   // their doctor by index.
-  const runs = await runDoctorCohort(spec.doctors.map(d => ({
+  const runs = await exec(spec.doctors.map(d => ({
     programPath: d.programPath,
     targetDir: spec.targetDir,
     includeTests: spec.includeTests,

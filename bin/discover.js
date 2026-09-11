@@ -80,6 +80,19 @@ export async function discoverDoctors(cwd, opts) {
     }
     return [...bySlug.values()];
 }
+// A doctor program is always a FILE. existsSync alone accepts directories:
+// the verbatim-slug candidate join(dir, ".") IS the doctors directory
+// itself, so `run .` from a repo without its own doctors tried to execute
+// the bundled pack directory as a program and crashed under Confinement
+// (found on the real-target smoke; "." is a target, never a slug).
+function isProgramFile(p) {
+    try {
+        return fs.statSync(p).isFile();
+    }
+    catch {
+        return false;
+    }
+}
 // Explicit paths (absolute, or containing separators) resolve directly.
 // Bare filenames are slugs: scopes win — repo-local first, then global,
 // then bundled — so a stray slug.mjs in the working directory cannot
@@ -89,7 +102,7 @@ export function resolveDoctorPath(arg, cwd, opts) {
     const bare = path.basename(arg) === arg && !path.isAbsolute(arg);
     if (!bare) {
         const direct = path.resolve(cwd, arg);
-        if (fs.existsSync(direct))
+        if (isProgramFile(direct))
             return direct;
     }
     if (bare) {
@@ -106,12 +119,12 @@ export function resolveDoctorPath(arg, cwd, opts) {
         for (const dir of scopes) {
             for (const suffix of ["", ".mjs", ".cjs", ".js"]) {
                 const candidate = path.join(dir, base + suffix);
-                if (fs.existsSync(candidate))
+                if (isProgramFile(candidate))
                     return candidate;
             }
         }
         const direct = path.resolve(cwd, arg);
-        if (fs.existsSync(direct))
+        if (isProgramFile(direct))
             return direct;
     }
     return null;

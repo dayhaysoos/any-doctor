@@ -1,4 +1,17 @@
+import * as os from "os";
+import * as path from "path";
+
 export type Severity = "error" | "warning" | "info";
+
+// The one severity ordering — worst first. Display rollups (report),
+// derivation sorts (summary), and view-model triage (doctor tree) all
+// rank through this; score weights and the gate's fail-on bar are
+// different questions and keep their own tables.
+export const SEVERITY_ORDER: Severity[] = ["error", "warning", "info"];
+
+export function severityRank(s: Severity): number {
+  return SEVERITY_ORDER.indexOf(s);
+}
 
 export interface CheckMeta {
   id: string;
@@ -43,6 +56,63 @@ export interface ReportGroup {
   findings: Finding[];
 }
 
+// The default walk's extensions — the empty-scan warning names them in
+// prose; composing from the array is what keeps the copy honest the day
+// this list changes.
+export const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
+
+// One doctor whose run crashed: a crash is data. The id is the
+// discovery id (or the program's file name without .mjs when selected
+// by path); the detail is the full describeRunnerError rendering,
+// carried so any surface — report, dashboard, or a future machine
+// consumer — can name the failure without re-deriving it.
+export interface CrashedDoctor {
+  id: string;
+  detail: string;
+}
+
+// One scan invocation's batch of results — assembled once, consumed by the
+// report, the dashboard, and any future surface. One defined meaning per
+// field: the command layer cannot drift because there is one type, and
+// one module (the Cohort) assembles it.
+export interface RunOutcome {
+  // The ReportGroups that ran — one per doctor that produced results.
+  groups: ReportGroup[];
+  // Doctors whose runs crashed: data, named with full detail, results
+  // above are partial.
+  crashed: CrashedDoctor[];
+  // Slugs Confinement refused to run — they ride along as the skip note.
+  skippedUnsafe: string[];
+  // Doctor id → program path, for composing re-run commands.
+  doctorPaths: ReadonlyMap<string, string>;
+  // The scanned target's file count (cohortFileCount of the doctors'
+  // counts) — the Score's denominator (D19).
+  fileCount: number;
+  // Wall-clock of the doctor batch: first spawn to last completion,
+  // discovery and selection excluded — measured once, by the Cohort.
+  durationMs: number;
+  // The scanned target, for composing re-run commands.
+  targetDir: string;
+  /** Could the identity engine power this run? (D20 Stage 2) — checks
+   * that declared `needs` render "narrowed" when false. */
+  analysisAvailable?: boolean;
+}
+
+// All doctors scan the same target, so the cohort's file count is any
+// doctor's count; the max is the honest pick when one crashed early. The
+// policy lives here, beside the RunOutcome field it fills and the Score
+// that divides by it.
+export function cohortFileCount(counts: number[]): number {
+  return counts.reduce((m, n) => Math.max(m, n), 0);
+}
+
+export interface FindingEvidence {
+  /** The expression's last line (1-based, same convention as `line`). */
+  endLine: number;
+  /** Exclusive end column on that line (0-based); omitted = through EOL. */
+  endColumn?: number;
+}
+
 export interface Finding {
   rule?: string;
   file: string;
@@ -50,6 +120,12 @@ export interface Finding {
   column?: number;
   message?: string;
   severity?: Severity;
+  /** Optional evidence range covering the whole flagged expression — the
+   *  host validates it against the source and digests the covered span, so
+   *  an edit on a continuation line of a multiline expression still breaks
+   *  identity. Omit it and identity falls back to the flagged line alone
+   *  (line-scoped: explicitly weaker, surfaced as such). */
+  evidence?: FindingEvidence;
 }
 
 export interface Match {
@@ -357,7 +433,7 @@ export function fixturesPathFor(programPath: string): string {
   return programPath.replace(DOCTOR_FILE_RE, "") + ".fixtures.mjs";
 }
 
-// D18's one law, in the conventions' home: test files and test directories
+// One law, in the conventions' home: test files and test directories
 // are not production reads. Every read capability applies this predicate —
 // the sdk walk prunes by it, the search host filters matches by it. Test
 // FILES are test-named code files (.test./.spec. with a code extension);
@@ -368,6 +444,36 @@ const TEST_DIR_NAMES = new Set(["test", "tests", "__tests__"]);
 export function isTestPath(relativePath: string): boolean {
   if (TEST_FILE_RE.test(relativePath)) return true;
   return relativePath.split(/[\\/]+/).some((seg) => TEST_DIR_NAMES.has(seg));
+}
+
+// The read-containment laws, one home each. withinDir is the strict
+// form — the path IS the directory or lies beneath it — and is what a
+// repo root, a sandbox dir, an evidence read, or a per-file check
+// enforces. withinBase guards BASES, which the channel hosts derive per
+// mode: a run's target directory, or verify's mkdtemp sandbox PREFIX
+// (any any-doctor-verify-* dir qualifies — hence the anchored form for
+// dash-suffixed bases). Private copies are how the `..`-resolution
+// subtlety gets forgotten (resolve() collapses it; a raw prefix check
+// would let /target/../../etc through). Fusing the two forms would WIDEN
+// strict roots whose path happens to end in "-" — found in review; kept
+// apart on purpose.
+export function withinDir(p: string, dir: string): boolean {
+  return p === dir || p.startsWith(dir + path.sep);
+}
+
+export function withinBase(root: string, base: string): boolean {
+  return base.endsWith("-") ? root.startsWith(base) : withinDir(root, base);
+}
+
+// The base a mode's reads must stay within: a run's target directory, a
+// verify's sandbox prefix under the temp dir, or nothing for meta (meta
+// may not read at all). Pure function of the Mode — placed with it.
+export function searchBase(mode: Mode): string {
+  switch (mode.kind) {
+    case "verify": return path.join(os.tmpdir(), "any-doctor-verify-");
+    case "run": return mode.root;
+    case "meta": return "";
+  }
 }
 
 // One derivation, one home: a run scans test files only when --include-tests

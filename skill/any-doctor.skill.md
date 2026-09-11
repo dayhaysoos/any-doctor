@@ -1,9 +1,19 @@
 # any-doctor — doctor generation skill
 
 You are writing a **doctor program**: a small analysis tool that detects one
-codebase convention, plus the fixtures that prove it works. The INTENT is
-the entire specification. Derive everything from the intent alone — never
-scan a target repository to tune your doctor against its code.
+codebase convention, plus fixtures that test its stated claims. The user's INTENT
+and explicit project conventions define the specification. When authorized,
+inspect the codebase to understand those conventions and obtain representative
+cases; reason about each expected outcome independently of detector output.
+Keep separate counterexamples for evaluation instead of tuning the claim until
+the target report looks clean. Your own passing fixtures are not a general
+precision measurement.
+
+The purpose is to help users and their own agents find recurring AI-code concerns
+beyond ordinary linting. Project-specific policies and contextual review candidates
+are valid doctor intents; phrase them accurately instead of calling every finding
+a proven bug. Planned review decisions and history belong to the CLI, not to
+doctor implementations. Doctors continue to emit raw findings through this contract.
 
 ## The contract
 
@@ -22,7 +32,7 @@ export const meta = {
   ],
   checks: [                           // optional: multiple related checks in ONE doctor
     {
-      id: "<check-id>",               // short kebab noun phrase, [a-z0-9-], unique per doctor; name the defect
+      id: "<check-id>",               // short kebab noun phrase, [a-z0-9-], unique per doctor; name the concern
       description: "<finding text>",
       severity: "warning",
       claim: "<observable condition established>",
@@ -95,7 +105,12 @@ export const fixtures = [
   Declare `needs: ["calls"]` and a degraded policy. Stored/passed/returned
   is not proof that a promise eventually settles; a nearby combiner is not
   evidence about a particular promise.
-- `ctx.report.finding({ rule, file, line, column?, message?, severity? })`
+- `ctx.report.finding({ rule, file, line, column?, message?, severity?, evidence? })`
+  - `evidence: { endLine, endColumn? }` (optional): the flagged expression's
+    full range when it spans lines — the host validates it and the diff's
+    identity matching then catches edits on ANY line of the expression.
+    Omit it and the finding matches on its flagged line only (line-scoped,
+    reported as weaker). One-line findings don't need it.
 
 Zero dependencies, zero imports — a doctor is one self-contained file;
 everything reaches it through `ctx`. Node >= 18.
@@ -241,7 +256,11 @@ it. Otherwise judge by consequence:
 
 - `error` — will break, lose, or expose data at runtime
 - `warning` — wrong or risky but non-fatal
-- `info` — stylistic or informational
+- `info` — contextual review candidates, maintenance suggestions, or informational
+
+Severity describes consequence, not certainty. Do not inflate a contextual
+suggestion into a proven defect. State a project's policy basis when the concern
+depends on that policy, and preserve the facts needed to investigate safely.
 
 Per-check severity lives in `meta.checks`; a finding may override with its
 own `severity` only for exceptions.
@@ -272,7 +291,7 @@ own `severity` only for exceptions.
    - **Semantic traps** — shapes that satisfy your pattern but not the
      intent (`await promiseArray` is not settling the promises), and shapes
      the intent condemns that merely look handled.
-   Reason every expectation from the intent alone — never from what your
+   Reason every expectation from the intent and explicit project conventions — never from what your
    doctor currently reports (that is the self-grading trap). Verify again
    and iterate until the attack wave is green too.
 5. Report: id, what it detects, declared blind spots, fixture count.
@@ -328,7 +347,8 @@ Verify also checks reliability beyond the author's individual examples:
   must be expected. A specified column must match; omitted columns retain
   legacy line-only matching. Duplicates count — a finding twice needs the
   expectation twice. A missing expected finding fails recall; an
-  unexpected finding fails precision. Get both sides right.
+  unexpected finding fails precision on those labeled cases. Get both sides right;
+  independently evaluated real-code cases are needed for broader accuracy claims.
 - Every doctor needs at least one `expected: []` fixture containing code that
   LOOKS like a violation but isn't — the lookalike that a naive implementation
   would wrongly flag.
@@ -359,7 +379,8 @@ then **Impact**, the code frame, and **Fix**. Write `impact`, `why`, and
 `fix` on every check — one line each, plain language, no code in them.
 They are what the user reads while deciding whether to care. `impact` =
 consequence if it ships; `why` = the code shape that triggers the check;
-`fix` = the corrective action in one sentence.
+`fix` = the corrective action in one sentence, or an investigation step when a
+safe correction depends on context the doctor cannot establish.
 
 ## Honesty rules
 
@@ -367,7 +388,8 @@ consequence if it ships; `why` = the code shape that triggers the check;
   see (aliased imports, cross-file references, dynamic constructs).
 - Never silently narrow the intent. If the intent is not fully statically
   checkable, implement the closest honest version and declare the gap.
-- A clean run must mean clean. Never swallow errors into empty findings.
+- A zero-finding run means nothing was detected within the exercised scope;
+  declare unsupported cases and never swallow errors into empty findings.
 
 ## Capability rules (the runtime gate enforces these)
 

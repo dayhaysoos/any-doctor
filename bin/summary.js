@@ -1,4 +1,4 @@
-import { narrowedCheckIds, resolveFinding } from "./contract.js";
+import { narrowedCheckIds, resolveFinding, severityRank } from "./contract.js";
 import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from "./score.js";
 // The Summary: the one derivation from a RunOutcome to everything its
 // surfaces render — the report string and the dashboard tree today, a
@@ -12,9 +12,6 @@ import { categoryRollup, computeScore, findingSeverity, scoreHeaderLines } from 
 //
 // Pure: derive twice from one RunOutcome, get one Summary. Rendering
 // (colors, prose, trees) belongs to the adapters, never here.
-// Worst-first display order — one home; the report's rollup rendering
-// imports it rather than re-listing severities.
-export const SEVERITY_ORDER = ["error", "warning", "info"];
 function groupSeverity(g) {
     var _a;
     const explicit = g.findings.find(f => f.severity);
@@ -28,7 +25,7 @@ function groupSeverity(g) {
 function dedupeGroups(groups) {
     const owner = new Map();
     const key = (f) => { var _a; return `${f.file}:${f.line}:${(_a = f.column) !== null && _a !== void 0 ? _a : ""}`; };
-    const ordered = [...groups].sort((a, b) => SEVERITY_ORDER.indexOf(groupSeverity(a)) - SEVERITY_ORDER.indexOf(groupSeverity(b)));
+    const ordered = [...groups].sort((a, b) => severityRank(groupSeverity(a)) - severityRank(groupSeverity(b)));
     const out = [];
     let hidden = 0;
     for (const g of ordered) {

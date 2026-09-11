@@ -1,12 +1,12 @@
 import * as path from "path";
-import { cohortFileCount } from "./report.js";
+import { cohortFileCount } from "./contract.js";
 import { describeRunnerError, runDoctorCohort } from "./runner.js";
-export async function runCohort(spec, onProgress) {
+export async function runCohort(spec, onProgress, exec = runDoctorCohort) {
     var _a;
     const runStarted = Date.now();
-    // runDoctorCohort preserves options order; the fold pairs runs with
+    // The executor preserves options order; the fold pairs runs with
     // their doctor by index.
-    const runs = await runDoctorCohort(spec.doctors.map(d => ({
+    const runs = await exec(spec.doctors.map(d => ({
         programPath: d.programPath,
         targetDir: spec.targetDir,
         includeTests: spec.includeTests,

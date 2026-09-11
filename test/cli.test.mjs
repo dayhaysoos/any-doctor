@@ -356,7 +356,7 @@ test("gate: --base against HEAD adds nothing — advisory findings pass, pre-exi
   const code = await cli.main(["run", DOCTOR, TARGET, "--base", "HEAD", "--fail-on", "warning"]);
   assert.equal(code, 0, "identical trees: zero added findings, the bar holds");
   const printed = log.mock.calls.map(c => c.arguments.join(" ")).join("\n");
-  assert.match(printed, /vs HEAD \(merged base\): 0 added · 0 resolved/, "the report carries the diff line");
+  assert.match(printed, /vs HEAD \(merged base\): 0 added · \d+ continuing · 0 no longer detected/, "the report carries the diff line");
 });
 
 test("gate: json output stays parseable when a doctor crashes — detail on stderr, exit 1", async (t) => {
@@ -464,13 +464,14 @@ test("main: a bare token that is a directory stays the target, not a slug", asyn
   fs.writeFileSync(path.join(root, "build", "index.ts"), "export const b = 1;\n");
   process.chdir(root);
   try {
-    // Non-TTY: no selector; no doctors discovered in this scratch root →
-    // the failure names the target resolution, proving `build` was treated
-    // as a directory rather than hijacked as a slug.
+    // Non-TTY: no selector. The bundled pack runs against build/ — one
+    // file scanned proves the token was the target directory, not a slug
+    // hijacked into doctor resolution (the pre-fix run crashed trying to
+    // execute a directory, or failed as not-found).
     const code = await cli.main(["run", "build"]);
-    assert.equal(code, 1);
+    assert.equal(code, 0);
     const out = logs.mock.calls.flatMap(c => c.arguments.map(String)).join("\n");
-    assert.match(out, /no doctors discovered|build/);
+    assert.match(out, /Scanned 1 file/, "the build directory was the scanned target");
   } finally {
     process.chdir(cwd);
     fs.rmSync(root, { recursive: true, force: true });

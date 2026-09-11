@@ -1,7 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
-import { resolveFinding, runCommandFor } from "./contract.js";
+import { runCommandFor } from "./contract.js";
+import { buildTree, FINDINGS_PER_CHECK, initialExpanded, summarizeCheck, summarizeDoctor, } from "./doctor-tree.js";
+import { checkFixPrompt, doctorFixPrompt, fixPrompt } from "./prompts.js";
 import { isEmptyScan, scoreFromFileHealth, scoreHeaderLines } from "./score.js";
 import { processTtyEnv } from "./tty.js";
 import * as tty from "./tty.js";
@@ -9,6 +11,12 @@ import { runTty, truncateVisible, visibleWidth } from "./tty.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, ORANGE, RESET, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import { unsafeSkipLine } from "./report.js";
 import { deriveSummary } from "./summary.js";
+// The Dashboard: the interactive review surface over the Summary. It owns
+// layout, the frame renderer, and the TUI loop; the Doctor tree
+// (doctor-tree.ts) is its view-model, and the task prompts it copies come
+// from prompts.ts. Its per-finding review state is still just readKeys —
+// M2's decision workflow will grow that here, in the loop, without
+// piercing the tree or the prompts.
 const SPLIT_MIN_COLS = 100;
 const TOKEN_RE = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^'\\]|\\.)*"|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|await|async|try|catch|finally|import|export|from|new|class|extends|throw|typeof|instanceof|in|of|do|switch|case|break|continue|default|yield)\b|\b(\d+(?:\.\d+)?)\b/g;
 export function highlightCode(line, useColor) {
@@ -29,113 +37,6 @@ export function highlightCode(line, useColor) {
 export function scoreBar(score, width) {
     const filled = Math.round((score / 100) * width);
     return "█".repeat(filled) + "░".repeat(Math.max(0, width - filled));
-}
-export function buildItems(groups) {
-    const items = [];
-    for (const g of groups) {
-        for (const f of g.findings) {
-            const j = resolveFinding(g.meta, f);
-            items.push({ ...j, readKey: j.checkKey + "@" + f.file + ":" + f.line, site: f });
-        }
-    }
-    return items;
-}
-// ---- copy prompts ----
-//
-// Enter copies the selected finding; `c` copies at whatever level the
-// selection rests on — one finding, a whole check (the overarching
-// explanation plus every site), or an entire doctor. The bulk prompt is
-// the natural agent task: "fix this pattern everywhere it appears."
-function promptHeading(severity, description, checkKey) {
-    return `${severity.toUpperCase()} · ${description} (${checkKey})`;
-}
-function scopeTail(scopeLine, verifyCommand, plural = false) {
-    return [
-        "",
-        "Scope:",
-        scopeLine,
-        `- Fix the root cause; do not suppress, disable, or silence ${plural ? "any of these checks" : "the check"}.`,
-        "- Keep unrelated refactors out of this pass.",
-        "",
-        `Verify with \`${verifyCommand}\` and confirm the finding${plural ? "s are" : " is"} gone before moving on.`,
-    ];
-}
-export function fixPrompt(item, verifyCommand) {
-    const site = item.site;
-    const lines = [
-        "Fix exactly one any-doctor finding:",
-        "",
-        promptHeading(item.severity, item.description, item.checkKey),
-        "",
-        `Affected site: ${site.file}:${site.line}`,
-    ];
-    if (item.impact)
-        lines.push("", "Impact " + item.impact);
-    if (item.why)
-        lines.push("", "Why " + item.why);
-    if (item.fix)
-        lines.push("", "Suggested fix: " + item.fix);
-    lines.push(...scopeTail(`- Fix only ${item.checkKey} at this site.`, verifyCommand));
-    return lines.join("\n");
-}
-// The re-scan loop is the pagination for display; a copied task still
-// lists generously, then defers the remainder to the next run.
-const PROMPT_SITES_CAP = 100;
-function sitesOf(items, cap) {
-    const shown = items.slice(0, cap);
-    return {
-        lines: shown.map(i => `- ${i.site.file}:${i.site.line}`),
-        hidden: items.length - shown.length,
-    };
-}
-function pushSites(lines, sites) {
-    lines.push(...sites.lines);
-    if (sites.hidden > 0) {
-        lines.push(`- … and ${sites.hidden} more — fix this batch, then re-run for the rest`);
-    }
-}
-export function checkFixPrompt(items, verifyCommand) {
-    const check = summarizeCheck(items[0].checkKey, items);
-    const lines = [
-        "Fix every finding of one any-doctor check:",
-        "",
-        promptHeading(check.severity, check.description, check.checkKey),
-        "",
-        `${check.count} finding${check.count === 1 ? "" : "s"} across ${check.files} file${check.files === 1 ? "" : "s"}:`,
-    ];
-    pushSites(lines, sitesOf(items, PROMPT_SITES_CAP));
-    if (check.impact)
-        lines.push("", "Impact " + check.impact);
-    if (check.why)
-        lines.push("", "Why " + check.why);
-    if (check.fix)
-        lines.push("", "Suggested fix: " + check.fix);
-    lines.push(...scopeTail(`- Fix ${check.checkKey} at every listed site — as many as practical in one pass.`, verifyCommand, true));
-    return lines.join("\n");
-}
-// Doctor prompts list generously per check but not boundlessly; the
-// re-run note carries the remainder.
-const DOCTOR_PROMPT_SITES_PER_CHECK = 25;
-export function doctorFixPrompt(doc, group, verifyCommand) {
-    var _a;
-    const lines = [
-        "Fix the findings of one any-doctor program:",
-        "",
-        `${doc.worst.toUpperCase()} · ${doc.doctorId} — ${doc.count} finding${doc.count === 1 ? "" : "s"} across ${doc.files} file${doc.files === 1 ? "" : "s"}`,
-    ];
-    for (const g of (_a = group === null || group === void 0 ? void 0 : group.checks) !== null && _a !== void 0 ? _a : []) {
-        {
-            const summary = summarizeCheck(g.checkKey, g.items);
-            lines.push("", `${summary.severity.toUpperCase()} · ${summary.description} (${summary.checkKey}) — ${summary.count} finding${summary.count === 1 ? "" : "s"}`);
-            if (summary.why)
-                lines.push("Why " + summary.why);
-            if (summary.fix)
-                lines.push("Suggested fix: " + summary.fix);
-            pushSites(lines, sitesOf(g.items, DOCTOR_PROMPT_SITES_PER_CHECK));
-        }
-    }
-    lines.push(...scopeTail(`- Fix every check of ${doc.doctorId} at the listed sites — as many as practical in one pass.`, verifyCommand, true));
-    return lines.join("\n");
 }
 function padVisible(s, width) {
     return s + " ".repeat(Math.max(0, width - visibleWidth(s)));
@@ -182,105 +83,6 @@ export function resolveDashboardLayout(cols, rows, itemCount) {
         detailHeight: Math.max(1, bodyRows - listHeight - 2),
         bodyRows,
     };
-}
-// The re-scan loop is the pagination: a check shows its first N findings,
-// then an affordance to fix a few and run again.
-export const FINDINGS_PER_CHECK = 50;
-const SEVERITY_RANK = { error: 0, warning: 1, info: 2 };
-export function buildTree(items, filesTotal) {
-    var _a;
-    const byDoctor = new Map();
-    for (const it of items) {
-        let checks = byDoctor.get(it.doctorId);
-        if (!checks) {
-            checks = new Map();
-            byDoctor.set(it.doctorId, checks);
-        }
-        const group = (_a = checks.get(it.checkKey)) !== null && _a !== void 0 ? _a : [];
-        group.push(it);
-        checks.set(it.checkKey, group);
-    }
-    const doctors = [...byDoctor.entries()].map(([doctorId, checks]) => {
-        const entries = [...checks.entries()].map(([checkKey, list]) => ({
-            checkKey,
-            items: [...list].sort((a, b) => a.site.file === b.site.file
-                ? a.site.line - b.site.line
-                : a.site.file < b.site.file ? -1 : 1),
-        })).sort((a, b) => {
-            const sa = SEVERITY_RANK[a.items[0].declaredSeverity];
-            const sb = SEVERITY_RANK[b.items[0].declaredSeverity];
-            return sa !== sb ? sa - sb : b.items.length - a.items.length || (a.checkKey < b.checkKey ? -1 : 1);
-        });
-        return {
-            doctorId,
-            checks: entries,
-            multiCheck: entries.length > 1,
-            count: entries.reduce((n, g) => n + g.items.length, 0),
-            worst: entries.reduce((w, g) => (SEVERITY_RANK[g.items[0].severity] < SEVERITY_RANK[w] ? g.items[0].severity : w), "info"),
-            score: scoreFromFileHealth(entries.flatMap(g => g.items.map(it => ({ file: it.site.file, severity: it.severity }))), filesTotal),
-        };
-    });
-    // Triage order: worst severity first, then most findings, then name.
-    return doctors.sort((a, b) => SEVERITY_RANK[a.worst] - SEVERITY_RANK[b.worst]
-        || b.count - a.count
-        || (a.doctorId < b.doctorId ? -1 : 1));
-}
-export function summarizeCheck(checkKey, groupItems) {
-    const first = groupItems[0];
-    const files = new Set(groupItems.map(i => i.site.file));
-    return {
-        checkKey,
-        checkId: first.checkId,
-        doctorId: first.doctorId,
-        description: first.description,
-        severity: first.declaredSeverity,
-        impact: first.impact,
-        why: first.why,
-        fix: first.fix,
-        blindSpots: first.blindSpots,
-        count: groupItems.length,
-        files: files.size,
-    };
-}
-export function summarizeDoctor(d) {
-    var _a;
-    const first = (_a = d.checks[0]) === null || _a === void 0 ? void 0 : _a.items[0];
-    const files = new Set();
-    for (const g of d.checks)
-        for (const i of g.items)
-            files.add(i.site.file);
-    return {
-        doctorId: d.doctorId,
-        description: first ? first.description : d.doctorId,
-        worst: d.worst,
-        count: d.count,
-        files: files.size,
-        score: d.score,
-        checks: d.checks.map(g => ({
-            description: g.items[0].description,
-            severity: g.items[0].declaredSeverity,
-            count: g.items.length,
-        })),
-        blindSpots: first === null || first === void 0 ? void 0 : first.blindSpots,
-    };
-}
-// Errors open on entry: any doctor carrying error findings, any
-// error-severity check, and the top of the list so the first screen is
-// never an empty overview. Everything else starts collapsed.
-export function initialExpanded(tree) {
-    const expanded = new Set();
-    const multiDoctor = tree.length > 1;
-    tree.forEach((d, i) => {
-        if (multiDoctor && (d.worst === "error" || i === 0))
-            expanded.add(d.doctorId);
-        if (!d.multiCheck)
-            return;
-        for (const g of d.checks) {
-            if (g.items[0].declaredSeverity === "error")
-                expanded.add(g.checkKey);
-        }
-    });
-    return expanded;
 }
 // The one way to ask what a row toggles — doctor rows answer their
 // doctorId, check rows their checkKey, everything else nothing.
@@ -594,9 +396,10 @@ export async function runDashboardOn(env, input, deps = {}) {
     const useColor = input.useColor;
     // One RunOutcome, one story on every surface: the tree AND the report
     // render the same Summary — the derivation lives in summary.ts, so
-    // counts and score can never disagree between surfaces.
+    // counts and score can never disagree between surfaces. The tree
+    // consumes the Summary's check buckets directly; it never re-groups.
     const summary = deriveSummary(input.outcome);
-    const tree = buildTree(buildItems(summary.groups), input.outcome.fileCount);
+    const tree = buildTree(summary.groupChecks, input.outcome.fileCount);
     const expanded = initialExpanded(tree);
     const readKeys = new Set();
     let notice;

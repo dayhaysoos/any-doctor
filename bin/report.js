@@ -1,13 +1,6 @@
-import { SEVERITY_ORDER, deriveSummary } from "./summary.js";
-import { DEFAULT_EXTS } from "./sdk.js";
+import { DEFAULT_EXTS, SEVERITY_ORDER } from "./contract.js";
+import { deriveSummary } from "./summary.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
-// All doctors scan the same target, so the cohort's file count is any
-// doctor's count; the max is the honest pick when one crashed early. The
-// policy lives here, beside the RunOutcome field it fills and the Score
-// that divides by it.
-export function cohortFileCount(counts) {
-    return counts.reduce((m, n) => Math.max(m, n), 0);
-}
 // The one place the skip-note copy lives; report, dashboard, and the CLI
 // all render this sentence so the story is identical everywhere. The count
 // is always the true total; only the name list caps — three names, then
@@ -35,6 +28,22 @@ export function emptyScanLine() {
 export function unsafeRefusalLine(name, capabilities) {
     return `${name} could be malicious (${capabilities.join(", ")}) — not running it.`;
 }
+// The one projection from the diff's full result to the prose surface —
+// beside the type it fills, so the command layer cannot hand-copy fields
+// into drift (loop-2 finding: an 8-field copy had already diverged).
+export function reportDiffOf(diff) {
+    return {
+        base: diff.base,
+        added: diff.added.length,
+        continuing: diff.continuing,
+        noLongerDetected: diff.noLongerDetected.length,
+        contextFallback: diff.contextFallback,
+        ambiguous: diff.ambiguous,
+        stale: diff.stale,
+        lineScoped: diff.lineScoped,
+        comparable: diff.provenance.comparable,
+    };
+}
 // The report is an adapter over the Summary: the derivation (dedupe,
 // score, rollups, check buckets, narrowed ids) lives in summary.ts,
 // shared with the dashboard and the future JSON surface — rendering
@@ -57,7 +66,22 @@ export function renderReport(input, useColor, diff) {
         lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
     }
     if (diff !== undefined) {
-        lines.push(c(`vs ${diff.base} (merged base): ${diff.added} added · ${diff.resolved} resolved`, DIM));
+        let line = `vs ${diff.base} (merged base): ${diff.added} added · ${diff.continuing} continuing · ${diff.noLongerDetected} no longer detected`;
+        const notes = [];
+        if (!diff.comparable) {
+            notes.push("doctor programs changed between the two sides — continuity refused, everything counts as added");
+        }
+        if (diff.contextFallback > 0)
+            notes.push(`${diff.contextFallback} matched without structural context`);
+        if (diff.ambiguous > 0)
+            notes.push(`${diff.ambiguous} matched among identical copies`);
+        if (diff.stale > 0)
+            notes.push(`${diff.stale} unread or changed mid-scan`);
+        if (diff.lineScoped > 0)
+            notes.push(`${diff.lineScoped} matched on line-scoped evidence only`);
+        if (notes.length > 0)
+            line += ` (${notes.join("; ")})`;
+        lines.push(c(line, DIM));
     }
     // The empty scan is its own outcome, not a clean one: no findings
     // headline, no per-doctor "clean" roll — those are claims a zero-file
@@ -187,8 +211,19 @@ export function renderJson(input, summary, gate, diff) {
             diff: {
                 base: diff.base,
                 baseSha: diff.baseSha,
+                headSha: diff.headSha,
+                headDirty: diff.headDirty,
                 added: diff.added,
-                resolved: diff.resolved,
+                continuing: diff.continuing,
+                noLongerDetected: diff.noLongerDetected,
+                contextFallback: diff.contextFallback,
+                ambiguous: diff.ambiguous,
+                stale: diff.stale,
+                lineScoped: diff.lineScoped,
+                unreadable: diff.unreadable,
+                contextUnavailable: diff.contextUnavailable,
+                identitySchema: diff.identitySchema,
+                comparable: diff.provenance.comparable,
             },
         } : {}),
     }, null, 2);

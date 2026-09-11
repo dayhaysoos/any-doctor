@@ -1,54 +1,8 @@
-import { ExpectedFinding, ReportGroup, VerifyRunResult } from "./contract.js";
-import { SEVERITY_ORDER, deriveSummary, RunSummary } from "./summary.js";
-import { DEFAULT_EXTS } from "./sdk.js";
+import { DEFAULT_EXTS, ExpectedFinding, ReportGroup, RunOutcome, SEVERITY_ORDER, VerifyRunResult } from "./contract.js";
+import { deriveSummary, RunSummary } from "./summary.js";
 import { BOLD, colorizer, DIM, GLYPH, GREEN, RED, scoreHeaderTone, SEVERITY_COLOR, YELLOW } from "./palette.js";
 import type { DiffResult } from "./diff.js";
 import type { GateVerdict } from "./gate.js";
-
-// One doctor whose run crashed: a crash is data. The id is the
-// discovery id (or the program's file name without .mjs when selected
-// by path); the detail is the full describeRunnerError rendering,
-// carried so any surface — report, dashboard, or a future machine
-// consumer — can name the failure without re-deriving it.
-export interface CrashedDoctor {
-  id: string;
-  detail: string;
-}
-
-// One scan invocation's batch of results — assembled once, consumed by the
-// report, the dashboard, and any future surface. One defined meaning per
-// field: the command layer cannot drift because there is one type, and
-// one module (the Cohort) assembles it.
-export interface RunOutcome {
-  // The ReportGroups that ran — one per doctor that produced results.
-  groups: ReportGroup[];
-  // Doctors whose runs crashed: data, named with full detail, results
-  // above are partial.
-  crashed: CrashedDoctor[];
-  // Slugs Confinement refused to run — they ride along as the skip note.
-  skippedUnsafe: string[];
-  // Doctor id → program path, for composing re-run commands.
-  doctorPaths: ReadonlyMap<string, string>;
-  // The scanned target's file count (cohortFileCount of the doctors'
-  // counts) — the Score's denominator (D19).
-  fileCount: number;
-  // Wall-clock of the doctor batch: first spawn to last completion,
-  // discovery and selection excluded — measured once, by the Cohort.
-  durationMs: number;
-  // The scanned target, for composing re-run commands.
-  targetDir: string;
-  /** Could the identity engine power this run? (D20 Stage 2) — checks
-   * that declared `needs` render "narrowed" when false. */
-  analysisAvailable?: boolean;
-}
-
-// All doctors scan the same target, so the cohort's file count is any
-// doctor's count; the max is the honest pick when one crashed early. The
-// policy lives here, beside the RunOutcome field it fills and the Score
-// that divides by it.
-export function cohortFileCount(counts: number[]): number {
-  return counts.reduce((m, n) => Math.max(m, n), 0);
-}
 
 // The one place the skip-note copy lives; report, dashboard, and the CLI
 // all render this sentence so the story is identical everywhere. The count
@@ -81,13 +35,44 @@ export function unsafeRefusalLine(name: string, capabilities: readonly string[])
   return `${name} could be malicious (${capabilities.join(", ")}) — not running it.`;
 }
 
-// Diff mode's one prose line, as data: what the change added and
-// resolved against the merged base. The findings list stays the full
-// HEAD picture — the diff is context, not a filter.
+// Diff mode's one prose line, as data: what the change added, what it
+// carried forward, and what it left behind against the merged base. The
+// findings list stays the full HEAD picture — the diff is context, not a
+// filter. "No longer detected" is the honest name for base occurrences
+// with no head counterpart: an observed absence, never a fix claim.
 export interface ReportDiff {
   base: string;
   added: number;
-  resolved: number;
+  continuing: number;
+  noLongerDetected: number;
+  // Continuing matches that rested on content alone — kept visible so an
+  // engine-off run never reads as structurally verified continuity.
+  contextFallback: number;
+  ambiguous: number;
+  // Occurrences with no confident content (unreadable or past end-of-file).
+  stale: number;
+  // Matches resting on line-scoped evidence (no validated range).
+  lineScoped: number;
+  // False when the doctor programs differed between the two sides — every
+  // occurrence is then counted as added and the prose must say so.
+  comparable: boolean;
+}
+
+// The one projection from the diff's full result to the prose surface —
+// beside the type it fills, so the command layer cannot hand-copy fields
+// into drift (loop-2 finding: an 8-field copy had already diverged).
+export function reportDiffOf(diff: DiffResult): ReportDiff {
+  return {
+    base: diff.base,
+    added: diff.added.length,
+    continuing: diff.continuing,
+    noLongerDetected: diff.noLongerDetected.length,
+    contextFallback: diff.contextFallback,
+    ambiguous: diff.ambiguous,
+    stale: diff.stale,
+    lineScoped: diff.lineScoped,
+    comparable: diff.provenance.comparable,
+  };
 }
 
 // The report is an adapter over the Summary: the derivation (dedupe,
@@ -113,7 +98,17 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
     lines.push(c(`\u26a0 ${unsafeSkipLine(input.skippedUnsafe)}`, YELLOW));
   }
   if (diff !== undefined) {
-    lines.push(c(`vs ${diff.base} (merged base): ${diff.added} added · ${diff.resolved} resolved`, DIM));
+    let line = `vs ${diff.base} (merged base): ${diff.added} added · ${diff.continuing} continuing · ${diff.noLongerDetected} no longer detected`;
+    const notes: string[] = [];
+    if (!diff.comparable) {
+      notes.push("doctor programs changed between the two sides — continuity refused, everything counts as added");
+    }
+    if (diff.contextFallback > 0) notes.push(`${diff.contextFallback} matched without structural context`);
+    if (diff.ambiguous > 0) notes.push(`${diff.ambiguous} matched among identical copies`);
+    if (diff.stale > 0) notes.push(`${diff.stale} unread or changed mid-scan`);
+    if (diff.lineScoped > 0) notes.push(`${diff.lineScoped} matched on line-scoped evidence only`);
+    if (notes.length > 0) line += ` (${notes.join("; ")})`;
+    lines.push(c(line, DIM));
   }
 
   // The empty scan is its own outcome, not a clean one: no findings
@@ -247,8 +242,19 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
       diff: {
         base: diff.base,
         baseSha: diff.baseSha,
+        headSha: diff.headSha,
+        headDirty: diff.headDirty,
         added: diff.added,
-        resolved: diff.resolved,
+        continuing: diff.continuing,
+        noLongerDetected: diff.noLongerDetected,
+        contextFallback: diff.contextFallback,
+        ambiguous: diff.ambiguous,
+        stale: diff.stale,
+        lineScoped: diff.lineScoped,
+        unreadable: diff.unreadable,
+        contextUnavailable: diff.contextUnavailable,
+        identitySchema: diff.identitySchema,
+        comparable: diff.provenance.comparable,
       },
     } : {}),
   }, null, 2);

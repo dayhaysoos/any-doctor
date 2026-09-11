@@ -1,12 +1,18 @@
 # Example catalog
 
+Historical brainstorm, not an implemented feature list or an accuracy claim.
+The [current vision](vision.md) and [reliability protocol](doctor-reliability.md)
+govern new doctors. Each intent below needs a bounded claim, valid lookalikes,
+and independent evidence; coverage, market, and safety assertions in this early
+catalog are hypotheses. Consult [features](features.md) for actual availability.
+
 Brainstormed rule intents showing the breadth of "anything JavaScript
 related." Each is written as the literal sentence you'd type. Tier tags:
 
 - `[P]` syntactic — pure pattern match
 - `[R]` relational — within-file structure (`inside`/`has`/`precedes`)
 - `[M]` multi-file — import paths / file graph / repo awareness
-- `[S]` semantic — needs scope/types (future oxlint tier, D4)
+- `[S]` semantic — needs facts beyond text matching; actual capability varies by engine
 
 The rule intents are raw material for the kill test, the demo, and the
 launch README GIF. The pitch is **one tool, one sentence each, unrelated

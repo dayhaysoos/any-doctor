@@ -1,13 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DoctorCtx, Finding, isTestPath, Match, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, Finding, isTestPath, Match, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, withinDir } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 import { EngineQuery, RawSgCapture, RawSgMatch } from "./engine.js";
-
-// The default walk's extensions — exported because the empty-scan
-// warning names them in prose; composing from the array is what keeps
-// the copy honest the day this list changes.
-export const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 
 // The verify harness forces the degraded path per fixture (fixture
 // `analysis: "off"`): the loader flips this switch before running that
@@ -154,10 +149,12 @@ function escapeRegExp(s: string): string {
 
 // The one read with one guard: an explicit path is a doctor's deliberate
 // choice (never test-path filtered), but it must stay inside the repo —
-// both read and readMasked pass through here.
+// both read and readMasked pass through here, through the strict
+// containment form (withinDir in contract.ts; no mktemp anchor carve-out
+// — a repo root is a directory, not a prefix).
 function readFileWithin(root: string, relativePath: string): string {
   const abs = path.resolve(root, relativePath);
-  if (abs !== root && !abs.startsWith(root + path.sep)) {
+  if (!withinDir(abs, root)) {
     throw new Error(`ctx.files read escapes the repo root: ${relativePath}`);
   }
   return fs.readFileSync(abs, "utf8");

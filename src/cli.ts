@@ -3,10 +3,12 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { DOCTOR_FILE_RE } from "./contract.js";
-import { renderJson, renderReport, renderVerifyResult, RunOutcome, unsafeSkipLine } from "./report.js";
+import { renderJson, renderReport, renderVerifyResult, reportDiffOf, unsafeSkipLine } from "./report.js";
+import { RunOutcome } from "./contract.js";
 import { CohortSpec, runCohort } from "./cohort.js";
 import { countsOfSeverities, FailOn, gateVerdict, GateVerdict, isFailOn } from "./gate.js";
-import { DiffResult, runDiff } from "./diff.js";
+import { DiffResult, captureHeadScan, runDiff } from "./diff.js";
+import { digestTextFile, doctorDigests } from "./identity.js";
 import { deriveSummary } from "./summary.js";
 import { copyToClipboard } from "./clipboard.js";
 import { runDashboard } from "./dashboard.js";
@@ -337,6 +339,10 @@ async function cmdRun(args: string[]): Promise<number> {
     );
   let done = 0;
   let ran;
+  // Diff provenance is captured BEFORE the head scan: the digests must
+  // describe the bytes that were about to run (a post-hoc read cannot
+  // tell two executions apart — see identity.ts).
+  const headDigests = parsed.base !== undefined ? doctorDigests(spec.doctors, digestTextFile) : undefined;
   try {
     ran = await runCohort(
       spec,
@@ -364,11 +370,14 @@ async function cmdRun(args: string[]): Promise<number> {
   // Diff mode exists iff --base was passed AND the HEAD scan is whole:
   // a crashed HEAD doctor contributes no findings, so its base findings
   // would surface as "resolved" — the same dishonesty as a partial
-  // base, on the other side. The crash already fails the run.
+  // base, on the other side. The crash already fails the run. The head
+  // capture is taken HERE, at scan-adjacency: evidence bytes are read
+  // once, before anything else can touch the working tree.
   let diff: DiffResult | undefined;
   if (parsed.base !== undefined && outcome.crashed.length === 0) {
     try {
-      diff = await runDiff(spec, parsed.base, summary.groups);
+      const head = captureHeadScan(spec.targetDir, summary.groups, outcome.analysisAvailable ?? false, headDigests!);
+      diff = await runDiff(spec, parsed.base, head);
     } catch (e) {
       fail(e instanceof Error ? e.message : String(e));
       return 1;
@@ -397,9 +406,7 @@ async function cmdRun(args: string[]): Promise<number> {
   }
 
   if (!interactive) {
-    console.log(renderReport(outcome, useColor(), diff !== undefined
-      ? { base: diff.base, added: diff.added.length, resolved: diff.resolved.length }
-      : undefined));
+    console.log(renderReport(outcome, useColor(), diff !== undefined ? reportDiffOf(diff) : undefined));
     return exitAfterSurface(outcome, gate);
   }
 

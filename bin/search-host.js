@@ -1,38 +1,7 @@
-import * as os from "os";
 import * as path from "path";
-import { decodeSearchOp, includeTestsFor, isTestPath, SEARCH_REQUEST } from "./contract.js";
+import { decodeSearchOp, includeTestsFor, isTestPath, SEARCH_REQUEST, searchBase, withinBase } from "./contract.js";
 import { runEngine } from "./engine.js";
 import { handleAnalysisRequest } from "./analysis-host.js";
-// The search host: the doctor child cannot spawn (Confinement), so it asks
-// any-doctor to run the Engine over a dedicated channel. This module is
-// the host side — a pure function from request line to response JSON,
-// directly testable without a real doctor child.
-//
-// The root check is a security decision: a run may search its target, a
-// verify may search its fixture sandboxes under the temp dir, and meta may
-// not search at all. The test-path filter is D18's law applied to this
-// seam: the same isTestPath predicate the sdk walk uses, the same
-// includeTestsFor derivation (run → flag, verify → everything).
-export function searchBase(mode) {
-    switch (mode.kind) {
-        // Verify sandboxes are seeded under the temp dir with this prefix —
-        // not the whole temp dir, and nothing else in it.
-        case "verify": return path.join(os.tmpdir(), "any-doctor-verify-");
-        case "run": return mode.root;
-        case "meta": return "";
-    }
-}
-// Bases are anchors: a run's target directory (anything beneath it), or
-// verify's sandbox prefix (any any-doctor-verify-* sandbox). The prefix
-// form ends in "-" on purpose — mkdtemp appends to it. Shared by the
-// analysis host — one copy of the containment law.
-export function withinBase(root, base) {
-    if (root === base)
-        return true;
-    if (base.endsWith("-"))
-        return root.startsWith(base);
-    return root.startsWith(base + path.sep);
-}
 // One request line in, one response body out (the SEARCH_RESULT sentinel
 // is framing added by the transport in the runner). Returns null for lines
 // that are not requests. The op discriminator selects the engine query
