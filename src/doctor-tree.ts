@@ -1,4 +1,4 @@
-import { DoctorMeta, Finding, JoinedFinding, ReportGroup, resolveFinding, Severity, severityRank } from "./contract.js";
+import { DoctorMeta, Finding, JoinedFinding, readKeyFor, ReportGroup, resolveFinding, Severity, severityRank } from "./contract.js";
 import { scoreFromFileHealth, ScoreResult } from "./score.js";
 import type { GroupChecks } from "./summary.js";
 
@@ -21,7 +21,7 @@ export type SiteFinding = { readKey: string; site: Finding } & Omit<JoinedFindin
 // consumer that wants the same join.
 function siteOf(meta: DoctorMeta, f: Finding): SiteFinding {
   const j = resolveFinding(meta, f);
-  return { ...j, readKey: j.checkKey + "@" + f.file + ":" + f.line, site: f };
+  return { ...j, readKey: readKeyFor(j.checkKey, f.file, f.line, f.column), site: f };
 }
 
 export function buildItems(groups: ReportGroup[]): SiteFinding[] {

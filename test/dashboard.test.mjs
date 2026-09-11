@@ -1,11 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 
 // The clipboard is injected via deps in runDashboardOn tests, keeping them
 // deterministic and spawn-free.
 const { buildListRows, scoreBar, runDashboardOn, dashboardFrame } = await import("../bin/dashboard.js");
-  const { buildTree } = await import("../bin/doctor-tree.js");
+const { buildTree } = await import("../bin/doctor-tree.js");
+const { reviewOf } = await import("../bin/review.js");
+const { encodeDecisionKey } = await import("../bin/finding-state.js");
+const { captureScan } = await import("../bin/scan-capture.js");
+const deriveSummaryOf = (await import("../bin/summary.js")).deriveSummary;
+const { doctorDigests } = await import("../bin/identity.js");
+const provOf = (doctorId, programText) => ({ revisions: new Map(), programDigests: new Map([[doctorId, doctorDigests([{ id: doctorId, programPath: "/fixture" }], () => programText)[0].digest]]) });
+
 
 const { deriveSummary } = await import("../bin/summary.js");
 // The tree consumes the Summary's check buckets; tests build them the way
@@ -117,7 +127,7 @@ test("runDashboard: revives a post-picker stdin (paused, cooked) and stays inter
 
   assert.equal(stdin.rawModeHistory[0], true, "must enter raw mode before reading keys (cooked mode line-buffers arrows and echoes)");
   assert.ok(stdin.resumed >= 1, "must resume stdin — the picker pauses it, and an explicitly paused stdin never auto-flows, so the loop drains and the process exits 0");
-  assert.match(stdout.frames[stdout.frames.length - 1], /enter copy finding/);
+  assert.match(stdout.frames[stdout.frames.length - 1], /a accept/);
 
   stdin.send("\x1b[B");
   stdin.send("\x1b[B");
@@ -661,4 +671,163 @@ test("tree: a doctor with zero findings contributes no node — clean cohorts re
   assert.deepEqual(buildTree(gcOf([clean]), 10), [], "the empty-bucket group is filtered before any checks[0] deref");
   const mixed = buildTree(gcOf([groups[0], clean]), 10);
   assert.deepEqual(mixed.map(d => d.doctorId), ["stripe-doctor"], "the clean doctor is simply absent");
+});
+
+// ---- remembered decisions in the dashboard (M2) ---------------------------
+
+test("dashboard: a records an accepted decision through the reason prompt and hides the finding", async () => {
+  const decided = [];
+  const reversedKeys = [];
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const deps = {
+    copy: () => true,
+    decide: (d) => { decided.push(d); return { ok: true }; },
+    reverse: (key) => { reversedKeys.push(key); return { ok: true }; },
+  };
+  // (provenance parity is asserted after submit: the write input must
+  // carry what the disk record needs — the restart-survival probe)
+  // Readable evidence (stale findings carry no decidable key — F5).
+  const target = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2view-"));
+  fs.mkdirSync(path.join(target, "src"), { recursive: true });
+  fs.writeFileSync(path.join(target, "src", "a.ts"), "const pad = 0;\nconst charges = chargesCreate(1);\nconst pad2 = 2;\nconst pad3 = 3;\nconst pad4 = 4;\nconst pad5 = 5;\nconst pad6 = 6;\nconst pad7 = 7;\nconst pad8 = 8;\nconst charges2 = chargesCreate(9);\n");
+  fs.writeFileSync(path.join(target, "src", "b.ts"), "const other = 7;\n");
+  try {
+  const baseOutcome = dashInput().outcome;
+  const realOutcome = { ...baseOutcome, targetDir: target };
+  const capture = captureScan(target, deriveSummaryOf(realOutcome).groups, false, []);
+  const view = reviewOf(capture, [], encodeDecisionKey, provOf("stripe-doctor", "export const meta = { id: 'stripe-doctor' }"));
+  const rawKey = view.rawKeyByReadKey.get("stripe-doctor/charges-create@src/a.ts:2");
+  assert.ok(rawKey !== undefined, "the fixture finding has an identity key");
+  const done = runDashboardOn(
+    { stdin, stdout },
+    { outcome: realOutcome, useColor: false, view },
+    deps,
+  );
+  // selection starts on the doctor row; walk onto the first finding
+  stdin.send("j");            // doctor row -> first finding (flat, single-check)
+  stdin.send("a");            // open the reason prompt
+  let frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(frame.includes("Reason for accepting"), "the prompt opens with its disposition");
+  stdin.send("intentional legacy charge");
+  stdin.send("\r");
+  frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.match(frame, /accepted — hidden from the active list/, "the notice confirms the decision");
+  assert.ok(!frame.includes("src/a.ts:2"), "the decided finding left the active tree");
+  assert.equal(decided.length, 1);
+  assert.equal(decided[0].key, rawKey);
+  assert.equal(decided[0].disposition, "accepted");
+  assert.equal(decided[0].reason, "intentional legacy charge");
+  assert.equal(decided[0].actor, "dashboard");
+  assert.ok(decided[0].provenance !== undefined
+    && decided[0].provenance.programDigest === provOf("stripe-doctor", "export const meta = { id: 'stripe-doctor' }").programDigests.get("stripe-doctor"),
+    "the WRITE carries the run's provenance — the disk record survives restart without a false 'doctor changed'");
+
+  // v reveals the review view: dim row with its disposition
+  stdin.send("v");
+  frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(frame.includes("src/a.ts:2"), "review view shows the decided finding");
+  assert.match(frame, /✓ accepted/, "with its disposition");
+
+  // u on it reverses
+  stdin.send("u");
+  frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.match(frame, /decision reversed/, "u reverses through the injected dep");
+  assert.equal(reversedKeys.length, 1);
+  assert.deepEqual(reversedKeys, [rawKey]);
+  stdin.send("q");
+  await settle(done);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("dashboard: x records not-applicable; an empty reason is refused; esc cancels", async () => {
+  const decided = [];
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const deps = { copy: () => true, decide: (d) => { decided.push(d); return { ok: true }; } };
+  const target2 = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2view2-"));
+  fs.mkdirSync(path.join(target2, "src"), { recursive: true });
+  fs.writeFileSync(path.join(target2, "src", "a.ts"), "const pad = 0;\nconst charges = chargesCreate(1);\nconst pad2 = 2;\nconst pad3 = 3;\nconst pad4 = 4;\nconst pad5 = 5;\nconst pad6 = 6;\nconst pad7 = 7;\nconst pad8 = 8;\nconst charges2 = chargesCreate(9);\n");
+  fs.writeFileSync(path.join(target2, "src", "b.ts"), "const other = 7;\n");
+  try {
+  const outcome2 = { ...dashInput().outcome, targetDir: target2 };
+  const capture2 = captureScan(target2, deriveSummaryOf(outcome2).groups, false, []);
+  const done = runDashboardOn({ stdin, stdout }, { outcome: outcome2, useColor: false, view: reviewOf(capture2, [], encodeDecisionKey, provOf("stripe-doctor", "x")) }, deps);
+  stdin.send("j");   // onto first finding (flat, single-check)
+  stdin.send("x");
+  stdin.send("\r");                                          // empty reason
+  let frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.match(frame, /a reason is required/, "empty reason refused");
+  stdin.send("\x1b");                                        // esc cancels
+  frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.ok(!frame.includes("Reason for"), "prompt closed");
+  assert.equal(decided.length, 0, "nothing recorded");
+  stdin.send("q");
+  await settle(done);
+  } finally {
+    fs.rmSync(target2, { recursive: true, force: true });
+  }
+});
+
+test("dashboard: a resurfaced decision renders the reassessment mark", async () => {
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const target3 = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-m2view3-"));
+  fs.mkdirSync(path.join(target3, "src"), { recursive: true });
+  fs.writeFileSync(path.join(target3, "src", "a.ts"), "const pad = 0;\nconst charges = chargesCreate(1);\nconst pad2 = 2;\nconst pad3 = 3;\nconst pad4 = 4;\nconst pad5 = 5;\nconst pad6 = 6;\nconst pad7 = 7;\nconst pad8 = 8;\nconst charges2 = chargesCreate(9);\n");
+  fs.writeFileSync(path.join(target3, "src", "b.ts"), "const other = 7;\n");
+  try {
+  const outcome3 = { ...dashInput().outcome, targetDir: target3 };
+  const capture3 = captureScan(target3, deriveSummaryOf(outcome3).groups, false, []);
+  const view3 = reviewOf(capture3, [], encodeDecisionKey);
+  view3.reassessing.push({ checkKey: "stripe-doctor/charges-create", file: "src/a.ts", reason: "old reason" });
+  const done = runDashboardOn({ stdin, stdout }, { outcome: outcome3, useColor: false, view: view3 }, { copy: () => true });
+  stdin.send("j");
+  const frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.match(frame, /⚠ decision needs reassessment/, "the resurfaced finding warns");
+  stdin.send("q");
+  await settle(done);
+  } finally {
+    fs.rmSync(target3, { recursive: true, force: true });
+  }
+});
+
+test("dashboard: recording on a shared identity refuses — matching what a rescan holds back", async () => {
+  const decided = [];
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const deps = { copy: () => true, decide: (x) => { decided.push(x); return { ok: true }; } };
+  // Real files with IDENTICAL lines: the identity key is shared (same
+  // digest/context/scope), which only readable evidence can prove.
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-shared-"));
+  try {
+  fs.writeFileSync(path.join(tmp, "f.ts"), "const twin = 1;\nconst pad = 2;\nconst pad2 = 3;\nconst pad3 = 4;\nconst twin = 1;\n");
+  const groups = [{
+    programName: "doc.mjs",
+    meta: { id: "doc", description: "d", severity: "warning" },
+    findings: [{ rule: "rule", file: "f.ts", line: 1 }, { rule: "rule", file: "f.ts", line: 5 }],
+  }];
+  const outcome = { groups, crashed: [], skippedUnsafe: [], doctorPaths: new Map(), fileCount: 1, durationMs: 1, targetDir: tmp };
+  // The view derives ambiguity itself from the shared identity.
+  const capture4 = captureScan(tmp, deriveSummaryOf(outcome).groups, false, []);
+  const view4 = reviewOf(capture4, [], encodeDecisionKey);
+  const sharedCount = [...view4.rows.values()].filter((r) => r.ambiguous === 2).length;
+  assert.equal(sharedCount, 2, "the view itself marks both copies as sharing an identity");
+  const done = runDashboardOn({ stdin, stdout }, { outcome, useColor: false, view: view4 }, deps);
+  stdin.send("j");          // onto the first finding
+  stdin.send("a");          // open the prompt
+  stdin.send("twin copies");
+  stdin.send("\r");        // submit — must REFUSE (identity shared)
+  const frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.match(frame, /held back: 2 identical occurrences share this identity/, "the refusal explains the rescan's law");
+  assert.equal(decided.length, 0, "nothing recorded");
+  assert.match(frame, /identical copies share this iden/, "the rows carry the ambiguity mark (list column truncates)");
+  stdin.send("\x1b");      // cancel the prompt
+  stdin.send("q");
+  await settle(done);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 });

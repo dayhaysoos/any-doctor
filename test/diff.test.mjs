@@ -15,13 +15,14 @@ import * as path from "node:path";
 
 const { runCohort } = await import("../bin/cohort.js");
 const { deriveSummary } = await import("../bin/summary.js");
-const { runDiff, captureHeadScan } = await import("../bin/diff.js");
+const { runDiff } = await import("../bin/diff.js");
+const { captureScan } = await import("../bin/scan-capture.js");
 const { digestTextFile, doctorDigests } = await import("../bin/identity.js");
 
 // The cli-shaped capture flow: digests BEFORE the scan, evidence taken
 // immediately AFTER it — the same adjacency production honors.
 const headOf = (spec, ran) =>
-  captureHeadScan(spec.targetDir, deriveSummary(ran).groups, ran.analysisAvailable ?? false, doctorDigests(spec.doctors, digestTextFile));
+  captureScan(spec.targetDir, deriveSummary(ran).groups, ran.analysisAvailable ?? false, doctorDigests(spec.doctors, digestTextFile));
 
 const hasGit = spawnSync("git", ["--version"]).status === 0;
 const gitSkip = hasGit ? false : "git not on PATH";
@@ -342,7 +343,7 @@ test("diff: a doctor mutated between the two executions refuses comparability", 
     // ...then the doctor's bytes change before the base side captures its
     // own pre-scan digests — the two executions ran different programs.
     fs.appendFileSync(doctor, "\n// a valid edit, different bytes\n");
-    const head = captureHeadScan(specOf(repo, doctor).targetDir, deriveSummary(ran).groups, ran.analysisAvailable ?? false, headDigests);
+    const head = captureScan(specOf(repo, doctor).targetDir, deriveSummary(ran).groups, ran.analysisAvailable ?? false, headDigests);
     const d = await runDiff(specOf(repo, doctor), "main", head);
     assert.equal(d.provenance.comparable, false, "pre-scan digests bracket their executions and differ");
     assert.equal(d.continuing, 0, "no continuity through a changed detector");

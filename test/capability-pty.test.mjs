@@ -64,7 +64,7 @@ test("capability gate: bare run in a real terminal — dashboard opens with the 
       '  timeout { puts ">FAIL note-timeout"; exit 103 }',
       "}",
       "expect {",
-      '  "enter copy finding" {}',
+      '  "a accept" {}',
       '  timeout { puts ">FAIL dashboard-timeout"; exit 104 }',
       "}",
       'send "q"',

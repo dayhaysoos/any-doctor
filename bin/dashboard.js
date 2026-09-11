@@ -1,7 +1,11 @@
 import * as fs from "fs";
 import * as path from "path";
 import { copyToClipboard } from "./clipboard.js";
-import { runCommandFor } from "./contract.js";
+import { resolveFinding, runCommandFor } from "./contract.js";
+import { recordDecision, reverseDecision, encodeDecisionKey } from "./finding-state.js";
+import { withDecision, withoutDecision } from "./review.js";
+import { captureScan } from "./scan-capture.js";
+import { readKeyFor } from "./contract.js";
 import { buildTree, FINDINGS_PER_CHECK, initialExpanded, summarizeCheck, summarizeDoctor, } from "./doctor-tree.js";
 import { checkFixPrompt, doctorFixPrompt, fixPrompt } from "./prompts.js";
 import { isEmptyScan, scoreFromFileHealth, scoreHeaderLines } from "./score.js";
@@ -89,7 +93,7 @@ export function resolveDashboardLayout(cols, rows, itemCount) {
 function toggleKeyOf(row) {
     return row === null || row === void 0 ? void 0 : row.toggleKey;
 }
-export function buildListRows(tree, useColor, selectedRow, readKeys, expanded) {
+export function buildListRows(tree, useColor, selectedRow, readKeys, expanded, review) {
     const c = colorizer(useColor);
     const open = expanded !== null && expanded !== void 0 ? expanded : new Set();
     const multiDoctor = tree.length > 1;
@@ -140,13 +144,16 @@ export function buildListRows(tree, useColor, selectedRow, readKeys, expanded) {
             const all = d.checks[0].items;
             const flat = all.slice(0, FINDINGS_PER_CHECK);
             flat.forEach((it, ci) => {
+                var _a, _b, _c, _d, _e;
                 const rowIndex = rows.length;
                 rows.push({
                     kind: "item",
-                    text: childPrefix(ci, flat.length - 1 + (all.length > flat.length ? 1 : 0)) + itemRowText(it, selectedRow === rowIndex, readKeys, c, !multiDoctor),
+                    text: childPrefix(ci, flat.length - 1 + (all.length > flat.length ? 1 : 0)) + itemRowText(it, selectedRow === rowIndex, readKeys, c, !multiDoctor, (_a = review === null || review === void 0 ? void 0 : review.dispositionByReadKey) === null || _a === void 0 ? void 0 : _a.get(it.readKey), (_b = review === null || review === void 0 ? void 0 : review.reassessPairs) === null || _b === void 0 ? void 0 : _b.has(`${it.checkKey}\u0000${it.site.file}`), (_c = review === null || review === void 0 ? void 0 : review.ambiguousReadKeys) === null || _c === void 0 ? void 0 : _c.has(it.readKey)),
                     severity: it.severity,
                     selectable: true,
                     item: it,
+                    reviewed: (_d = review === null || review === void 0 ? void 0 : review.dispositionByReadKey) === null || _d === void 0 ? void 0 : _d.get(it.readKey),
+                    reassess: (_e = review === null || review === void 0 ? void 0 : review.reassessPairs) === null || _e === void 0 ? void 0 : _e.has(`${it.checkKey}\u0000${it.site.file}`),
                 });
             });
             if (all.length > flat.length) {
@@ -182,13 +189,17 @@ export function buildListRows(tree, useColor, selectedRow, readKeys, expanded) {
                 return;
             const shown = g.items.slice(0, FINDINGS_PER_CHECK);
             shown.forEach(it => {
+                var _a, _b, _c, _d, _e;
                 const rowIndex = rows.length;
+                const readKey = it.readKey;
                 rows.push({
                     kind: "item",
-                    text: guidePrefix(ci, d.checks.length - 1) + itemRowText(it, selectedRow === rowIndex, readKeys, c, false),
+                    text: guidePrefix(ci, d.checks.length - 1) + itemRowText(it, selectedRow === rowIndex, readKeys, c, false, (_a = review === null || review === void 0 ? void 0 : review.dispositionByReadKey) === null || _a === void 0 ? void 0 : _a.get(readKey), (_b = review === null || review === void 0 ? void 0 : review.reassessPairs) === null || _b === void 0 ? void 0 : _b.has(`${it.checkKey}\u0000${it.site.file}`), (_c = review === null || review === void 0 ? void 0 : review.ambiguousReadKeys) === null || _c === void 0 ? void 0 : _c.has(readKey)),
                     severity: it.severity,
                     selectable: true,
                     item: it,
+                    reviewed: (_d = review === null || review === void 0 ? void 0 : review.dispositionByReadKey) === null || _d === void 0 ? void 0 : _d.get(readKey),
+                    reassess: (_e = review === null || review === void 0 ? void 0 : review.reassessPairs) === null || _e === void 0 ? void 0 : _e.has(`${it.checkKey}\u0000${it.site.file}`),
                 });
             });
             if (g.items.length > shown.length) {
@@ -205,15 +216,24 @@ export function buildListRows(tree, useColor, selectedRow, readKeys, expanded) {
     }
     return rows;
 }
-function itemRowText(it, isSelected, readKeys, c, showCheckId = true) {
+function itemRowText(it, isSelected, readKeys, c, showCheckId = true, reviewed, reassess, ambiguous) {
     const isRead = readKeys.has(it.readKey);
     const glyph = c(GLYPH[it.severity], SEVERITY_COLOR[it.severity]);
-    const wrap = isSelected ? BOLD : isRead ? DIM : undefined;
+    // A decided row renders dim with its disposition — present tense, never
+    // a fix claim — and a resurfaced decision warns with the reassess mark.
+    const wrap = reviewed !== undefined ? DIM : isSelected ? BOLD : isRead ? DIM : undefined;
     const suffix = showCheckId && it.checkId !== it.doctorId ? c("  " + it.checkId, DIM) : "";
-    return `${isSelected ? c("›", BOLD) : " "}${glyph} ${c(it.site.file + ":" + it.site.line, wrap)}${suffix}`;
+    const mark = reviewed !== undefined
+        ? c(reviewed === "accepted" ? "  ✓ accepted" : "  ⊘ not applicable", DIM)
+        : reassess === true
+            ? c("  ⚠ decision needs reassessment", YELLOW)
+            : ambiguous === true
+                ? c("  ⚠ identical copies share this identity", YELLOW)
+                : "";
+    return `${isSelected ? c("›", BOLD) : " "}${glyph} ${c(it.site.file + ":" + it.site.line, wrap)}${suffix}${mark}`;
 }
 export function dashboardFrame(state) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
     const { tree, selectedRow, readKeys, useColor, cols, rows } = state;
     const c = colorizer(useColor);
     const findings = tree.flatMap(d => d.checks.flatMap(g => g.items));
@@ -222,7 +242,9 @@ export function dashboardFrame(state) {
     // The header is the SELECTED doctor's report — never a cohort total,
     // which read as belonging to whichever row was on screen. Rows are
     // needed first: the selection's payload names the doctor.
-    const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded);
+    const rowsData = buildListRows(tree, useColor, selectedRow, readKeys, state.expanded, state.dispositionByReadKey !== undefined || state.reassessPairs !== undefined || state.prompt !== undefined
+        ? { dispositionByReadKey: state.dispositionByReadKey, reassessPairs: state.reassessPairs, ambiguousReadKeys: state.ambiguousReadKeys }
+        : undefined);
     const sel = rowsData[selectedRow];
     const scopedId = (_f = (_d = (_b = (_a = sel === null || sel === void 0 ? void 0 : sel.doctor) === null || _a === void 0 ? void 0 : _a.doctorId) !== null && _b !== void 0 ? _b : (_c = sel === null || sel === void 0 ? void 0 : sel.check) === null || _c === void 0 ? void 0 : _c.doctorId) !== null && _d !== void 0 ? _d : (_e = sel === null || sel === void 0 ? void 0 : sel.item) === null || _e === void 0 ? void 0 : _e.doctorId) !== null && _f !== void 0 ? _f : (_g = tree[0]) === null || _g === void 0 ? void 0 : _g.doctorId;
     const scoped = tree.find(d => d.doctorId === scopedId);
@@ -273,16 +295,27 @@ export function dashboardFrame(state) {
         listLines.push("");
     const detail = [];
     const selRow = rowsData[selectedRow];
-    if (selRow === null || selRow === void 0 ? void 0 : selRow.item) {
+    // A DECIDED row tells the decision's story first — the reason is what
+    // a reviewer needs, and u to reverse is the action.
+    if ((selRow === null || selRow === void 0 ? void 0 : selRow.item) && selRow.reviewed !== undefined && ((_h = state.reasonByReadKey) === null || _h === void 0 ? void 0 : _h.has(selRow.item.readKey)) === true) {
+        const sel = selRow.item;
+        detail.push(c(`${sel.site.file}:${sel.site.line}`, BOLD));
+        detail.push(c(selRow.reviewed === "accepted" ? "✓ accepted" : "⊘ not applicable", DIM));
+        detail.push("");
+        proseSection(detail, "Reason", (_j = state.reasonByReadKey.get(sel.readKey)) !== null && _j !== void 0 ? _j : "", layout.detailWidth - 2, c);
+        detail.push("");
+        proseSection(detail, "Undo", "u reverses this decision — the finding returns to the active list", layout.detailWidth - 2, c);
+    }
+    else if (selRow === null || selRow === void 0 ? void 0 : selRow.item) {
         const sel = selRow.item;
         detail.push(c(`${sel.site.file}:${sel.site.line}`, BOLD));
         detail.push(c(`${cap(sel.category)} · ${sel.severity}`, DIM));
         detail.push("");
-        const impact = (_h = sel.impact) !== null && _h !== void 0 ? _h : sel.description;
+        const impact = (_k = sel.impact) !== null && _k !== void 0 ? _k : sel.description;
         for (const l of wordWrap(impact, layout.detailWidth - 2))
             detail.push(c(l, SEVERITY_COLOR[sel.severity]));
         detail.push("");
-        proseSection(detail, "Why", (_j = sel.why) !== null && _j !== void 0 ? _j : "Not documented for this check.", layout.detailWidth - 2, c);
+        proseSection(detail, "Why", (_l = sel.why) !== null && _l !== void 0 ? _l : "Not documented for this check.", layout.detailWidth - 2, c);
         detail.push("");
         detail.push(c("Code", DIM));
         for (const l of codeFrameLines(state.readSource(sel.site.file), sel.site.line, layout.detailWidth - 2, useColor))
@@ -331,7 +364,7 @@ export function dashboardFrame(state) {
     const body = [];
     if (layout.mode === "split") {
         for (let i = 0; i < layout.bodyRows; i++) {
-            body.push(padVisible(truncateVisible((_k = listLines[i]) !== null && _k !== void 0 ? _k : "", layout.listWidth), layout.listWidth) + "  " + ((_l = detail[i]) !== null && _l !== void 0 ? _l : ""));
+            body.push(padVisible(truncateVisible((_m = listLines[i]) !== null && _m !== void 0 ? _m : "", layout.listWidth), layout.listWidth) + "  " + ((_o = detail[i]) !== null && _o !== void 0 ? _o : ""));
         }
     }
     else {
@@ -342,13 +375,17 @@ export function dashboardFrame(state) {
             ...detail,
         ];
         for (let i = 0; i < layout.bodyRows; i++)
-            body.push((_m = stacked[i]) !== null && _m !== void 0 ? _m : "");
+            body.push((_p = stacked[i]) !== null && _p !== void 0 ? _p : "");
     }
     // Fixed-shape footer: the notice line is always present (blank when idle)
     // so showing or clearing a notice never changes the frame height.
     const footer = [
-        state.notice ? c("✔ " + state.notice, GREEN) : "",
-        c("↑↓ move · →← expand · enter copy finding · c copy group · q quit", DIM),
+        state.prompt !== undefined
+            ? c(state.prompt.error === true
+                ? `a reason is required — type one (esc cancels): ${state.prompt.buffer}▏`
+                : `Reason for ${state.prompt.disposition === "accepted" ? "accepting" : "not-applicable"} ${state.prompt.file}:${state.prompt.line}: ${state.prompt.buffer}▏ (enter records · esc cancels)`, YELLOW)
+            : state.notice ? c("✔ " + state.notice, GREEN) : "",
+        c("↑↓ move · →← expand · enter copy · c copy group · a accept · x n/a · u undo · v review · q quit", DIM),
     ];
     return [...headerLines, "", ...body, "", ...footer].join("\n");
 }
@@ -390,6 +427,7 @@ export async function runDashboard(input) {
     await runDashboardOn(processTtyEnv(), input);
 }
 export async function runDashboardOn(env, input, deps = {}) {
+    var _a, _b, _c;
     const { stdout } = env;
     if (!tty.canRunTui(env))
         return;
@@ -399,13 +437,84 @@ export async function runDashboardOn(env, input, deps = {}) {
     // counts and score can never disagree between surfaces. The tree
     // consumes the Summary's check buckets directly; it never re-groups.
     const summary = deriveSummary(input.outcome);
-    const tree = buildTree(summary.groupChecks, input.outcome.fileCount);
-    const expanded = initialExpanded(tree);
+    // ---- review state (M2): decided items leave the active tree; the
+    // review view (v) shows them dim with their disposition and reason.
+    // The ReviewView owns every decision law; this loop only reads its
+    // rows and swaps in the next view when a/x/u record or reverse —
+    // no parallel copies of suppression/ambiguity bookkeeping.
+    const encodeForView = (raw) => Buffer.from(raw, "utf8").toString("base64url");
+    let view = input.view;
+    // The capture the view derives from, rebuilt the same way the command
+    // layer built it — a/x/u swap in the next view re-derived from it.
+    const captureForView = view !== undefined
+        ? captureScan(input.outcome.targetDir, deriveSummary(input.outcome).groups, (_a = input.outcome.analysisAvailable) !== null && _a !== void 0 ? _a : false, [])
+        : undefined;
+    const deriveViewMaps = () => {
+        var _a;
+        const dispositionByReadKey = new Map();
+        const reasonByReadKey = new Map();
+        const reassessPairs = new Set(((_a = view === null || view === void 0 ? void 0 : view.reassessing) !== null && _a !== void 0 ? _a : []).map((ra) => `${ra.checkKey}\u0000${ra.file}`));
+        const ambiguousReadKeys = new Map();
+        if (view !== undefined) {
+            for (const [readKey, row] of view.rows) {
+                if (row.decision !== undefined && view.suppressedReadKeys.has(readKey)) {
+                    dispositionByReadKey.set(readKey, row.decision.disposition);
+                    reasonByReadKey.set(readKey, row.decision.reason);
+                }
+                if (row.ambiguous !== undefined)
+                    ambiguousReadKeys.set(readKey, row.ambiguous);
+            }
+        }
+        return { dispositionByReadKey, reasonByReadKey, reassessPairs, ambiguousReadKeys };
+    };
+    let { dispositionByReadKey, reasonByReadKey, reassessPairs, ambiguousReadKeys } = deriveViewMaps();
+    const rawKeyOf = (readKey) => view === null || view === void 0 ? void 0 : view.rawKeyByReadKey.get(readKey);
+    const readKeyShares = (readKey) => { var _a; return (_a = ambiguousReadKeys.get(readKey)) !== null && _a !== void 0 ? _a : 1; };
+    let showReviewed = false;
+    let prompt;
+    const decide = (_b = deps.decide) !== null && _b !== void 0 ? _b : ((d) => recordDecision(input.outcome.targetDir, d));
+    const reverse = (_c = deps.reverse) !== null && _c !== void 0 ? _c : ((key) => reverseDecision(input.outcome.targetDir, key));
+    // The readKey of a finding inside the Summary's buckets — the same
+    // join the identity layer namespaces by.
+    const readKeyOf = (meta, f) => readKeyFor(resolveFinding(meta, f).checkKey, f.file, f.line, f.column);
+    const groupCountsFor = (withReviewed) => {
+        var _a;
+        const suppressedReadKeys = (_a = view === null || view === void 0 ? void 0 : view.suppressedReadKeys) !== null && _a !== void 0 ? _a : new Set();
+        if (withReviewed || suppressedReadKeys.size === 0)
+            return summary.groupChecks;
+        return summary.groupChecks
+            .map((gc) => ({
+            ...gc,
+            checks: gc.checks
+                .map((b) => ({ ...b, findings: b.findings.filter((f) => !suppressedReadKeys.has(readKeyOf(gc.group.meta, f))) }))
+                .filter((b) => b.findings.length > 0),
+        }))
+            .filter((gc2) => gc2.checks.length > 0);
+    };
+    const rebuildTrees = () => {
+        var _a;
+        const decided = (_a = view === null || view === void 0 ? void 0 : view.suppressedReadKeys.size) !== null && _a !== void 0 ? _a : 0;
+        trees = {
+            active: buildTree(groupCountsFor(false), input.outcome.fileCount),
+            full: decided === 0
+                ? trees.active
+                : buildTree(groupCountsFor(true), input.outcome.fileCount),
+        };
+        expanded.clear();
+        initialExpanded(trees.active).forEach((k) => expanded.add(k));
+    };
+    let trees = {
+        active: buildTree(groupCountsFor(false), input.outcome.fileCount),
+        full: buildTree(groupCountsFor(true), input.outcome.fileCount),
+    };
+    const tree = () => (showReviewed ? trees.full : trees.active);
+    const expanded = new Set();
+    initialExpanded(trees.active).forEach((k) => expanded.add(k));
     const readKeys = new Set();
     let notice;
-    const currentRows = () => buildListRows(tree, useColor, selectedRow, readKeys, expanded);
+    const currentRows = () => buildListRows(tree(), useColor, selectedRow, readKeys, expanded, { dispositionByReadKey, reassessPairs, ambiguousReadKeys });
     let selectedRow = (() => {
-        const rows = buildListRows(tree, useColor, 0, new Set(), expanded);
+        const rows = buildListRows(trees.active, useColor, 0, new Set(), expanded);
         const first = rows.findIndex(r => r.selectable);
         return first === -1 ? 0 : first;
     })();
@@ -425,6 +534,12 @@ export async function runDashboardOn(env, input, deps = {}) {
         sourceCache.set(file, lines);
         return lines;
     };
+    const decideCommandFor = (item) => {
+        const idKey = rawKeyOf(item.readKey);
+        return idKey !== undefined
+            ? `any-doctor decide --key ${encodeDecisionKey(idKey)} --accepted|--not-applicable --reason "…"`
+            : undefined;
+    };
     const verifyCmdFor = (doctorId) => {
         const doctorPath = input.outcome.doctorPaths.get(doctorId);
         if (doctorPath === undefined)
@@ -443,11 +558,18 @@ export async function runDashboardOn(env, input, deps = {}) {
             if (selRow === null || selRow === void 0 ? void 0 : selRow.item)
                 readKeys.add(selRow.item.readKey);
             return dashboardFrame({
-                tree,
+                tree: tree(),
                 selectedRow,
                 readKeys,
                 readSource,
                 expanded,
+                dispositionByReadKey,
+                reassessPairs,
+                reasonByReadKey,
+                ambiguousReadKeys,
+                prompt: prompt !== undefined
+                    ? { disposition: prompt.disposition, buffer: prompt.buffer, file: prompt.item.site.file, line: prompt.item.site.line, ...(prompt.error === true ? { error: true } : {}) }
+                    : undefined,
                 filesTotal: input.outcome.fileCount,
                 durationMs: input.outcome.durationMs,
                 useColor,
@@ -464,6 +586,15 @@ export async function runDashboardOn(env, input, deps = {}) {
                 + String(err && err.stack ? err.stack : err);
         }
     };
+    const clampSelection = () => {
+        const rows = currentRows();
+        if (selectedRow >= rows.length) {
+            let next = rows.length - 1;
+            while (next >= 0 && !rows[next].selectable)
+                next--;
+            selectedRow = Math.max(0, next);
+        }
+    };
     const step = (dir) => {
         const rows = currentRows();
         let next = selectedRow + dir;
@@ -478,11 +609,81 @@ export async function runDashboardOn(env, input, deps = {}) {
         stdout,
         frame,
         onKey: (key, finish) => {
-            var _a, _b, _c;
-            if (key === "q" || key === "\x03" || key === "esc")
-                return finish();
+            var _a, _b, _c, _d, _e;
             if (key === "ignore")
                 return;
+            // The reason prompt consumes every key until submitted or cancelled.
+            if (prompt !== undefined) {
+                if (key === "esc" || key === "\x03") {
+                    prompt = undefined;
+                    notice = undefined;
+                    return;
+                }
+                if (key === "\r" || key === "\n") {
+                    const reason = prompt.buffer.trim();
+                    if (reason === "") {
+                        prompt = { ...prompt, error: true };
+                        return;
+                    }
+                    const p = prompt;
+                    prompt = undefined;
+                    const idKey = rawKeyOf(p.item.readKey);
+                    if (idKey === undefined) {
+                        notice = "cannot record: no identity key for this finding (rescan)";
+                        return;
+                    }
+                    if (readKeyShares(p.item.readKey) > 1) {
+                        notice = `held back: ${ambiguousReadKeys.get(p.item.readKey)} identical occurrences share this identity — they must diverge before a decision applies`;
+                        return;
+                    }
+                    // Provenance is computed BEFORE the write and passed INTO it, so
+                    // the disk record carries it — adding it only to the in-memory
+                    // copy made the decision resurface as "doctor changed" after
+                    // restart (review probe).
+                    const provRecorded = view !== undefined
+                        ? (() => {
+                            const rev = view.provenance.revisions.get(p.item.checkKey);
+                            return rev !== undefined
+                                ? { revision: rev }
+                                : { programDigest: view.provenance.programDigests.get(p.item.checkKey.split("/")[0]) };
+                        })()
+                        : undefined;
+                    const r = decide({ key: idKey, checkKey: p.item.checkKey, file: p.item.site.file, line: p.item.site.line, disposition: p.disposition, reason, actor: "dashboard",
+                        ...(provRecorded !== undefined ? { provenance: provRecorded } : {}) });
+                    if (!r.ok) {
+                        notice = r.error;
+                        return;
+                    }
+                    // The next view re-derives every law from the updated list.
+                    if (view !== undefined && captureForView !== undefined) {
+                        const prior = view.decisions.find((d) => d.key === idKey);
+                        const now = new Date().toISOString();
+                        const record = {
+                            key: idKey, checkKey: p.item.checkKey, file: p.item.site.file, line: p.item.site.line,
+                            disposition: p.disposition, reason, scope: "local", actor: "dashboard",
+                            createdAt: (_a = prior === null || prior === void 0 ? void 0 : prior.createdAt) !== null && _a !== void 0 ? _a : now, updatedAt: now,
+                            ...(provRecorded !== undefined ? { provenance: provRecorded } : {}),
+                        };
+                        view = withDecision(view, record, encodeForView, captureForView, view.provenance);
+                        ({ dispositionByReadKey, reasonByReadKey, reassessPairs, ambiguousReadKeys } = deriveViewMaps());
+                    }
+                    notice = `${p.disposition === "accepted" ? "accepted" : "not applicable"} — hidden from the active list (v reviews, u undoes)`;
+                    rebuildTrees();
+                    clampSelection();
+                    return;
+                }
+                if (key === "backspace" || key === "\x7f" || key === "\b") {
+                    prompt = { ...prompt, buffer: prompt.buffer.slice(0, -1), error: undefined };
+                    return;
+                }
+                if (key.length === 1 && prompt.buffer.length < 200) {
+                    prompt = { ...prompt, buffer: prompt.buffer + key, error: undefined };
+                    return;
+                }
+                return;
+            }
+            if (key === "q" || key === "\x03" || key === "esc")
+                return finish();
             if (key === "up" || key === "k")
                 return step(-1);
             if (key === "down" || key === "j")
@@ -490,20 +691,55 @@ export async function runDashboardOn(env, input, deps = {}) {
             const rows = currentRows();
             const row = rows[selectedRow];
             const rowKey = toggleKeyOf(row);
+            if (key === "v") {
+                showReviewed = !showReviewed;
+                const decidedCount = (_b = view === null || view === void 0 ? void 0 : view.suppressedReadKeys.size) !== null && _b !== void 0 ? _b : 0;
+                notice = showReviewed && decidedCount > 0
+                    ? `review view — ${decidedCount} decided finding${decidedCount === 1 ? "" : "s"} shown dim`
+                    : undefined;
+                selectedRow = 0;
+                step(1);
+                return;
+            }
+            if ((key === "a" || key === "x") && (row === null || row === void 0 ? void 0 : row.item) !== undefined && row.reviewed === undefined) {
+                prompt = { disposition: key === "a" ? "accepted" : "not-applicable", buffer: "", item: row.item };
+                notice = undefined;
+                return;
+            }
+            if (key === "u" && (row === null || row === void 0 ? void 0 : row.item) !== undefined && row.reviewed !== undefined) {
+                const idKey = rawKeyOf(row.item.readKey);
+                if (idKey === undefined) {
+                    notice = "cannot reverse: no identity key (rescan)";
+                    return;
+                }
+                const r = reverse(idKey);
+                if (!r.ok) {
+                    notice = r.error;
+                    return;
+                }
+                if (view !== undefined && captureForView !== undefined) {
+                    view = withoutDecision(view, idKey, encodeForView, captureForView, view.provenance);
+                    ({ dispositionByReadKey, reasonByReadKey, reassessPairs, ambiguousReadKeys } = deriveViewMaps());
+                }
+                notice = "decision reversed — the finding returns to the active list";
+                rebuildTrees();
+                clampSelection();
+                return;
+            }
             if (key === "c") {
                 // Copy at the level you're on: one finding, a whole check, or an
                 // entire doctor — the bulk task is the natural agent unit.
                 if (row === null || row === void 0 ? void 0 : row.item) {
-                    copy(fixPrompt(row.item, verifyCmdFor(row.item.doctorId)), "copied finding");
+                    copy(fixPrompt(row.item, verifyCmdFor(row.item.doctorId), decideCommandFor(row.item)), "copied finding");
                 }
                 else if (row === null || row === void 0 ? void 0 : row.check) {
                     const check = row.check;
-                    const items = (_c = (_b = (_a = tree.find(d => d.doctorId === check.doctorId)) === null || _a === void 0 ? void 0 : _a.checks.find(g => g.checkKey === check.checkKey)) === null || _b === void 0 ? void 0 : _b.items) !== null && _c !== void 0 ? _c : [];
+                    const items = (_e = (_d = (_c = tree().find(d => d.doctorId === check.doctorId)) === null || _c === void 0 ? void 0 : _c.checks.find(g => g.checkKey === check.checkKey)) === null || _d === void 0 ? void 0 : _d.items) !== null && _e !== void 0 ? _e : [];
                     copy(checkFixPrompt(items, verifyCmdFor(check.doctorId)), `copied ${items.length} findings from ${check.checkKey}`);
                 }
                 else if (row === null || row === void 0 ? void 0 : row.doctor) {
                     const doctor = row.doctor;
-                    const group = tree.find(d => d.doctorId === doctor.doctorId);
+                    const group = tree().find(d => d.doctorId === doctor.doctorId);
                     copy(doctorFixPrompt(doctor, group, verifyCmdFor(doctor.doctorId)), `copied ${doctor.count} findings from ${doctor.doctorId}`);
                 }
                 return;
@@ -554,7 +790,7 @@ export async function runDashboardOn(env, input, deps = {}) {
                 }
                 if (!(row === null || row === void 0 ? void 0 : row.item))
                     return;
-                copy(fixPrompt(row.item, verifyCmdFor(row.item.doctorId)), "copied finding");
+                copy(fixPrompt(row.item, verifyCmdFor(row.item.doctorId), decideCommandFor(row.item)), "copied finding");
                 return;
             }
         },

@@ -1,11 +1,11 @@
-import { resolveFinding, severityRank } from "./contract.js";
+import { readKeyFor, resolveFinding, severityRank } from "./contract.js";
 import { scoreFromFileHealth } from "./score.js";
 // The Finding↔Meta join as a flat list. Production trees join per-bucket
 // (siteOf inside buildTree); buildItems serves tests and any flat-item
 // consumer that wants the same join.
 function siteOf(meta, f) {
     const j = resolveFinding(meta, f);
-    return { ...j, readKey: j.checkKey + "@" + f.file + ":" + f.line, site: f };
+    return { ...j, readKey: readKeyFor(j.checkKey, f.file, f.line, f.column), site: f };
 }
 export function buildItems(groups) {
     const items = [];

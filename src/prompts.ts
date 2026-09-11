@@ -17,19 +17,23 @@ function promptHeading(severity: Severity, description: string, checkKey: string
   return `${severity.toUpperCase()} · ${description} (${checkKey})`;
 }
 
-function scopeTail(scopeLine: string, verifyCommand: string, plural = false): string[] {
-  return [
+function scopeTail(scopeLine: string, verifyCommand: string, plural = false, decideCommand?: string): string[] {
+  const lines = [
     "",
     "Scope:",
     scopeLine,
-    `- Fix the root cause; do not suppress, disable, or silence ${plural ? "any of these checks" : "the check"}.`,
+    "- Investigate first; fix the root cause when the finding is real.",
+    "- If it is intentional or misread for this code, record a decision instead — never silence or disable the check itself.",
     "- Keep unrelated refactors out of this pass.",
-    "",
-    `Verify with \`${verifyCommand}\` and confirm the finding${plural ? "s are" : " is"} gone before moving on.`,
   ];
+  if (decideCommand !== undefined) {
+    lines.push(`- Record the decision with: \`${decideCommand}\``);
+  }
+  lines.push("", `Verify with \`${verifyCommand}\` and confirm the finding${plural ? "s are" : " is"} gone before moving on.`);
+  return lines;
 }
 
-export function fixPrompt(item: SiteFinding, verifyCommand: string): string {
+export function fixPrompt(item: SiteFinding, verifyCommand: string, decideCommand?: string): string {
   const site = item.site;
   const lines: string[] = [
     "Fix exactly one any-doctor finding:",
@@ -41,7 +45,7 @@ export function fixPrompt(item: SiteFinding, verifyCommand: string): string {
   if (item.impact) lines.push("", "Impact " + item.impact);
   if (item.why) lines.push("", "Why " + item.why);
   if (item.fix) lines.push("", "Suggested fix: " + item.fix);
-  lines.push(...scopeTail(`- Fix only ${item.checkKey} at this site.`, verifyCommand));
+  lines.push(...scopeTail(`- Fix only ${item.checkKey} at this site.`, verifyCommand, false, decideCommand));
   return lines.join("\n");
 }
 

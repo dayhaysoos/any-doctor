@@ -2,14 +2,15 @@ import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { Finding, resolveFinding, ReportGroup, Severity } from "./contract.js";
+import { resolveFinding, ReportGroup, Severity } from "./contract.js";
 import { CohortSpec, runCohort } from "./cohort.js";
 import { deriveSummary } from "./summary.js";
-import { withinDir } from "./contract.js";
+import {
+  captureScan, Entry, entriesOf, identityKeyOf, invalidateChangedFiles, ScanCapture,
+} from "./scan-capture.js";
 import {
   compareOccurrences, comparableScans, digestTextFile, DoctorDigest, doctorDigests,
-  extractEvidence, EvidenceInput, EvidenceReport,
-  IDENTITY_SCHEMA_VERSION, ScanComparison, ScanProvenance, scanProvenance, spansProvider,
+  EvidenceReport, IDENTITY_SCHEMA_VERSION, ScanComparison, ScanProvenance, scanProvenance,
 } from "./identity.js";
 
 // Diff mode: the stateless baseline. No file is committed, nothing goes
@@ -90,51 +91,6 @@ function git(args: string[], cwd: string): { ok: true; out: string } | { ok: fal
   return { ok: true, out: String(r.stdout).trim() };
 }
 
-// One finding zipped with the group that emitted it and the checkKey the
-// identity layer namespaces by — parallel to the neutral evidence array.
-interface Entry {
-  f: Finding;
-  g: ReportGroup;
-  checkKey: string;
-}
-
-function entriesOf(groups: ReportGroup[]): Entry[] {
-  const out: Entry[] = [];
-  for (const g of groups) {
-    for (const f of g.findings) {
-      out.push({ f, g, checkKey: resolveFinding(g.meta, f).checkKey });
-    }
-  }
-  return out;
-}
-
-function evidenceInputOf(e: Entry): EvidenceInput {
-  return {
-    checkKey: e.checkKey,
-    file: e.f.file,
-    line: e.f.line,
-    ...(e.f.column !== undefined ? { column: e.f.column } : {}),
-    ...(e.f.evidence !== undefined ? { evidence: e.f.evidence } : {}),
-  };
-}
-
-// Evidence reads stay inside the scanned root — a finding's file string is
-// doctor-supplied data, and the host's read must not become an escape hatch
-// the confined doctor itself could never take. withinDir is the strict
-// containment form's one home (a scan root is a directory, not a prefix).
-function readFileFrom(root: string): (rel: string) => string | null {
-  const containmentRoot = path.resolve(root);
-  return (rel: string): string | null => {
-    const abs = path.resolve(root, rel);
-    if (!withinDir(abs, containmentRoot)) return null;
-    try {
-      return fs.readFileSync(abs, "utf8");
-    } catch {
-      return null;
-    }
-  };
-}
-
 // The rich projection of chosen entries — severities and doctor ids for the
 // gate and the report, joined back through the identity layer's indices.
 function joinFindings(entries: Entry[], indices: number[]): DiffFinding[] {
@@ -151,69 +107,12 @@ function joinFindings(entries: Entry[], indices: number[]): DiffFinding[] {
   });
 }
 
-// What the HEAD side's scan actually saw, captured at scan-adjacency by
-// the command layer: the doctor digests taken BEFORE the head scan, and
-// the evidence extracted immediately AFTER it from an immutable source
-// capture (one read per file with findings — the evidence bytes and the
-// retained bytes are the same bytes by construction). Evidence read
-// later, after the base scan and any number of file edits, described
-// whatever the disk held at read time, not what the scan saw (review
-// finding 2: scan v2, restore v1, compare → false continuity).
-export interface HeadScanCapture {
-  groups: ReportGroup[];
-  analysisAvailable: boolean;
-  digests: DoctorDigest[];
-  evidence: EvidenceReport;
-  sources: Map<string, string>;
-}
-
-export function captureHeadScan(
-  targetDir: string,
-  headGroups: ReportGroup[],
-  analysisAvailable: boolean,
-  digests: DoctorDigest[],
-): HeadScanCapture {
-  const entries = entriesOf(headGroups);
-  const reader = readFileFrom(targetDir);
-  const sources = new Map<string, string>();
-  for (const input of entries.map(evidenceInputOf)) {
-    if (!sources.has(input.file)) {
-      const source = reader(input.file);
-      if (source !== null) sources.set(input.file, source);
-    }
-  }
-  const fromCapture = (file: string): string | null => sources.get(file) ?? null;
-  const evidence = extractEvidence(entries.map(evidenceInputOf), fromCapture, spansProvider(analysisAvailable));
-  return { groups: headGroups, analysisAvailable, digests, evidence, sources };
-}
-
-// The HEAD side's consistency recheck: if a file changed on disk since
-// its scan-adjacent capture, the capture no longer describes the working
-// tree this diff is reporting on — every occurrence in that file goes
-// stale (never a false continuity through borrowed bytes). The base side
-// needs no recheck: its worktree is materialized once by git and removed
-// at the end, so its bytes cannot change under the scan. What this
-// cannot catch is an edit DURING a scan itself — a documented residual,
-// never a guarantee.
-function invalidateChangedHeadFiles(head: HeadScanCapture, targetDir: string): void {
-  if (head.sources.size === 0) return;
-  const reader = readFileFrom(targetDir);
-  const changed = new Set<string>();
-  for (const [file, captured] of head.sources) {
-    if (reader(file) !== captured) changed.add(file);
-  }
-  if (changed.size === 0) return;
-  for (const o of head.evidence.occurrences) {
-    if (changed.has(o.file)) o.lineDigest = null;
-  }
-}
-
 // The HEAD cohort has already run and its capture has been taken at
 // scan-adjacency by the caller; only the base side scans here.
 export async function runDiff(
   spec: CohortSpec,
   baseRef: string,
-  head: HeadScanCapture,
+  head: ScanCapture,
 ): Promise<DiffResult> {
   const repoRootR = git(["rev-parse", "--show-toplevel"], spec.targetDir);
   if (!repoRootR.ok) {
@@ -276,21 +175,14 @@ export async function runDiff(
       baseGroups = deriveSummary(baseRun).groups;
       baseAnalysisAvailable = baseRun.analysisAvailable ?? false;
       baseDigestsPost = baseDigests;
-      const baseReader = readFileFrom(baseTarget);
-      const baseScanEntries = entriesOf(baseGroups);
-      for (const input of baseScanEntries.map(evidenceInputOf)) {
-        if (!baseSources.has(input.file)) {
-          const source = baseReader(input.file);
-          if (source !== null) baseSources.set(input.file, source);
-        }
-      }
-      const fromBaseCapture = (file: string): string | null => baseSources.get(file) ?? null;
-      baseEvidence = extractEvidence(baseScanEntries.map(evidenceInputOf), fromBaseCapture, spansProvider(baseAnalysisAvailable));
+      const baseCapture = captureScan(baseTarget, baseGroups, baseAnalysisAvailable, baseDigests);
+      baseSources = baseCapture.sources;
+      baseEvidence = baseCapture.evidence;
     } else {
       baseDigestsPost = baseDigests;
     }
 
-    const headEntries = entriesOf(head.groups);
+    const headEntries = head.entries;
     const baseEntries = entriesOf(baseGroups);
     const provenance = {
       head: scanProvenance(spec.doctors, head.analysisAvailable, head.digests),
@@ -305,7 +197,7 @@ export async function runDiff(
     // describes the bytes that were about to run when it ran.
     let cmp: ScanComparison;
     if (comparable) {
-      invalidateChangedHeadFiles(head, spec.targetDir);
+      invalidateChangedFiles(head, spec.targetDir);
       cmp = compareOccurrences(baseEvidence.occurrences, head.evidence.occurrences);
     } else {
       cmp = {

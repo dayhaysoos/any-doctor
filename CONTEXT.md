@@ -360,8 +360,11 @@ and applicability rules.
   digest, indentation-relative column, and innermost enclosing function span —
   computed per comparison from one post-scan read, never persisted.
 - **Observation:** evidence that a finding was detected in a particular scan.
-- **Decision:** a reasoned accepted/not-applicable disposition with local or project
-  scope; it changes review state, not the raw observation.
+- **Decision** *(landed locally, D31)*: a reasoned accepted/not-applicable
+  disposition with a required reason, stored in the local decisions file,
+  reversible, attached to a Finding identity — it changes review state
+  (the active list), never the raw observation, and never the gate.
+  Project scope (Git-shared) is M3.
 - **Continuing** *(landed in the diff path)*: a head occurrence matched to a
   compatible base occurrence by identity — movement is not addition. Matches
   resting on content alone are flagged contextFallback; identical copies
@@ -369,5 +372,6 @@ and applicability rules.
 - **No longer detected** *(landed in the diff path)*: absence established by
   compatible, completed coverage.
 - **Claimed fix:** a recorded explanation of remediation, separate from rescan evidence.
-- **Reassessment:** a decision requires review because identity or applicability is
-  changed, conflicting, or uncertain.
+- **Reassessment** *(landed locally)*: a decision requires review because
+  its evidence changed — the finding resurfaces with a warning; the
+  decision is never silently carried.

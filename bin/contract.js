@@ -159,6 +159,15 @@ export function narrowedCheckIds(meta) {
     var _a;
     return ((_a = meta.checks) !== null && _a !== void 0 ? _a : []).filter((c) => c.needs !== undefined && c.needs.length > 0).map((c) => c.id);
 }
+// The within-run occurrence handle: checkKey plus coordinates, COLUMN
+// INCLUDED — two findings on one line are two occurrences, and one
+// decision must never hide both (the review-probe bug: this key dropped
+// columns, so display filters suppressed by line). One home — the
+// identity layer keys evidence by it, decisions address findings by it,
+// and every surface composes it from these parts.
+export function readKeyFor(checkKey, file, line, column) {
+    return `${checkKey}@${file}:${line}${column !== undefined ? `:${column}` : ""}`;
+}
 export function resolveFinding(meta, finding) {
     var _a, _b, _c, _d, _e, _f, _g;
     const checkId = (_a = finding.rule) !== null && _a !== void 0 ? _a : meta.id;

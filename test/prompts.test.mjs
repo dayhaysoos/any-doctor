@@ -123,6 +123,6 @@ test("doctorFixPrompt says any-of-these-checks for multi-check tasks", async () 
   const gc = gcOf(multiGroups);
   const tree = buildTree(gc, 10);
   const prompt = doctorFixPrompt(summarizeDoctor(tree[0]), tree[0], "any-doctor run x y");
-  assert.match(prompt, /do not suppress, disable, or silence any of these checks/);
+  assert.match(prompt, /never silence or disable the check itself/);
   assert.match(prompt, /confirm the findings are gone/);
 });

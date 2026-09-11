@@ -129,6 +129,64 @@ function validatedRange(f, lines) {
 function stripCr(raw) {
     return raw.endsWith("\r") ? raw.slice(0, -1) : raw;
 }
+// The conservative span for LINE-SCOPED findings (no doctor-supplied
+// range): the flagged line PLUS continuation lines until the line's
+// brackets balance (capped), joined into the digest. Strictly
+// conservative — it can only turn "same" into "different," never miss a
+// change — because it only ADDS content to compare. An edit on a
+// continuation line of a multiline expression now breaks identity (the
+// review probe: flag('s argument changed on the next line; the decision
+// carried). Unbalanced-past-cap falls back to the flagged line alone
+// (unchanged behavior, documented).
+const SPAN_MAX_CONTINUATION_LINES = 10;
+function conservativeSpan(lines, startLine, flagged) {
+    let depth = bracketDepth(flagged);
+    if (depth <= 0)
+        return flagged;
+    const parts = [flagged];
+    // l runs to lines.length INCLUSIVE: the final physical line exists in
+    // the split even without a trailing newline (review probe missed it).
+    for (let l = startLine + 1; l <= lines.length && l - startLine <= SPAN_MAX_CONTINUATION_LINES; l++) {
+        const next = lines[l - 1].endsWith("\r") ? lines[l - 1].slice(0, -1) : lines[l - 1];
+        parts.push(next);
+        // RUNNING depth, not per-line: an inner closing bracket (net -1 on a
+        // line) does not end the expression while an outer bracket is still
+        // open — the span ends only when the total reaches zero.
+        depth += bracketDepth(next);
+        if (depth <= 0)
+            break;
+    }
+    return parts.join("\n");
+}
+// Net bracket depth of a line, ignoring brackets inside strings and
+// comments (the same quote-awareness normalizeLine already implements —
+// a simpler count is fine here because false-positive depth only makes
+// the span LONGER, and false-negative only falls back to line-only).
+function bracketDepth(line) {
+    let depth = 0;
+    let inStr = null;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (inStr !== null) {
+            if (ch === "\\")
+                i++;
+            else if (ch === inStr)
+                inStr = null;
+            continue;
+        }
+        if (ch === '"' || ch === "'" || ch === "`") {
+            inStr = ch;
+            continue;
+        }
+        if (ch === "/" && line[i + 1] === "/")
+            break;
+        if (ch === "(" || ch === "[" || ch === "{")
+            depth++;
+        else if (ch === ")" || ch === "]" || ch === "}")
+            depth--;
+    }
+    return depth;
+}
 // The covered span's text: from the finding's start position (or the
 // line's start when no column) through the exclusive end.
 function rangeText(lines, f, range) {
@@ -331,7 +389,7 @@ export function extractEvidence(findings, readSource, spansFor) {
             ...f,
             lineDigest: range !== null
                 ? digestOf(normalizeLine(rangeText(facts.lines, f, range)))
-                : digestOf(normalizeLine(line)),
+                : digestOf(normalizeLine(conservativeSpan(facts.lines, f.line, line))),
             relColumn: f.column !== undefined ? Math.max(0, f.column - indent) : null,
             contextId: facts.ids !== null ? enclosingContext(facts.spans, facts.ids, f.line, (_a = f.column) !== null && _a !== void 0 ? _a : 0) : null,
             scope: range !== null ? "range" : "line",
@@ -453,4 +511,19 @@ export function spansProvider(engineOn) {
 }
 export function analysisEngineAvailable() {
     return analysisStatus().available;
+}
+// Doctor provenance for a scan's decisions (review-probe fix): per-check
+// authored revision when the check declares one; whole-program digest
+// otherwise. Computed by the command layer, which alone holds the doctor
+// program paths.
+export function computeScanProvenance(groups, programDigests) {
+    var _a;
+    const revisions = new Map();
+    for (const g of groups) {
+        for (const check of (_a = g.meta.checks) !== null && _a !== void 0 ? _a : []) {
+            if (check.revision !== undefined)
+                revisions.set(`${g.meta.id}/${check.id}`, check.revision);
+        }
+    }
+    return { revisions, programDigests };
 }

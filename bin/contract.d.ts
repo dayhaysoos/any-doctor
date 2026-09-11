@@ -22,6 +22,12 @@ export interface CheckMeta {
     onUnknown?: "narrow" | "skip";
     /** Unit counted by certification; occurrence checks require a two-location witness. */
     reportingUnit?: "occurrence" | "file" | "project";
+    /** Semantic revision of this check's MEANING, authored by hand: bump it
+     *  when the check detects something different; cosmetic doctor edits do
+     *  not bump it. Recorded decisions stay compatible while the revision is
+     *  unchanged; without a revision, the whole-program digest governs (and
+     *  any doctor edit resurfaces decisions — the churn revision prevents). */
+    revision?: number;
 }
 export interface DoctorMeta {
     id: string;
@@ -318,6 +324,7 @@ export declare function includeTestsFor(mode: Mode): boolean;
 export declare function runCommandFor(doctorPath: string, root: string, invoker?: string): string;
 export declare function compareFindings(expected: ExpectedFinding[], actual: Finding[]): FixtureDiff;
 export declare function narrowedCheckIds(meta: DoctorMeta): string[];
+export declare function readKeyFor(checkKey: string, file: string, line: number, column?: number): string;
 export interface JoinedFinding {
     doctorId: string;
     checkId: string;
