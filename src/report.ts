@@ -234,7 +234,12 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
     target: input.targetDir,
     fileCount: input.fileCount,
     durationMs: input.durationMs,
-    score: summary.score,
+    // An invalidated grade is withheld in JSON exactly as in prose: a
+    // partial (crashed/broken) or empty scan emits null score/grade —
+    // never a vacuous 100/Excellent the flag then contradicts.
+    score: summary.score.partialScan === true || summary.score.emptyScan === true
+      ? { ...summary.score, score: null, grade: null }
+      : summary.score,
     counts: { ...summary.severityCounts, total: summary.total, hiddenDuplicates: summary.hidden },
     analysisAvailable: input.analysisAvailable ?? false,
     emptyScan: summary.emptyScan,

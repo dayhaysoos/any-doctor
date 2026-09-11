@@ -920,7 +920,9 @@ test("agent surface: a broken doctor fails ALWAYS and never corrupts JSON stdout
     const j = JSON.parse(text); // pure JSON — the warning rode stderr
     assert.ok(Array.isArray(j.broken) && j.broken.some(b => b.id === "async-doctor"),
       "the broken doctor is structured failure data in JSON");
-    assert.equal(j.score.partialScan, true, "a broken scan withholds the grade — no false 100/Excellent");
+    assert.equal(j.score.partialScan, true, "a broken scan withholds the grade");
+    assert.equal(j.score.score, null, "the invalidated number is nulled, not 100-with-a-flag");
+    assert.equal(j.score.grade, null, "and the grade word too");
     const stderr = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
     assert.match(stderr, /skipping broken doctor async-doctor/, "the human warning is on stderr");
   } finally {

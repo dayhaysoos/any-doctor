@@ -39,7 +39,7 @@ export function scoreFromFileHealth(perFile, filesTotal) {
     const score = filesTotal <= 0
         ? 100
         : Math.max(0, Math.min(100, Math.floor(100 * (1 - burden / filesTotal))));
-    return { score, grade: gradeFor(score), filesClean: Math.max(0, filesTotal - worst.size), filesTotal };
+    return { score, grade: gradeFor(score), filesClean: Math.max(0, filesTotal - worst.size), filesTotal, emptyScan: filesTotal <= 0 };
 }
 export function computeScore(groups, filesTotal) {
     return scoreFromFileHealth(groups.flatMap(g => g.findings.map(f => ({ file: f.file, severity: findingSeverity(g, f) }))), filesTotal);

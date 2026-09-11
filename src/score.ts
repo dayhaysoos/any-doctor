@@ -5,6 +5,9 @@ export interface ScoreResult {
   grade: string;
   filesClean: number;
   filesTotal: number;
+  // True when the scan saw zero files (isEmptyScan's predicate — the
+  // computed 100 is vacuous and every surface renders n/a).
+  emptyScan: boolean;
   // True when doctors crashed during the scan: the computed score is a
   // partial-scan artifact (crashed doctors contributed no findings), so
   // every surface must withhold the grade — never render an inflated
@@ -51,7 +54,7 @@ export function scoreFromFileHealth(perFile: { file: string; severity: Severity 
   const score = filesTotal <= 0
     ? 100
     : Math.max(0, Math.min(100, Math.floor(100 * (1 - burden / filesTotal))));
-  return { score, grade: gradeFor(score), filesClean: Math.max(0, filesTotal - worst.size), filesTotal };
+  return { score, grade: gradeFor(score), filesClean: Math.max(0, filesTotal - worst.size), filesTotal, emptyScan: filesTotal <= 0 };
 }
 
 export function computeScore(groups: ReportGroup[], filesTotal: number): ScoreResult {

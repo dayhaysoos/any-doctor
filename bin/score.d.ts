@@ -4,6 +4,7 @@ export interface ScoreResult {
     grade: string;
     filesClean: number;
     filesTotal: number;
+    emptyScan: boolean;
     partialScan?: boolean;
 }
 export declare function findingSeverity(g: ReportGroup, f: Finding): Severity;
