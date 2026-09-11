@@ -76,7 +76,7 @@ export const fixtures = [
   characters — an unmasked `/["']/ ` opens a phantom string that swallows
   every line after it. Never carry a private masking copy.
 - `ctx.search.pattern(pattern, language?)` → `[{ file, line, column, text, endLine?, endColumn?, captures? }]`
-  (ast-grep pattern syntax, e.g. `"fetch($URL)"`; requires ast-grep installed;
+  (ast-grep pattern syntax, e.g. `"fetch($URL)"`; the engine ships with any-doctor — nothing to install;
   respects the same test-path exclusion — `--include-tests` includes them)
 - `ctx.search.rule(query, language?)` → same Match shape — a composite
   structural question: `{ pattern, inside: { pattern, stopBy? } }` (see below)

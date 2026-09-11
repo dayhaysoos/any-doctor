@@ -38,6 +38,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@ast-grep/cli": "^0.45.3",
     "@typescript-eslint/scope-manager": "^8.70.0",
     "effect": "^4.0.0-beta.107",
     "eslint-scope": "^9.1.2",

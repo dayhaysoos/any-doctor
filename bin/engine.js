@@ -1,4 +1,62 @@
 import { spawnSync } from "child_process";
+import * as fs from "fs";
+import { createRequire } from "module";
+import * as path from "path";
+// The Engine: the one place that knows how to run ast-grep. The search
+// host sits on it — there is exactly one path from ctx.search to here
+// (the sdk asks the host; a channel-less ctx.search fails loudly, so no
+// unconfined route exists). CONTEXT.md names this seam: ast-grep today; a
+// different backend slots in here alone.
+//
+// The binary ships WITH the package (@ast-grep/cli, its platform binaries
+// as npm optionalDependencies — the same distribution pattern as oxc).
+// A user installs nothing: npx/npm install pulls the right platform
+// binary automatically. Resolution order, one home, tried once and cached:
+//   1. the postinstall copy inside @ast-grep/cli,
+//   2. the platform package's own binary (present even under
+//      --ignore-scripts, where postinstall never ran),
+//   3. ast-grep on PATH, then sg (for machines that already have it),
+//   4. the loud error — unsupported platforms only.
+const require_ = createRequire(import.meta.url);
+let cachedBinary;
+export function resolveAstGrepBinary() {
+    var _a;
+    if (cachedBinary !== undefined)
+        return cachedBinary;
+    const candidates = [];
+    try {
+        const pkgRoot = path.dirname(require_.resolve("@ast-grep/cli/package.json"));
+        candidates.push(path.join(pkgRoot, "ast-grep"), path.join(pkgRoot, "ast-grep.exe"));
+        const pkg = JSON.parse(fs.readFileSync(path.join(pkgRoot, "package.json"), "utf8"));
+        const platformSuffix = `-${process.platform}-${process.arch}`;
+        for (const dep of Object.keys((_a = pkg.optionalDependencies) !== null && _a !== void 0 ? _a : {})) {
+            if (dep.includes(platformSuffix)) {
+                try {
+                    const depRoot = path.dirname(require_.resolve(`${dep}/package.json`));
+                    candidates.push(path.join(depRoot, "ast-grep"), path.join(depRoot, "ast-grep.exe"));
+                }
+                catch {
+                    // not installed on this machine — next candidate
+                }
+            }
+        }
+    }
+    catch {
+        // @ast-grep/cli absent (unsupported install) — PATH is next
+    }
+    for (const candidate of candidates) {
+        try {
+            fs.accessSync(candidate, fs.constants.X_OK);
+            cachedBinary = candidate;
+            return cachedBinary;
+        }
+        catch {
+            // next candidate
+        }
+    }
+    cachedBinary = null;
+    return null;
+}
 // One batched query over a real repo emits tens of megabytes of JSON (the
 // async-doctor pilot's ten patterns produce 24MB over a 979-file repo) —
 // spawnSync's 1MB default truncates that mid-array, and the crash reads as
@@ -12,6 +70,12 @@ const MAX_BUFFER_BYTES = 256 * 1024 * 1024;
 // first try.
 const SPAWN_OPTS = { encoding: "utf8", timeout: 120000, maxBuffer: MAX_BUFFER_BYTES };
 function invoke(args, root) {
+    const bundled = resolveAstGrepBinary();
+    if (bundled !== null) {
+        return spawnSync(bundled, [...args, root], SPAWN_OPTS);
+    }
+    // No bundled binary (unsupported platform or stripped install): the
+    // user's own ast-grep, then its old name.
     let r = spawnSync("ast-grep", [...args, root], SPAWN_OPTS);
     if (r.error && r.error.code === "ENOENT") {
         r = spawnSync("sg", [...args, root], SPAWN_OPTS);
@@ -57,7 +121,10 @@ export function runEngine(query, language, root) {
     }
     const r = invoke(args, root);
     if (missingEngine(r)) {
-        return { ok: false, error: "ctx.search requires ast-grep (ast-grep or sg) on PATH — install: brew install ast-grep" };
+        return {
+            ok: false,
+            error: "ctx.search needs the ast-grep engine: it ships with any-doctor (@ast-grep/cli installs the binary for your platform automatically). It was not found in this install and is not on PATH — reinstall any-doctor, or install ast-grep separately and put it on PATH.",
+        };
     }
     if (isBufferOverflow(r)) {
         return {
