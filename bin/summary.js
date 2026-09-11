@@ -92,6 +92,9 @@ function expandChecks(g) {
                 ruleId: (_a = f.rule) !== null && _a !== void 0 ? _a : null,
                 heading: j.description,
                 severity: j.declaredSeverity,
+                ...(j.impact !== undefined ? { impact: j.impact } : {}),
+                ...(j.why !== undefined ? { why: j.why } : {}),
+                ...(j.fix !== undefined ? { fix: j.fix } : {}),
                 findings: [],
             });
         }

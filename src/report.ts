@@ -227,7 +227,7 @@ export interface JsonReview {
   dormant: number;
 }
 
-export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult, review?: JsonReview): string {
+export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult, review?: JsonReview, broken: { id: string; detail: string }[] = []): string {
   return JSON.stringify({
     schema: 1,
     tool: "any-doctor",
@@ -244,6 +244,9 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
         ...(b.ruleId !== null ? { rule: b.ruleId } : {}),
         heading: b.heading,
         severity: b.severity,
+        ...(b.impact !== undefined ? { impact: b.impact } : {}),
+        ...(b.why !== undefined ? { why: b.why } : {}),
+        ...(b.fix !== undefined ? { fix: b.fix } : {}),
         findings: b.findings.map(f => {
           const readKey = readKeyFor(`${gc.group.meta.id}/${b.ruleId ?? gc.group.meta.id}`, f.file, f.line, f.column);
           const ann = review?.annotations.get(readKey);
@@ -261,6 +264,9 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
       ...(gc.group.meta.blindSpots !== undefined && gc.group.meta.blindSpots.length > 0 ? { blindSpots: gc.group.meta.blindSpots } : {}),
     })),
     crashed: input.crashed.map(cr => ({ id: cr.id, detail: cr.detail })),
+    // Discovery failures — an unreadable program is infrastructure, not
+    // a finding; it fails the run always and says so here.
+    broken: broken.map(b => ({ id: b.id, detail: b.detail })),
     skippedUnsafe: input.skippedUnsafe,
     gate: {
       failOn: gate.failOn,

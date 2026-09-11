@@ -4,6 +4,9 @@ export interface CheckBucket {
     ruleId: string | null;
     heading: string;
     severity: Severity;
+    impact?: string;
+    why?: string;
+    fix?: string;
     findings: Finding[];
 }
 export interface GroupChecks {

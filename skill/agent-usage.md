@@ -11,15 +11,25 @@ npx any-doctor@latest run --all <dir> --format json
 ```
 
 One JSON object on stdout (diagnostics on stderr — ignore stderr unless
-the exit code is nonzero). Every finding carries:
+the exit code is nonzero). Structure: `groups` → `checks` → `findings`.
+Replace `<dir>` with the SAME target directory in every command — state
+and decisions live per directory, and omitting it targets your current
+working directory.
 
-- `file`, `line`, `column`, `severity`, `message`
+Each check carries `heading`, `severity`, and the explanation fields
+`impact`, `why`, `fix` (present when the doctor declared them) — read
+these to investigate. Each finding carries:
+
+- `file`, `line` — always; `column`, `severity`, `message` — optional
 - `decisionKey` — the finding's stable identity; use it to record decisions
-- `decision` — present only when a decision already applies to it
+- `decision` — present only when a decision already applies (decided
+  findings stay in this raw list, annotated; the human report hides them)
 
-Exit codes: crashes and skipped doctors fail ALWAYS. `--fail-on
-error|warning|info` sets a bar over RAW findings — recorded decisions
-never flip a gate, so dismissing findings cannot fake a clean run.
+Exit codes: crashes, broken doctors (unreadable programs), and skipped
+doctors fail ALWAYS, and appear in the JSON as `crashed`, `broken`, and
+`skippedUnsafe`. `--fail-on error|warning|info` sets a bar over RAW
+findings — recorded decisions never flip a gate, so dismissing findings
+cannot fake a clean run.
 
 ## The workflow
 
@@ -41,9 +51,12 @@ decide.
 ## Recording decisions
 
 ```bash
-npx any-doctor@latest decide --key <decisionKey> --accepted --reason "<why>"
-npx any-doctor@latest decide --key <decisionKey> --not-applicable --reason "<why>"
+npx any-doctor@latest decide --key <decisionKey> --accepted --reason "<why>" <dir>
+npx any-doctor@latest decide --key <decisionKey> --not-applicable --reason "<why>" <dir>
 ```
+
+(With `--file`/`--line` resolution instead of `--key`, pass the doctor
+path too: `decide --file <f> --line <n> --accepted --reason "…" <doctor> <dir>`.)
 
 - `--accepted`: the concern is real but the code is intentional.
 - `--not-applicable`: the check's interpretation is wrong for this code.
@@ -59,6 +72,9 @@ are reversible:
 npx any-doctor@latest decisions <dir> --json     # inspect state
 npx any-doctor@latest decisions <dir> --reverse <key>
 ```
+
+State lives in `<dir>/.any-doctor/decisions.local.json` — the directory
+you scanned, not the one you run from.
 
 ## Diff against a base
 

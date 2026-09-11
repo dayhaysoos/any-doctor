@@ -56,5 +56,8 @@ export interface JsonReview {
     }[];
     dormant: number;
 }
-export declare function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult, review?: JsonReview): string;
+export declare function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVerdict, diff?: DiffResult, review?: JsonReview, broken?: {
+    id: string;
+    detail: string;
+}[]): string;
 export declare function renderVerifyResult(result: VerifyRunResult, useColor: boolean): string;

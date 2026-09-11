@@ -163,7 +163,7 @@ export function renderReport(input, useColor, diff, review) {
     pushReviewNotices(lines, review, c);
     return lines.join("\n").replace(/\n+$/, "");
 }
-export function renderJson(input, summary, gate, diff, review) {
+export function renderJson(input, summary, gate, diff, review, broken = []) {
     var _a;
     return JSON.stringify({
         schema: 1,
@@ -181,6 +181,9 @@ export function renderJson(input, summary, gate, diff, review) {
                 ...(b.ruleId !== null ? { rule: b.ruleId } : {}),
                 heading: b.heading,
                 severity: b.severity,
+                ...(b.impact !== undefined ? { impact: b.impact } : {}),
+                ...(b.why !== undefined ? { why: b.why } : {}),
+                ...(b.fix !== undefined ? { fix: b.fix } : {}),
                 findings: b.findings.map(f => {
                     var _a;
                     const readKey = readKeyFor(`${gc.group.meta.id}/${(_a = b.ruleId) !== null && _a !== void 0 ? _a : gc.group.meta.id}`, f.file, f.line, f.column);
@@ -199,6 +202,9 @@ export function renderJson(input, summary, gate, diff, review) {
             ...(gc.group.meta.blindSpots !== undefined && gc.group.meta.blindSpots.length > 0 ? { blindSpots: gc.group.meta.blindSpots } : {}),
         })),
         crashed: input.crashed.map(cr => ({ id: cr.id, detail: cr.detail })),
+        // Discovery failures — an unreadable program is infrastructure, not
+        // a finding; it fails the run always and says so here.
+        broken: broken.map(b => ({ id: b.id, detail: b.detail })),
         skippedUnsafe: input.skippedUnsafe,
         gate: {
             failOn: gate.failOn,

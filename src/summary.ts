@@ -61,6 +61,12 @@ export interface CheckBucket {
   ruleId: string | null;
   heading: string;
   severity: Severity;
+  // The explanation fields agents investigate with (the agent-usage doc
+  // promises them): impact/why/fix from the check's meta, present when
+  // the doctor declared them.
+  impact?: string;
+  why?: string;
+  fix?: string;
   findings: Finding[];
 }
 
@@ -129,6 +135,9 @@ function expandChecks(g: ReportGroup): CheckBucket[] {
         ruleId: f.rule ?? null,
         heading: j.description,
         severity: j.declaredSeverity,
+        ...(j.impact !== undefined ? { impact: j.impact } : {}),
+        ...(j.why !== undefined ? { why: j.why } : {}),
+        ...(j.fix !== undefined ? { fix: j.fix } : {}),
         findings: [],
       });
     }

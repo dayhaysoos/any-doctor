@@ -32,6 +32,9 @@ export interface CohortSpec {
   // owns discovery, hands them in with the spec so the outcome it gets
   // back is complete — no post-hoc patching of a placeholder field.
   skippedUnsafe?: readonly string[];
+  // Discovery facts that gate the run even when nothing scanned: a
+  // broken doctor (unreadable program) fails ALWAYS, like a crash.
+  broken?: readonly { slug: string; cause?: { _tag?: string } }[];
 }
 
 // The doctor executor: the seam the Cohort assembles outcomes from. The

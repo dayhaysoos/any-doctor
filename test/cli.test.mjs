@@ -891,3 +891,49 @@ test("agent surface: the AGENTS.md tip fires once, on the first decision", async
     fs.rmSync(dir, { recursive: true, force: true }); fs.rmSync(docDir, { recursive: true, force: true });
   }
 });
+
+// ---- agent-interface review fixes ------------------------------------------
+
+test("agent surface: a broken doctor fails ALWAYS and never corrupts JSON stdout", async (t) => {
+  silentConsole(t);
+  const err = t.mock.method(console, "error", () => {});
+  const log = t.mock.method(console, "log", () => {});
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-broken-"));
+  try {
+    // A local broken doctor (no metadata) SHADOWS discovery; with an explicit
+    // valid doctor path alongside, the run must still fail always.
+    fs.mkdirSync(path.join(dir, "doctors"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "doctors", "async-doctor.mjs"), "not a doctor\n");
+    fs.writeFileSync(path.join(dir, "a.ts"), "const x = 1;\n");
+    // Discovery walks from cwd — run from inside the target, as the
+    // reviewer's probe did, so the local broken doctor is discovered.
+    const cwd = process.cwd();
+    process.chdir(dir);
+    let code;
+    try {
+      code = await cli.main(["run", "--all", "--format", "json", "--fail-on", "warning"]);
+    } finally {
+      process.chdir(cwd);
+    }
+    assert.equal(code, 1, "a broken doctor fails the run regardless of the bar");
+    const text = log.mock.calls.map(c => c.arguments.join(" ")).join("");
+    const j = JSON.parse(text); // pure JSON — the warning rode stderr
+    assert.ok(Array.isArray(j.broken) && j.broken.some(b => b.id === "async-doctor"),
+      "the broken doctor is structured failure data in JSON");
+    const stderr = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+    assert.match(stderr, /skipping broken doctor async-doctor/, "the human warning is on stderr");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("agent surface: JSON checks carry impact/why/fix when declared", async (t) => {
+  const log = t.mock.method(console, "log", () => {});
+  await cli.main(["run", DOCTOR, TARGET, "--format", "json"]);
+  const j = JSON.parse(log.mock.calls.map(c => c.arguments.join(" ")).join(""));
+  const checks = j.groups.flatMap(g => g.checks);
+  assert.ok(checks.length > 0);
+  assert.ok(checks.some(c => c.impact !== undefined || c.why !== undefined || c.fix !== undefined),
+    "at least one bundled check exposes its explanation fields");
+  log.mock.restore();
+});

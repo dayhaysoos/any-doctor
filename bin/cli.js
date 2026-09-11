@@ -151,8 +151,10 @@ async function runOrReport(work) {
     }
 }
 function warnBrokenDoctors(skipped) {
+    // stderr, always: a console.log here put the warning INSIDE --format
+    // json stdout, corrupting the machine surface (agent-review probe).
     for (const b of skipped) {
-        console.log(YELLOW + "\u26a0 skipping broken doctor " + b.slug + RESET + dim(" — " + causeSummaryLine(b.cause)));
+        warn("\u26a0 skipping broken doctor " + b.slug + dim(" — " + causeSummaryLine(b.cause)));
     }
 }
 function selectionOutcome(sel) {
@@ -305,7 +307,7 @@ function wantsTui(parsed) {
 // The exit law, once: crashes always fail (their lines name what's
 // partial), the gate's bar judges findings, skips fail quietly. Each
 // surface calls this where its timing wants the lines printed.
-function exitAfterSurface(outcome, gate) {
+function exitAfterSurface(outcome, gate, brokenCount = 0) {
     var _a;
     if (outcome.crashed.length > 0) {
         for (const c of outcome.crashed)
@@ -316,7 +318,7 @@ function exitAfterSurface(outcome, gate) {
         fail((_a = gate.reason) !== null && _a !== void 0 ? _a : "gate failed");
         return 1;
     }
-    return outcome.skippedUnsafe.length > 0 ? 1 : 0;
+    return outcome.skippedUnsafe.length > 0 || brokenCount > 0 ? 1 : 0;
 }
 async function cmdRun(args) {
     var _a, _b, _c;
@@ -348,6 +350,7 @@ async function cmdRun(args) {
     // Cohort, which owns everything from first spawn to last settle.
     let doctors;
     let skippedUnsafe;
+    let broken = [];
     // The live line is mode-based, not count-based: an explicit path is a
     // scan of one (label + elapsed, no counts, no settle notes); picker
     // and --all are cohort runs (counts + per-settle notes) even when the
@@ -367,6 +370,7 @@ async function cmdRun(args) {
         // report use.
         doctors = [{ id: path.basename(selection.doctorPath, ".mjs"), programPath: selection.doctorPath }];
         skippedUnsafe = [];
+        broken = sel.kind === "doctor" ? sel.skipped : [];
     }
     else {
         const cohort = await gatherDoctors();
@@ -375,6 +379,7 @@ async function cmdRun(args) {
             return 1;
         let valid = cohort.valid;
         skippedUnsafe = cohort.skippedUnsafe;
+        broken = cohort.broken;
         // The cold start is opt-in: the selector opens with nothing
         // pre-selected, space selects, a selects every filtered row, and
         // Enter runs the selection — narrowing to one doctor is one space,
@@ -399,7 +404,7 @@ async function cmdRun(args) {
     // rejects the batch must not leave a hidden cursor behind. Settle
     // notes name doctors by the spec's ids — one naming rule, shared with
     // the crash report.
-    const spec = { doctors, targetDir: parsed.targetDir, includeTests: parsed.includeTests, skippedUnsafe };
+    const spec = { doctors, targetDir: parsed.targetDir, includeTests: parsed.includeTests, skippedUnsafe, broken };
     const idOf = new Map(doctors.map(d => [d.programPath, d.id]));
     // JSON mode paints nothing on stdout — not even the live line. The
     // picker and dashboard get the same refusal from wantsTui; the
@@ -428,6 +433,13 @@ async function cmdRun(args) {
     }
     finally {
         spin === null || spin === void 0 ? void 0 : spin.stop();
+    }
+    // Broken doctors fail ALWAYS, like crashes: a doctor whose program
+    // cannot even be read is an infrastructure failure, and a local broken
+    // file shadowing a bundled doctor must never read as that doctor
+    // scanning clean (the agent-review probe: exit 0, score 100).
+    for (const b of broken) {
+        warn("\u26a0 broken doctor " + b.slug + " — " + causeSummaryLine(b.cause));
     }
     // Crash detail prints before any surface: "details above" in the
     // report's every-crashed line stays true, and the dashboard's own
@@ -486,8 +498,8 @@ async function cmdRun(args) {
             || review.reassessing.length > 0
             || review.ambiguous.length > 0);
     if (parsed.format === "json") {
-        console.log(renderJson(outcome, summary, gate, diff, review !== undefined ? jsonReviewOf(review) : undefined));
-        return exitAfterSurface(outcome, gate);
+        console.log(renderJson(outcome, summary, gate, diff, review !== undefined ? jsonReviewOf(review) : undefined, broken.map(b => ({ id: b.slug, detail: causeSummaryLine(b.cause) }))));
+        return exitAfterSurface(outcome, gate, broken.length);
     }
     if (!interactive) {
         // Agents and pipes get one pointer to the machine surface — stderr,
@@ -503,19 +515,23 @@ async function cmdRun(args) {
             ? { accepted: review.accepted, notApplicable: review.notApplicable,
                 reassessing: review.reassessing, ambiguous: review.ambiguous }
             : undefined));
-        return exitAfterSurface(outcome, gate);
+        return exitAfterSurface(outcome, gate, broken.length);
     }
     const invoker = process.argv[1] ? `node "${fs.realpathSync(process.argv[1])}"` : "any-doctor";
     // Crashes are named before the dashboard paints — the dashboard itself
     // renders findings and skips, not crashes — and the dashboard ignores
     // diff mode: it is the review experience, not the gate.
     const code = exitAfterSurface(outcome, gate);
+    const stateExistedBeforeDashboard = fs.existsSync(decisionsPath(parsed.targetDir));
     await runDashboard({
         outcome,
         invoker,
         useColor: useColor(),
         ...(review !== undefined ? { view: review } : {}),
     });
+    if (!stateExistedBeforeDashboard && fs.existsSync(decisionsPath(parsed.targetDir))) {
+        console.log(dim("tip: add the agent workflow to this repo's AGENTS.md so your agents use decisions — 'any-doctor help agents' prints ready-to-paste markdown"));
+    }
     return code;
 }
 async function cmdVerify(args) {
