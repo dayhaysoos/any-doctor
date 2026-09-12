@@ -36,9 +36,9 @@
 	--nb-accent-foreground: var(--nb-foreground);
 
 	/* Primary action / brand */
-	--nb-primary: oklch(0.145 0 0);
-	--nb-primary-foreground: oklch(0.97 0 0);
-	--nb-primary-hover: oklch(0.371 0 0);
+	--nb-primary: oklch(0.55 0.21 27);
+	--nb-primary-foreground: oklch(0.98 0 0);
+	--nb-primary-hover: oklch(0.49 0.2 27);
 
 	/* Borders / focus */
 	--nb-border: oklch(0.935 0 0);
@@ -80,9 +80,11 @@
 	/* Used only by the API reference (registry: api-layout); harmless elsewhere. */
 	--nb-code-rail-width: 34rem;
 
-	/* Typography — self-hosted via @fontsource-variable in BaseLayout.astro */
+	/* Typography — self-hosted via @fontsource-variable in BaseLayout.astro.
+	 * Mulish: humanist sans in the Frutiger tradition (the typeface family
+	 * behind NHS/hospital wayfinding) — warm, clinical, free. */
 	--nb-font-sans:
-		"Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto,
+		"Mulish Variable", "Mulish", system-ui, -apple-system, "Segoe UI", Roboto,
 		sans-serif;
 	--nb-font-mono:
 		"JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "Cascadia Code",
@@ -127,9 +129,9 @@
 	--nb-accent: oklch(0.269 0 0);
 	--nb-accent-foreground: var(--nb-foreground);
 
-	--nb-primary: oklch(0.9 0 0);
-	--nb-primary-foreground: oklch(0.085 0 0);
-	--nb-primary-hover: oklch(0.7 0 0);
+	--nb-primary: oklch(0.68 0.19 22);
+	--nb-primary-foreground: oklch(0.1 0 0);
+	--nb-primary-hover: oklch(0.74 0.17 22);
 
 	--nb-border: oklch(0.269 0 0);
 	--nb-border-strong: oklch(0.371 0 0);
@@ -555,3 +557,14 @@ body:not(:has([data-mobile-sidebar])) [data-menu-btn] {
 		animation: none;
 	}
 }
+
+/* Logo playground (docs-only page) */
+.lp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+.lp-card { border: 1px solid #2a2a2e; border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
+.lp-card h4 { margin: 0; font-size: 0.95rem; }
+.lp-card p { margin: 0; font-size: 0.8rem; opacity: 0.7; text-align: center; }
+.lp-sizes { display: flex; align-items: flex-end; gap: 1rem; justify-content: center; }
+.lp-dark { background: #0b0d12; border-radius: 8px; padding: 0.5rem; }
+@keyframes lp-pulse { 0% { stroke-dashoffset: 320; } 70% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 0; } }
+.lp-ekg { stroke-dasharray: 320; animation: lp-pulse 2.6s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) { .lp-ekg { animation: none; stroke-dasharray: none; } }

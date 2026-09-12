@@ -1,0 +1,65 @@
+---
+title: Logo
+description: The Any Doctor logo — the half-red pill.
+audience: human
+sidebar:
+  order: 99
+  hidden: true
+---
+
+## The logo
+
+A pill tilted 45 degrees. The bottom half is solid red; the top half is hollow —
+just an outline, so whatever background it sits on shows through. No divider
+stripe: the red meeting the empty half is the split.
+
+<div class="lp-grid">
+
+<div class="lp-card">
+  <svg width="150" height="150" viewBox="0 0 120 120" role="img" aria-label="Any Doctor logo: tilted pill, half red, half hollow">
+    <g transform="rotate(-45 60 60)">
+      <path d="M60 40 H35 A20 20 0 0 0 35 80 H60 Z" fill="#E5322D"/>
+      <path d="M60 40 H85 A20 20 0 0 1 85 80 H60" fill="none" stroke="#E5322D" stroke-width="7" stroke-linecap="round"/>
+    </g>
+  </svg>
+  <h4>Primary — the only mark</h4>
+  <p>Red <code>#E5322D</code> (lighter <code>#FF6B66</code> in dark mode). Canonical asset: <code>/logo.svg</code>. Ours, no attribution needed.</p>
+</div>
+
+<div class="lp-card">
+  <div class="lp-dark">
+    <svg width="130" height="130" viewBox="0 0 120 120" role="img" aria-label="Dark mode pill">
+      <g transform="rotate(-45 60 60)">
+        <path d="M60 40 H35 A20 20 0 0 0 35 80 H60 Z" fill="#FF6B66"/>
+        <path d="M60 40 H85 A20 20 0 0 1 85 80 H60" fill="none" stroke="#FF6B66" stroke-width="7" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </div>
+  <h4>Dark mode</h4>
+  <p>The hollow half picks up the dark background; the red lightens so it keeps its punch.</p>
+</div>
+
+<div class="lp-card">
+  <svg width="150" height="150" viewBox="0 0 120 120" role="img" aria-label="Swap variant: React atom inside the hollow half">
+    <g transform="rotate(-45 60 60)">
+      <path d="M60 40 H35 A20 20 0 0 0 35 80 H60 Z" fill="#E5322D"/>
+      <path d="M60 40 H85 A20 20 0 0 1 85 80 H60" fill="none" stroke="#E5322D" stroke-width="7" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(76,44)" stroke="#61DAFB" stroke-width="2.4" fill="none">
+      <ellipse rx="11" ry="4.5"/>
+      <ellipse rx="11" ry="4.5" transform="rotate(60)"/>
+      <ellipse rx="11" ry="4.5" transform="rotate(120)"/>
+      <circle r="2.2" fill="#61DAFB" stroke="none"/>
+    </g>
+  </svg>
+  <h4>The swap — patient in the empty half</h4>
+  <p>The hollow half is the slot: the doctor examines React, the React atom sits in the empty side. Ecosystem pages drop their mark in.</p>
+</div>
+
+</div>
+
+## Notes
+
+- **Red:** `#E5322D`. The site's action color (buttons, links) matches.
+- The stethoscope and pill-with-stripe rounds live in this file's git history.
+  The mark is settled: this pill.

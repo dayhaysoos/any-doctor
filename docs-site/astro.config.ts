@@ -13,7 +13,7 @@ const nimbusConfig = defineNimbusConfig({
   // CHANGE_ME: your project's name — used for <title>, the home H1, and OG.
   title: "Any Doctor",
   // CHANGE_ME: a one-line description of your docs — used for meta + OG.
-  description: "Your agent writes the doctor. Inspect its findings. Remember what matters.",
+  description: "Capture your AI's mistakes. Report them to your doctor.",
   locale: "en",
   github: null,
   socialImageAlt: "Nimbus documentation preview",
