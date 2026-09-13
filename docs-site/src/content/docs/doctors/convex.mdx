@@ -1,0 +1,46 @@
+---
+title: convex
+description: Indexed reads, bounded collects, query clocks, validated args, awaited writes.
+audience: human
+sidebar:
+  order: 7
+---
+
+Convex discipline: indexed reads, bounded collects, query clocks,
+discarded promises, validated args, awaited writes, honest runtime
+boundaries.
+
+| Severity | Check | Catches |
+| -------- | ----- | ------- |
+| warning | `filter-table-scan` | A database filter without an index — may scan many documents |
+| warning | `index-without-range` | An index without a range feeding an unbounded consumer |
+| warning | `query-clock-reactivity` | `Date.now()` in a query — stale time-dependent results, less cache reuse |
+| warning | `transaction-clock-duration` | Two `Date.now()` readings in one transaction — zero elapsed time |
+| warning | `unbounded-collect` | `.collect()` with no `take`, no `paginate`, no index range |
+| warning | `index-filter-combo` | An indexed chain that also filters — multi-field index candidate |
+| warning | `presence-patch-on-shared-document` | A presence field (`lastSeen`-shaped) patched onto a document |
+| warning | `missing-args-validator` | A query/mutation/action without argument validators |
+| warning | `write-in-query` | A write, scheduler, or mutation/action call inside a query |
+| warning | `db-in-action` | `ctx.db` used inside an action |
+| warning | `unawaited-convex-call` | A known Promise-returning Convex context call discarded as a statement |
+| warning | `node-runtime-transaction` | A query or mutation defined in a `"use node"` file |
+| info | `public-api-in-server-call` | A server-side run call referencing the public api namespace — review candidate |
+| info | `sequential-run-in-loop` | A run call awaited inside a loop — batching review candidate |
+| info | `spread-into-patch` | `ctx.db.patch/replace` called with a spread — review candidate |
+
+The `info` checks are review candidates, not proven defects: they flag
+shapes a human should look at once.
+
+## Blind spots (the short version)
+
+- Receiver types and schema cardinality are not resolved;
+  `withSearchIndex` chains are skipped entirely.
+- Chains split across statements (`const q = ctx.db.query(t); ...`) are
+  not tracked — single-statement chains only.
+- `unbounded-collect` cannot tell a provably small table from a growing
+  one; `index-filter-combo` fires on every index+filter chain regardless
+  of result size.
+- Only the object-config validator form is inspected; `customQuery`
+  wrappers are not recognized.
+
+The full list prints in every report this doctor appears in.

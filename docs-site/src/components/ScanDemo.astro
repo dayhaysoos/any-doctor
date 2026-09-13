@@ -1,0 +1,314 @@
+---
+// The homepage terminal demo: one continuous, scrolling session — the way
+// a real terminal works. Lines arrive (typed or revealed), and older lines
+// scroll up as the session grows: command → choose doctors → findings →
+// agent handoff → deliberate re-run → score. No screen-swapping; the
+// scroll is the transition. Reduced-motion users get the finished
+// transcript, static.
+---
+
+<div class="scan-demo" data-scan-demo>
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot" style="background:#FF5F57"></span>
+      <span class="dot" style="background:#FEBC2E"></span>
+      <span class="dot" style="background:#28C840"></span>
+      <span class="term-title">any-doctor</span>
+    </div>
+    <div class="term-body" data-viewport aria-label="any-doctor scan demo">
+      <div class="session" data-session>
+        <div class="ln" data-step="cmdline"><span class="prompt">$</span> <span data-cmd></span><span class="caret" data-caret></span></div>
+
+        <div class="ln section" data-step="choose-head">Choose your doctors</div>
+        <div class="ln choose" data-step="doctor"><span class="box">[<span class="tick" data-tick>✔</span>]</span> async <span class="dim">— promises, timers, abort signals</span></div>
+        <div class="ln choose" data-step="doctor"><span class="box">[<span class="tick" data-tick>✔</span>]</span> convex <span class="dim">— queries, indexes, unbounded reads</span></div>
+        <div class="ln choose" data-step="doctor"><span class="box">[<span class="tick" data-tick>✔</span>]</span> slop <span class="dim">— defensive catches, dead guards</span></div>
+        <div class="ln choose" data-step="doctor"><span class="box">[<span class="tick" data-tick>✔</span>]</span> effect-v4</div>
+        <div class="ln choose" data-step="custom"><span class="plus">＋</span> write your own…</div>
+
+        <div class="ln" data-step="scanned"><span class="ok">✔</span> Scanned 221 files <span class="dim">· 2 findings</span></div>
+
+        <div class="ln" data-step="finding">
+          <span class="warn">⚠</span> .map(async ...) result is never awaited
+          <div class="sub dim" data-step="finding-sub">async/unawaited-async-map · src/services/chat.ts:15</div>
+        </div>
+        <div class="ln" data-step="finding">
+          <span class="warn">⚠</span> An index without a range feeds an unbounded consumer
+          <div class="sub dim" data-step="finding-sub">convex/index-without-range · convex/notes.ts:19</div>
+        </div>
+
+        <div class="ln section" data-step="copied">→ copied for your agent</div>
+        <div class="ln" data-step="working"><span class="ok">✔</span> your agent finished</div>
+        <div class="ln" data-step="resolve"><span class="ok">✔</span> .map(async ...) result awaited <span class="dim">— fixed</span></div>
+        <div class="ln" data-step="resolve"><span class="ok">✔</span> accepted as intended <span class="dim">— remembered</span></div>
+
+        <div class="ln" data-step="recmdline"><span class="prompt">$</span> <span data-recmd></span><span class="caret" data-recaret></span></div>
+        <div class="ln" data-step="rescan"><span class="ok">✔</span> Scanned 221 files <span class="dim">· <span class="zero">0 findings</span></span></div>
+
+        <div class="ln score" data-step="score">
+          <span data-pill class="pill">
+            <svg viewBox="0 0 120 120" class="pill-svg">
+              <g transform="rotate(-45 60 60)">
+                <path d="M60 40 H35 A20 20 0 0 0 35 80 H60 Z" fill="currentColor"/>
+                <path d="M60 40 H85 A20 20 0 0 1 85 80 H60" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+              </g>
+            </svg>
+          </span>
+          Score: 100 / 100 — <span class="ok">Excellent</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .scan-demo { margin-top: 2.75rem; }
+  .term {
+    border-radius: 0.85rem;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background: #0b0d12;
+    box-shadow: 0 20px 48px -20px rgb(0 0 0 / 0.55);
+    overflow: hidden;
+  }
+  .term-bar {
+    position: relative;
+    display: flex; align-items: center; gap: 0.45rem;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  }
+  .dot { width: 0.7rem; height: 0.7rem; border-radius: 9999px; display: inline-block; }
+  .term-title {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    color: rgb(255 255 255 / 0.4);
+    font-size: 0.75rem;
+    font-family: var(--nb-font-mono);
+  }
+  .term-body {
+    position: relative;
+    height: 27rem;
+    overflow: hidden;
+    font-family: var(--nb-font-mono);
+    font-size: 1.2rem;
+    line-height: 1.9;
+    color: rgb(255 255 255 / 0.88);
+  }
+  .session {
+    padding: 1.2rem 1.35rem 1.6rem;
+    will-change: transform;
+  }
+  .prompt { color: rgb(255 255 255 / 0.4); margin-right: 0.4rem; }
+  .caret {
+    display: inline-block; width: 0.5em; height: 1.05em;
+    background: rgb(255 255 255 / 0.75);
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+  .ln { white-space: pre-wrap; }
+  .section { font-weight: 700; font-size: 1.6rem; margin: 0.6rem 0 0.5rem; }
+  .choose { display: flex; align-items: baseline; gap: 0.55rem; }
+  .box { color: rgb(255 255 255 / 0.4); }
+  .tick { color: #34d399; opacity: 0; transition: opacity 120ms; }
+  .plus { color: #6EE7B7; margin-left: 0.1rem; }
+  .sub { padding-left: 1.3rem; font-size: 0.95rem; line-height: 1.6; }
+  .dim { color: rgb(255 255 255 / 0.45); }
+  .ok { color: #34d399; }
+  .warn { color: #f5a623; }
+  .zero { color: #34d399; font-weight: 700; }
+  .score { font-weight: 700; font-size: 1.45rem; display: flex; align-items: center; gap: 0.6rem; margin-top: 0.5rem; }
+  .pill { display: inline-flex; color: #6EE7B7; width: 1.35rem; height: 1.35rem; }
+  .pill-svg { width: 100%; height: 100%; }
+  @media (prefers-reduced-motion: reduce) {
+    .term-body { height: auto; overflow: visible; }
+    .caret { display: none; }
+  }
+</style>
+
+<script>
+  import { animate } from "motion";
+
+  const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+  const WORKING_HTML = '<span class="work-dot">●</span> your agent is working<span class="dots" data-dots></span>';
+  const WORKING_DONE_HTML = '<span class="ok">✔</span> your agent finished';
+  const SCANNING_HTML = '<span class="spin" data-spinner>⠋</span> scanning…';
+
+  function startDemo(root: HTMLElement) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const session = root.querySelector<HTMLElement>("[data-session]")!;
+    const viewport = root.querySelector<HTMLElement>("[data-viewport]")!;
+    const cmd = root.querySelector<HTMLElement>("[data-cmd]")!;
+    const caret = root.querySelector<HTMLElement>("[data-caret]")!;
+    const recmd = root.querySelector<HTMLElement>("[data-recmd]")!;
+    const recaret = root.querySelector<HTMLElement>("[data-recaret]")!;
+    const pill = root.querySelector<HTMLElement>("[data-pill]")!;
+    const steps = (sel: string) =>
+      Array.from(root.querySelectorAll<HTMLElement>(`[data-step="${sel}"]`));
+
+    const COMMAND = "npx any-doctor@latest";
+    const REVEAL_EASE = [0.25, 0.1, 0.25, 1] as const;
+    const SCROLL_EASE = [0.22, 0.61, 0.36, 1] as const;
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    function reveal(el: HTMLElement, distance = 6): void {
+      el.style.display = "";
+      el.style.opacity = "0";
+      animate(
+        el,
+        { opacity: [0, 1], transform: [`translateY(${distance}px)`, "translateY(0px)"] },
+        { duration: 0.35, easing: REVEAL_EASE },
+      );
+    }
+
+    // Keep the newest line in view: as the session outgrows the terminal
+    // window, glide it up. Not awaited — the scroll happens during the
+    // reading pause that follows.
+    function settle(): void {
+      const overflow = Math.max(0, session.scrollHeight - viewport.clientHeight);
+      animate(
+        session,
+        { transform: `translateY(-${overflow}px)` },
+        { duration: 0.8, easing: SCROLL_EASE },
+      );
+    }
+
+    async function typeInto(el: HTMLElement, text: string, lo: number, hi: number): Promise<void> {
+      el.textContent = "";
+      for (const ch of text) {
+        el.textContent += ch;
+        await wait(lo + Math.random() * (hi - lo));
+      }
+    }
+
+    function resetAll(): void {
+      for (const el of root.querySelectorAll<HTMLElement>("[data-step]")) {
+        el.style.display = "none";
+        el.style.opacity = "1";
+      }
+      for (const tick of root.querySelectorAll<HTMLElement>("[data-tick]")) { tick.style.opacity = "0"; }
+      session.style.transform = "translateY(0px)";
+      cmd.textContent = "";
+      recmd.textContent = "";
+    }
+
+    async function story(): Promise<void> {
+      // Command.
+      reveal(steps("cmdline")[0]);
+      settle();
+      await wait(300);
+      await typeInto(cmd, COMMAND, 34, 74);
+      caret.style.opacity = "0";
+      await wait(700);
+
+      // Choose doctors.
+      reveal(steps("choose-head")[0]);
+      settle();
+      await wait(550);
+      for (const line of steps("doctor")) {
+        reveal(line);
+        settle();
+        const tick = line.querySelector<HTMLElement>("[data-tick]");
+        if (tick) { await wait(200); tick.style.opacity = "1"; }
+        await wait(420);
+      }
+      await wait(250);
+      reveal(steps("custom")[0]);
+      settle();
+      await wait(1300);
+
+      // Findings.
+      reveal(steps("scanned")[0]);
+      settle();
+      await wait(850);
+      for (const finding of steps("finding")) {
+        reveal(finding);
+        settle();
+        await wait(300);
+        const sub = finding.querySelector<HTMLElement>('[data-step="finding-sub"]');
+        if (sub) { reveal(sub); settle(); }
+        await wait(650);
+      }
+      await wait(950);
+
+      // Agent handoff.
+      reveal(steps("copied")[0]);
+      settle();
+      await wait(800);
+      const working = steps("working")[0];
+      working.innerHTML = WORKING_HTML;
+      reveal(working);
+      settle();
+      const dotsEl = working.querySelector<HTMLElement>("[data-dots]")!;
+      let dots = 0;
+      const dotsTimer = setInterval(() => {
+        dotsEl.textContent = ".".repeat(1 + (dots++ % 3));
+      }, 420);
+      await wait(2200);
+      clearInterval(dotsTimer);
+      animate(working, { opacity: [1, 0.35, 1] }, { duration: 0.45 });
+      working.innerHTML = WORKING_DONE_HTML;
+      await wait(550);
+      for (const line of steps("resolve")) { reveal(line); settle(); await wait(650); }
+      await wait(1100);
+
+      // The deliberate re-run: same speed as the first time. The doctor
+      // re-checks the work — no shortcuts.
+      reveal(steps("recmdline")[0]);
+      settle();
+      await wait(300);
+      await typeInto(recmd, COMMAND, 34, 74);
+      recaret.style.opacity = "0";
+      await wait(450);
+
+      const rescan = steps("rescan")[0];
+      const resolvedHTML = rescan.innerHTML;
+      rescan.innerHTML = SCANNING_HTML;
+      reveal(rescan);
+      settle();
+      const spinnerEl = rescan.querySelector<HTMLElement>("[data-spinner]")!;
+      let frame = 0;
+      const spinTimer = setInterval(() => {
+        spinnerEl.textContent = SPINNER_FRAMES[frame++ % SPINNER_FRAMES.length];
+      }, 80);
+      await wait(1600);
+      clearInterval(spinTimer);
+      animate(rescan, { opacity: [1, 0.35, 1] }, { duration: 0.45 });
+      rescan.innerHTML = resolvedHTML;
+      settle();
+      await wait(900);
+
+      // Score.
+      reveal(steps("score")[0]);
+      settle();
+      animate(
+        pill,
+        { transform: ["scale(0) rotate(0deg)", "scale(1) rotate(0deg)"], opacity: [0, 1] },
+        { type: "spring", stiffness: 480, damping: 20 },
+      );
+    }
+
+    async function play(): Promise<void> {
+      if (!document.contains(root)) return;
+      resetAll();
+      await wait(250);
+      await story();
+      await wait(6000);
+      await animate(session, { opacity: [1, 0] }, { duration: 0.55 }).finished;
+      resetAll();
+      animate(session, { opacity: [0, 1] }, { duration: 0.4 });
+      await wait(400);
+      void play();
+    }
+
+    void play();
+  }
+
+  function bind() {
+    for (const root of document.querySelectorAll<HTMLElement>("[data-scan-demo]")) {
+      if (!root.dataset.bound) {
+        root.dataset.bound = "1";
+        startDemo(root);
+      }
+    }
+  }
+  document.addEventListener("astro:page-load", bind);
+</script>

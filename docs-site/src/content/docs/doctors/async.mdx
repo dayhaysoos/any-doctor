@@ -1,0 +1,31 @@
+---
+title: async
+description: Fetch hygiene, promise handling, timer cleanup.
+audience: human
+sidebar:
+  order: 6
+---
+
+Async and concurrency discipline: fetch hygiene, promise handling, timer
+cleanup.
+
+| Severity | Check | Catches |
+| -------- | ----- | ------- |
+| warning | `fetch-calls-without-abortsignal` | A fetch call whose options contain no signal |
+| warning | `unawaited-async-map` | A `.map(async ...)` result no one consumes — the promises are dropped |
+| warning | `uncleared-settimeout-in-effect` | A `setTimeout` inside `useEffect` with no matching `clearTimeout` |
+
+## Blind spots (the short version)
+
+- Cannot determine whether a variable, spread, or helper supplies a
+  signal at runtime; aliased fetch functions are not recognized.
+- Reassigned bindings are inconclusive and skipped; consumption inside
+  template strings or dynamic property access is not tracked.
+- Mapped results that are returned, passed into a call, or chained after
+  another call are not judged — a bare `map(async)` is judged only in
+  statement or await position.
+- Timers: only directly named `useEffect`/`setTimeout`/`clearTimeout`
+  are recognized; the handle must be a simple local identifier cleared in
+  the same effect.
+
+The full blind-spot list prints in every report this doctor appears in.

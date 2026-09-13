@@ -1,0 +1,124 @@
+---
+// FAQ accordion — native details/summary, no JavaScript. Answers are the
+// author's own words.
+---
+
+<div class="faq" data-faq>
+  <details name="faq">
+    <summary>What is a doctor?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="a"><p>
+      A doctor is a single JS file that scans your repo for mistakes and
+      reports the findings. You can create your own doctors for specific
+      patterns in your own codebase and re-use them later on or share with
+      your team.
+    </p></div>
+  </details>
+
+  <details name="faq">
+    <summary>Why "doctor"?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="a"><p>
+      Heavily inspired by the react-doctor experience. "What if we had a
+      'doctor' for everything we cared about?"
+    </p></div>
+  </details>
+
+  <details name="faq">
+    <summary>What's the health score?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="a"><p>
+      A 0–100 number at the end of a run. Severity is weighted across
+      findings and files with a grade.
+    </p></div>
+  </details>
+
+  <details name="faq">
+    <summary>How is this different from ESLint?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="a"><p>
+      You should still 100% be using linters. any-doctor is designed for
+      recurring patterns that show up in your code that you don't
+      necessarily want to make lint configs for.
+    </p></div>
+  </details>
+
+  <details name="faq">
+    <summary>How is this different from AI code reviewers?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="a"><p>
+      You should still run your regular AI code reviewers. However, you can
+      save your agents tokens and time by having them run doctors. Doctors
+      should be calling out bad patterns from mistakes you've seen them make
+      so they can focus on the real issues.
+    </p></div>
+  </details>
+
+  <details name="faq">
+    <summary>What about false positives?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="a"><p>
+      You or your agent can accept findings as intended so it never shows
+      again.
+    </p></div>
+  </details>
+
+  <details name="faq">
+    <summary>Does it send my code anywhere?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="a"><p>No.</p></div>
+  </details>
+
+  <details name="faq">
+    <summary>How do I write my own?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="a"><p>
+      Describe the patterns or bugs you want to catch with any-doctor to
+      your agent. The doctor contract is one file with named checks and
+      evidence rules. A full agent guide is baked into the CLI.
+    </p></div>
+  </details>
+
+  <details name="faq">
+    <summary>Can it run in CI?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+    <div class="a"><p>
+      Yes — though it's untested in real CI so far. JSON output and exit
+      codes are built in.
+    </p></div>
+  </details>
+</div>
+
+<style>
+  .faq { margin-top: 5rem; }
+  details {
+    border-bottom: 1px solid var(--color-border);
+  }
+  details:first-of-type { border-top: 1px solid var(--color-border); }
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.05rem 0.25rem;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--color-foreground);
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+  .chev {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: var(--color-muted-foreground);
+    transition: transform 0.2s ease;
+  }
+  details[open] .chev { transform: rotate(90deg); }
+  details[open] summary { color: var(--color-primary); }
+  .a { padding: 0 0.25rem 1.15rem; }
+  .a p {
+    margin: 0;
+    font-size: 0.98rem;
+    line-height: 1.7;
+    color: var(--color-muted-foreground);
+    max-width: 46rem;
+  }
+</style>

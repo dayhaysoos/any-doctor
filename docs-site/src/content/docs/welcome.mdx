@@ -1,9 +1,47 @@
 ---
-title: any-doctor
-description: Docs home — content pending.
+title: What is any-doctor
+description: A doctor is a single JS file that scans your repo for mistakes. Yours to write, forever.
 audience: human
 sidebar:
   order: 0
 ---
 
-Content pending.
+A doctor is a single JS file that scans your repo for mistakes and reports
+the findings. It is deterministic: same code in, same findings out. No
+model, no tokens, no hallucinated problems.
+
+You run it after your agent finishes work. Findings come back with the
+file, the line, and the reason. You (or your agent) review them, fix what
+is real, and record decisions on the rest. Decisions are remembered: an
+accepted finding never shows up again, even after the line moves.
+
+## The loop
+
+1. Your AI agent makes a mistake. Then makes it again. And again.
+2. You describe the mistake and write a doctor for it — or your agent
+   writes the doctor while you watch.
+3. Every scan from then on catches it. Re-checking costs nothing.
+
+## What ships in the box
+
+Five doctors cover common agent-made mistakes:
+
+- **async** — fetch hygiene, dropped promises, timer cleanup
+- **convex** — indexed reads, bounded collects, query discipline
+- **slop** — duplicated helpers, dead exports, hostname-sniffed
+  environments, careless text matching
+- **openrouter** — stream errors surfaced, cancellations that stop billing
+- **effect-v4** — the mechanical rules of the kitlangton Effect skill,
+  enforced
+
+The real product is the doctors you write yourself. Your codebase has its
+own patterns. A doctor is a single JS file. Describe the mistakes to your
+agent, point it at the repo, ship it to your team.
+
+## Where to go next
+
+- [Quickstart](/getting-started/quickstart) — run your first scan
+- [The report](/scans/report) — read the findings and the score
+- [Writing your first doctor](/authoring/first-doctor) — capture a
+  mistake forever
+- [The agent guide](/agents/agent-guide) — hand any-doctor to your agent

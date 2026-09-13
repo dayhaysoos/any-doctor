@@ -1,0 +1,61 @@
+---
+title: Quickstart
+description: Run your first scan in two minutes.
+audience: human
+sidebar:
+  order: 1
+---
+
+No install needed. From the repo you want to scan:
+
+```bash
+npx any-doctor@latest
+```
+
+With a terminal attached you get the interactive flow: pick the doctors
+to run, watch the scan, then review findings in the dashboard. Pick a
+doctor, press Enter, and navigate the tree of doctor → check → finding.
+
+Want one specific doctor only? Name it:
+
+```bash
+npx any-doctor@latest run async
+```
+
+## The agent version
+
+Agents should not parse the interactive dashboard. One command, one JSON
+object on stdout:
+
+```bash
+npx any-doctor@latest run --all <dir> --format json
+```
+
+The [agent guide](/agents/agent-guide) covers the full workflow: scan,
+investigate, fix or decide, re-run to verify.
+
+## What you'll see
+
+A scan ends with a report:
+
+```text
+Any Doctor — 5 doctors
+Score: 95 / 100 — Excellent
+187/221 files clean
+
+71 findings  (27 warning, 44 info)
+Async: 5 warning
+Convex: 5 warning
+Slop: 14 warning, 44 info
+```
+
+Each finding names the check, the claim it makes, and the exact
+`file:line`. The [report page](/scans/report) breaks down every part of
+it, including the blind spots every doctor prints about itself.
+
+## Next steps
+
+- [Reviewing findings](/scans/reviewing-findings) — the dashboard and
+  the decisions
+- [The doctor contract](/authoring/contract) — what a doctor actually is
+- [CLI reference](/reference/cli) — every command and flag

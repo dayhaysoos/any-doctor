@@ -1,0 +1,48 @@
+---
+title: CI
+description: Gates, exit codes, and the raw-findings rule. Honest status, not yet battle-tested.
+audience: human
+sidebar:
+  order: 17
+---
+
+Yes, any-doctor can run in CI — though real-world CI use is untested so
+far. The contract is designed for it; the miles are not on it yet.
+
+## The command
+
+```bash
+npx any-doctor@latest run --all . --format json --fail-on warning
+```
+
+Parse the JSON, judge the `gate`, fail on the exit code. No terminal
+attached means no interactive UI, no prompts, stdout stays parseable —
+built for robots.
+
+## The raw-findings rule
+
+Gates always judge **raw** findings. Recorded decisions annotate findings
+but never flip a gate, so dismissing noise cannot fake a clean run. If
+you want a decision to count in CI, that is a future feature — by design,
+CI gets the unfiltered truth.
+
+## What always fails
+
+Regardless of `--fail-on`:
+
+- a crashed doctor
+- a broken doctor (unreadable program)
+- a skipped-unsafe doctor
+
+These appear in the JSON as `crashed`, `broken`, and `skippedUnsafe`, and
+the score renders as null. Broken tooling never reads as a clean
+codebase, in CI or anywhere else.
+
+## Diff mode for PRs
+
+```bash
+npx any-doctor@latest run --all . --format json --base main
+```
+
+Only **added** findings gate — `continuing` and `noLongerDetected` are
+reported for context. Judged against the merge base, not the branch tip.

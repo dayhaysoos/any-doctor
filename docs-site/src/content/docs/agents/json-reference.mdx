@@ -1,0 +1,68 @@
+---
+title: JSON reference
+description: The exact shape of run and decisions output.
+sidebar:
+  order: 15
+---
+
+Every machine consumer reads `--format json`. One object on stdout,
+diagnostics on stderr.
+
+## run --format json
+
+Top level:
+
+| Field | Type | Notes |
+| ----- | ---- | ----- |
+| `schema` | string | Output schema identifier |
+| `tool` | string | Tool name and version |
+| `target` | string | The scanned directory |
+| `fileCount` | number | Files considered |
+| `durationMs` | number | Wall time |
+| `score` | object | `score`, `grade`, `filesClean`, `filesTotal`, `emptyScan` — or null when the scan is partial |
+| `counts` | object | Findings by severity |
+| `analysisAvailable` | boolean | Whether the structural analysis engine ran (ast-grep present) |
+| `emptyScan` | boolean | Zero files checked — the score is a warning, not a win |
+| `groups` | array | One per doctor |
+| `crashed` | array | Doctors that crashed — always fails the run |
+| `broken` | array | Doctors that could not be loaded — always fails the run |
+| `skippedUnsafe` | array | Doctors skipped for safety — always fails the run |
+| `gate` | object | The raw-findings gate verdict |
+
+Each group carries `doctor` (id), `blindSpots` (the doctor's declared
+limits — surface these to the human, they qualify every finding), and
+`checks`. Each check carries `rule` (check id), `heading`, `severity`,
+the optional `impact` / `why` / `fix` explanations, and its `findings`.
+
+Each finding carries:
+
+| Field | Type | Notes |
+| ----- | ---- | ----- |
+| `file` | string | Always present |
+| `line` | number | Always present |
+| `column` | number | Optional; column-precise when present |
+| `severity` | string | Optional; check default applies otherwise |
+| `message` | string | Optional finding-level note |
+| `decisionKey` | string | Stable identity for `decide`. Absent when `staleEvidence` is true — not decidable this run |
+| `decision` | object | Present only when a recorded decision already applies |
+
+## The decisionKey
+
+The identity is a digest of the check, the normalized line content, the
+column, and the enclosing function — not raw coordinates. It is
+base64url-encoded so it is safe in shells and URLs. The same finding
+keeps its key through line moves and file renames; it changes when the
+flagged code changes, which is the point.
+
+## Diff mode
+
+`--base <ref>` adds a `diff` block with `added`, `continuing`, and
+`noLongerDetected`, judged against the merge base. Only added findings
+gate.
+
+## decisions --json
+
+Lists every recorded decision: the encoded `key`, the check, the
+`disposition` (`accepted` or `not-applicable`), the `reason`, scope and
+actor, timestamps, and the provenance that keeps it attached (check
+revision or program digest).

@@ -1,0 +1,59 @@
+---
+title: Writing your first doctor
+description: Describe the mistake, generate the prompt, let your agent build it, verify it.
+audience: human
+sidebar:
+  order: 12
+---
+
+The intended workflow is: you describe the mistake, your agent writes the
+doctor, fixtures prove it works, and the verify gate holds it honest.
+
+## 1. Describe the mistake
+
+The same mistake, third time. Write down what it is:
+
+> "The agent keeps calling `refreshSession()` without awaiting it, so the
+> token it returns is always stale."
+
+## 2. Generate the prompt
+
+```bash
+any-doctor generate "refreshSession() called without awaiting — stale token"
+```
+
+This prints the exact prompt to hand your agent: the contract, the
+fixture expectations, the honesty rules. Generation delegates to your
+installed agent; `run` and `verify` never touch a model.
+
+Add `--global` to install the doctor to `~/.any-doctor/doctors/` instead
+of the repo's `./doctors/`.
+
+## 3. Your agent writes the doctor
+
+Give the prompt to your agent with the repo open. It writes the single
+JS file, a `claim` for each check, and fixture files that prove both the
+catch and the lookalikes. Watch that it declares `revision: 1` on each
+check — that is what keeps your future decisions attached through
+cosmetic edits.
+
+## 4. Verify
+
+```bash
+any-doctor verify my-doctor
+```
+
+The fixture gate runs the doctor against its own fixtures: every
+expected finding must appear, every lookalike must stay silent. A check
+without a claim cannot be certified. If the gate passes, the doctor is
+real.
+
+## 5. Scan
+
+```bash
+any-doctor run my-doctor
+```
+
+From now on the mistake is a finding with a file and a line, every scan,
+for free. When the agent does it again next week, you will know before
+review does.

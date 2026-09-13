@@ -1,6 +1,10 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Header from "../components/Header.astro";
+import ScanDemo from "../components/ScanDemo.astro";
+import TrustedBy from "../components/TrustedBy.astro";
+import ValueSections from "../components/ValueSections.astro";
+import Faq from "../components/Faq.astro";
 import { config } from "virtual:nimbus/config";
 import { withBase } from "@cloudflare/nimbus-docs/runtime";
 
@@ -12,7 +16,7 @@ export const prerender = true;
 <BaseLayout title={config.title} description={config.description}>
   <div class="flex flex-col min-h-screen">
     <Header />
-    <main id="main-content" tabindex="-1" class="flex-1 mx-auto max-w-2xl w-full px-6 py-24">
+    <main id="main-content" tabindex="-1" class="flex-1 mx-auto max-w-3xl w-full px-6 py-24">
       <h1
         class="text-foreground leading-tight"
         style="font-size: var(--nb-h1-size); font-weight: var(--nb-h1-weight); letter-spacing: var(--nb-h1-tracking);"
@@ -59,6 +63,14 @@ export const prerender = true;
           Read the docs
         </a>
       </div>
+
+      <ScanDemo />
+
+      <TrustedBy />
+
+      <ValueSections />
+
+      <Faq />
     </main>
   </div>
 </BaseLayout>

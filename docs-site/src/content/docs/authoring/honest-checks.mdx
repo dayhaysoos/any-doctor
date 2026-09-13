@@ -1,0 +1,61 @@
+---
+title: Honest checks
+description: Claims over vibes — the rules that keep a doctor from crying wolf.
+audience: human
+sidebar:
+  order: 13
+---
+
+A doctor is only worth running if its findings can be trusted. The
+contract enforces that with rules, not vibes.
+
+## State the claim, not the conclusion
+
+A check's `claim` is the observable condition it fires on: "A fetch call
+whose options contain no signal." Not the conclusion ("this is a bug")
+and not the advice ("add AbortController"). The claim is testable — a
+fixture can prove it fires and prove the lookalikes stay silent.
+
+This is why a check without a claim cannot pass the verify gate. Impact
+prose explains a finding; it cannot substitute for a statement of what
+was observed.
+
+## Name the lookalikes
+
+Every shape that resembles the claim but is fine belongs in
+`lookalikes`: "signal threaded through a variable the pattern cannot
+see." Lookalikes get fixtures too. A doctor that cannot tell the
+difference between a mistake and an idiom is noise with confidence.
+
+## Declare what you cannot see
+
+`blindSpots` is a required honesty field. The async doctor does not know
+whether a helper supplies a signal at runtime — so it says exactly that,
+in the report, next to the findings. Blind spots are not a weakness to
+hide; they are the difference between a tool and a sales pitch.
+
+## Decide what happens on the unknown
+
+`onUnknown` tells the runtime what a check does with incomplete
+evidence:
+
+- `"narrow"` — report only what is provable; silence is the default.
+- `"skip"` — this check never reports on partial evidence.
+
+Both are conservative. There is no `onUnknown: "vibes"`.
+
+## One finding, one unit
+
+`reportingUnit` states what a single finding covers: each `occurrence`,
+once per `file`, or once per `project`. Findings never blur into
+"various issues in this area."
+
+## Fixtures prove it forever
+
+A doctor ships with `*.fixtures.mjs` files: the shapes it must catch and
+the lookalikes it must spare. `any-doctor verify` replays them. Behavior
+that is not pinned by a fixture is behavior you cannot claim you have.
+
+The result: findings arrive pre-annotated with their limits, decisions
+attach to identities that survive refactors, and a doctor that oversteps
+its evidence fails its own gate before it ever wastes your review.

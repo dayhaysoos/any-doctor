@@ -1,0 +1,74 @@
+---
+// The honest logo wall: instead of "trusted by 10,000 companies," it's
+// trusted by exactly one guy, scrolling the companies whose tools he
+// actually uses. Text names, not logos — no trademark art to borrow.
+// Edit the COMPANIES list to taste.
+---
+
+<div class="trusted" data-trusted>
+  <div class="label">Trusted by one guy who uses:</div>
+  <div class="marquee" aria-hidden="true">
+    <div class="track">
+      {
+        Array.from({ length: 2 }).map(() => (
+          <div class="set">
+            {[
+              "Apple",
+              "GitHub",
+              "Cloudflare",
+              "Anthropic",
+              "Convex",
+              "Effect",
+              "OpenRouter",
+              "React",
+              "npm",
+              "Motion",
+              "Astro",
+              "Tailwind",
+            ].map((name) => (
+              <span class="name">
+                {name}
+                <span class="sep">·</span>
+              </span>
+            ))}
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</div>
+
+<style>
+  .trusted { margin-top: 2.25rem; }
+  .label {
+    font-size: 0.9rem;
+    color: var(--color-muted-foreground);
+    text-align: center;
+    margin-bottom: 0.9rem;
+  }
+  .marquee {
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+  }
+  .track {
+    display: flex;
+    width: max-content;
+    animation: marquee 36s linear infinite;
+  }
+  .set { display: flex; align-items: baseline; }
+  .name {
+    font-family: var(--nb-font-mono);
+    font-size: 1.05rem;
+    color: var(--color-muted-foreground);
+    white-space: nowrap;
+    padding-inline: 0.9rem;
+  }
+  .sep { padding-left: 1.8rem; color: var(--color-border); }
+  @keyframes marquee {
+    to { transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .track { animation: none; }
+  }
+</style>

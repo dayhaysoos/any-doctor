@@ -1,0 +1,41 @@
+---
+title: effect-v4
+description: The mechanical rules of the kitlangton Effect skill, enforced.
+audience: human
+sidebar:
+  order: 10
+---
+
+Effect v4 discipline: typed errors over hand-rolled tags, Config over
+direct env reads, named Effect.fn, deterministic generators, validated
+boundaries, no casts that silence the type system. The mechanical rules
+of the kitlangton Effect skill, enforced.
+
+Ships as `effect-v4-kitlangton`. Only files that import `effect` (or
+`effect/...`) are scanned; zod checks apply to files importing zod.
+
+| Severity | Check | Catches |
+| -------- | ----- | ------- |
+| warning | `type-silencing-cast` | `as any`, a double cast, or a non-null assertion in Effect code |
+| warning | `schema-class-as-default` | `Schema.Class` / `Schema.TaggedClass` for application data modeling |
+| warning | `handrolled-tagged-error` | A `_tag` error class hand-rolled instead of `Schema.TaggedErrorClass` |
+| info | `cause-level-recovery` | `catchCause` / `catchAllCause` / `sandbox` where typed-error recovery is the default |
+| warning | `direct-process-env-read` | `process.env` read directly inside Effect application code |
+| warning | `unnamed-effect-fn` | `Effect.fn` without a span/tracing name |
+| warning | `date-now-in-gen` | `Date.now()` inside an `Effect.gen` body |
+| warning | `zod-single-record` | `z.record` called with a single argument |
+| warning | `sleep-in-test` | `Effect.sleep` inside a test file |
+| info | `blind-layer-merge` | `Layer.mergeAll` / `provideMerge` as a make-it-compile composition tool |
+
+## Blind spots (the short version)
+
+- Effect idioms routed through re-exporting wrappers are not covered;
+  generated `.d.ts` files are skipped entirely.
+- Boundary and startup code legitimately reads the environment — the
+  check cannot tell application logic from boundaries.
+- `cause-level-recovery` and `blind-layer-merge` record the skill's
+  defaults, not proven misuse.
+- `sleep-in-test` only fires when test files are scanned — pass
+  `--include-tests` to check test discipline.
+
+The full list prints in every report this doctor appears in.

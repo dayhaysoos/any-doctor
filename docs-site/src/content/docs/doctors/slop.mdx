@@ -1,0 +1,42 @@
+---
+title: slop
+description: The recurring shapes of LLM-generated code — duplicates, dead bindings, guessed environments.
+audience: human
+sidebar:
+  order: 8
+---
+
+LLM slop discipline: duplicated helpers, dead exports and unread
+bindings, hostname-sniffed environments, careless text matching,
+collapsed boolean states. Born from 1,368 Bugbot findings across 182
+reviewed PRs.
+
+| Severity | Check | Catches |
+| -------- | ----- | ------- |
+| info | `identical-helper-body-in-two-modules` | A function body identical (literals included) in two modules — consolidation suggestion, not a proven defect |
+| info | `environment-guessed-from-hostname-substring` | Environment routing by hostname substring with a fixed fallback |
+| info | `boolean-collapsed-into-three-state` | A nullish-defaulted boolean collapsed into a two-way ternary feeding a three-state domain |
+| warning | `prefix-overlapping-substring-match` | An OR-chain of substring tests whose literals overlap by prefix |
+| warning | `named-import-without-reference` | A named import with zero references — value, JSX, and type positions all resolve |
+| info | `export-without-any-consumer` | A named export with no consumer found — deletion candidate |
+| info | `unread-local-binding` | A non-exported local binding never read in its file |
+| info | `unanchored-abbreviation-regex` | A short case-insensitive regex tested against text without word boundaries |
+
+## Blind spots (the short version)
+
+- Helpers: only function declarations are compared, bodies must be
+  identically equal, and trivial bodies are ignored. Doctors and build
+  output are exempt.
+- Dead exports: entry-point-shaped files are exempt, and a name counts
+  as consumed when any other file imports it from anywhere, so same-name
+  imports can mask a dead export. Dynamic imports and test-file consumers
+  are not resolved.
+- Bindings: the engine resolves value positions only — a name reused in
+  comments or strings can mask a dead binding.
+- Hostname: only `.includes()`/`startsWith` shapes are seen; URL parsing
+  and configured-base-URL-first flows are not.
+- Three checks (dead exports, unread bindings, unused imports) need the
+  analysis engine; without it they narrow to silence and the report says
+  so.
+
+The full list prints in every report this doctor appears in.

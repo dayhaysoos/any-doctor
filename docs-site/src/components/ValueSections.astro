@@ -1,0 +1,143 @@
+---
+// The four value sections under the demo: deterministic economics,
+// authorable checks, remembered decisions, the agent loop. Copy carries
+// the pitch; a small terminal fragment grounds each one.
+---
+
+<div class="values" data-values>
+  <section class="value" data-reveal>
+    <div class="copy">
+      <div class="kicker">Deterministic review</div>
+      <h2>Review without burning tokens.</h2>
+      <p>
+        Run a doctor after your agent wraps up. All findings come back with
+        everything you need to know, with reports you can trust, without
+        burning any more tokens.
+      </p>
+    </div>
+    <div class="snippet" aria-hidden="true">
+      <div><span class="dim">$</span> npx any-doctor@latest</div>
+      <div><span class="ok">✔</span> 71 findings <span class="dim">· 1.3s · 0 tokens</span></div>
+    </div>
+  </section>
+
+  <section class="value" data-reveal>
+    <div class="copy">
+      <div class="kicker">Create your own doctors</div>
+      <h2>Specialized to your needs.</h2>
+      <p>
+        Your codebase has its own patterns. A doctor is a single JS file.
+        Describe the mistakes to your agent, point it at the repo, ship it to
+        your team. Every scan catches those mishaps.
+      </p>
+    </div>
+    <div class="snippet" aria-hidden="true">
+      <div><span class="dim">check:</span> "Fetch call does not provide an AbortSignal"</div>
+      <div><span class="dim">evidence:</span> file + line&nbsp;&nbsp;&nbsp;<span class="dim">onUnknown:</span> skip</div>
+    </div>
+  </section>
+
+  <section class="value" data-reveal>
+    <div class="copy">
+      <div class="kicker">Memory</div>
+      <h2>Keep track of your decisions.</h2>
+      <p>
+        Not all findings are bad. Ignore the false positives and they'll never
+        show up again.
+      </p>
+    </div>
+    <div class="snippet" aria-hidden="true">
+      <div><span class="dim">$</span> any-doctor decide --key … suppress</div>
+      <div><span class="ok">✔</span> remembered — this one stays</div>
+    </div>
+  </section>
+
+  <section class="value" data-reveal>
+    <div class="copy">
+      <div class="kicker">Agent native</div>
+      <h2>Built for humans and agents.</h2>
+      <p>
+        Every run comes back with JSON and tooling for locking in decisions.
+        Your agent scans, investigates, fixes and re-runs for verification.
+        Your agent can handle all of this without you.
+      </p>
+    </div>
+    <div class="snippet" aria-hidden="true">
+      <div><span class="dim">$</span> npx any-doctor@latest --format json</div>
+      <div><span class="dim">[&#123; "decisionKey": "…" &#125;]</span></div>
+    </div>
+  </section>
+</div>
+
+<style>
+  .values { margin-top: 5rem; display: flex; flex-direction: column; gap: 3.5rem; }
+  .value {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: center;
+  }
+  @media (max-width: 640px) {
+    .value { grid-template-columns: 1fr; }
+  }
+  .kicker {
+    font-family: var(--nb-font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+    margin-bottom: 0.6rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-foreground);
+    margin: 0 0 0.65rem;
+  }
+  p {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--color-muted-foreground);
+    margin: 0;
+  }
+  .snippet {
+    background: #0b0d12;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: 0.7rem;
+    padding: 1rem 1.15rem;
+    font-family: var(--nb-font-mono);
+    font-size: 0.85rem;
+    line-height: 1.8;
+    color: rgb(255 255 255 / 0.85);
+    white-space: pre-wrap;
+    box-shadow: 0 14px 34px -18px rgb(0 0 0 / 0.45);
+  }
+  .snippet .dim { color: rgb(255 255 255 / 0.42); }
+  .snippet .ok { color: #34d399; }
+</style>
+
+<script>
+  import { animate, inView } from "motion";
+
+  function bind() {
+    for (const root of document.querySelectorAll<HTMLElement>("[data-values]")) {
+      if (root.dataset.bound) continue;
+      root.dataset.bound = "1";
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      for (const section of root.querySelectorAll<HTMLElement>("[data-reveal]")) {
+        section.style.opacity = "0";
+        inView(section, () => {
+          animate(
+            section,
+            { opacity: [0, 1], transform: ["translateY(18px)", "translateY(0px)"] },
+            { duration: 0.55, easing: [0.22, 0.61, 0.36, 1] },
+          );
+        }, { margin: "0px 0px -15% 0px" });
+      }
+    }
+  }
+  document.addEventListener("astro:page-load", bind);
+</script>

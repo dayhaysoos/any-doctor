@@ -1,0 +1,78 @@
+---
+title: CLI reference
+description: Every command and flag.
+audience: human
+sidebar:
+  order: 16
+---
+
+Doctors live in `./doctors/` (repo), `~/.any-doctor/doctors/` (global),
+and the bundled pack (lowest priority). Generation delegates to your
+installed agent — `run` and `verify` never touch a model.
+
+## generate
+
+```bash
+any-doctor generate "<intent>" [--global]
+```
+
+Prints the exact prompt for your agent to build a doctor for the
+described mistake. `--global` targets `~/.any-doctor/doctors/` instead of
+the repo's `./doctors/`.
+
+## run
+
+```bash
+any-doctor run [--all] [--include-tests] [doctor.(m)js] [dir]
+```
+
+Scan. No argument = every doctor in one review tree. Flags:
+
+| Flag | Does |
+| ---- | ---- |
+| `--all` | Run every doctor |
+| `--include-tests` | Include test files in the scan (some checks need this) |
+| `--format report\|json` | Human report or machine JSON (see the [JSON reference](/agents/json-reference)) |
+| `--base <ref>` | Diff mode: `added` / `continuing` / `noLongerDetected` against the merge base |
+| `--fail-on error\|warning\|info` | Set the gate bar over RAW findings |
+
+Exit code is nonzero when a gate fails or when doctors crash, break, or
+get skipped — those are infrastructure failures, always.
+
+## verify
+
+```bash
+any-doctor verify [--all] [doctor.(m)js]
+```
+
+The fixture gate. With no doctor argument, a fuzzy picker; `--all` runs
+every doctor. Expected findings must appear, lookalikes must stay
+silent, and a check without a claim cannot be certified.
+
+## decide
+
+```bash
+any-doctor decide (--key K | --file F --line N [--check C]) (--accepted|--not-applicable) --reason R
+```
+
+Record a decision on a finding. `--key` resolves without scanning and is
+what agents should use; `--file`/`--line` re-scans to resolve. The reason
+is required. See [remembered decisions](/scans/decisions).
+
+## decisions
+
+```bash
+any-doctor decisions [dir] [--json] [--reverse K]
+```
+
+List remembered decisions for a directory, or reverse one by key.
+
+## help
+
+```bash
+any-doctor help [agents]
+```
+
+General help, or `help agents` for the machine interface — the same
+content as the [agent guide](/agents/agent-guide), printed by the CLI
+itself.
