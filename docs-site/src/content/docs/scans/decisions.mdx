@@ -1,65 +1,34 @@
 ---
 title: Remembered decisions
-description: Accept a finding once and it never shows again — where decisions live and what survives.
+description: Not all findings are bad. Ignore the false positives and they'll never show up again.
 audience: human
 sidebar:
   order: 5
 ---
 
-Not all findings are bad. Some are intentional code the check cannot know
-about. A decision records your call so the finding stops being noise.
+Not all findings are bad. Sometimes the code is fine and the check can't
+tell. A decision is you telling any-doctor to stop bringing it up.
 
-Two dispositions:
+There are two kinds:
 
 - **accepted** — the concern is real, the code is intentional.
-- **not-applicable** — the check's interpretation is wrong for this code.
+- **not-applicable** — the check misread this code.
 
-Both require a reason, and the reason has to be specific enough for a
-human to evaluate later.
+Both ask for a reason. The reason is kept for future reference.
 
-## Recording one
+You decide from the dashboard while you review. Your agent can record
+decisions too — the [agent guide](/agents/agent-guide) covers its side
+of it.
 
-From the dashboard, press `a` or `x` on a finding and type the reason.
-From the CLI (this is what agents use):
+## What's remembered
 
-```bash
-any-doctor decide --key <decisionKey> --accepted --reason "intentional fire-and-forget telemetry"
-```
+A decision sticks to the finding, not to the line number. The code
+moves, the file gets renamed — the decision still applies. The finding
+only comes back when something actually changed: the code changed, or
+the doctor changed what it looks for.
 
-The `--key` comes from the JSON scan output, and it is shell-safe
-(base64url). Prefer `--key`: it resolves without re-scanning. The
-alternative is coordinate resolution:
+## Changing your mind
 
-```bash
-any-doctor decide --file src/services/chat.ts --line 15 --accepted --reason "..." async .
-```
-
-## What survives
-
-Decisions attach to a finding's identity — a digest of the check, the
-line content, the enclosing function — not to raw coordinates:
-
-- The line moves, the file renames: the decision holds.
-- The flagged code changes: the finding resurfaces. You changed the
-  evidence; the call gets re-made.
-- The doctor's meaning changes: the author bumps the check's `revision`,
-  and decisions on the old meaning resurface. Cosmetic doctor edits
-  (comments, formatting) do not bump it — decisions survive those.
-- Duplicate identical occurrences: held back for you, because one
-  decision cannot honestly cover a population it was never evaluated
-  against.
-
-## Listing and reversing
-
-```bash
-any-doctor decisions           # human table
-any-doctor decisions --json    # machine state
-any-doctor decisions --reverse <key>
-```
-
-State lives in `<dir>/.any-doctor/decisions.local.json` — the directory
-you scanned, not the one you ran from. Delete the file and you are back
-to raw findings; nothing else holds state.
-
-Decisions never flip a gate: CI always judges [raw
-findings](/reference/ci), so dismissing noise cannot fake a clean run.
+Press `u` on a finding in the dashboard to undo its decision. Decisions
+live in your repo, in `.any-doctor/`. Delete that file and everything
+comes back.

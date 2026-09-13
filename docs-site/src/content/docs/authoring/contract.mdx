@@ -1,48 +1,56 @@
 ---
 title: The doctor contract
-description: One JS file, zero imports, confined to reading. What a doctor is made of.
+description: Metadata, shared analysis, and inspectable findings for a doctor and its fixtures.
 audience: human
 sidebar:
   order: 11
 ---
 
-A doctor is a single JS file. No imports, no dependencies, no build step.
-It exports a `meta` object and a `doctor(ctx)` function, and that is the
-whole contract.
+A doctor is a single JS file. It exports a `meta` object and a
+`doctor(ctx)` function. Companion fixtures describe the cases used to verify it.
+
+Here's what the metadata for a doctor looks like:
 
 ```js
 export const meta = {
-  id: "my-doctor",
-  description: "What this doctor looks for, in one line.",
+  id: "refresh-session",
+  description: "Direct discarded session refresh promises.",
   severity: "warning",
-  blindSpots: [ "what it cannot see" ],
-  checks: [
-    {
-      id: "forgotten-await",
-      description: "A call whose result is never awaited.",
-      severity: "warning",
-      revision: 1,
-      claim: "A call to send() in statement position.",
-      lookalikes: ["results passed to Promise.all"],
-      impact: "Errors vanish; the work is fire-and-forget.",
-      why: "send() returns a promise nothing consumes.",
-      fix: "Await it or return it.",
-    },
+  blindSpots: [
+    "Only direct named imports from @acme/session are recognized.",
+    "Stored promises and wrapper calls are not followed.",
+    "Without call analysis this check does not run.",
   ],
+  checks: [{
+    id: "discarded-refresh",
+    description: "The session refresh call's result is discarded.",
+    severity: "warning",
+    revision: 1,
+    needs: ["calls"],
+    onUnknown: "skip",
+    reportingUnit: "occurrence",
+    claim: "A direct named refreshSession import from @acme/session is called as a discarded expression.",
+    lookalikes: ["Awaited, returned, passed, or stored results", "Shadowed local functions"],
+    impact: "Discarding this promise can leave refresh failures unhandled.",
+    why: "The identified package call is a standalone discarded expression.",
+    fix: "Await or return this promise where appropriate for the caller's contract.",
+  }],
 };
-
-export async function doctor(ctx) {
-  // read files, search structurally, return findings
-}
 ```
+
+This metadata accompanies the complete implementation and fixtures in
+[Writing your first doctor](/authoring/first-doctor). That example assumes the
+named package export returns a promise; metadata alone does not establish it.
 
 ## The confinement
 
-The runtime gives the doctor a read-only `ctx` and nothing else. No
-network. No writes. No imports. A doctor can read your files, run
-structural searches, and report findings. It cannot phone home, mutate
-your repo, or grow dependencies. That is what makes third-party doctors
-safe to run.
+The runtime gives the doctor a read-only context and nothing more.
+
+Doctors run under Node's permission model: file writes, subprocesses,
+and native addons are denied by Node itself, and an import guard refuses
+every module a doctor tries to reach. Network globals are deleted before
+doctor code runs, and a checker scans the doctor file for network calls.
+Nothing phones home.
 
 ## Check fields
 
@@ -50,18 +58,45 @@ safe to run.
 | ----- | ---------- |
 | `id` | Stable check name; appears as `doctor/check-id` |
 | `description` | The heading shown for each finding |
-| `severity` | `error`, `warning`, or `info` |
+| `severity` | `error`, `warning`, or `info`; severity does not establish certainty |
 | `revision` | Bump when the check's *meaning* changes; cosmetic edits keep it |
 | `claim` | The observable condition the check states. Required to certify |
 | `lookalikes` | Shapes that look like the claim but are fine |
-| `onUnknown` | `"narrow"` or `"skip"` — what to do when the evidence is incomplete |
+| `needs` | Required analysis capabilities, such as `["calls"]`; declare these when using optional analysis |
+| `onUnknown` | `"narrow"` or `"skip"` when required analysis is unavailable; implement and test this behavior |
 | `reportingUnit` | `occurrence`, `file`, or `project` — what one finding covers |
 | `impact` / `why` / `fix` | The explanation carried into every report and JSON scan |
-| `evidence` | Optional range covering the whole flagged expression |
 
 The `claim` is the load-bearing field. A check without a claim cannot be
 certified, because eloquent impact prose is not a testable statement.
-More on this in [honest checks](/authoring/honest-checks).
+A nonempty claim is not proof that the implementation establishes it. Verification
+also requires lookalikes, and an `onUnknown` policy when `needs` is declared.
+Declare a reporting unit on new checks and inspect skipped coverage. More on this
+in [honest checks](/authoring/honest-checks).
+
+## Report an inspectable finding
+
+`evidence` belongs to an emitted finding, not the check metadata:
+
+```js
+ctx.report.finding({
+  rule: "discarded-refresh",
+  file,
+  line: call.line,
+  column: call.column,
+  evidence: { endLine: call.endLine, endColumn: call.endColumn },
+});
+```
+
+Lines are one-based and columns are zero-based. Supply the expression's end
+position for multiline evidence. Distinct occurrences on one line need distinct
+columns; location and evidence help reviewers inspect the claimed operation.
+
+Doctors receive shared structural and binding analysis through `ctx`. Use these
+facts to establish identity and scope; keep framework semantics in the doctor.
+Do not import a parser or create a private text-based substitute for semantic
+facts. See [testing and evaluating doctors](/authoring/testing-doctors) for
+location witnesses, unavailable-analysis fixtures, and independent evaluation.
 
 ## Where doctors live
 

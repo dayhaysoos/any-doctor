@@ -1,21 +1,32 @@
 ---
 title: Reviewing findings
-description: The dashboard — walk the tree, decide with reasons, copy the work for your agent.
+description: The dashboard.
 audience: human
 sidebar:
   order: 4
 ---
 
-Run bare (`any-doctor` with no doctor argument) and you get the
-interactive review: pick the doctors, then the dashboard opens on the
-aggregate tree — doctor → check → finding.
+Run `npx any-doctor@latest` to get the interactive review. Choose your
+doctors and select which ones to run. Review the findings yourself.
 
-## The tree
+You can navigate the tree below with your keyboard.
 
-Expand a doctor to see its checks with counts; expand a check to see its
-findings; land on a finding to read the claim and the code. Findings stay
-hidden until you expand the check, so a noisy doctor never floods the
-screen.
+```text
+┌ any-doctor ─────────────────────────────────────────────┐
+│                                                         │
+│  ▸ async                                      ×5        │
+│  ▸ convex                                     ×5        │
+│  ▾ slop                                       ×58       │
+│      ▾ prefix-overlapping-substring-match     ×2        │
+│            src/services/search.ts:12                    │
+│            src/services/search.ts:28                    │
+│      ▸ named-import-without-reference          ×1       │
+│  ▸ openrouter                                 ×2        │
+│  ▸ effect-v4                                  ×6        │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+  ↑↓ move · enter expand · a accept · x not-applicable · c copy · q quit
+```
 
 ## Keys
 
@@ -33,21 +44,9 @@ screen.
 
 ## Decisions need reasons
 
-`a` and `x` prompt for a reason, and the reason is required. A reason is
-for the future human — including future you — evaluating whether the
-decision still holds. "Looks fine" is a rejection of the tool, not a
-decision.
-
-Decisions attach to the finding's identity, not its coordinates: code
-moving around keeps the decision applied. What resurfaces a finding for
-reassessment: the flagged code changing, the doctor's meaning changing,
-or duplicate identical occurrences. Details on the
-[decisions page](/scans/decisions).
+`a` and `x` prompt you for the reason your choices are being made, for
+future reference.
 
 ## Copy the work for your agent
 
-`c` copies a fix prompt at whatever level you are on: one finding, a
-whole check, or an entire doctor. The prompt carries the finding, the
-verify command, and the ready-made `decide` command — paste it into your
-agent and the scan-investigate-fix-verify loop runs without you typing
-the plumbing.
+`c` copies a prompt for you to send to your agent so it can fix.

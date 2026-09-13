@@ -6,17 +6,16 @@ sidebar:
   order: 1
 ---
 
-No install needed. From the repo you want to scan:
+Run this command in your TypeScript or JavaScript repo.
 
 ```bash
 npx any-doctor@latest
 ```
 
-With a terminal attached you get the interactive flow: pick the doctors
-to run, watch the scan, then review findings in the dashboard. Pick a
-doctor, press Enter, and navigate the tree of doctor → check → finding.
+You can choose which doctors you want to run from the interactive picker.
+These are sample doctors just to try out.
 
-Want one specific doctor only? Name it:
+You can select a specific doctor like this:
 
 ```bash
 npx any-doctor@latest run async
@@ -24,8 +23,9 @@ npx any-doctor@latest run async
 
 ## The agent version
 
-Agents should not parse the interactive dashboard. One command, one JSON
-object on stdout:
+Agents shouldn't be navigating an interactive menu. We support the same
+capabilities with a fully JSON experience. Your agent would run the
+commands like this:
 
 ```bash
 npx any-doctor@latest run --all <dir> --format json

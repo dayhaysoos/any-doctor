@@ -6,42 +6,47 @@ sidebar:
   order: 0
 ---
 
-A doctor is a single JS file that scans your repo for mistakes and reports
-the findings. It is deterministic: same code in, same findings out. No
-model, no tokens, no hallucinated problems.
+A doctor is a single JS file that scans your repo for mistakes and
+reports the findings. It's a deterministic way to capture frequent
+patterns you see in code reviews. This allows you to run code review
+scans without wasting tokens on the findings, making it easier for your
+agents to fix things without searching the whole codebase.
 
-You run it after your agent finishes work. Findings come back with the
-file, the line, and the reason. You (or your agent) review them, fix what
-is real, and record decisions on the rest. Decisions are remembered: an
-accepted finding never shows up again, even after the line moves.
+Run it after your agent finishes work. You and your agent can fix what's
+real and record decisions. The decisions persist between runs so that if
+you decide to ignore a finding, it won't show up again.
 
 ## The loop
 
-1. Your AI agent makes a mistake. Then makes it again. And again.
-2. You describe the mistake and write a doctor for it — or your agent
-   writes the doctor while you watch.
-3. Every scan from then on catches it. Re-checking costs nothing.
+1. Your agent writes code. You run /review. It finds bugs and fixes.
+   Your agent continues to write code and fix the same exact bug.
+2. You call out the recurring pattern and ask your agent to write a
+   doctor for it. Every doctor scan moving forward will catch that
+   pattern again. No inference being spent on the search.
 
-## What ships in the box
+## Predefined sample doctors
 
-Five doctors cover common agent-made mistakes:
+We have some doctors for you to test in your own codebase!
 
-- **async** — fetch hygiene, dropped promises, timer cleanup
-- **convex** — indexed reads, bounded collects, query discipline
-- **slop** — duplicated helpers, dead exports, hostname-sniffed
+- [async](/doctors/async): fetch hygiene, dropped promises, timer cleanup
+- [convex](/doctors/convex): indexed reads, bounded collects, query discipline
+- [slop](/doctors/slop): duplicated helpers, dead exports, hostname-sniffed
   environments, careless text matching
-- **openrouter** — stream errors surfaced, cancellations that stop billing
-- **effect-v4** — the mechanical rules of the kitlangton Effect skill,
-  enforced
+- [openrouter](/doctors/openrouter): stream errors surfaced, cancellations
+  that stop billing
+- [effect-v4](/doctors/effect-v4-kitlangton): the rules of the
+  [kitlangton Effect skill](https://www.ui-skills.com/skills/kitlangton/effect)
 
-The real product is the doctors you write yourself. Your codebase has its
-own patterns. A doctor is a single JS file. Describe the mistakes to your
-agent, point it at the repo, ship it to your team.
+## The goal
+
+The real goal here is for you to
+[write your own doctors](/authoring/first-doctor) tailored specifically
+to your codebase or team. Ask your agent how to create doctors using
+any-doctor!
 
 ## Where to go next
 
 - [Quickstart](/getting-started/quickstart) — run your first scan
-- [The report](/scans/report) — read the findings and the score
-- [Writing your first doctor](/authoring/first-doctor) — capture a
-  mistake forever
-- [The agent guide](/agents/agent-guide) — hand any-doctor to your agent
+- [The report](/scans/report) — how to read findings and the score
+- [Writing your first doctor](/authoring/first-doctor) — capture a pattern forever
+- [The agent guide](/agents/agent-guide) — the interface your agent reads

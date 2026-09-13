@@ -1,59 +1,260 @@
 ---
 title: Writing your first doctor
-description: Describe the mistake, generate the prompt, let your agent build it, verify it.
+description: Define a bounded claim, build a doctor with your agent, and evaluate its findings.
 audience: human
 sidebar:
   order: 12
 ---
 
-The intended workflow is: you describe the mistake, your agent writes the
-doctor, fixtures prove it works, and the verify gate holds it honest.
+A doctor turns a recurring concern into a repeatable check. You describe the
+concern, your agent writes the detector and fixtures, and Any Doctor runs them
+without asking a model to judge each scan.
 
-## 1. Describe the mistake
+**Passing verification means the doctor agrees with its test cases.** It does
+not establish accuracy on arbitrary repositories. This tutorial includes the
+next steps: challenge the detector and inspect its findings on real code.
 
-The same mistake, third time. Write down what it is:
+## 1. Define what the doctor can establish
 
-> "The agent keeps calling `refreshSession()` without awaiting it, so the
-> token it returns is always stale."
+Start with an observed problem and a small, explicit scope. Suppose your project
+uses a package named `@acme/session`, whose `refreshSession` export returns a
+promise. Your convention requires callers to handle that promise.
 
-## 2. Generate the prompt
+“Flag every call without `await`” is too broad: returning the promise or passing
+it to `Promise.all` may be correct. A narrower first check is:
+
+> Report a standalone expression that discards a direct call to the named
+> `refreshSession` import from `@acme/session`, including renamed imports.
+
+Here is the intended behavior. The examples assume the named import unless
+otherwise noted:
+
+| Code | Outcome | Reason |
+| --- | --- | --- |
+| `refreshSession();` | Finding | The call's result is discarded |
+| `refreshSession(); await Promise.all([]);` | Finding | The unrelated await does not consume this result |
+| `await refreshSession();` | No finding | The immediate result is awaited |
+| `return refreshSession();` | No finding | The immediate result is returned |
+| `await Promise.all([refreshSession()]);` | No finding | The result is passed to the combiner |
+| A local function also named `refreshSession` | No finding | It is a different binding |
+| `const pending = refreshSession();` | Outside this claim | Following the stored promise requires further analysis |
+
+“No finding” does not certify the surrounding program as safe. For example, a
+returned promise may be mishandled by its caller. This check only establishes
+**direct discards**; it does not prove eventual promise settlement or stale tokens.
+
+Before generating, write down the claim, valid lookalikes, required facts, and
+unsupported cases. [Honest checks](/authoring/honest-checks) explains how to keep
+that evidence boundary consistent throughout the report.
+
+## 2. Generate an agent prompt
+
+From the repository where you want to use the doctor:
 
 ```bash
-any-doctor generate "refreshSession() called without awaiting — stale token"
+any-doctor generate "Detect direct discarded calls to the named refreshSession import from @acme/session, including renamed imports. Spare awaited, returned, passed, and stored results and shadowed local functions. Use shared call facts; skip when analysis is unavailable."
 ```
 
-This prints the exact prompt to hand your agent: the contract, the
-fixture expectations, the honesty rules. Generation delegates to your
-installed agent; `run` and `verify` never touch a model.
+`generate` prepares the prompt and copies it to your clipboard when available;
+otherwise it prints it. It does **not** launch an agent. Paste the prompt into
+your own agent session and use the working directory it prints.
 
-Add `--global` to install the doctor to `~/.any-doctor/doctors/` instead
-of the repo's `./doctors/`.
+The command creates the doctor directory and plants or refreshes Any Doctor's
+managed `AGENTS.md` instructions there. It preserves an existing user-owned copy.
+The agent then writes the doctor and its companion fixtures. `--global` chooses
+`~/.any-doctor/doctors/` as the destination instead of `./doctors/`; it does not
+create a completed doctor by itself.
 
-## 3. Your agent writes the doctor
+Use the exact verification command printed by `generate`, since its generated
+filename depends on your intent. `run` and `verify` do not invoke a model.
 
-Give the prompt to your agent with the repo open. It writes the single
-JS file, a `claim` for each check, and fixture files that prove both the
-catch and the lookalikes. Watch that it declares `revision: 1` on each
-check — that is what keeps your future decisions attached through
-cosmetic edits.
+## 3. Inspect the implementation and fixtures
 
-## 4. Verify
+The following complete example uses fixed filenames so you can also copy it
+manually. The package name is illustrative: replace it and the promise contract
+with your actual dependency before adopting this check.
+
+Create `doctors/refresh-session.mjs`:
+
+```js
+export const meta = {
+  id: "refresh-session",
+  description: "Direct discarded session refresh promises.",
+  severity: "warning",
+  blindSpots: [
+    "Only direct named imports from @acme/session are recognized.",
+    "Namespace imports, wrappers, and later use of stored promises are not followed.",
+    "The rule relies on this package's refreshSession export returning a promise.",
+    "Without call analysis this check does not run.",
+  ],
+  checks: [{
+    id: "discarded-refresh",
+    description: "The session refresh call's result is discarded.",
+    severity: "warning",
+    revision: 1,
+    needs: ["calls"],
+    onUnknown: "skip",
+    reportingUnit: "occurrence",
+    claim: "A direct named refreshSession import from @acme/session is called as a discarded expression.",
+    lookalikes: [
+      "Awaited, returned, passed, or stored call results",
+      "Unrelated functions and shadowed local bindings with the same name",
+    ],
+    impact: "Discarding this promise can leave refresh failures unhandled.",
+    why: "The identified package call is a standalone discarded expression.",
+    fix: "Await or return this promise where appropriate for the caller's contract.",
+  }],
+};
+
+export async function doctor(ctx) {
+  if (!ctx.analysis.available) return;
+
+  for (const file of await ctx.files.list()) {
+    const facts = ctx.analysis.calls(file);
+    for (const call of facts.calls) {
+      const target = call.target;
+      if (
+        target.source !== "@acme/session" ||
+        target.importedName !== "refreshSession" ||
+        target.members.length !== 0 ||
+        target.reassigned ||
+        call.usage !== "discarded"
+      ) continue;
+
+      ctx.report.finding({
+        rule: "discarded-refresh",
+        file,
+        line: call.line,
+        column: call.column,
+        evidence: { endLine: call.endLine, endColumn: call.endColumn },
+      });
+    }
+  }
+}
+```
+
+The doctor has no imports of its own. It uses the host's call facts to identify
+imports in the **target source**. Comparing the spelling `refreshSession` alone
+would confuse unrelated functions and miss renamed imports.
+
+Create `doctors/refresh-session.fixtures.mjs` beside it:
+
+```js
+const imported = 'import { refreshSession } from "@acme/session";';
+const hit = (line, column = 0) => ({
+  rule: "discarded-refresh", file: "src/example.ts", line, column,
+});
+
+export const fixtures = [
+  {
+    name: "two identical discards on the same line remain separate",
+    seed: { "src/example.ts": `${imported}\nrefreshSession(); refreshSession();` },
+    expected: [hit(2, 0), hit(2, 18)],
+  },
+  {
+    name: "renamed import remains the same package function",
+    seed: { "src/example.ts": 'import { refreshSession as renew } from "@acme/session";\nrenew();' },
+    expected: [hit(2)],
+  },
+  {
+    name: "unrelated Promise.all does not consume the refresh",
+    seed: { "src/example.ts": `${imported}\nrefreshSession(); await Promise.all([]);` },
+    expected: [hit(2)],
+  },
+  {
+    name: "multiline call is still a direct discard",
+    seed: { "src/example.ts": `${imported}\nrefreshSession(\n);` },
+    expected: [hit(2)],
+  },
+  {
+    name: "awaited, returned, passed, and stored results are outside the claim",
+    seed: { "src/example.ts": `${imported}
+await refreshSession();
+await Promise.all([refreshSession()]);
+const pending = refreshSession();
+export function forward() { return refreshSession(); }` },
+    expected: [],
+  },
+  {
+    name: "shadowing, comments, and strings are not package calls",
+    seed: { "src/example.ts": `${imported}
+export function local() {
+  const refreshSession = () => 1;
+  refreshSession();
+}
+// refreshSession();
+const example = "refreshSession();";` },
+    expected: [],
+  },
+  {
+    name: "analysis unavailable explicitly abstains",
+    analysis: "off",
+    seed: { "src/example.ts": `${imported}\nrefreshSession();` },
+    expected: [],
+  },
+];
+```
+
+Fixture seeds are source to analyze; verification does not execute the seeded
+application or need the illustrative package installed. Lines are one-based;
+columns are zero-based. The same-line fixture proves that two occurrences are
+not collapsed into one finding.
+
+Read [the contract](/authoring/contract) for metadata, capabilities, and evidence
+ranges. Keep `revision` unchanged for cosmetic edits; bump it when the meaning
+of a check changes so old review decisions are reconsidered appropriately.
+
+## 4. Verify the specified behavior
+
+For the manually copied example:
 
 ```bash
-any-doctor verify my-doctor
+any-doctor verify doctors/refresh-session.mjs
 ```
 
-The fixture gate runs the doctor against its own fixtures: every
-expected finding must appear, every lookalike must stay silent. A check
-without a claim cannot be certified. If the gate passes, the doctor is
-real.
+Read both failures and “not exercised” entries. Verification compares expected
+and actual findings, checks claim metadata, and exercises relevant shared
+corpora and location coverage. Missing optional analysis or legacy coverage can
+produce skips; a successful exit does not mean every check was exercised.
 
-## 5. Scan
+If a case fails, reason from the intended behavior before changing anything.
+Fix a wrong expectation only with evidence explaining why it was wrong. Do not
+remove a useful positive or weaken a claim just to make the report look clean.
+
+## 5. Challenge the doctor
+
+The example fixtures are a starting point. The same author can put the same
+mistake into both detector and tests. Write a second wave of counterexamples,
+and seek independently labeled cases before making broader accuracy claims.
+
+Rename bindings, reformat calls, move identical violations into separate
+functions, and introduce unrelated nearby code. For property-based checks,
+reorder properties and use shorthand. Equivalent code should produce equivalent
+findings. Keep real positive controls beside lookalikes to catch over-suppression.
+
+[Testing and evaluating doctors](/authoring/testing-doctors) provides a fuller
+matrix, unavailable-analysis checks, and a release checklist. An author's own
+adversarial pass is useful, but is not independent evaluation.
+
+## 6. Scan and inspect the findings
 
 ```bash
-any-doctor run my-doctor
+any-doctor run doctors/refresh-session.mjs
 ```
 
-From now on the mistake is a finding with a file and a line, every scan,
-for free. When the agent does it again next week, you will know before
-review does.
+Inspect each finding against source before asking an agent to change code.
+Separate confirmed defects, contextual review candidates, false positives, and
+unknowns. Check the proposed fix as well as the detection: a true observation
+can still lead to an unsafe recommendation.
+
+For example, seeing a public API called by server code does not establish that
+it should become internal; clients may need it too. Seeing a spread in a patch
+does not establish that arbitrary client-controlled fields are written.
+
+Retain confirmed false positives as counterexamples, preserve useful positives,
+and rerun verification after changes. Before sharing a doctor, test the exact
+artifact another person will install on a fixed real-code target. Record its
+version, scope, and coverage limits. Fewer findings alone do not prove improvement.
+
+You now have a repeatable check with evidence for its stated scope. Future syntax
+variations and framework versions still need evaluation.

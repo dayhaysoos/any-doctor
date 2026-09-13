@@ -1,0 +1,353 @@
+---
+title: Testing and evaluating doctors
+description: Challenge false positives, preserve useful findings, and verify the artifact people will run.
+audience: human
+sidebar:
+  order: 14
+---
+
+A fixture suite answers whether a doctor behaves as specified on its cases.
+Evaluation asks whether those specifications and findings are useful on code
+outside the author's examples. Keep both parts of the authoring workflow.
+
+This guide follows the `refresh-session.mjs` doctor from
+[Writing your first doctor](/authoring/first-doctor). Copy its doctor and fixture
+files first, or substitute your own paths. Work from that repository's root and
+use the same Any Doctor installation throughout an evaluation.
+
+| Step | Action | Evidence you obtain |
+| --- | --- | --- |
+| 1 | Define expectations and counterexamples | A specification that does not depend on current detector output |
+| 2 | Verify fixtures and inspect every result | Agreement on the exercised cases, plus explicit failures and skips |
+| 3 | Run independently labeled cases | Evidence beyond the examples used to tune the detector |
+| 4 | Scan fixed real code and review changes | Source-grounded judgments about findings and recommendations |
+| 5 | Test the files or package you distribute | Evidence about the artifact recipients will actually run |
+| 6 | Make an acceptance decision | A bounded statement of what is ready and what remains unresolved |
+
+## 1. Define expectations and counterexamples
+
+For each check, state its observable claim, unit of reporting, valid lookalikes,
+required facts, and unsupported cases. Label examples from the intended behavior
+and project conventions before looking at the detector's output.
+
+Keep the original inputs and expectations. If an expectation is wrong, record
+the evidence for correcting it. If you intentionally narrow a rule, record which
+previously requested cases are now unsupported and why. Do not redefine success
+silently until the report is empty.
+
+### Build a matrix of counterexamples
+
+Choose the rows relevant to your rule. Include positive and negative controls
+so a repair cannot pass merely by suppressing everything.
+
+| Challenge | What it should establish |
+| --- | --- |
+| A minimal real violation | The detector catches the original concern |
+| A valid similar-looking operation | The nearest innocent alternative stays silent |
+| Renamed imports and parameters | Binding identity survives a spelling change |
+| A local binding with a familiar name | Unrelated functions and objects are not treated as framework APIs |
+| Comments, strings, and nested scopes | Source text and lexical boundaries are respected |
+| One-line and multiline forms | Formatting does not change meaning or detection |
+| Reordered properties and shorthand | Equivalent object construction retains the result |
+| Returned, awaited, passed, stored, and discarded values | The check distinguishes immediate uses without inventing eventual consumption |
+| An unrelated nearby await or helper call | Proximity does not substitute for evidence about the flagged value |
+| Two identical violations in separate functions | Text deduplication does not erase distinct occurrences |
+| Two violations on one line | Separate columns preserve separate findings |
+| Unavailable analysis and unresolved operations | Abstention or a narrower claim remains explicit |
+| Supported extensions, test paths, and generated code | Scan scope matches the documented claim |
+| Framework versions and custom wrappers | Applicability is established or the limitation is visible |
+
+These transformations test a general requirement: equivalent code should receive
+equivalent findings. Add new forms beyond the exact examples that exposed a bug.
+A special case for one failing string rarely repairs the underlying class.
+
+## 2. Verify fixtures and interpret the results
+
+Run the tutorial's companion fixtures through the real CLI:
+
+```bash
+any-doctor verify doctors/refresh-session.mjs
+```
+
+For repeatable evidence, create a fresh output directory and record a run:
+
+```bash
+evaluation_output="$(mktemp -d)"
+doctor_path="$PWD/doctors/refresh-session.mjs"
+any-doctor verify "$doctor_path" > "$evaluation_output/verify.log" 2>&1
+verify_status=$?
+printf 'verify exit: %s\nevidence: %s\n' "$verify_status" "$evaluation_output"
+cat "$evaluation_output/verify.log"
+```
+
+Keep these variables in the same shell for the later commands. Saving the status
+immediately prevents a later `cat` or `printf` from replacing the result you meant
+to record. Inspect the log even when the exit status is zero.
+
+### Interpret failures and skipped coverage
+
+Suppose an evaluation summary says **12 passed, 0 failed, 2 not exercised**.
+These numbers are illustrative, not an expected result for the tutorial doctor
+or an exact CLI transcript. They describe 12 successful checks and two coverage
+gaps; they do not establish 14 successful detection tests.
+
+| Observed outcome | Interpretation and next action |
+| --- | --- |
+| An expected finding is missing | Investigate a missed positive, an incorrect expectation, or a scope/coverage problem before changing the label |
+| An unexpected finding appears | Inspect the source and intended claim; the detector or the expectation may be wrong |
+| Required analysis is unavailable | The dependent detection path was not exercised; restore that capability before claiming coverage |
+| A doctor crashes or source cannot be analyzed | Resolve or explicitly delimit the execution/coverage failure; silence is not evidence of correct detection |
+| A deliberate abstention fixture passes | The uncertainty policy behaved as expected; the underlying concern was not thereby detected or proven absent |
+
+If an independent runner writes result JSON, inspect its failure counts as well
+as its command exit. Some runners complete successfully after recording failed
+expectations. The `run --format json` command used below emits scan observations;
+it does not automatically compare them with independent labels.
+
+### Verify locations and unavailable-analysis behavior
+
+An occurrence fixture should contain two distinct locations for the same check
+in one file. If both are on one line, include their zero-based columns in
+`expected`. Line numbers are one-based. File and project checks need positive
+witnesses appropriate to their unit.
+
+Pin unavailable analysis using `analysis: "off"` in a separate fixture. When a
+check declares `onUnknown: "skip"`, include source that would otherwise trigger
+it and expect no findings. This proves the abstention path; it does not prove
+that the unavailable detector ran successfully. For `"narrow"`, test the exact
+reduced claim and its lookalikes.
+
+Verification also exercises applicable shared corpora and location coverage.
+Read “missing,” “unexpected,” and “not exercised” output. Some coverage gaps can
+be reported as skips even when the command succeeds. Do not count those rows as
+passed detection tests, or change a warning to info solely to bypass coverage.
+
+## 3. Run independently labeled cases
+
+An agent that writes a detector and its fixtures may encode the same assumption
+in both. Ask it to attack its first version, but also retain examples labeled
+independently of that implementation. A second agent given the same assumptions
+is not automatically an independent evaluator.
+
+Keep a separate evaluation set that is not used to tune the detector. When a
+failure becomes a development regression fixture, retain its origin and add new
+held-out cases for the next evaluation. Do not continue calling repeatedly tuned
+examples an unseen test set.
+
+Keep the three evidence sources distinct:
+
+| Evidence source | How to use it |
+| --- | --- |
+| Development fixtures | Available to the implementing agent for iteration and regression testing |
+| Held-out evaluation cases | Labeled independently and withheld during tuning; run against the chosen candidate |
+| Real-code review | Inspect source and intended behavior, including whether the recommendation is appropriate |
+
+For example, an evaluator can place prepared source cases under
+`evaluation/held-out/`, using supported source extensions. Keep labels and output
+outside that target directory. Then scan those cases with the candidate doctor:
+
+```bash
+any-doctor run "$doctor_path" evaluation/held-out --format json \
+  > "$evaluation_output/held-out.json" 2> "$evaluation_output/held-out.stderr"
+held_out_status=$?
+printf 'held-out scan exit: %s\n' "$held_out_status"
+```
+
+Prepare that directory before running the command; Any Doctor does not create an
+evaluation corpus for you. The default scope excludes test-named source files
+and test directories. If your cases use those paths, explicitly use
+`--include-tests` and record that choice. Fixture sandboxes have different test
+visibility, so a fixture pass alone does not prove the default scan found a case.
+
+Compare the JSON's findings with the independently established labels. A small
+evaluation record might look like this. It is a suggested record format, **not**
+a fixture API or a file automatically consumed by `verify`:
+
+```yaml
+case_id: renamed-import-discard
+source: src/renamed.ts
+check: discarded-refresh
+expected: One finding at the direct discarded call
+reason: Renaming the import preserves its identity and discarded result
+origin: Independently labeled before candidate evaluation
+actual: Not evaluated yet
+classification: Pending
+evidence: Pending scan output and source review
+```
+
+Record the actual location and outcome after running. Resolve disputed labels
+against source, the intended claim, and the relevant package or framework
+contract. An evaluator can be wrong too. Preserve the original label, correction,
+and supporting reason; do not replace labels just because the doctor disagrees.
+
+Track false positives and missed positives per check. A suite deliberately filled
+with difficult counterexamples measures those boundaries, not the frequency of
+errors in customer repositories. Report its composition and limits alongside
+any pass percentage.
+
+## 4. Scan fixed real code and review changes
+
+Use a fixed target checkout or snapshot so before/after results are comparable.
+Keep its content and scan options unchanged. Record target revision and dirty
+state, or a digest manifest for files that are not represented by a commit.
+
+Prepare the snapshot outside your evaluation output directory, then substitute
+its actual absolute path here:
+
+```bash
+target_path="/absolute/path/to/fixed-target"
+any-doctor run "$doctor_path" "$target_path" --format json \
+  > "$evaluation_output/real-code.json" 2> "$evaluation_output/real-code.stderr"
+real_code_status=$?
+printf 'real-code scan exit: %s\n' "$real_code_status"
+```
+
+Keep the target read-only during evaluation. Confirm the scan included the
+intended files and analysis capabilities before judging its findings. Inspect
+errors and coverage information alongside the finding count. For a new doctor,
+this reviewed run establishes a baseline; for an update, retain the earlier
+artifact's output and compare it with the candidate under the same conditions.
+
+Classify findings against source:
+
+- **Confirmed concern:** the evidence supports the stated defect or cleanup.
+- **Review candidate:** the pattern exists; action depends on additional context.
+- **False positive:** the stated condition or interpretation does not hold.
+- **Unknown:** the necessary evidence is missing or coverage is incomplete.
+
+Review the recommendation as carefully as the condition. A real public API call
+may be required by clients. An index range does not prove small cardinality. A
+patch spread may contain server-selected fields. A fix must preserve the
+application's intended behavior.
+
+Compare three groups separately:
+
+| Group | Questions for source review |
+| --- | --- |
+| Retained findings | Do useful positives survive? Are locations, claims, and recommendations still accurate? |
+| Removed findings | Was a false positive corrected, the claim intentionally narrowed, coverage lost, or a useful positive missed? |
+| Added findings | Is this a newly detected concern, a contextual candidate, or a false positive? |
+
+Establish comparable coverage before interpreting disappearance as improvement.
+A file excluded from the new scan or a check skipped without analysis can make
+the report look cleaner without improving detection. Review location or identity
+changes before treating apparent removals and additions as distinct operations.
+Fewer findings and higher scores alone do not establish better accuracy.
+
+Preserve confirmed false positives as counterexamples and useful positives as
+sensitivity tests. An accepted concern is different from an incorrect detector;
+a review dismissal should not automatically become a global suppression rule.
+
+## 5. Test what you distribute
+
+### Sharing a custom doctor
+
+You do not need to rebuild Any Doctor to share a doctor file. Copy the exact
+doctor and companion fixture files to a separate test directory and verify them
+with the Any Doctor version the recipient will use. Record that version, the
+file digests, and supported framework and analysis versions.
+
+Then scan the same held-out cases and fixed target using the copied doctor's
+explicit path. Check that metadata and fixtures accompanied the implementation
+and that the results match the evaluated version. Substitute the recipient's
+installation and your copied doctor's actual absolute paths:
+
+```bash
+/absolute/path/to/any-doctor verify /absolute/path/to/shared/refresh-session.mjs
+/absolute/path/to/any-doctor run /absolute/path/to/shared/refresh-session.mjs \
+  "$target_path" --format json
+```
+
+Capture these results separately. A globally discovered or bundled doctor with
+the same name is not a substitute for testing the file you intend to share.
+
+### Releasing Any Doctor or a packaged doctor
+
+If you change Any Doctor itself or distribute a package, build and pack the exact
+candidate using that project's release scripts, then install its
+tarball in a fresh temporary consumer. Repeat verification and the fixed-target
+scan, plus the same independent cases, using the installed CLI and explicit
+doctor path. For a doctor-only package, use the intended compatible Any Doctor
+installation; do not assume the package supplies its own CLI. Record the tarball's
+SHA-256, installed versions, and source-reviewed output comparison.
+
+Uncommitted working files are not represented by a HEAD-only archive. A published
+`npx ...@latest` command does not test an unpublished candidate. Label local,
+packed, and published results separately; a passing local test is not evidence
+that packaging included the same implementation or dependencies.
+
+## 6. Decide whether it is ready to share
+
+- Fix unexplained failures within the supported claim. If the expectation is
+  wrong, correct it with retained evidence before rerunning.
+- Resolve unsafe recommendations before presenting findings as actionable.
+  A correct observation does not excuse a behavior-breaking fix.
+- Document and test intentional exclusions. Verify that conservative handling
+  does not suppress demonstrably unrelated positive controls.
+- Present contextual findings as review candidates, with the additional checks
+  needed before changing code.
+- State what passed and what remains untested. Unavailable analysis, crashes,
+  and unresolved labels cannot support a claim of complete coverage.
+
+Choose an evidence-supported verdict: ready for the stated scope, suitable for
+supervised review with named limits, or not ready because specific failures remain.
+There is no universal pass percentage that substitutes for these judgments.
+
+### Report the evidence and its limits
+
+Before sharing, provide:
+
+- Doctor/check IDs and semantic revisions, exact source or artifact identity,
+  runtime version, and relevant framework versions.
+- Passed, failed, and skipped counts per check or suite, plus command exits.
+  Inspect result JSON when a runner records failures without a nonzero exit.
+- Target identity and scan scope, analysis availability, crashes, and unsupported
+  syntax or consumer roles.
+- Remaining false positives and missed positives, with reproducible inputs.
+- Source-reviewed reasons for changed findings and any unsafe recommendations.
+
+A useful acceptance statement is specific: “These labeled cases passed on this
+artifact, these real-code findings were reviewed, and these gaps remain.” Avoid
+promising that fixtures prove correctness on every repository.
+
+Copy this outline into the review or release notes and fill in measured results.
+It is a report template, not CLI output or an executable configuration:
+
+```text
+Candidate
+  Doctor/check IDs and semantic revisions:
+  Source revision plus working-file digests, or artifact SHA-256:
+  Any Doctor, Node, analysis, and relevant framework versions:
+
+Target and scope
+  Checkout/snapshot identity and dirty state or manifest:
+  Included files, test-file policy, and scan options:
+  Analysis availability, crashes, and unsupported cases:
+
+Execution (record local, copied/packed, and published runs separately)
+  Development fixtures: passed / failed / skipped; command exit:
+  Independent evaluation: passed / failed / skipped; command exit:
+  Explicit abstention-policy tests: passed / failed:
+
+Detection and recommendation review (per check)
+  Confirmed concerns / review candidates / false positives / unknowns:
+  Missed positives in the labeled evaluation set:
+  Unsafe or unresolved recommendations:
+  Retained / removed / added findings and source-reviewed reasons:
+
+Acceptance
+  Verdict and supported scope:
+  Remaining failures, exclusions, and untested coverage:
+  Evidence paths and reproduction commands:
+```
+
+Abstention-policy results may already be included in the fixture totals; identify
+them as a subset rather than adding them again. Keep execution counts, detection
+accuracy, abstention behavior, and recommendation quality separate. If you report
+a rate, define its denominator and evaluation set; an unresolved case must not
+silently become a correct negative.
+
+The [first-doctor tutorial](/authoring/first-doctor) shows an executable example.
+[Honest checks](/authoring/honest-checks) explains how to keep report wording within
+its evidence. When these practices change, update the public guides, contract
+examples, generated agent instructions, and verification examples together.

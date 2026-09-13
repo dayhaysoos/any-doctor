@@ -1,6 +1,6 @@
 ---
 title: Requirements
-description: Node 18+, and optionally ast-grep for structural analysis.
+description: Node 18 or newer. That's it.
 audience: human
 sidebar:
   order: 2
@@ -8,30 +8,17 @@ sidebar:
 
 ## Node
 
-Node 18 or newer. That is the only hard requirement. `npx` works with no
+Node 18 or newer. That is the only requirement. `npx` works with no
 install; `any-doctor` never writes to your repo unless you record
 decisions (state lives in `.any-doctor/`).
 
-## ast-grep (optional, recommended)
+## ast-grep + oxc parser
 
-Structural checks run through [ast-grep](https://ast-grep.github.io).
-When it is on your PATH, checks that need structure — `.map(async ...)`
-detection, binding analysis, call facts — run at full power.
+The analysis engine ships with the package. We use ast-grep to
+determine the shapes of written code and oxc parser for getting more
+details. The reports come back in JSON.
 
-Without it, those checks still run in a degraded mode: narrower rules,
-fewer shapes recognized. The report says so. Every doctor also prints its
-blind spots either way, so degraded results are labeled, not hidden.
+## No Network
 
-Install it globally:
-
-```bash
-npm install -g @ast-grep/cli
-```
-
-The JSON output carries `analysisAvailable` so agents can tell which mode
-a run used.
-
-## No network
-
-The doctor runtime has no network access. Doctors read your files and
-nothing else — nothing leaves your machine.
+The doctor runtime has no network access. They only can read your
+files.

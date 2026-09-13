@@ -1,13 +1,10 @@
 ---
-title: The report
-description: Anatomy of a scan — findings, blind spots, score, and what a broken run looks like.
+title: Report
+description: The results of the scan. Findings, blind spots, score and what a broken run looks like.
 audience: human
 sidebar:
   order: 3
 ---
-
-A run ends with a report. It is built to be read once, at a glance, and
-to never overstate what it knows.
 
 ## Findings
 
@@ -27,11 +24,14 @@ explanations you do.
 
 ## Blind spots
 
-Every doctor declares what it cannot see, and the report prints those
-blind spots next to the findings. A doctor that cannot tell whether a
-variable supplies an AbortSignal says exactly that. Findings arrive
-pre-annotated with their limits — you never have to guess how a sausage
-was made.
+Blind spots are written by your agent for each doctor. When your agent
+builds a doctor, it declares what that doctor cannot catch. They are
+there to guide your agents through the code review process. Think of it
+as your agent consulting with your doctor, so it can make the educated
+decisions itself.
+
+Where blind spots come from — and how agents are taught to probe their
+own — is covered in [honest checks](/authoring/honest-checks).
 
 ## The score
 
@@ -46,12 +46,8 @@ and files, with a grade:
 | 25–49 | Poor |
 | 0–24 | Critical |
 
-Two honest exceptions:
-
-- An **empty scan** (zero files checked) never scores a perfect 100. A
-  vacuous pass is a warning, not a win.
-- A **partial scan** (a crashed or broken doctor) withholds the grade.
-  Incomplete results never get to look Excellent.
+An empty scan (zero files checked) doesn't score a perfect 100 —
+nothing checked is a warning, not a win.
 
 ## Broken doctors are infrastructure failures
 

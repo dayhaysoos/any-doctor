@@ -1,61 +1,222 @@
 ---
 title: Honest checks
-description: Claims over vibes — the rules that keep a doctor from crying wolf.
+description: Match every claim and recommendation to the evidence the doctor can establish.
 audience: human
 sidebar:
   order: 13
 ---
 
-A doctor is only worth running if its findings can be trusted. The
-contract enforces that with rules, not vibes.
+A useful doctor states a bounded claim, supplies evidence for it, and explains
+what remains uncertain. The contract and fixture gate support this discipline;
+they cannot guarantee that an author's detector, fixtures, or explanation are
+correct for every repository.
 
-## State the claim, not the conclusion
+## Separate observation from interpretation
 
-A check's `claim` is the observable condition it fires on: "A fetch call
-whose options contain no signal." Not the conclusion ("this is a bug")
-and not the advice ("add AbortController"). The claim is testable — a
-fixture can prove it fires and prove the lookalikes stay silent.
+A `claim` describes what the detector establishes. “A direct call to a known
+promise-returning import discards its result” can be tested against binding and
+call-use facts. “This code always returns a stale token” requires additional
+application evidence.
 
-This is why a check without a claim cannot pass the verify gate. Impact
-prose explains a finding; it cannot substitute for a statement of what
-was observed.
+Project conventions, performance concerns, and maintenance review candidates
+are valid doctor intents. They must be presented as such:
 
-## Name the lookalikes
+| Kind of result | What the report should say |
+| --- | --- |
+| Established defect | The evidence establishing the defect and a fix consistent with it |
+| Review candidate | The observed pattern, why it may matter, and what to inspect before changing it |
+| Unknown | Which necessary facts are missing and which conclusions are unavailable |
 
-Every shape that resembles the claim but is fine belongs in
-`lookalikes`: "signal threaded through a variable the pattern cannot
-see." Lookalikes get fixtures too. A doctor that cannot tell the
-difference between a mistake and an idiom is noise with confidence.
+These are distinctions for reasoning about results, not additional values for
+the contract's `severity` field or new finding types to emit.
 
-## Declare what you cannot see
+**Severity and certainty are different.** An `info` finding can still contain
+harmful advice. A warning can describe a serious risk that requires contextual
+review. Match the `description`, `impact`, `why`, and `fix` to the same evidence
+boundary as the claim.
 
-`blindSpots` is a required honesty field. The async doctor does not know
-whether a helper supplies a signal at runtime — so it says exactly that,
-in the report, next to the findings. Blind spots are not a weakness to
-hide; they are the difference between a tool and a sales pitch.
+For example, an indexed query with an additional filter is an optimization
+candidate, not proof of a production bottleneck. Its fix should ask whether a
+matching index preserves the desired order and reduces meaningful read volume.
+It should not claim a measured performance problem when none was measured.
 
-## Decide what happens on the unknown
+## Identify the operation, not just its name
 
-`onUnknown` tells the runtime what a check does with incomplete
-evidence:
+Use shared structural and binding facts for identity, scope, and immediate call
+use. A parameter named `ctx` is not necessarily a framework context, and renaming
+a real context must not make its operations disappear. A nearby `Promise.all`
+does not prove that a specific promise is consumed.
 
-- `"narrow"` — report only what is provable; silence is the default.
-- `"skip"` — this check never reports on partial evidence.
+Use `ctx.analysis.calls`, `bindings`, and `spans` when those facts are needed.
+Merely requesting AST facts is insufficient if the detector then compares only
+names. Avoid hand-written brace counting, line windows, and property-order
+assumptions for semantic checks. Text matching is appropriate when the claim is
+actually textual; use the shared masked source when comments and strings should
+be excluded.
 
-Both are conservative. There is no `onUnknown: "vibes"`.
+The host supplies generic facts. The doctor owns framework policy: which APIs
+return promises, which contexts allow writes, and which versions support those
+contracts. State version assumptions and check primary framework documentation
+or the dependency's implementation before prescribing an API change.
 
-## One finding, one unit
+## Distinguish positive variants, lookalikes, and unknowns
 
-`reportingUnit` states what a single finding covers: each `occurrence`,
-once per `file`, or once per `project`. Findings never blur into
-"various issues in this area."
+For each claim, separate three kinds of test input. Consider a check for direct
+discarded calls to a known promise-returning import:
 
-## Fixtures prove it forever
+| Input class | Example | Expected behavior |
+| --- | --- | --- |
+| Positive variant | Rename the imported function and still discard its result | Retain the finding: the binding and behavior are unchanged |
+| Innocent lookalike | Call a synchronous local function that shadows the imported name | Stay silent: this is a different binding |
+| Unknown case | Call through a wrapper whose behavior the analysis cannot resolve | Do not infer whether the underlying promise is discarded |
 
-A doctor ships with `*.fixtures.mjs` files: the shapes it must catch and
-the lookalikes it must spare. `any-doctor verify` replays them. Behavior
-that is not pinned by a fixture is behavior you cannot claim you have.
+`lookalikes` names the innocent shapes the check must spare. A renamed import
+is not inherently innocent; its result should match the equivalent original
+code. Returned or awaited results are negative cases for this direct-discard
+claim, without certifying how callers eventually handle them.
 
-The result: findings arrive pre-annotated with their limits, decisions
-attach to identities that survive refactors, and a doctor that oversteps
-its evidence fails its own gate before it ever wastes your review.
+Give each relevant class executable fixtures. Retain positive variants while
+repairing lookalikes so the detector cannot pass by suppressing the original
+problem.
+
+An unresolved helper is an **unknown**, not proof of either safety or a defect.
+For example, an options variable might supply a fetch signal. If the detector
+cannot resolve it, “no signal supplied” is not established.
+
+For project-wide claims, finding no consumer in a text search does not prove an
+export unused. Production, test, generated, dynamic, and external consumers can
+have different roles. Type evidence is not discovery of a production caller.
+Use supported shared consumer facts and retain their uncertainty and coverage
+limits; do not reconstruct a whole-project claim from name matching.
+
+## Implement the unavailable-analysis policy
+
+Declare required analysis in `needs` and its unavailable-analysis policy in
+`onUnknown`:
+
+- `"skip"` declares that the dependent check abstains without its analysis.
+- `"narrow"` declares a reduced claim when analysis is unavailable. Any fallback
+  must still establish what it reports.
+
+Implement and test the corresponding behavior in the doctor. These fields do
+not resolve unknown expressions or turn an unsafe text fallback into proof.
+Even when analysis is available, individual operations can remain unresolved.
+Work through the decision explicitly:
+
+1. **Name the required fact.** What must be true for this claim to hold? For a
+   discarded-promise check, the operation's identity and immediate result use
+   both matter.
+2. **Check the available evidence.** Can the analysis establish that fact for
+   this operation, under the documented framework or package contract?
+3. **Consider a narrower observation.** If the stronger claim is unavailable,
+   is there a separately supported observation that would still help a reviewer?
+   State that reduced claim and make its recommendation conditional.
+4. **Abstain when no useful claim is supported.** Describe the limitation through
+   the supported coverage reporting and `blindSpots`, without labeling the code
+   safe or defective.
+
+Keep uncertainty scoped to the conclusions it can actually undermine. An
+unresolved call elsewhere should not hide a direct discarded promise whose
+identity and usage are established. Conversely, an unresolved dynamic import
+can affect a claim that an export has no consumers. Bound that uncertainty only
+when the evidence supports the bound; do not assume unrelatedness from directory
+names alone. Test that demonstrably unrelated positive controls remain visible.
+
+Document limitations in `blindSpots`, including unsupported syntax, wrappers,
+file types, framework versions, and consumer roles when relevant. A disclosure
+does not excuse a known false positive inside the supported scope. Test the
+unavailable-analysis path separately; skipped coverage is not a passed test.
+
+## Make findings precise and decisions revisable
+
+Declare `reportingUnit` for every new check: each `occurrence`, once per `file`,
+or once per `project`. Include positive witnesses for that unit. Two violations
+on one line need distinct columns; do not broaden the unit to hide lost findings.
+
+Provide the source location and, for a multiline expression, its evidence range.
+Readers should be able to inspect the operation the doctor actually observed.
+Bump `revision` when the check's meaning changes; cosmetic edits keep it.
+Recorded decisions still need reassessment when relevant source evidence changes.
+
+## Work through the finding and its recommendation
+
+For every finding, ask two questions:
+
+1. Does the source establish the stated observation?
+2. Would the recommended change preserve the required behavior?
+
+Suppose a doctor resolves a server-side call to an endpoint registered as public.
+It has established the call and registration, but has not established the
+endpoint's intended audience, authorization behavior, or all of its callers.
+
+| Report field | Overreaching wording | Wording supported by this evidence |
+| --- | --- | --- |
+| `claim` | This endpoint is exposed accidentally | Server code calls a publicly registered endpoint |
+| `description` | Exposed server-only endpoint | Review the public endpoint's intended callers |
+| `impact` | Clients can bypass your workflow | If this operation is intended to be server-only, public registration may expose an unintended entry point |
+| `why` | Server calls must use internal endpoints | The target is publicly registered; this call alone does not establish who should be allowed to invoke it |
+| `fix` | Make the endpoint internal | Check intended callers and authorization. Preserve required client access; use an internal endpoint if server-only intent is established |
+
+Now consider evidence that could change the assessment:
+
+- **A required frontend caller exists.** Reject the blanket internalization
+  advice. The endpoint may still need an authorization review, but the server
+  call does not establish a defect.
+- **An explicit contract requires server-only access.** Together with proven
+  public registration, this supports a contract-violation finding. Confirm the
+  caller migration before prescribing the exact change; an authorization bypass
+  remains a separate claim requiring its own evidence.
+- **No client caller was found in a search.** Retain the uncertainty. External,
+  generated, or dynamic callers may be outside the search's coverage.
+
+Use the strongest conclusion the evidence establishes. Conditional wording is
+appropriate when facts are missing; it should not weaken a defect that has been
+established. If new evidence changes the check's meaning, update its claim,
+fixtures, explanation, and semantic revision together.
+
+Apply the same reasoning to other patterns. A spread can contain
+explicitly selected server fields. A sequential loop can implement retries or
+cursor-dependent batches. Their presence does not justify unconditional advice
+to rewrite the patch or parallelize the loop.
+
+Likewise, adding an arbitrary `take(50)` to a full-processing job may omit work.
+Replacing an authorization clock with a client-provided timestamp can change the
+security contract. Make recommendations conditional when their safety depends
+on facts the doctor cannot establish.
+
+## Know what verification establishes
+
+> **Enforced checks and author responsibilities are different.** Verification
+> validates required metadata and compares behavior with supplied and applicable
+> shared cases, including location coverage. It does not prove that the prose
+> claim is true, that the examples represent customer code, or that a proposed
+> fix preserves application behavior. Those require evidence and review.
+
+For example, checking that `claim` contains text cannot establish that the
+detector implements that claim. Read failed and skipped coverage explicitly;
+a successful exit can include checks that were not exercised.
+
+Fixtures record expected behavior for specific cases. A second adversarial pass
+helps find blind spots; independent labeled cases and real-code review provide
+additional evidence. None is a guarantee about arbitrary future code.
+
+Keep positive findings while repairing false positives and inspect changed
+findings against source.
+
+## Review each check before sharing it
+
+Answer these questions for each check, and retain the answers with its evidence:
+
+- What exactly did we observe, and does the claim say only that?
+- Which facts establish the operation's identity and context?
+- Which equivalent forms must retain the finding?
+- Which innocent lookalikes must remain silent?
+- What remains unknown, and which conclusions does that uncertainty affect?
+- Do the heading, impact, explanation, and fix respect the same evidence boundary?
+- What must be checked before applying the recommendation?
+- Which independently labeled cases or source reviews support the rule, and what
+  coverage remains untested?
+
+See
+[testing and evaluating doctors](/authoring/testing-doctors) for the workflow and
+[the first-doctor tutorial](/authoring/first-doctor) for a runnable example.
