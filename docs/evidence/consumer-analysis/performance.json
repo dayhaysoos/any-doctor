@@ -1,0 +1,130 @@
+{
+  "sourceCommit": "de33df5a2b64389450b8d0e3f98e02fb17163590",
+  "platform": "darwin",
+  "arch": "arm64",
+  "node": "v26.5.0",
+  "cpus": "Apple M1 Pro",
+  "totalMemoryBytes": 17179869184,
+  "runs": [
+    {
+      "label": "before",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "/tmp/any-doctor-baseline-012/node_modules/any-doctor/bin/cli.js",
+        "run",
+        "/tmp/any-doctor-baseline-012/node_modules/any-doctor/doctors/slop.mjs",
+        "/tmp/any-doctor-frozen-sift",
+        "--format",
+        "json"
+      ],
+      "cwd": "/tmp/any-doctor-frozen-sift",
+      "wallMs": 3545.344875,
+      "status": 0,
+      "stderr": "",
+      "fileCount": 679,
+      "counts": {
+        "error": 0,
+        "warning": 0,
+        "info": 178,
+        "total": 178,
+        "hiddenDuplicates": 0
+      },
+      "analysisAvailable": true,
+      "dependencies": {
+        "@ast-grep/cli": {
+          "version": "0.45.3",
+          "resolvedPackage": "/tmp/any-doctor-baseline-012/node_modules/@ast-grep/cli/package.json",
+          "note": "CLI-only package has no JS main; package manifest verified directly after measurement."
+        },
+        "@typescript-eslint/scope-manager": {
+          "version": "8.70.0",
+          "resolvedPackage": "/private/tmp/any-doctor-baseline-012/node_modules/@typescript-eslint/scope-manager/package.json"
+        },
+        "effect": {
+          "version": "4.0.0-rc.115",
+          "resolvedPackage": "/private/tmp/any-doctor-baseline-012/node_modules/effect/package.json"
+        },
+        "eslint-scope": {
+          "version": "9.1.2",
+          "resolvedPackage": "/private/tmp/any-doctor-baseline-012/node_modules/eslint-scope/package.json"
+        },
+        "eslint-visitor-keys": {
+          "version": "5.0.1",
+          "resolvedPackage": "/private/tmp/any-doctor-baseline-012/node_modules/eslint-visitor-keys/package.json"
+        },
+        "oxc-parser": {
+          "version": "0.149.0",
+          "resolvedPackage": "/private/tmp/any-doctor-baseline-012/node_modules/oxc-parser/package.json"
+        }
+      }
+    },
+    {
+      "label": "after",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/slop.mjs",
+        "/tmp/any-doctor-frozen-sift",
+        "--format",
+        "json"
+      ],
+      "cwd": "/tmp/any-doctor-frozen-sift",
+      "wallMs": 11172.506792,
+      "status": 0,
+      "stderr": "",
+      "fileCount": 671,
+      "counts": {
+        "error": 0,
+        "warning": 0,
+        "info": 67,
+        "total": 67,
+        "hiddenDuplicates": 0
+      },
+      "analysisAvailable": true,
+      "dependencies": {
+        "@ast-grep/cli": {
+          "version": "0.45.3",
+          "resolvedPackage": "/Users/nickdejesus/Code/any-doctor/node_modules/@ast-grep/cli/package.json",
+          "note": "CLI-only package has no JS main; package manifest verified directly after measurement."
+        },
+        "@typescript-eslint/scope-manager": {
+          "version": "8.70.0",
+          "resolvedPackage": "/Users/nickdejesus/Code/any-doctor/node_modules/@typescript-eslint/scope-manager/package.json"
+        },
+        "effect": {
+          "version": "4.0.0-rc.112",
+          "resolvedPackage": "/Users/nickdejesus/Code/any-doctor/node_modules/effect/package.json"
+        },
+        "eslint-scope": {
+          "version": "9.1.2",
+          "resolvedPackage": "/Users/nickdejesus/Code/any-doctor/node_modules/eslint-scope/package.json"
+        },
+        "eslint-visitor-keys": {
+          "version": "5.0.1",
+          "resolvedPackage": "/Users/nickdejesus/Code/any-doctor/node_modules/eslint-visitor-keys/package.json"
+        },
+        "typescript": {
+          "version": "5.9.3",
+          "resolvedPackage": "/Users/nickdejesus/Code/any-doctor/node_modules/typescript/package.json"
+        },
+        "oxc-parser": {
+          "version": "0.149.0",
+          "resolvedPackage": "/Users/nickdejesus/Code/any-doctor/node_modules/oxc-parser/package.json"
+        }
+      }
+    }
+  ],
+  "graph": {
+    "wallMs": 5192.8674999999985,
+    "analysisMs": 5192.086792,
+    "peakRssKiB": 778464,
+    "rssAfterBytes": 797147136,
+    "sourceBytes": 13170748,
+    "inventoryFiles": 1514,
+    "codeModules": 1067,
+    "issues": 20,
+    "snapshot": "fdf966f2682b48c8304270b2eb7a202a0f6f2f511eea33adc51279561965d82e"
+  },
+  "limits": "Single sequential observation on one snapshot and one machine; RSS is this measurement host process peak, not a cross-repository capacity claim."
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "doctor": "async",
+    "passed": 41,
+    "failed": 0,
+    "skipped": 3
+  },
+  {
+    "doctor": "convex",
+    "passed": 97,
+    "failed": 0,
+    "skipped": 0
+  },
+  {
+    "doctor": "effect-v4-kitlangton",
+    "passed": 30,
+    "failed": 0,
+    "skipped": 10
+  },
+  {
+    "doctor": "openrouter",
+    "passed": 12,
+    "failed": 0,
+    "skipped": 5
+  },
+  {
+    "doctor": "slop",
+    "passed": 48,
+    "failed": 0,
+    "skipped": 0
+  }
+]

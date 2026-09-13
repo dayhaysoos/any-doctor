@@ -1,0 +1,1213 @@
+{
+  "cli": "/tmp/any-doctor-baseline-012/node_modules/any-doctor/bin/cli.js",
+  "doctor": "/tmp/any-doctor-baseline-012/node_modules/any-doctor/doctors/slop.mjs",
+  "node": "v26.5.0",
+  "flags": "run slop <fixture> --format json; --include-tests only where specified",
+  "passed": 16,
+  "failed": 32,
+  "skipped": 0,
+  "rows": [
+    {
+      "name": "test-consumer-default",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "test-consumer-included",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": true
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "renamed-barrel",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "reexport-without-final-caller",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "same-name-positive",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "same-basename-dynamic",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a/helper.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "generated-target",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "dist/utility.js:generatedOnly"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "dist/utility.js",
+            "line": 1,
+            "message": "candidate: no consumer found for generatedOnly",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAZGlzdC91dGlsaXR5LmpzAGI0NjQwM2M2ODQxMzE3NjdiZjQ3YmNiMGViZjk4NTdlYmUxYTc1NWJjMzZmMWUzNzU1MGRhOGRlMzFiYjk0OTUAAG5vbmUALQBsaW5l",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "generated-consumer",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "type-only-consumer",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "type-only-named",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "default-alias",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBmYWY2OWYzM2Q2NTVlODdlMGFkZTYzNmM1MzY4YTBiNzFjNWI1NDc1NGVhNWJjYWMyMmJkZTY1MmQzZWEzMmY4AABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "star-cycle",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 4,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "namespace-member",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 2,
+            "message": "candidate: no consumer found for unused",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkM2RkZTU0NGFmZTE5MDk5NDAyNjg2NWQ2ZDU1NmVlNGJlMjQ5NzBlZTg1ZmFlYzRlNjRlNzZiZGE2MDViYmEwAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "namespace-escape",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "shadowed-namespace",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "tsconfig-alias",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "package-entry",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "declared-framework-entry",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "route.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "route.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAcm91dGUudHMAZDJhMDc5NWE0NDU3OGU1Y2JhZDc5NDk1MmY3OGNmYzdkNjA1ZGE3ODhjNzE2MmFlN2Y1OGU1Zjg5MzQ2N2NmZAAAbm9uZQAtAGxpbmU",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "extension-index",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "genuine-positive",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "unknown-dynamic",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "unresolved-relative",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "parse-failure",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "failure": true,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "literal-whitespace",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 2,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "identical body also in: b.ts",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYS50cwBhMjg2Nzk4NmMzYjM2YjJhNTcwMmY3Yjg1NDc5MGNkOTMyNzhhOGIyNjgxOGFjN2I5ZjVkYmJmNWM4MGRkNzg3AABub25lAC0AbGluZQ",
+            "rule": "identical-helper-body-in-two-modules"
+          },
+          {
+            "file": "b.ts",
+            "line": 1,
+            "message": "identical body also in: a.ts",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYi50cwA5ZDZmNGE1N2EyZTNhMzE4MjMwYmE0ZGY0NzcwNTM0OTk3Y2RhNWJjZjg5ZTFiYWVjNDFlNDhhOTljNDhiNDEzAABub25lAC0AbGluZQ",
+            "rule": "identical-helper-body-in-two-modules"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "template-whitespace",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 2,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "identical body also in: b.ts",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYS50cwA3OWNhYTkwZGFmZDA3OGJkNzU2ZmE0NmMxNTgwMjgzNDU3ZTg2NGNjOWIxZmZjNWU1ZjZhYjI5MWJjZGQyNDM0AABub25lAC0AbGluZQ",
+            "rule": "identical-helper-body-in-two-modules"
+          },
+          {
+            "file": "b.ts",
+            "line": 1,
+            "message": "identical body also in: a.ts",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYi50cwA2NmUzYTg0MzU5YWMxY2ZmYWYxZTFiNjg2MWFiZWZmZWVjM2FjYmE2MzQ0NmFkNmM0ZWEzZGNlZGQwM2JkYTliAABub25lAC0AbGluZQ",
+            "rule": "identical-helper-body-in-two-modules"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "regex-whitespace",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 2,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "identical body also in: b.ts",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYS50cwBlNmFmNjRmMDllNDBkOWI5OTc1Y2UyMmJmYjU5ZTcwODgyM2YzMTQ4N2E0MDRhYmE4OTBkZmM4NmZlMTllZTY3AABub25lAC0AbGluZQ",
+            "rule": "identical-helper-body-in-two-modules"
+          },
+          {
+            "file": "b.ts",
+            "line": 1,
+            "message": "identical body also in: a.ts",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYi50cwA2NDkwY2I0NDI0M2Q1MGYzNjJhZmE3ODU5NWUxMDE1ZDMzMjkxOTc3MGQ1YWVhZDFlZWEzNTI5MDgxOTMxNWU5AABub25lAC0AbGluZQ",
+            "rule": "identical-helper-body-in-two-modules"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "substantial-duplicate",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 2,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "identical body also in: b.ts",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYS50cwBhMjg2Nzk4NmMzYjM2YjJhNTcwMmY3Yjg1NDc5MGNkOTMyNzhhOGIyNjgxOGFjN2I5ZjVkYmJmNWM4MGRkNzg3AABub25lAC0AbGluZQ",
+            "rule": "identical-helper-body-in-two-modules"
+          },
+          {
+            "file": "b.ts",
+            "line": 1,
+            "message": "identical body also in: a.ts",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYi50cwBhMjg2Nzk4NmMzYjM2YjJhNTcwMmY3Yjg1NDc5MGNkOTMyNzhhOGIyNjgxOGFjN2I5ZjVkYmJmNWM4MGRkNzg3AABub25lAC0AbGluZQ",
+            "rule": "identical-helper-body-in-two-modules"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "trivial-long-signature",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 2,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "identical body also in: b.ts",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYS50cwA0ZTRkN2NmMDM3NDhlOTdkMDU2ZGVkNzRmNmRjNjg0NDA0YjE4N2QzYmU0OGFlNWFlNWNjNGIzNDdmNzJhODIwAABub25lAC0AbGluZQ",
+            "rule": "identical-helper-body-in-two-modules"
+          },
+          {
+            "file": "b.ts",
+            "line": 1,
+            "message": "identical body also in: a.ts",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYi50cwA0ZTRkN2NmMDM3NDhlOTdkMDU2ZGVkNzRmNmRjNjg0NDA0YjE4N2QzYmU0OGFlNWFlNWNjNGIzNDdmNzJhODIwAABub25lAC0AbGluZQ",
+            "rule": "identical-helper-body-in-two-modules"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "workspace-package-entry",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "excluded-test-consumer",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "same-line-surrounding-code",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "format-and-comments",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "different-captured-bindings",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "unsupported-config",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "dynamic-namespace-binding",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "dynamic-destructuring",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "default-reexport-chain",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "local-export-specifier-positive",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "dynamic-then-member",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "vitest-config-entry",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "nitro-plugin-entry",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "plugin-name-lookalike",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:default"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "review-tagged-template-raw",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:f",
+          "b.ts:f"
+        ],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for f",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBiYmNmNmY2ZmE2NGEyMzI4NzhjOTg2MzMxN2FjYzFlNDRhOGU2YzUzNDJmYmFhMmFlYjI4MGRmZDdmY2IzYjMyAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          },
+          {
+            "file": "b.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for f",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYi50cwA3YTNlMjI0MDc5NTQ4MzRkMzkxZjA5N2Q0NDA1MjdhYzkwZTdkOWZjZjY3NTQyYjQ2MWY1YjNkYzkyNDVmNmQwAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "review-destructured-export-shadow",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "review-array-export-shadow",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "review-stored-import-promise",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "review-nested-import-type",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "import-equals-uncertainty",
+      "passed": false,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "message": "candidate: no consumer found for helper",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAABub25lAC0AbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    }
+  ]
+}

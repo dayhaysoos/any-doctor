@@ -1,0 +1,42 @@
+[2mcapabilities: reads via ctx only — no imports, no network, no writes, no subprocesses[0m
+  ✔ flags the same function body maintained in two modules
+  ✔ degraded: twins still found without the analysis engine
+  ✔ accepts same-named helpers with different bodies
+  ✔ accepts trivial bodies and doctors/ directory copies
+  ✔ flags environment routing from a hostname substring
+  ✔ accepts environment read from explicit configuration
+  ✔ flags a nullish-defaulted boolean collapsed into a two-way ternary
+  ✔ accepts an explicit three-state branch
+  ✔ flags OR-chained substring literals that overlap by prefix
+  ✔ accepts non-overlapping literals and word-bounded regexes
+  ✔ flags a short unanchored case-insensitive stem used with .test()
+  ✔ accepts word-bounded and long patterns
+  ✔ flags an exported helper no file imports or references
+  ✔ accepts an exported helper imported by another module
+  ✔ accepts an exported helper used within its own module
+  ✔ entry-point files are exempt from dead-export
+  ✔ without the identity engine the check narrows to silence
+  ✔ flags a named import never referenced in its module
+  ✔ accepts imports used in value or type positions
+  ✔ without the identity engine unused imports narrow to silence
+  ✔ flags a never-read local constant
+  ✔ accepts a read binding and exempts side-effect initializers
+  ✔ without the identity engine unread locals narrow to silence
+  ✔ reviewer: JSX component use after a closing tag is a reference
+  ✔ reviewer: destructured export consumed elsewhere
+  ✔ reviewer: intentional object-rest field exclusion is not unread
+  ✔ reviewer: semicolon inside type annotation is still one export
+  ✔ reviewer: dynamic import consumes the module's exports
+  ✔ reviewer: a throwing QA guard is not environment routing
+  ✔ reviewer: helpers differing only in literal values are not identical
+  ✔ shared innocent corpus (12 files)
+  – location coverage: identical-helper-body-in-two-modules — skipped: reporting unit undeclared — location coverage not exercised
+  – location coverage: environment-guessed-from-hostname-substring — skipped: reporting unit undeclared — location coverage not exercised
+  – location coverage: boolean-collapsed-into-three-state — skipped: reporting unit undeclared — location coverage not exercised
+  – location coverage: prefix-overlapping-substring-match — skipped: reporting unit undeclared — location coverage not exercised
+  – location coverage: export-without-any-consumer — skipped: reporting unit undeclared — location coverage not exercised
+  – location coverage: named-import-without-reference — skipped: reporting unit undeclared — location coverage not exercised
+  – location coverage: unread-local-binding — skipped: reporting unit undeclared — location coverage not exercised
+  – location coverage: unanchored-abbreviation-regex — skipped: reporting unit undeclared — location coverage not exercised
+
+[2m31/39 fixtures passed for slop — 8 not exercised (see reasons above)[0m

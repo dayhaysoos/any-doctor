@@ -1,0 +1,1137 @@
+{
+  "schema": 1,
+  "tool": "any-doctor",
+  "target": "/tmp/any-doctor-frozen-sift",
+  "fileCount": 679,
+  "durationMs": 3069,
+  "score": {
+    "score": 98,
+    "grade": "Excellent",
+    "filesClean": 574,
+    "filesTotal": 679,
+    "emptyScan": false
+  },
+  "counts": {
+    "error": 0,
+    "warning": 0,
+    "info": 178,
+    "total": 178,
+    "hiddenDuplicates": 0
+  },
+  "analysisAvailable": true,
+  "emptyScan": false,
+  "groups": [
+    {
+      "doctor": "slop",
+      "checks": [
+        {
+          "rule": "identical-helper-body-in-two-modules",
+          "heading": "A function body identical (literals included) to one in another module - a consolidation suggestion, not a proven defect.",
+          "severity": "info",
+          "impact": "Two copies of one contract drift independently: the next edit fixes one and silently leaves the other behind. In the corpus this came from, reviewers raised it 16 times across 14 PRs and every finding was actioned - but duplication alone establishes maintenance risk, not a bug.",
+          "why": "Generated code copies what worked instead of importing it. The bodies are identical including literal values, which is what makes later divergence invisible - but intentional copies exist, so this is a review suggestion.",
+          "fix": "Consolidate into one shared module and import it on both sides - or, if the domains must stay separate, make the separation explicit in the name and a comment saying why they differ.",
+          "findings": [
+            {
+              "file": "convex/analysis/bonus.ts",
+              "line": 87,
+              "message": "identical body also in: convex/analysis/gaps.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2JvbnVzLnRzAGYxY2U3OGE5MDkwMzdiMjU4ODFiYTZiOTNiYjk2NmYxYzdmMmY2ZTdjZTA1MmZhY2IxNWJjNmEyOTJmZTdlZDQAZnVuY3Rpb246cmVtb3ZlTWluTWF4Q29uc3RyYWludHMjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/analysis/gaps.ts",
+              "line": 164,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2dhcHMudHMAZjFjZTc4YTkwOTAzN2IyNTg4MWJhNmI5M2JiOTY2ZjFjN2YyZjZlN2NlMDUyZmFjYjE1YmM2YTI5MmZlN2VkNABmdW5jdGlvbjpyZW1vdmVNaW5NYXhDb25zdHJhaW50cyMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/analysis/transferable.ts",
+              "line": 101,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/gaps.ts, convex/job_wizard_ai.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL3RyYW5zZmVyYWJsZS50cwBmMWNlNzhhOTA5MDM3YjI1ODgxYmE2YjkzYmI5NjZmMWM3ZjJmNmU3Y2UwNTJmYWNiMTViYzZhMjkyZmU3ZWQ0AGZ1bmN0aW9uOnJlbW92ZU1pbk1heENvbnN0cmFpbnRzIzAALQBsaW5l"
+            },
+            {
+              "file": "convex/job_wizard_ai.ts",
+              "line": 43,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2pvYl93aXphcmRfYWkudHMAZjFjZTc4YTkwOTAzN2IyNTg4MWJhNmI5M2JiOTY2ZjFjN2YyZjZlN2NlMDUyZmFjYjE1YmM2YTI5MmZlN2VkNABmdW5jdGlvbjpyZW1vdmVNaW5NYXhDb25zdHJhaW50cyMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/analysis/bonus.ts",
+              "line": 115,
+              "message": "identical body also in: convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2JvbnVzLnRzAGM4MzRlMDNlM2Y3MDdkMjk2ZjRhZWE5MzA5OGNkNTY2MzY3YjgxYTA0M2M1ODI0MTkwZTBjMTYwYTNjMDJkYjMAZnVuY3Rpb246bm9ybWFsaXplVGV4dCMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/analysis/evidence.ts",
+              "line": 146,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2V2aWRlbmNlLnRzADMzNDdlN2RhNWQ2NGExMDE1OWVlMGQyNGZmMzUzMDMzN2YyMGE1ODdhYWZiNGMzZTM2NDc1MWQ1MjI5ZjZiNjQAZnVuY3Rpb246bm9ybWFsaXplVGV4dCMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/analysis/fit.ts",
+              "line": 227,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2ZpdC50cwAzMzQ3ZTdkYTVkNjRhMTAxNTllZTBkMjRmZjM1MzAzMzdmMjBhNTg3YWFmYjRjM2UzNjQ3NTFkNTIyOWY2YjY0AGZ1bmN0aW9uOm5vcm1hbGl6ZVRleHQjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/analysis/gaps.ts",
+              "line": 192,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/transferable.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2dhcHMudHMAYzgzNGUwM2UzZjcwN2QyOTZmNGFlYTkzMDk4Y2Q1NjYzNjdiODFhMDQzYzU4MjQxOTBlMGMxNjBhM2MwMmRiMwBmdW5jdGlvbjpub3JtYWxpemVUZXh0IzAALQBsaW5l"
+            },
+            {
+              "file": "convex/analysis/transferable.ts",
+              "line": 129,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL3RyYW5zZmVyYWJsZS50cwBjODM0ZTAzZTNmNzA3ZDI5NmY0YWVhOTMwOThjZDU2NjM2N2I4MWEwNDNjNTgyNDE5MGUwYzE2MGEzYzAyZGIzAGZ1bmN0aW9uOm5vcm1hbGl6ZVRleHQjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/analysis/bonus.ts",
+              "line": 121,
+              "message": "identical body also in: convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2JvbnVzLnRzADJhOTkyMGZiODJhNTQwNWY2MGYyNWFhZDEwMGQwYzFhNWZhZGUwNjIzZTY0Y2VkNGQzY2FiNjdmNTJhYTIwNzAAZnVuY3Rpb246bm9ybWFsaXplU3RyaW5ncyMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/analysis/evidence.ts",
+              "line": 197,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2V2aWRlbmNlLnRzADJhOTkyMGZiODJhNTQwNWY2MGYyNWFhZDEwMGQwYzFhNWZhZGUwNjIzZTY0Y2VkNGQzY2FiNjdmNTJhYTIwNzAAZnVuY3Rpb246bm9ybWFsaXplU3RyaW5ncyMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/analysis/fit.ts",
+              "line": 518,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2ZpdC50cwAyYTk5MjBmYjgyYTU0MDVmNjBmMjVhYWQxMDBkMGMxYTVmYWRlMDYyM2U2NGNlZDRkM2NhYjY3ZjUyYWEyMDcwAGZ1bmN0aW9uOm5vcm1hbGl6ZVN0cmluZ3MjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/analysis/gaps.ts",
+              "line": 291,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/transferable.ts, convex/job_wizard_ai.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2dhcHMudHMAMmE5OTIwZmI4MmE1NDA1ZjYwZjI1YWFkMTAwZDBjMWE1ZmFkZTA2MjNlNjRjZWQ0ZDNjYWI2N2Y1MmFhMjA3MABmdW5jdGlvbjpub3JtYWxpemVTdHJpbmdzIzAALQBsaW5l"
+            },
+            {
+              "file": "convex/analysis/transferable.ts",
+              "line": 136,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/job_wizard_ai.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL3RyYW5zZmVyYWJsZS50cwAyYTk5MjBmYjgyYTU0MDVmNjBmMjVhYWQxMDBkMGMxYTVmYWRlMDYyM2U2NGNlZDRkM2NhYjY3ZjUyYWEyMDcwAGZ1bmN0aW9uOm5vcm1hbGl6ZVN0cmluZ3MjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/job_wizard_ai.ts",
+              "line": 119,
+              "message": "identical body also in: convex/analysis/bonus.ts, convex/analysis/evidence.ts, convex/analysis/fit.ts, convex/analysis/gaps.ts, convex/analysis/transferable.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2pvYl93aXphcmRfYWkudHMAMmE5OTIwZmI4MmE1NDA1ZjYwZjI1YWFkMTAwZDBjMWE1ZmFkZTA2MjNlNjRjZWQ0ZDNjYWI2N2Y1MmFhMjA3MABmdW5jdGlvbjpub3JtYWxpemVTdHJpbmdzIzAALQBsaW5l"
+            },
+            {
+              "file": "convex/analysis/evidence.ts",
+              "line": 112,
+              "message": "identical body also in: convex/analysis/fit.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2V2aWRlbmNlLnRzAGViNGViZTkyMjIxN2M0YzFjMmRmODlkZjM5Mzk3ODA5N2MyNWRkYTQxZmY2NDRiMDdlZWQ4MmE1ZDNmMTk5MTUAZnVuY3Rpb246cHJlcGFyZVNjaGVtYUZvclN0cnVjdHVyZWRPdXRwdXQjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/analysis/fit.ts",
+              "line": 193,
+              "message": "identical body also in: convex/analysis/evidence.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2ZpdC50cwBlYjRlYmU5MjIyMTdjNGMxYzJkZjg5ZGYzOTM5NzgwOTdjMjVkZGE0MWZmNjQ0YjA3ZWVkODJhNWQzZjE5OTE1AGZ1bmN0aW9uOnByZXBhcmVTY2hlbWFGb3JTdHJ1Y3R1cmVkT3V0cHV0IzAALQBsaW5l"
+            },
+            {
+              "file": "convex/analysis/githubProfileReader.ts",
+              "line": 1039,
+              "message": "identical body also in: convex/lib/firecrawlClient.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2dpdGh1YlByb2ZpbGVSZWFkZXIudHMAZmE1MmM3YTI4NDRlYTg5NWI0MjcwOGVjMGRlZWRkZjc3ZmU0ODc3NDYzYmM2YzAxNzczYWU4OTE1ODkxZDczOABmdW5jdGlvbjpkZWZhdWx0U2xlZXAjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/firecrawlClient.ts",
+              "line": 614,
+              "message": "identical body also in: convex/analysis/githubProfileReader.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9maXJlY3Jhd2xDbGllbnQudHMAZmE1MmM3YTI4NDRlYTg5NWI0MjcwOGVjMGRlZWRkZjc3ZmU0ODc3NDYzYmM2YzAxNzczYWU4OTE1ODkxZDczOABmdW5jdGlvbjpkZWZhdWx0U2xlZXAjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/analysis/githubProfileReader.ts",
+              "line": 1188,
+              "message": "identical body also in: convex/lib/firecrawlClient.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2dpdGh1YlByb2ZpbGVSZWFkZXIudHMAMDRiZTk1NjNlODY0MjYzY2ExNGMxNDU1ZjIyZDI2MjRhYmMzN2VmYjg2Yzg2ODgyY2IwOTUyNzU5MTA5MjIxZABmdW5jdGlvbjppc1JlY29yZCMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/firecrawlClient.ts",
+              "line": 669,
+              "message": "identical body also in: convex/analysis/githubProfileReader.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9maXJlY3Jhd2xDbGllbnQudHMAMDRiZTk1NjNlODY0MjYzY2ExNGMxNDU1ZjIyZDI2MjRhYmMzN2VmYjg2Yzg2ODgyY2IwOTUyNzU5MTA5MjIxZABmdW5jdGlvbjppc1JlY29yZCMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/analysis/githubProfileReader.ts",
+              "line": 1200,
+              "message": "identical body also in: convex/lib/firecrawlClient.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2FuYWx5c2lzL2dpdGh1YlByb2ZpbGVSZWFkZXIudHMAMWRlMGM3MmQ4YjJhY2MwODA2NzhjZGY2OGYxNDRkNTNmMTEzMmE2ZWUxYTcxMzIyOTgzOTAzYTI1YzI5ZmJkYQBmdW5jdGlvbjpzdHJpbmdGcm9tVW5rbm93biMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/firecrawlClient.ts",
+              "line": 687,
+              "message": "identical body also in: convex/analysis/githubProfileReader.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9maXJlY3Jhd2xDbGllbnQudHMAMWRlMGM3MmQ4YjJhY2MwODA2NzhjZGY2OGYxNDRkNTNmMTEzMmE2ZWUxYTcxMzIyOTgzOTAzYTI1YzI5ZmJkYQBmdW5jdGlvbjpzdHJpbmdGcm9tVW5rbm93biMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/billingActions.ts",
+              "line": 28,
+              "message": "identical body also in: convex/stripeWebhook.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2JpbGxpbmdBY3Rpb25zLnRzAGQxMzgyN2Y5Mjg1YzY1MjEwYTFmOGQyYTg5YjQ2MTE3MzI5OGY4ZjM1OTAyMjRkZTQ1NDQyMGQwNzM4YjMyYmEAZnVuY3Rpb246Z2V0U3RyaXBlSWQjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/stripeWebhook.ts",
+              "line": 135,
+              "message": "identical body also in: convex/billingActions.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L3N0cmlwZVdlYmhvb2sudHMAZDEzODI3ZjkyODVjNjUyMTBhMWY4ZDJhODliNDYxMTczMjk4ZjhmMzU5MDIyNGRlNDU0NDIwZDA3MzhiMzJiYQBmdW5jdGlvbjpnZXRTdHJpcGVJZCMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/hiring/stateRead.ts",
+              "line": 133,
+              "message": "identical body also in: convex/hiringApplication.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2hpcmluZy9zdGF0ZVJlYWQudHMAZmMyZmJlODI3MzU3NWMyZmRiYWE1NDEwMjZkNTI2ZjBlNTQwMjA5YTI0ODdiMDNmNzFmNDMyODlkZGU4MGZiNABmdW5jdGlvbjpoaXJpbmdBcHBsaWNhdGlvblN0YXRlIzAALQBsaW5l"
+            },
+            {
+              "file": "convex/hiringApplication.ts",
+              "line": 60,
+              "message": "identical body also in: convex/hiring/stateRead.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2hpcmluZ0FwcGxpY2F0aW9uLnRzAGZjMmZiZTgyNzM1NzVjMmZkYmFhNTQxMDI2ZDUyNmYwZTU0MDIwOWEyNDg3YjAzZjcxZjQzMjg5ZGRlODBmYjQAZnVuY3Rpb246aGlyaW5nQXBwbGljYXRpb25TdGF0ZSMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/chatPayloadSanitize.ts",
+              "line": 8,
+              "message": "identical body also in: convex/lib/chatSearchEvidence.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9jaGF0UGF5bG9hZFNhbml0aXplLnRzAGRlMGFjNzAwYTQwMWQ5NjkxNjU3YjY3ZDRhMzY0OTJjYWU1YWYzMzhlNGEzZGYxZWUxMGIxNDY0ZDU1OTQwYjgAZnVuY3Rpb246ZXNjYXBlUmVnRXhwIzAALQBsaW5l"
+            },
+            {
+              "file": "convex/lib/chatSearchEvidence.ts",
+              "line": 90,
+              "message": "identical body also in: convex/lib/chatPayloadSanitize.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9jaGF0U2VhcmNoRXZpZGVuY2UudHMAZGUwYWM3MDBhNDAxZDk2OTE2NTdiNjdkNGEzNjQ5MmNhZTVhZjMzOGU0YTNkZjFlZTEwYjE0NjRkNTU5NDBiOABmdW5jdGlvbjplc2NhcGVSZWdFeHAjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/contactForm.ts",
+              "line": 88,
+              "message": "identical body also in: convex/lib/supportForm.ts, extensions/sift-chrome/popup.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9jb250YWN0Rm9ybS50cwAyY2Y4NTI4YjhiMmY2MmYyNDNjMGMwNjlhOWY0ZTA3NTY5YjE5YmM5OThiOWZkZjU5MTk0YjJhMmRiNWU5YmIyAGZ1bmN0aW9uOmVzY2FwZUh0bWwjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/supportForm.ts",
+              "line": 163,
+              "message": "identical body also in: convex/lib/contactForm.ts, extensions/sift-chrome/popup.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9zdXBwb3J0Rm9ybS50cwAyY2Y4NTI4YjhiMmY2MmYyNDNjMGMwNjlhOWY0ZTA3NTY5YjE5YmM5OThiOWZkZjU5MTk0YjJhMmRiNWU5YmIyAGZ1bmN0aW9uOmVzY2FwZUh0bWwjMAAtAGxpbmU"
+            },
+            {
+              "file": "extensions/sift-chrome/popup.ts",
+              "line": 849,
+              "message": "identical body also in: convex/lib/contactForm.ts, convex/lib/supportForm.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAZXh0ZW5zaW9ucy9zaWZ0LWNocm9tZS9wb3B1cC50cwAyY2Y4NTI4YjhiMmY2MmYyNDNjMGMwNjlhOWY0ZTA3NTY5YjE5YmM5OThiOWZkZjU5MTk0YjJhMmRiNWU5YmIyAGZ1bmN0aW9uOmVzY2FwZUh0bWwjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/extensionAuth.ts",
+              "line": 42,
+              "message": "identical body also in: convex/lib/mcpApiKeys.ts, convex/lib/promoCodes.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9leHRlbnNpb25BdXRoLnRzADFiMTFhOWM1ZmUzMDY3NWFkNmJkM2ZiZWNlOTBiOGRiYmQ5NWU0MTVjNjViZmYyMTYzNGU1Yzk3ODJjYThhYTEAZnVuY3Rpb246Ynl0ZXNUb0hleCMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/mcpApiKeys.ts",
+              "line": 38,
+              "message": "identical body also in: convex/lib/extensionAuth.ts, convex/lib/promoCodes.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9tY3BBcGlLZXlzLnRzADFiMTFhOWM1ZmUzMDY3NWFkNmJkM2ZiZWNlOTBiOGRiYmQ5NWU0MTVjNjViZmYyMTYzNGU1Yzk3ODJjYThhYTEAZnVuY3Rpb246Ynl0ZXNUb0hleCMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/promoCodes.ts",
+              "line": 59,
+              "message": "identical body also in: convex/lib/extensionAuth.ts, convex/lib/mcpApiKeys.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9wcm9tb0NvZGVzLnRzADFiMTFhOWM1ZmUzMDY3NWFkNmJkM2ZiZWNlOTBiOGRiYmQ5NWU0MTVjNjViZmYyMTYzNGU1Yzk3ODJjYThhYTEAZnVuY3Rpb246Ynl0ZXNUb0hleCMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/publicApplicationEmailIdentity.ts",
+              "line": 16,
+              "message": "identical body also in: convex/lib/publicApplicationIngressAuth.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9wdWJsaWNBcHBsaWNhdGlvbkVtYWlsSWRlbnRpdHkudHMAOTMyZGQ1YzliOTQyZTFmYWQ5YzI3NmIzNTkxNDA4MmI3NmY1YWJlZTU3YjA0MzA5N2M1ODNiYzBkYmE0ZjY5MwBmdW5jdGlvbjppc1ZhbGlkVmVyc2lvbiMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/publicApplicationIngressAuth.ts",
+              "line": 19,
+              "message": "identical body also in: convex/lib/publicApplicationEmailIdentity.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9wdWJsaWNBcHBsaWNhdGlvbkluZ3Jlc3NBdXRoLnRzADkzMmRkNWM5Yjk0MmUxZmFkOWMyNzZiMzU5MTQwODJiNzZmNWFiZWU1N2IwNDMwOTdjNTgzYmMwZGJhNGY2OTMAZnVuY3Rpb246aXNWYWxpZFZlcnNpb24jMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/publicApplicationEmailIdentity.ts",
+              "line": 24,
+              "message": "identical body also in: convex/lib/publicApplicationIngressAuth.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9wdWJsaWNBcHBsaWNhdGlvbkVtYWlsSWRlbnRpdHkudHMAZTBhYjI1Nzk2MjFlOGI2ZjQ5Y2M2OWRjNDlmODNmNjU5OGM1Y2FlNGE4NGM3MzM5MzVkZmE4OGRmOThjZTcyOABmdW5jdGlvbjpwYXJzZVJvdGF0ZWRBdCMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/publicApplicationIngressAuth.ts",
+              "line": 23,
+              "message": "identical body also in: convex/lib/publicApplicationEmailIdentity.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9wdWJsaWNBcHBsaWNhdGlvbkluZ3Jlc3NBdXRoLnRzAGUwYWIyNTc5NjIxZThiNmY0OWNjNjlkYzQ5ZjgzZjY1OThjNWNhZTRhODRjNzMzOTM1ZGZhODhkZjk4Y2U3MjgAZnVuY3Rpb246cGFyc2VSb3RhdGVkQXQjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/recruiterChatPrimaryDecision.ts",
+              "line": 148,
+              "message": "identical body also in: convex/lib/recruiterChatTurn.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9yZWNydWl0ZXJDaGF0UHJpbWFyeURlY2lzaW9uLnRzAGUxMzhiOGM3M2I3OGVhMWYzODExZjM3MTRiZTQwZjViZWM4ODliNmI5MWJjY2M5ODQ4OTBlNDdhZGJiNzZmZjIAZnVuY3Rpb246YXNSZWNvcmQjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/recruiterChatTurn.ts",
+              "line": 302,
+              "message": "identical body also in: convex/lib/recruiterChatPrimaryDecision.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9yZWNydWl0ZXJDaGF0VHVybi50cwBlMTM4YjhjNzNiNzhlYTFmMzgxMWYzNzE0YmU0MGY1YmVjODg5YjZiOTFiY2NjOTg0ODkwZTQ3YWRiYjc2ZmYyAGZ1bmN0aW9uOmFzUmVjb3JkIzAALQBsaW5l"
+            },
+            {
+              "file": "convex/lib/recruiterChatQaTargetPolicy.ts",
+              "line": 279,
+              "message": "identical body also in: convex/qaBrowserAccounts.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9yZWNydWl0ZXJDaGF0UWFUYXJnZXRQb2xpY3kudHMAZjkzOWJlODZiOWYwMjM0OWNkOTFkZjljN2Q4NGM4NzE0OTZjYjYzMGRkOTI0YTVmYmMwNTYwYWM4MDJmZjkxZABmdW5jdGlvbjpoYXNTdHJpcGVTdGF0ZSMwAC0AbGluZQ"
+            },
+            {
+              "file": "convex/qaBrowserAccounts.ts",
+              "line": 65,
+              "message": "identical body also in: convex/lib/recruiterChatQaTargetPolicy.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L3FhQnJvd3NlckFjY291bnRzLnRzAGY5MzliZTg2YjlmMDIzNDljZDkxZGY5YzdkODRjODcxNDk2Y2I2MzBkZDkyNGE1ZmJjMDU2MGFjODAyZmY5MWQAZnVuY3Rpb246aGFzU3RyaXBlU3RhdGUjMAAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/shareViewerProofCrypto.ts",
+              "line": 3,
+              "message": "identical body also in: shared/authNetworkSignal.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAY29udmV4L2xpYi9zaGFyZVZpZXdlclByb29mQ3J5cHRvLnRzADliYWYxZDhmNzUzYTJkNTA4NjEzMmU1NDllZDI1NTRjZjdlMTQ0ZWU5Y2JiNDNmZTZhYjcwOWRjYjI5NThmMDUAZnVuY3Rpb246Ynl0ZXNUb0hleCMwAC0AbGluZQ"
+            },
+            {
+              "file": "shared/authNetworkSignal.ts",
+              "line": 34,
+              "message": "identical body also in: convex/lib/shareViewerProofCrypto.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc2hhcmVkL2F1dGhOZXR3b3JrU2lnbmFsLnRzADliYWYxZDhmNzUzYTJkNTA4NjEzMmU1NDllZDI1NTRjZjdlMTQ0ZWU5Y2JiNDNmZTZhYjcwOWRjYjI5NThmMDUAZnVuY3Rpb246Ynl0ZXNUb0hleCMwAC0AbGluZQ"
+            },
+            {
+              "file": "extensions/sift-chrome/popup.ts",
+              "line": 282,
+              "message": "identical body also in: extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAZXh0ZW5zaW9ucy9zaWZ0LWNocm9tZS9wb3B1cC50cwAyZWU3NmZjNWZmYzFmOTcwYjJlYTQ2M2IwODUzODUzMTI3NzZjZGEyNTMwYWYxZDQ2YTllYjg3ZDU0NTA4MGJiAGZ1bmN0aW9uOmlzUmVjb3JkIzAALQBsaW5l"
+            },
+            {
+              "file": "extensions/sift-chrome/src/api/client.ts",
+              "line": 36,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAZXh0ZW5zaW9ucy9zaWZ0LWNocm9tZS9zcmMvYXBpL2NsaWVudC50cwAyZWU3NmZjNWZmYzFmOTcwYjJlYTQ2M2IwODUzODUzMTI3NzZjZGEyNTMwYWYxZDQ2YTllYjg3ZDU0NTA4MGJiAGZ1bmN0aW9uOmlzUmVjb3JkIzAALQBsaW5l"
+            },
+            {
+              "file": "extensions/sift-chrome/src/background/submitPipeline.ts",
+              "line": 167,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAZXh0ZW5zaW9ucy9zaWZ0LWNocm9tZS9zcmMvYmFja2dyb3VuZC9zdWJtaXRQaXBlbGluZS50cwAyZWU3NmZjNWZmYzFmOTcwYjJlYTQ2M2IwODUzODUzMTI3NzZjZGEyNTMwYWYxZDQ2YTllYjg3ZDU0NTA4MGJiAGZ1bmN0aW9uOmlzUmVjb3JkIzAALQBsaW5l"
+            },
+            {
+              "file": "extensions/sift-chrome/src/storage/durableRetryContext.ts",
+              "line": 17,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAZXh0ZW5zaW9ucy9zaWZ0LWNocm9tZS9zcmMvc3RvcmFnZS9kdXJhYmxlUmV0cnlDb250ZXh0LnRzADJlZTc2ZmM1ZmZjMWY5NzBiMmVhNDYzYjA4NTM4NTMxMjc3NmNkYTI1MzBhZjFkNDZhOWViODdkNTQ1MDgwYmIAZnVuY3Rpb246aXNSZWNvcmQjMAAtAGxpbmU"
+            },
+            {
+              "file": "extensions/sift-chrome/src/storage/settings.ts",
+              "line": 17,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAZXh0ZW5zaW9ucy9zaWZ0LWNocm9tZS9zcmMvc3RvcmFnZS9zZXR0aW5ncy50cwAyZWU3NmZjNWZmYzFmOTcwYjJlYTQ2M2IwODUzODUzMTI3NzZjZGEyNTMwYWYxZDQ2YTllYjg3ZDU0NTA4MGJiAGZ1bmN0aW9uOmlzUmVjb3JkIzAALQBsaW5l"
+            },
+            {
+              "file": "src/lib/public-application-ingress-client.ts",
+              "line": 98,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL2xpYi9wdWJsaWMtYXBwbGljYXRpb24taW5ncmVzcy1jbGllbnQudHMAMmVlNzZmYzVmZmMxZjk3MGIyZWE0NjNiMDg1Mzg1MzEyNzc2Y2RhMjUzMGFmMWQ0NmE5ZWI4N2Q1NDUwODBiYgBmdW5jdGlvbjppc1JlY29yZCMwAC0AbGluZQ"
+            },
+            {
+              "file": "src/routes/api/public-applications/submissions.ts",
+              "line": 79,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/uploads.ts, src/routes/evals/index.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9hcGkvcHVibGljLWFwcGxpY2F0aW9ucy9zdWJtaXNzaW9ucy50cwAyZWU3NmZjNWZmYzFmOTcwYjJlYTQ2M2IwODUzODUzMTI3NzZjZGEyNTMwYWYxZDQ2YTllYjg3ZDU0NTA4MGJiAGZ1bmN0aW9uOmlzUmVjb3JkIzAALQBsaW5l"
+            },
+            {
+              "file": "src/routes/api/public-applications/uploads.ts",
+              "line": 51,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/evals/index.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9hcGkvcHVibGljLWFwcGxpY2F0aW9ucy91cGxvYWRzLnRzADJlZTc2ZmM1ZmZjMWY5NzBiMmVhNDYzYjA4NTM4NTMxMjc3NmNkYTI1MzBhZjFkNDZhOWViODdkNTQ1MDgwYmIAZnVuY3Rpb246aXNSZWNvcmQjMAAtAGxpbmU"
+            },
+            {
+              "file": "src/routes/evals/index.tsx",
+              "line": 623,
+              "message": "identical body also in: extensions/sift-chrome/popup.ts, extensions/sift-chrome/src/api/client.ts, extensions/sift-chrome/src/background/submitPipeline.ts, extensions/sift-chrome/src/storage/durableRetryContext.ts, extensions/sift-chrome/src/storage/settings.ts, src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9ldmFscy9pbmRleC50c3gAMmVlNzZmYzVmZmMxZjk3MGIyZWE0NjNiMDg1Mzg1MzEyNzc2Y2RhMjUzMGFmMWQ0NmE5ZWI4N2Q1NDUwODBiYgBmdW5jdGlvbjppc1JlY29yZCMwAC0AbGluZQ"
+            },
+            {
+              "file": "scripts/recruiterChatEvals/langfuseUpload.ts",
+              "line": 138,
+              "message": "identical body also in: scripts/recruiterChatEvals/tracePromotion.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc2NyaXB0cy9yZWNydWl0ZXJDaGF0RXZhbHMvbGFuZ2Z1c2VVcGxvYWQudHMAZWI2YjdjZDI3MzcxYjkxYmM2ZDJjOWM3YjY2MTI3ZGFiNDU5NmJhOGRhNjZlYjk0YTdhYTY4NmZiOGMyM2VhMwBmdW5jdGlvbjpzdGFibGVJZCMwAC0AbGluZQ"
+            },
+            {
+              "file": "scripts/recruiterChatEvals/tracePromotion.ts",
+              "line": 87,
+              "message": "identical body also in: scripts/recruiterChatEvals/langfuseUpload.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc2NyaXB0cy9yZWNydWl0ZXJDaGF0RXZhbHMvdHJhY2VQcm9tb3Rpb24udHMAZWI2YjdjZDI3MzcxYjkxYmM2ZDJjOWM3YjY2MTI3ZGFiNDU5NmJhOGRhNjZlYjk0YTdhYTY4NmZiOGMyM2VhMwBmdW5jdGlvbjpzdGFibGVJZCMwAC0AbGluZQ"
+            },
+            {
+              "file": "scripts/recruiterChatEvals/langfuseUpload.ts",
+              "line": 434,
+              "message": "identical body also in: scripts/recruiterChatEvals/tracePromotion.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc2NyaXB0cy9yZWNydWl0ZXJDaGF0RXZhbHMvbGFuZ2Z1c2VVcGxvYWQudHMANTZjMTAwY2EwMWI4YzYxYTI1ZDMwZDBlZmJjNDMwMjIyM2JlZTJmZmNhZDQ3MjM0ZjhkODhhNGRmNWI4OTZmZABmdW5jdGlvbjppc0FscmVhZHlFeGlzdHNFcnJvciMwAC0AbGluZQ"
+            },
+            {
+              "file": "scripts/recruiterChatEvals/tracePromotion.ts",
+              "line": 95,
+              "message": "identical body also in: scripts/recruiterChatEvals/langfuseUpload.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc2NyaXB0cy9yZWNydWl0ZXJDaGF0RXZhbHMvdHJhY2VQcm9tb3Rpb24udHMANTZjMTAwY2EwMWI4YzYxYTI1ZDMwZDBlZmJjNDMwMjIyM2JlZTJmZmNhZDQ3MjM0ZjhkODhhNGRmNWI4OTZmZABmdW5jdGlvbjppc0FscmVhZHlFeGlzdHNFcnJvciMwAC0AbGluZQ"
+            },
+            {
+              "file": "shared/compareChipPhrase.ts",
+              "line": 54,
+              "message": "identical body also in: shared/comparePhraseCompress.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc2hhcmVkL2NvbXBhcmVDaGlwUGhyYXNlLnRzAGVlZTBhN2Q2YmNlYmNjMzVlYTQ0NzViNDNiYzExMmZmMzUzYTg5OWE0Yzc5NWFhYTJkOTRlMGZlNDU4Mjc4MTEAZnVuY3Rpb246Y29sbGFwc2VXaGl0ZXNwYWNlIzAALQBsaW5l"
+            },
+            {
+              "file": "shared/comparePhraseCompress.ts",
+              "line": 54,
+              "message": "identical body also in: shared/compareChipPhrase.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc2hhcmVkL2NvbXBhcmVQaHJhc2VDb21wcmVzcy50cwBlZWUwYTdkNmJjZWJjYzM1ZWE0NDc1YjQzYmMxMTJmZjM1M2E4OTlhNGM3OTVhYWEyZDk0ZTBmZTQ1ODI3ODExAGZ1bmN0aW9uOmNvbGxhcHNlV2hpdGVzcGFjZSMwAC0AbGluZQ"
+            },
+            {
+              "file": "shared/resumeTextNormalize.ts",
+              "line": 49,
+              "message": "identical body also in: src/components/ChatWidget.tsx, src/lib/chatWidgetDisplay.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc2hhcmVkL3Jlc3VtZVRleHROb3JtYWxpemUudHMAZWIzMGFmZTcwOWYyY2QxZTk2ZDNmN2IyZDM2ZGIzN2FlZjA4NzcyNTlhMjkxNjRjMzAyODJlOWI2OWIwNTRhMABmdW5jdGlvbjplc2NhcGVSZWdFeHAjMAAtAGxpbmU"
+            },
+            {
+              "file": "src/components/ChatWidget.tsx",
+              "line": 2338,
+              "message": "identical body also in: shared/resumeTextNormalize.ts, src/lib/chatWidgetDisplay.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL2NvbXBvbmVudHMvQ2hhdFdpZGdldC50c3gAZWIzMGFmZTcwOWYyY2QxZTk2ZDNmN2IyZDM2ZGIzN2FlZjA4NzcyNTlhMjkxNjRjMzAyODJlOWI2OWIwNTRhMABmdW5jdGlvbjplc2NhcGVSZWdFeHAjMAAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/chatWidgetDisplay.ts",
+              "line": 265,
+              "message": "identical body also in: shared/resumeTextNormalize.ts, src/components/ChatWidget.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL2xpYi9jaGF0V2lkZ2V0RGlzcGxheS50cwBlYjMwYWZlNzA5ZjJjZDFlOTZkM2Y3YjJkMzZkYjM3YWVmMDg3NzI1OWEyOTE2NGMzMDI4MmU5YjY5YjA1NGEwAGZ1bmN0aW9uOmVzY2FwZVJlZ0V4cCMwAC0AbGluZQ"
+            },
+            {
+              "file": "src/components/application-detail/ApplicationDetail.tsx",
+              "line": 2033,
+              "message": "identical body also in: src/components/jobs/ApplicationsTabPanel.tsx, src/routes/jobs/$jobId/-components/ApplicationsSection.tsx, src/routes/jobs/$jobId/index.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL2NvbXBvbmVudHMvYXBwbGljYXRpb24tZGV0YWlsL0FwcGxpY2F0aW9uRGV0YWlsLnRzeABlZGVhODhlNjFkNGQzYjUwN2U3NGFhZWQ5Yzk3ZDQ3N2U5NGU4YjY4MzQzMWQzNmFjN2UwN2IwY2I0ODIzZTAwAGZ1bmN0aW9uOmZvcm1hdERhdGUjMAAtAGxpbmU"
+            },
+            {
+              "file": "src/components/jobs/ApplicationsTabPanel.tsx",
+              "line": 368,
+              "message": "identical body also in: src/components/application-detail/ApplicationDetail.tsx, src/routes/jobs/$jobId/-components/ApplicationsSection.tsx, src/routes/jobs/$jobId/index.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL2NvbXBvbmVudHMvam9icy9BcHBsaWNhdGlvbnNUYWJQYW5lbC50c3gAZWRlYTg4ZTYxZDRkM2I1MDdlNzRhYWVkOWM5N2Q0NzdlOTRlOGI2ODM0MzFkMzZhYzdlMDdiMGNiNDgyM2UwMABmdW5jdGlvbjpmb3JtYXREYXRlIzAALQBsaW5l"
+            },
+            {
+              "file": "src/routes/jobs/$jobId/-components/ApplicationsSection.tsx",
+              "line": 52,
+              "message": "identical body also in: src/components/application-detail/ApplicationDetail.tsx, src/components/jobs/ApplicationsTabPanel.tsx, src/routes/jobs/$jobId/index.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9qb2JzLyRqb2JJZC8tY29tcG9uZW50cy9BcHBsaWNhdGlvbnNTZWN0aW9uLnRzeABlZGVhODhlNjFkNGQzYjUwN2U3NGFhZWQ5Yzk3ZDQ3N2U5NGU4YjY4MzQzMWQzNmFjN2UwN2IwY2I0ODIzZTAwAGZ1bmN0aW9uOmZvcm1hdERhdGUjMAAtAGxpbmU"
+            },
+            {
+              "file": "src/routes/jobs/$jobId/index.tsx",
+              "line": 1740,
+              "message": "identical body also in: src/components/application-detail/ApplicationDetail.tsx, src/components/jobs/ApplicationsTabPanel.tsx, src/routes/jobs/$jobId/-components/ApplicationsSection.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9qb2JzLyRqb2JJZC9pbmRleC50c3gAZWRlYTg4ZTYxZDRkM2I1MDdlNzRhYWVkOWM5N2Q0NzdlOTRlOGI2ODM0MzFkMzZhYzdlMDdiMGNiNDgyM2UwMABmdW5jdGlvbjpmb3JtYXREYXRlIzAALQBsaW5l"
+            },
+            {
+              "file": "src/components/apply/JobDescriptionDisplay.tsx",
+              "line": 309,
+              "message": "identical body also in: src/components/jobs/wizard/JobWizardLivePreview.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL2NvbXBvbmVudHMvYXBwbHkvSm9iRGVzY3JpcHRpb25EaXNwbGF5LnRzeAA4M2U5MWNhNmZjYTgwYThhMTUyN2MyMDkwOTkzZWZmYjIwZTMxNWU5ODIzMDE0ZTBmMGYwY2NiNzIyYzk1ZWQxAGZ1bmN0aW9uOmZvcm1hdElubGluZUxpc3QjMAAtAGxpbmU"
+            },
+            {
+              "file": "src/components/jobs/wizard/JobWizardLivePreview.tsx",
+              "line": 397,
+              "message": "identical body also in: src/components/apply/JobDescriptionDisplay.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL2NvbXBvbmVudHMvam9icy93aXphcmQvSm9iV2l6YXJkTGl2ZVByZXZpZXcudHN4ADgzZTkxY2E2ZmNhODBhOGExNTI3YzIwOTA5OTNlZmZiMjBlMzE1ZTk4MjMwMTRlMGYwZjBjY2I3MjJjOTVlZDEAZnVuY3Rpb246Zm9ybWF0SW5saW5lTGlzdCMwAC0AbGluZQ"
+            },
+            {
+              "file": "src/components/social-cross-reference/SocialCrossReferenceSection.tsx",
+              "line": 113,
+              "message": "identical body also in: src/lib/social-cross-reference-view-model.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL2NvbXBvbmVudHMvc29jaWFsLWNyb3NzLXJlZmVyZW5jZS9Tb2NpYWxDcm9zc1JlZmVyZW5jZVNlY3Rpb24udHN4ADIxOGQxMmY2NmM5NzhjZmIyN2M3NTBjNGFmZDczODQxMmY5YzczMGFkOWU5Njk2NTJiYTUyNzRjNjkyZTEyZjUAZnVuY3Rpb246aGFzVGFsbHkjMAAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/social-cross-reference-view-model.ts",
+              "line": 420,
+              "message": "identical body also in: src/components/social-cross-reference/SocialCrossReferenceSection.tsx",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL2xpYi9zb2NpYWwtY3Jvc3MtcmVmZXJlbmNlLXZpZXctbW9kZWwudHMAMjE4ZDEyZjY2Yzk3OGNmYjI3Yzc1MGM0YWZkNzM4NDEyZjljNzMwYWQ5ZTk2OTY1MmJhNTI3NGM2OTJlMTJmNQBmdW5jdGlvbjpoYXNUYWxseSMwAC0AbGluZQ"
+            },
+            {
+              "file": "src/lib/public-application-ingress-client.ts",
+              "line": 102,
+              "message": "identical body also in: src/routes/api/public-applications/submissions.ts, src/routes/api/public-applications/uploads.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL2xpYi9wdWJsaWMtYXBwbGljYXRpb24taW5ncmVzcy1jbGllbnQudHMAZTZkOWU0NGE4MTVhNThkNjk0MmQzZWY4Yzc5M2QwZmM3NzRjZTMxZGRmMGVlMDkyZmFiODdiMDg1YjY5OWFmZgBmdW5jdGlvbjpwYXJzZUpzb24jMAAtAGxpbmU"
+            },
+            {
+              "file": "src/routes/api/public-applications/submissions.ts",
+              "line": 218,
+              "message": "identical body also in: src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/uploads.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9hcGkvcHVibGljLWFwcGxpY2F0aW9ucy9zdWJtaXNzaW9ucy50cwBlNmQ5ZTQ0YTgxNWE1OGQ2OTQyZDNlZjhjNzkzZDBmYzc3NGNlMzFkZGYwZWUwOTJmYWI4N2IwODViNjk5YWZmAGZ1bmN0aW9uOnBhcnNlSnNvbiMwAC0AbGluZQ"
+            },
+            {
+              "file": "src/routes/api/public-applications/uploads.ts",
+              "line": 66,
+              "message": "identical body also in: src/lib/public-application-ingress-client.ts, src/routes/api/public-applications/submissions.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9hcGkvcHVibGljLWFwcGxpY2F0aW9ucy91cGxvYWRzLnRzAGU2ZDllNDRhODE1YTU4ZDY5NDJkM2VmOGM3OTNkMGZjNzc0Y2UzMWRkZjBlZTA5MmZhYjg3YjA4NWI2OTlhZmYAZnVuY3Rpb246cGFyc2VKc29uIzAALQBsaW5l"
+            },
+            {
+              "file": "src/routes/api/public-applications/submissions.ts",
+              "line": 66,
+              "message": "identical body also in: src/routes/api/public-applications/uploads.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9hcGkvcHVibGljLWFwcGxpY2F0aW9ucy9zdWJtaXNzaW9ucy50cwA2M2UwZWIyZTMyZDhlNTY2OTkxNjRkMGQxMWNjNzhlNzQ3Mzk2M2VlODEwMTk2MmYxYmVlODVhNjhmN2U1M2U0AGZ1bmN0aW9uOnNhZmVKc29uUmVzcG9uc2UjMAAtAGxpbmU"
+            },
+            {
+              "file": "src/routes/api/public-applications/uploads.ts",
+              "line": 38,
+              "message": "identical body also in: src/routes/api/public-applications/submissions.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9hcGkvcHVibGljLWFwcGxpY2F0aW9ucy91cGxvYWRzLnRzADYzZTBlYjJlMzJkOGU1NjY5OTE2NGQwZDExY2M3OGU3NDczOTYzZWU4MTAxOTYyZjFiZWU4NWE2OGY3ZTUzZTQAZnVuY3Rpb246c2FmZUpzb25SZXNwb25zZSMwAC0AbGluZQ"
+            },
+            {
+              "file": "src/routes/api/public-applications/submissions.ts",
+              "line": 226,
+              "message": "identical body also in: src/routes/api/public-applications/uploads.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9hcGkvcHVibGljLWFwcGxpY2F0aW9ucy9zdWJtaXNzaW9ucy50cwAxMzY5NmJlYzVhNWRmMTQ0MTRhZDEzMjhmMDc1NmU0Yzk3ZGQ4YzYzNTAzYWQ3NDM2ZDg0NDg0NWEwN2NjZDgyAGZ1bmN0aW9uOnNhZmVSZXRyeUFmdGVyIzAALQBsaW5l"
+            },
+            {
+              "file": "src/routes/api/public-applications/uploads.ts",
+              "line": 74,
+              "message": "identical body also in: src/routes/api/public-applications/submissions.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9hcGkvcHVibGljLWFwcGxpY2F0aW9ucy91cGxvYWRzLnRzADEzNjk2YmVjNWE1ZGYxNDQxNGFkMTMyOGYwNzU2ZTRjOTdkZDhjNjM1MDNhZDc0MzZkODQ0ODQ1YTA3Y2NkODIAZnVuY3Rpb246c2FmZVJldHJ5QWZ0ZXIjMAAtAGxpbmU"
+            },
+            {
+              "file": "src/routes/api/public-applications/submissions.ts",
+              "line": 236,
+              "message": "identical body also in: src/routes/api/public-applications/uploads.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9hcGkvcHVibGljLWFwcGxpY2F0aW9ucy9zdWJtaXNzaW9ucy50cwA2MDVhYzgzNjk1NjA2MzFjMjVjOTg0M2NlYWNhY2M0OWRiN2EzZWZlN2ZlZmRkNzQzZThkMTNlZTYwODNlNTAzAGZ1bmN0aW9uOnJlYWRCb3VuZGVkSnNvbiMwAC0AbGluZQ"
+            },
+            {
+              "file": "src/routes/api/public-applications/uploads.ts",
+              "line": 84,
+              "message": "identical body also in: src/routes/api/public-applications/submissions.ts",
+              "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAc3JjL3JvdXRlcy9hcGkvcHVibGljLWFwcGxpY2F0aW9ucy91cGxvYWRzLnRzADYwNWFjODM2OTU2MDYzMWMyNWM5ODQzY2VhY2FjYzQ5ZGI3YTNlZmU3ZmVmZGQ3NDNlOGQxM2VlNjA4M2U1MDMAZnVuY3Rpb246cmVhZEJvdW5kZWRKc29uIzAALQBsaW5l"
+            }
+          ]
+        },
+        {
+          "rule": "export-without-any-consumer",
+          "heading": "A named export with no consumer found - a deletion candidate, pending the blind spots below.",
+          "severity": "info",
+          "impact": "Likely dead public surface: code that looks load-bearing, is maintained, reviewed, and shipped - but no consumer was found. The corpus caught this 5 times across 4 PRs.",
+          "why": "Generated code over-exports ('might be useful'), and nothing in the toolchain reports an export with zero consumers. Dynamic consumers are detected heuristically - see blind spots - so this is a candidate, not a verdict.",
+          "fix": "Verify against the blind spots, then delete it - or consume it. If it is a genuine public API entry point, say so in a comment and exempt it deliberately.",
+          "findings": [
+            {
+              "file": "convex/analysis/evidence.ts",
+              "line": 786,
+              "message": "candidate: no consumer found for buildEvidencePrompt",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2FuYWx5c2lzL2V2aWRlbmNlLnRzADNmN2I4ODJlY2EzZTZmMDU0MmRlYTA2NjdlNTRlZDBhNDI1YzI5MzY2MzBlYzc0NmM4MTU1NzdlNWY5OTc3YjIAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/analysis/fit.ts",
+              "line": 1428,
+              "message": "candidate: no consumer found for buildFitPrompt",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2FuYWx5c2lzL2ZpdC50cwA0ZDc3OTA4MWU2NThkMzQ5MDE5YmIwNzJlZjQ5ZDRlZjE1YzkzNTc0NGMwOWIxZTE4ZGY2ZDZiZmI2ZjgzNmE1AABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/analysis/gaps.ts",
+              "line": 152,
+              "message": "candidate: no consumer found for finalizeHardCredentialFromRequirement",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2FuYWx5c2lzL2dhcHMudHMAYWU3MDhlYjkzODFmZGM5ZmJlNDg3ZGJiZGQyMzBjNTEwZDc4N2Y4ZDZlY2U5YzkzM2FmNjUwMzE3OTgyMGRiZgAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/analysis/internal.ts",
+              "line": 59,
+              "message": "candidate: no consumer found for clearAnalysisStatusesHelper",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2FuYWx5c2lzL2ludGVybmFsLnRzADgxNDM0NjcyODRhOTExNWE5ZmEzZWRmZDY1NTNhMmE1YjRhZTI1NmRlMGU5ZTRjMWY4NjA5YzY2NzY0NjQ4ZGIAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/analysis/jsonExtractor.ts",
+              "line": 135,
+              "message": "candidate: no consumer found for supportsStructuredOutput",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2FuYWx5c2lzL2pzb25FeHRyYWN0b3IudHMAMjA3ZWJlNjFmMmQ4ZTFkNWM3NmQ2NjIxMDRhZWQ1YjhmYzM4MTZlYzU5NzQyOWUzYTBmOWVkMGE3MGZkMmRhZAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/analysis/piiRemoval.ts",
+              "line": 674,
+              "message": "candidate: no consumer found for redactPIIForTest",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2FuYWx5c2lzL3BpaVJlbW92YWwudHMANWVjNTlkYWNkM2YwODE5NTdlYmJiMDZlZTk4NWY0NGM0MjU0NDlkYWFkYzc1YmY2ZTM2MGRlNGU4MWRjY2JkNwAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/analysis/proportionalScore.ts",
+              "line": 100,
+              "message": "candidate: no consumer found for requirementProportionalWeight",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2FuYWx5c2lzL3Byb3BvcnRpb25hbFNjb3JlLnRzAGJkOTZjZTliMDY1NWQ1MDZlN2VkMDAxMTlmMWZiZWVlZWEzMzQ1MmExMThjZWNiMGZlODY1MTQzMjJlN2VjOTUAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/analysis/verification.ts",
+              "line": 1236,
+              "message": "candidate: no consumer found for verifyGitHub",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2FuYWx5c2lzL3ZlcmlmaWNhdGlvbi50cwA5ZDUyMTAxZGQxOGIyNWQ4NTY0ZmRjMGEzMjI0OWEyMzc5ZmQwYTdlMDlkNjcwZjgwYzg5ZDY0Yjk0YWZmYmQ3AABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/analysis/verificationInsights.ts",
+              "line": 71,
+              "message": "candidate: no consumer found for normalizeEvidence",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2FuYWx5c2lzL3ZlcmlmaWNhdGlvbkluc2lnaHRzLnRzADI4OGE4NmI3YjMzNzYyMmQ4N2JkZDVkNDcyYjJlMWE4ZTYwODJlMWJjZWMzMmZlM2UzM2E5NmE3NjYwYjYwMzUAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/analysis/verificationScrape.ts",
+              "line": 125,
+              "message": "candidate: no consumer found for scrapeWithFirecrawlV2",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2FuYWx5c2lzL3ZlcmlmaWNhdGlvblNjcmFwZS50cwBjMmE4ZTU1NjYwNDRjODBlNmVkYzkzNmY2OWNkYmY4OTQ2MzdjOGFmYTFhMTJiYzFiNTQwNjQ0ZDNlM2JmYTA4AABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/chat.ts",
+              "line": 971,
+              "message": "candidate: no consumer found for buildSystemPrompt",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2NoYXQudHMANmZkZmJkZDlmMWRiMjk1MTkxOWZjOGMxMmFjY2QwNmY3ZGIzY2U1NzIyN2M4NDE5NmFiOGU3ZTliZmUzODZlMgAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/chatGoldenQuestions.ts",
+              "line": 62,
+              "message": "candidate: no consumer found for assertGoldenBlockedCoverage",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2NoYXRHb2xkZW5RdWVzdGlvbnMudHMAOTVkM2E0MmNlM2ZmMTFkNjgxZDQxNTU3MDE2NjNmMDhiZTEyOWRmZGU0Y2U1NWNkNGRhODQxYTAzMDBmNTA4NwAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/chatGoldenQuestions.ts",
+              "line": 74,
+              "message": "candidate: no consumer found for assertGoldenAllowedCoverage",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2NoYXRHb2xkZW5RdWVzdGlvbnMudHMAZDliOGQ1MWI2ZGYzYmFmZWFmZGExODBhYWMxYWQxNTM2MGRiYTg3NmI3ODNlMWQ5N2Y1YzBiNDNlNjYwNThkYQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/chatTools.ts",
+              "line": 910,
+              "message": "candidate: no consumer found for compareByScoreDesc",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2NoYXRUb29scy50cwA2MTZkNmQyYTg4MWEzOWM5Mjg5NzE5OWQyN2VlNDBiMTk2MGI0MDY5YmFiMzA3MDcxOWEyZWY1MmUwZDg3ZjI4AABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/evals/registry.ts",
+              "line": 516,
+              "message": "candidate: no consumer found for getPromptsByCategory",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2V2YWxzL3JlZ2lzdHJ5LnRzAGMzNmFkYzA5ODljZGM0MTc1N2M5ZjFkYzUxYmE1MmQyY2UzODgxZjJmMGMyOTMyYjA5ODhjYzAwNTIwOTkwYWIAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/evals/registry.ts",
+              "line": 525,
+              "message": "candidate: no consumer found for getAllPromptSlugs",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2V2YWxzL3JlZ2lzdHJ5LnRzADI0ODFkMGY3OTMxNGIyNGVlMGUxNmFmMDI4MDA5NDI3NDRlZmU4M2Q0OTg5MGYzZGIyMWZmYmMzNDg3NzY2YjAAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/evals/renderer.ts",
+              "line": 141,
+              "message": "candidate: no consumer found for previewPrompt",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2V2YWxzL3JlbmRlcmVyLnRzAGI1ZTdmNjU5NzI3ZTI4ZjIxN2E3ODI0YmExMTUzMTk0ZWMxZGVhNDliZDE5MmNjMjg2ZDVjNDZlOGViZDdhMGYAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/evals/renderer.ts",
+              "line": 213,
+              "message": "candidate: no consumer found for getFieldInfo",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2V2YWxzL3JlbmRlcmVyLnRzADYwYWQwN2M5NGNjMGNlNWI0ZjJjYWRiNGYzMzMzMGU3NTY0MjMxNTI3ZWFjMWFjNzQ3Zjc3MTBiZTJkYTRmN2QAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/evals/validator.ts",
+              "line": 140,
+              "message": "candidate: no consumer found for hasOutputSchema",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2V2YWxzL3ZhbGlkYXRvci50cwA5NjBmMTI0ZDg0YzNkM2EzOGE4MzBmN2I0NGViM2UwYmJjMTdmMGIwYThlNDZmZGE0YTc3YjY5YjczODViNWE5AABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/hiring/consumerRead.ts",
+              "line": 117,
+              "message": "candidate: no consumer found for payloadLeaksProtectedHiring",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2hpcmluZy9jb25zdW1lclJlYWQudHMAZTc2MzY1MGZmMzQxZTU4NjQxZTVhMGFkYTIxMjRmZjJkYTVlMDIwNDkzM2RlNzkwYTVlZDM2M2JjYjkwNTZhMQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/hiring/consumerRead.ts",
+              "line": 126,
+              "message": "candidate: no consumer found for hiringCsvStageLabel",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2hpcmluZy9jb25zdW1lclJlYWQudHMAYTA2ZDVhMzEyNjdjMTNkNWU0MGFjMjI4M2Y0YmYxNjdjZmM3MTk0M2VkNTBhMmY5ZjYyNTliMTk0NDc5ZDY1OQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/hiring/consumerRead.ts",
+              "line": 194,
+              "message": "candidate: no consumer found for projectHiringForTrustedJobExport",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2hpcmluZy9jb25zdW1lclJlYWQudHMAZmU0MzFhZTkyMjQzMzlhNWFmMWNiZTc4YmI3MWUxMWI3NzMwNDkxNTZkZWRjNTEyYzJjNDQyOTNjMWQ0YzkzMAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/hiring/stateRead.ts",
+              "line": 337,
+              "message": "candidate: no consumer found for hiringApplicationRow",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2hpcmluZy9zdGF0ZVJlYWQudHMANjQ1MjA1NWNmZjdlN2JlYTAzYmM1NmViMjFkMzRkZGUxYTllZGY2MDE3YjNjZDU2MTE0YTAwNDg5MGM3OWViOQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/applicationFileUploads.ts",
+              "line": 501,
+              "message": "candidate: no consumer found for deleteUnattachedApplicationFileUploads",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9hcHBsaWNhdGlvbkZpbGVVcGxvYWRzLnRzADVlOGI3YjdlMTRiMjVlZDk4MzM4NmQyOTcyMTY0NTI0OTBmNzg5OWZkMGE1MTY4MWQ0OWFkNjYwNzhhZmUyZjYAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/lib/authHelpers.ts",
+              "line": 270,
+              "message": "candidate: no consumer found for requireSelfOrThrow",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9hdXRoSGVscGVycy50cwA1OTNhNDE0NGRhNTcxOTY4NTNmMzM1OGY3NDI3YTc2ZWVhMzk1ODJiNjA2OTMyODVhNjU0NzdiNmZjMGE2MDVjAABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/authHelpers.ts",
+              "line": 291,
+              "message": "candidate: no consumer found for getAuthOptional",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9hdXRoSGVscGVycy50cwBkZTAzNTQ3MTRmOTllODhjZWFhZmNjMjBjMDI3YzhkMzdkZTJhZjA1ZDI3MTg2MzU4NjFhZTM2ZGI3ZGRjYzlkAABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/billing.ts",
+              "line": 280,
+              "message": "candidate: no consumer found for getBillingAudienceForOrgType",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9iaWxsaW5nLnRzADA1ODA2N2E5YmViZTdiZDZkYzU2NzE5MGM0MDgwYzZjNzViNmZkZTNlYjU0M2VmMjRlZTkxZjM5ZjdlZmY1YTcAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 458,
+              "message": "candidate: no consumer found for getTierAudienceForLegacyPlanKey",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9iaWxsaW5nUGxhbnMudHMAZmQ4NzdjYjRiM2ZjNmMzM2MxMDU4M2NkZTY4ZGRkNWRlNDZhYjA5Nzc3YmE0ZTVhMmE2ODQ4NmI1ZTFiYmM3MQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 477,
+              "message": "candidate: no consumer found for getScanAllowanceForTier",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9iaWxsaW5nUGxhbnMudHMAN2QyNGI4YjVkOTIxNGY2YmVkNzdmMmI3YjBiOTcyNjU4ZGNkNmZhZmFjM2Q2NDg5MjMyNGM2NDBmODgzMDVjMgAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 493,
+              "message": "candidate: no consumer found for getTrialDaysForTier",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9iaWxsaW5nUGxhbnMudHMAZjczYmI3ZWFjYzEyMzUxMjBlMjM4YTNiYjZmNjMwMDUxYTkxY2JmN2E3NTE4ZTIxYjhhYWUxNTI3OGUxZDBhZQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 499,
+              "message": "candidate: no consumer found for isEnterprisePlan",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9iaWxsaW5nUGxhbnMudHMAYjZiOTc5YjU0NDZkYTMzM2E3ZGQ3NTE0OTc4NDFkNDk4NTY0MDdjMjYyYzAwZWQ3OTJlMDI2ZjE2MzA4YzEwNAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 503,
+              "message": "candidate: no consumer found for isPaidPlan",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9iaWxsaW5nUGxhbnMudHMAZjdjMGJmYTM1N2Q0NTBhYjRmZDRjMGY3MzQyNzRlYzE4YjYwMTYzMWVkODEzYjhmODQ0MjFlM2U0NDZhYjlhZAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 507,
+              "message": "candidate: no consumer found for isTrialTier",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9iaWxsaW5nUGxhbnMudHMAOTM3ZGIzZjZlZDVjMTNhZWNlZTEyYWI2YTlhY2JmMWI1NzcwYWU4MDg2MTQ2MzQ1OTQzNjc0NTEzMmNjNDJjMwAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/billingPlans.ts",
+              "line": 511,
+              "message": "candidate: no consumer found for isPaidTier",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9iaWxsaW5nUGxhbnMudHMAZTIzMWU3YjQ4MDQ0NzA3OGRlZDc1ZGEwZWY0MzRhM2ZhYzEwM2ZmNjY1YjNhZDk2ZDQ4ZWEzZThkODUyY2EyYgAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/chatAnswerComposer.ts",
+              "line": 609,
+              "message": "candidate: no consumer found for composeChatAnswerForNamedTurn",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9jaGF0QW5zd2VyQ29tcG9zZXIudHMAMWQ0ZDI4Yzg4YzM1MDY1ZTI3OTZkNDQ5MTIzNmExY2I5ODUzYWQyOGVhOWVhODFhNzZhZmE4YWU4YmMxYTJlZQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/chatAnswerComposer.ts",
+              "line": 636,
+              "message": "candidate: no consumer found for normalizeComposedAnswerLabel",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9jaGF0QW5zd2VyQ29tcG9zZXIudHMAMWEwYzExMzRhYmM5MWU0NDVmOWIwYjNjZWQxMTAxZTgyYzM0NzI5ZmUwMTAxMzY4YTk3ZTQ1NThkYjAyZjgzNQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/chatApplicationAnalysisPayload.ts",
+              "line": 61,
+              "message": "candidate: no consumer found for buildChatAnalysisListPayload",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9jaGF0QXBwbGljYXRpb25BbmFseXNpc1BheWxvYWQudHMANGQ1MWY0NTRiOWQ3N2M3MGVlN2NiNzA2ZTljOGQxOGVjMDk0NWM0NTk4YjJlOGY4Y2YxNjEyYjRmZDliY2YxNAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/chatCareerTimeline.ts",
+              "line": 204,
+              "message": "candidate: no consumer found for buildEmployerNeutralCareerTimeline",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9jaGF0Q2FyZWVyVGltZWxpbmUudHMAMTJkNTcwYTI4ODc3NDkwNjc0M2ZhMTM0YzU3ODg4OWU4Y2YxZmYzMDk1OTA2ODQ4MTY0YWNmMWQ3YjljMDIzOAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/chatPrivateEntitySafety.ts",
+              "line": 94,
+              "message": "candidate: no consumer found for isPrivateEntityResumeQuestion",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9jaGF0UHJpdmF0ZUVudGl0eVNhZmV0eS50cwA2ZjNjMmViOTgxZjFiM2Y1YTA4YTI2M2E5ZjYyMGUxZTE5ZmIxYmQwZWExZjVlMzQ5OWFkYTViZWJmNThiM2Q0AABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/chatPrivateEntitySafety.ts",
+              "line": 108,
+              "message": "candidate: no consumer found for isWorkAuthorizationRecruitingSearch",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9jaGF0UHJpdmF0ZUVudGl0eVNhZmV0eS50cwBjYjc0ZjZlNWZhYzEzNWNhZjVkNjQ3YTFjNWFiMjVjZjlkNzk0MGRjN2EyNzc0ODI2OTlkM2M4NzU3YzYyNDM1AABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/companySizes.ts",
+              "line": 33,
+              "message": "candidate: no consumer found for getCompanySizeBucketForEmployeeCount",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9jb21wYW55U2l6ZXMudHMAMjU4MTUzMWJjZmNkM2QyNDY2ZTEyYzYzNjEwMjY4ZWM5ZDJmZjE1OTZmM2YxNDVhOGI5Mzg4MWQ0MzFjOTBiNAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/extensionAuth.ts",
+              "line": 113,
+              "message": "candidate: no consumer found for hasExtensionScope",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9leHRlbnNpb25BdXRoLnRzAGQwMjk3ZGUyZjBkMjQzOTllNjBlODM4MDQ4NjAxNjFiNDgxNzg0ZTUwOGJiNzdkOWFkM2RhOGU1YjRhMWU5YWIAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/lib/fileValidation.ts",
+              "line": 95,
+              "message": "candidate: no consumer found for validateStorageFile",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9maWxlVmFsaWRhdGlvbi50cwBkMWQxMTQxZjRmOWRhYjRlMGVmYzk0N2RiZDA1ZWRmMGRmYmFkMmI3MjJkNTk2M2ExNDZjZTUxZDhjMWQxNzM0AABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/firecrawlClient.ts",
+              "line": 316,
+              "message": "candidate: no consumer found for scrapeFirecrawlUrlsEffect",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9maXJlY3Jhd2xDbGllbnQudHMAMjVmYWI3ZDhiOTRjMzNiODNlODQwODliOWU5YzBiNzhjNTc0NzYwYWMyNTdiYTEyOGE3NDYwODdiZjZjMGFkNAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/recruiterChatModel.ts",
+              "line": 142,
+              "message": "candidate: no consumer found for collectRecruiterChatToolExecutions",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9yZWNydWl0ZXJDaGF0TW9kZWwudHMAMTI1MDY3YzU5NGMzODY2YTg0YTFkNDllOGNkZTU2NWZmNTJmOWNhZGYzMTgxMDc3NDlkZmQ0ZTk1NWZmNWE4MAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/recruiterChatModel.ts",
+              "line": 372,
+              "message": "candidate: no consumer found for classifyRecruiterChatContextRelationWithModel",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9yZWNydWl0ZXJDaGF0TW9kZWwudHMAYzU5YTU4NjAyZjFjOGMxNTBhNThmMDY4MzdkMWM3ZTUzM2ZlNjUxM2NjM2M0YjQ0MjhkZTA0OWI5NWVmZDA0ZQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/recruiterSearchContext.ts",
+              "line": 365,
+              "message": "candidate: no consumer found for legacyRecruiterCandidateSearchCriteriaFromStorage",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9yZWNydWl0ZXJTZWFyY2hDb250ZXh0LnRzAGJkMjcxNmE5YmQxYzRhNjc3MGJlNWRjMTE3Njk1Y2EyYTcwNTFiOGE4MzE1N2I4MWQ3YTg3NzJiMWZhYWNlNTMAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "convex/lib/resumeOrgRedaction.ts",
+              "line": 374,
+              "message": "candidate: no consumer found for isExperienceEmployerName",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9yZXN1bWVPcmdSZWRhY3Rpb24udHMAMTJjZGNkYWYwNWRiOTZhNjVhZjdhOTZhZTAyMWE1NTAxZTg4YTIwNGEzYzE2YmMxZTA2ZmFlM2Y1MjU2OWJmMwAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/stripe.ts",
+              "line": 19,
+              "message": "candidate: no consumer found for getStripePublishableKey",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9zdHJpcGUudHMAYTZkZWYzOTllZmMzYThjNzY1NGQ0MGY4MjRjODE3ZDM2ZmFiNWI3ZmM4MmE4ZWM5NmIyM2FiNDQ0ZWNjYWNjMwAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "convex/lib/supportForm.ts",
+              "line": 5,
+              "message": "candidate: no consumer found for SUPPORT_SLA_TEXT",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9zdXBwb3J0Rm9ybS50cwA4OThjZTY4M2RjYWJjNTZhYzUyNDJmZjAxODQ0Y2YxYmEwMzAwZTEyZGRmNWU1MDRmZWUyYTZjNGVjYTI2MzkxAABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/supportForm.ts",
+              "line": 95,
+              "message": "candidate: no consumer found for formatSupportTicketId",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi9zdXBwb3J0Rm9ybS50cwAzNTk2OWVkNGJkMmM3MjVhYzMwMmE3MDYyNmFjYmI5NWQyMzRlY2I3Mzc5ZGUyMzM1MTE0MGE0YTgxMDI4ODFhAABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "convex/lib/validation.ts",
+              "line": 174,
+              "message": "candidate: no consumer found for validateOptionalEmail",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAY29udmV4L2xpYi92YWxpZGF0aW9uLnRzAGQyNTcyZGRhZjI3MmM1Y2Q3ZGUyMmI2Zjc2ZDhhZTliNWJkZWFmZjM1ZTc5ZmJjZWMwMzAzYWU2MGYyNWI4MTgAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "extensions/sift-chrome/src/storage/settings.ts",
+              "line": 75,
+              "message": "candidate: no consumer found for clearSettings",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAZXh0ZW5zaW9ucy9zaWZ0LWNocm9tZS9zcmMvc3RvcmFnZS9zZXR0aW5ncy50cwA5MjU1ZDhkZmQwYWVhYTRiODc2OThjN2NiZjI0NzY5Njg1MDQzZmM0ZWMzMzBkMTk3ZjhlOGJiMDczYWVhNzcyAABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "shared/chatTurnPlanner.ts",
+              "line": 27,
+              "message": "candidate: no consumer found for resolveChatAnswerMode",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc2hhcmVkL2NoYXRUdXJuUGxhbm5lci50cwAzMWYyZDIzYmYxYzRlMzNlY2EzNzQzY2Y2ZjA1MjUwY2ZjMGY0NTkwM2Y5MGNkZmRiODI5M2FhNDBiY2RiZjZiAABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "shared/compareChipPhrase.ts",
+              "line": 6,
+              "message": "candidate: no consumer found for TARGET_COMPARE_CHIP_WORDS_MIN",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc2hhcmVkL2NvbXBhcmVDaGlwUGhyYXNlLnRzADMxNTRlNzJlMTNjZjk0YjlmZDFhNGJkNjU3YjMxYjEyNTI5Y2Q0MjY5MGUyYjBmMDllZmQ1N2FjNTBkODZhZmEAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "shared/comparePhraseCompress.ts",
+              "line": 4,
+              "message": "candidate: no consumer found for MAX_COMPARE_REQUIREMENT_WORDS",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc2hhcmVkL2NvbXBhcmVQaHJhc2VDb21wcmVzcy50cwA0MjE4MjU2NDRhZmRmNTJhNzEyNDYyOGZiZWIzZWZiMDYwZTdiY2MzZDQxNmM0OWZiMDg5ODAwYjExMzM1YzQ0AABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "shared/comparePhraseCompress.ts",
+              "line": 5,
+              "message": "candidate: no consumer found for MAX_COMPARE_CHIP_WORDS",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc2hhcmVkL2NvbXBhcmVQaHJhc2VDb21wcmVzcy50cwA4ZDFhNGFhN2I2ODJkNDc2M2Q0MjZkZjE2NjZjZDdmZDk0ZTk5YzY1MzM0ZDc2ODBmMGU3YWFmOTRjOGEzYjBjAABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "shared/resumeTextNormalize.ts",
+              "line": 30,
+              "message": "candidate: no consumer found for RESUME_SECTION_BLOCKLIST",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc2hhcmVkL3Jlc3VtZVRleHROb3JtYWxpemUudHMAYjUzOTllMmIyNjMzZWY0NWYyZDkzOTQ0YTViZTczNGM1N2JkYzdmZjQ5ZTg0YmY3NDA4YjliOGQ1M2E5NmZjMwAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/components/dashboard/DashboardKpiSection.tsx",
+              "line": 21,
+              "message": "candidate: no consumer found for DashboardKpiSection",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2NvbXBvbmVudHMvZGFzaGJvYXJkL0Rhc2hib2FyZEtwaVNlY3Rpb24udHN4ADUyYjI5YmM0MWVmNTZlYjk0NWIxNzQ5NTY3MmRkNDE5YzNmNjRhYTFmODIzOTYyNDlhNzk1ZmMyZTNkNzc1YjAAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/components/jobs/GeneratedJDPreview.tsx",
+              "line": 21,
+              "message": "candidate: no consumer found for GeneratedJDPreview",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2NvbXBvbmVudHMvam9icy9HZW5lcmF0ZWRKRFByZXZpZXcudHN4ADcwOGRlYTFlODU5N2U2MWQxOGMzNzVkYzg0N2Q1YjZmY2QyMjAyNWQwZTBlN2VlMWRlMjc5NDcwYWM5Yzk5ZDAAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/components/jobs/JobStatusLabel.tsx",
+              "line": 6,
+              "message": "candidate: no consumer found for JobStatusLabel",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2NvbXBvbmVudHMvam9icy9Kb2JTdGF0dXNMYWJlbC50c3gAZDA2MWY4ODI2ZTgxZmQ0ZGNiOGNiZGJhMmEyNzc3ZDU0ODlkNDU1ZWI0YTUzODc2ZTU5YWYzZmJhNGJjYjI0MwAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/components/jobs/SocialFieldsConfigurator.tsx",
+              "line": 20,
+              "message": "candidate: no consumer found for SocialFieldsConfigurator",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2NvbXBvbmVudHMvam9icy9Tb2NpYWxGaWVsZHNDb25maWd1cmF0b3IudHN4AGM3M2IwNTJjMDI5ODgyNzM2MzI3N2RjZGUxMzU3OGEzNDcxODllOTVjY2RlMTQ3ZGZiYTdjZWQ0MDlkOTBhMjkAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/components/jobs/wizard/constants.ts",
+              "line": 68,
+              "message": "candidate: no consumer found for SENIORITY_LABELS",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2NvbXBvbmVudHMvam9icy93aXphcmQvY29uc3RhbnRzLnRzAGRmZDM0ZTA0ODZhMjYyYzNmMjc0ZDM4MTE0MDdiZDJkYTM4ODI4MDgxZWNmZjAwZTEzNDAxOTYyMzRlZWE1ZTkAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/components/jobs/wizard/primitives/WizardChipGroup.tsx",
+              "line": 12,
+              "message": "candidate: no consumer found for WizardChipGroup",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2NvbXBvbmVudHMvam9icy93aXphcmQvcHJpbWl0aXZlcy9XaXphcmRDaGlwR3JvdXAudHN4ADRkNjUxMTA0N2M4ZGY4NTAzMjZiY2YxNmExYjg2MjIxODEwYWU4NGM5MjE2MDA4OTYzOWVjMTEwMjgwYjBmZjkAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/components/landing/LaunchPricingLink.tsx",
+              "line": 7,
+              "message": "candidate: no consumer found for LaunchPricingLink",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2NvbXBvbmVudHMvbGFuZGluZy9MYXVuY2hQcmljaW5nTGluay50c3gAZjdlYzkxZGMzOWYwY2EyNWRjZmVlNjdlNjA0MjhjOTU2YzVmM2M5YjE1YzhhZWExNGY5MTE4ZWZiMWJmZWJhMgAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/components/settings/ColorWheelIcon.tsx",
+              "line": 4,
+              "message": "candidate: no consumer found for ColorWheelIcon",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2NvbXBvbmVudHMvc2V0dGluZ3MvQ29sb3JXaGVlbEljb24udHN4AGRiZWZjMTg2MjNjZjhjZjM1NmM0MWExMjUyZjIzZjE1MTk0YzMyMTFmYjJiNmI2ZDlkMGQ3YzNlYTVkNmMyZjUAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/components/settings/SettingsTabPanel.tsx",
+              "line": 6,
+              "message": "candidate: no consumer found for SettingsTabHeader",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2NvbXBvbmVudHMvc2V0dGluZ3MvU2V0dGluZ3NUYWJQYW5lbC50c3gAMTE0NWY0Yjk2MGM5YmNhMDE5ZWQzMDE0NzRiNTM1N2FmZDNjZmJlMTQ5ZjQzMzZmMTkyZjhhNzU2YWU3NmQwMgAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/components/settings/SettingsTabPanel.tsx",
+              "line": 68,
+              "message": "candidate: no consumer found for resolveSettingsTabMetaForOrg",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2NvbXBvbmVudHMvc2V0dGluZ3MvU2V0dGluZ3NUYWJQYW5lbC50c3gANzkwMDNhNDc2NTg4MTdmNWZmN2I4Y2I0ZmJkMTQwNzE0Zjc5OTQ0YTI2Y2E2YmE0NjBiNDgwMmNiZWZkY2IzOQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/components/settings/job-defaults/JobDefaultsSectionNav.tsx",
+              "line": 120,
+              "message": "candidate: no consumer found for JobDefaultsIconBadge",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2NvbXBvbmVudHMvc2V0dGluZ3Mvam9iLWRlZmF1bHRzL0pvYkRlZmF1bHRzU2VjdGlvbk5hdi50c3gANzhkN2U1NDQ4NTEyYmVhOGE4N2EwMWYxNTlmMjMzMzE1YjJkNGJkZTk0NjI2M2JiNzEzNzYzZjZjYjU4MWM2MgAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/analysis-requirement-summary.ts",
+              "line": 448,
+              "message": "candidate: no consumer found for buildEvidenceSummaryText",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9hbmFseXNpcy1yZXF1aXJlbWVudC1zdW1tYXJ5LnRzADExNmQ0NDRiZjE2YTZkNDQ5MGVmNjNmMjRlNWFmNWNhNTdmYjgzNzUwYzlmZWEyYWU3YWIwMmIzMzQxMmM2YmUAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/analysis-requirement-summary.ts",
+              "line": 477,
+              "message": "candidate: no consumer found for pickCoreTransferableHighlight",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9hbmFseXNpcy1yZXF1aXJlbWVudC1zdW1tYXJ5LnRzADhlZDRiODc5NzdhOGUxNDA5NmQ4ZWQzNWU3N2IxNmU2ODEzNzM0MTZjNDRjZGJhZDczOWI0YjRmNDkyZjM0MGIAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/analysis-requirement-summary.ts",
+              "line": 544,
+              "message": "candidate: no consumer found for formatTransferableSummaryTarget",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9hbmFseXNpcy1yZXF1aXJlbWVudC1zdW1tYXJ5LnRzADU5MWU4NjBjNWRhMjIxMWI1MDA5NDE2NGQwYTJkM2M5YTI0MDY0YmU4M2Y1OGZlZWY2ZGE0NWNiZTg3M2MxZTgAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/analysis-requirement-summary.ts",
+              "line": 556,
+              "message": "candidate: no consumer found for excludeCoreRequirementKeysFromRows",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9hbmFseXNpcy1yZXF1aXJlbWVudC1zdW1tYXJ5LnRzADVkMjFkZWViOTgyYjNiN2YxMmJkNDBhNTBkYmFmNDQwN2ZmZDlkNWNmYjg1Yzk5ZDEwMGM1M2UwMjdmMjZiNDEAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/analysis-status-colors.ts",
+              "line": 14,
+              "message": "candidate: no consumer found for TRANSFERABLE_ACCENT_HEX",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9hbmFseXNpcy1zdGF0dXMtY29sb3JzLnRzADQ3NjA3ZjI3NjZmYTA3Mzk4YzUyZGFjMjk3NGQ5ZTcxODc2ODQyOGRiZmZiZGYwYTMzZTc3ODEyOWUxOWFiMTIAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/analysis-status-colors.ts",
+              "line": 40,
+              "message": "candidate: no consumer found for TRANSFERABLE_ROW_ACCENT_CLASS",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9hbmFseXNpcy1zdGF0dXMtY29sb3JzLnRzAGE2NTQwMWZiMzAzY2JjNDNmNTY4N2ZmZDFkMTQxYjRhM2FiNjkzOTdlOTA1NjdjMjY0MDk3ODgzNTQ1MmE0ZGMAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/bulk-resume-intake.ts",
+              "line": 535,
+              "message": "candidate: no consumer found for selectBulkResumeFiles",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9idWxrLXJlc3VtZS1pbnRha2UudHMANTc0NGFlYzI3YmNlZmZiNzk4MTBlYjU1YmUyZDFjYjc0ZjY4ZGNjMmI0NjA4OTg2OGMzZWRjOTg2NjE2OWE5ZQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/bulk-resume-intake.ts",
+              "line": 621,
+              "message": "candidate: no consumer found for validateBulkResumeSubmitCapacity",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9idWxrLXJlc3VtZS1pbnRha2UudHMAMmQ3N2EwMGYzODc2OTA1MWM4YjQxMDgzMWUxMWQ0ZTUwZDdmZDRhMDQ3OWIwMzFmMGMyM2JmNWYxMmJmMGRhMQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/compareCandidates.ts",
+              "line": 355,
+              "message": "candidate: no consumer found for buildLockedRequirementRows",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9jb21wYXJlQ2FuZGlkYXRlcy50cwA4N2IwMWY4OGU2ZWMxN2Q5ZGYyMDBkOTkwNjc3MTRjMDNlNGI2M2ZiMTM4N2FiY2JhMDIwM2I5NGUwYzAyODEwAABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "src/lib/compareDisplayCompact.ts",
+              "line": 22,
+              "message": "candidate: no consumer found for MAX_COMPARE_PHRASE_CHARS",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9jb21wYXJlRGlzcGxheUNvbXBhY3QudHMAMjY2NWU4NjA5NzkyNjE5MDJiMzI3NmE5NDU0YzRkNTNjYmFhNWU5OWY3ZmYzNmVjODM1NzQ0ZDcwMjZmMzBiMQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/compareDisplayCompact.ts",
+              "line": 23,
+              "message": "candidate: no consumer found for MAX_COMPARE_BULLET_CHARS",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9jb21wYXJlRGlzcGxheUNvbXBhY3QudHMANWNkNGJmYjRjMmFjNjY4ZGI1OGQzMDU2MjhiZDNkYTc0ZTg3ZGIzMjI3N2FhMDU4NjExMDY4ZGQ3ODkxOTA1OQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/contact-sales.ts",
+              "line": 1,
+              "message": "candidate: no consumer found for CONTACT_SALES_EMAIL",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9jb250YWN0LXNhbGVzLnRzAGVkOWY0MzBhYWI0ZWFlOTliYjM3MWM4MDY1MjMzNzBmMjZhMjg3M2Y1OTRjMzJlMDU1M2M1ZDAxYWY0ZDA5N2IAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/eval-auth.ts",
+              "line": 37,
+              "message": "candidate: no consumer found for hasEvalToken",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9ldmFsLWF1dGgudHMAMjU3OTNiNmRlMWQwY2Q5YWNhMzE4ZGU4N2M1YzY1ZDc4OTQyMWI2YzFmNzlkNTAzMTU2NTRhMTBhNDYyNTI3ZgAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/extension-connect-client.ts",
+              "line": 64,
+              "message": "candidate: no consumer found for getPersistedExtensionToken",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9leHRlbnNpb24tY29ubmVjdC1jbGllbnQudHMAZjFmODIwZWVkNGZjODg1MGI5MWNlNWM0ZTAwMWU5ODdiYTUzZDIyZDQ1MTE2MzhkOTg4ZWQxODhjODdhNWEzZQAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/extension-connect-client.ts",
+              "line": 118,
+              "message": "candidate: no consumer found for createPairingPayload",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9leHRlbnNpb24tY29ubmVjdC1jbGllbnQudHMAODJlMzc0ZDVhNGE0MmZmNTAwYTcwZDdkZWVjNDEzOTExMzljZmQzMGY5MjYwZmU1ZDNhYWQ5YWE2YWQxNjdhMwAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/extension-connect-client.ts",
+              "line": 130,
+              "message": "candidate: no consumer found for exchangePairingCodeWithApi",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9leHRlbnNpb24tY29ubmVjdC1jbGllbnQudHMAMzUwMDBmZDAyNzA4YjhkNzRhMzgyZDAwNTdiMzliOTNkNTkzMDgyOGJhYjg0MjUwNGExMjBmMjExNDUxZjNmNAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/extension-connect-client.ts",
+              "line": 179,
+              "message": "candidate: no consumer found for revokeConnectedToken",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9leHRlbnNpb24tY29ubmVjdC1jbGllbnQudHMAMzZiMDczNGY1ZmRiN2I4MGE4OGFhMzY4ODI4Nzc1NmM1MmFmYTI2M2YyZGJkMzdhZTliMDBmMWQ2YTAyOGNjMgAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/gapClustering.ts",
+              "line": 51,
+              "message": "candidate: no consumer found for gapReasonTextForDisplay",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9nYXBDbHVzdGVyaW5nLnRzAGFhYTVmMDRmNWEyMzYyMmNhYmRlOTVlYWEzYjJlMzQ4ODI4MDRhODYzM2Y0Y2NjNDA0Yzg3NmY3N2EwZmU0YTQAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/gapClustering.ts",
+              "line": 67,
+              "message": "candidate: no consumer found for subItemReasonDedupedAgainstPrimary",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9nYXBDbHVzdGVyaW5nLnRzAGZiNWYyMjJiNmZkMTRjYzI4YzI4NmZjYjEwZDBhMDcxYTE2ZDI4ODk5ZTllZjFmNjRmMzc1M2EyZjk0NDg3YzIAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/gapClustering.ts",
+              "line": 89,
+              "message": "candidate: no consumer found for displayGapRequirementText",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9nYXBDbHVzdGVyaW5nLnRzADk4MWJlNWI4OWNkOGVlYzJkM2QzNGFjNWFjMzdmMzcwNmRjMjQzMGI0NjQxYmU1NTYzOWNiMjgwZjQ2MzMyZGQAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/gapClustering.ts",
+              "line": 111,
+              "message": "candidate: no consumer found for clusterSimilarGaps",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9nYXBDbHVzdGVyaW5nLnRzAGU3YjU2MzFiY2ZiOTM2OThmYTc2YTdjM2Y4OTY2YWE1ZTc5Zjg1Yzk5NmE0ODk5YzcyOGJlNmY1NzJmODQ5NjYAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/gapClustering.ts",
+              "line": 168,
+              "message": "candidate: no consumer found for sortGapsWithinCategory",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9nYXBDbHVzdGVyaW5nLnRzAGNiZWJiYzhhNjI4MDU3Y2I2ZjUzYmNmMzczNjMyNTljMjk2ZmZmZGRjMzMwNjkzMDE1OTY5M2E3ZDAzMzUyMWQAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/job-defaults-snapshot.ts",
+              "line": 103,
+              "message": "candidate: no consumer found for jobDefaultsSnapshotsEqual",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9qb2ItZGVmYXVsdHMtc25hcHNob3QudHMAOTQ3NzUxOGUzZjhmOTAzY2YyNDYzYzBkZWMzNGUzMzVkMDVmOTg3ODEwZjI2ODI2Yzc0Y2YwYzhkMTkwNTQ3OAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/job-types.ts",
+              "line": 30,
+              "message": "candidate: no consumer found for salaryPeriodLabels",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9qb2ItdHlwZXMudHMAYzAwYTkzMTc1ZmE5ZjNiNDMzZjhiY2I4Yzc0MjVmYTRlYjYwY2E3ODljOGQ2ZmMwMDVjNDllMTg3YTMyMTUwZAAAbm9uZQAtAGxpbmU"
+            },
+            {
+              "file": "src/lib/split-evidence-bullets.ts",
+              "line": 31,
+              "message": "candidate: no consumer found for splitEvidenceIntoBullets",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi9zcGxpdC1ldmlkZW5jZS1idWxsZXRzLnRzADM5MTVhNWJmNjUxYjY5MTJiNWFiMWFiNTkxMDBmMWEzYTAwMmNhYWE0ZTA4MDY2N2E5MjRjNTNiMTUyOWY1Y2QAAG5vbmUALQBsaW5l"
+            },
+            {
+              "file": "src/lib/use-stable-convex-query.ts",
+              "line": 4,
+              "message": "candidate: no consumer found for clearSettingsQueryCache",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi91c2Utc3RhYmxlLWNvbnZleC1xdWVyeS50cwBkZjU2ZWE1ZDIxZWY0ZTlkYmU2ZDdhNmRiNWE1OTI5YTY0NTRhNzNhOThjMjA1MTE0YzhlMjc3OWNlNzc2Y2IyAABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "src/lib/utils.ts",
+              "line": 214,
+              "message": "candidate: no consumer found for VERIFICATION_BLOCKED_REGEX",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi91dGlscy50cwA1ODBiMDA3MWQ4MTdlOGQ4ZTM0ZjhlOGQ1ZjE4MjhlZjE5ZTlhNzM2ZDgwNzIxZjQ5NWRkZWQyZGM4OTY0MjgzAABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "src/lib/utils.ts",
+              "line": 267,
+              "message": "candidate: no consumer found for cleanVerificationBulletLine",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL2xpYi91dGlscy50cwAwZWQ2YTgyM2JkZTJhNGEyYmQ5ZGJjZDMzNjM0N2JkMjIwYmZjZjg0NTc5MGExNzJhNjNlMzEzNDg3MTdlOGRmAABub25lAC0AbGluZQ"
+            },
+            {
+              "file": "src/routes/jobs/$jobId/-components/ApplicationsSection.tsx",
+              "line": 198,
+              "message": "candidate: no consumer found for ApplicationsSection",
+              "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAc3JjL3JvdXRlcy9qb2JzLyRqb2JJZC8tY29tcG9uZW50cy9BcHBsaWNhdGlvbnNTZWN0aW9uLnRzeAA5M2IwZTljOGRjZjlhMTRjM2I1Nzc5NzYyYjMyMmZlZTJiZWEyYjk4ZWRmNTkyODhjNDc0ZTIzNmJjM2ZmZjI1AABub25lAC0AbGluZQ"
+            }
+          ]
+        }
+      ],
+      "blindSpots": [
+        "Helpers: only function declarations are compared (arrow-const helpers and class methods are not), bodies must normalize to identical text, and trivial bodies under ~60 characters are ignored. Doctor programs (doctors/) and compiled output (bin/, dist/, build/) are exempt - the single-file law mandates copies, and build artifacts mirror their sources by construction.",
+        "Dead exports: entry-point-shaped files (cli, main, index, server, app, mod, anything under bin/, scripts/, or doctors/ - doctor programs are consumed by the loader's dynamic import) are exempt entirely, and a name counts as consumed when ANY other file imports that name from ANYWHERE, so same-name imports from other modules can mask a dead export. Dynamic import() and string-built references are not resolved; test-file consumers are invisible in the default run (pass --include-tests to count them).",
+        "Bindings: the analysis engine resolves value positions only - a binding used purely as a type never becomes a reference. The text-occurrence guard keeps those out of findings, but a name reused in comments or strings can mask a genuinely dead binding. Parameter and catch bindings are not checked.",
+        "Hostname: only .includes()/startsWith shapes against known environment tokens on host/URL-ish receivers are seen; URL parsing, DNS suffix checks, and configured-base-URL-first flows are not.",
+        "Substring matches: only OR-chains whose literal arguments overlap by prefix are flagged; a single unbounded stem that silently matches longer words is not seen.",
+        "Boolean collapse: the shape requires a ?? -defaulted boolean later tested with `=== true ?`; switches, explicit typeof branches, and collapses without a nullish default are not recognized.",
+        "Abbreviation regexes: only bare 1-5 letter case-insensitive patterns without anchors or word boundaries used with .test()/.match() are flagged; longer patterns and compiled RegExp objects are not seen.",
+        "Declaration files (.d.ts) are skipped entirely: they declare types, not behavior - a `declare const` is a contract, not a dead binding.",
+        "This doctor needs the identity engine for three checks (dead exports, unread bindings, unused imports); without it those narrow to silence and the report says so."
+      ]
+    }
+  ],
+  "crashed": [],
+  "broken": [],
+  "skippedUnsafe": [],
+  "gate": {
+    "failOn": "none",
+    "mode": "full",
+    "fails": false
+  }
+}

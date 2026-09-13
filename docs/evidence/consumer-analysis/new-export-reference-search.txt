@@ -1,0 +1,17 @@
+src/routes/index.tsx:1038:      {/* Header: Avatar + Name + Contact */}
+src/lib/analysis-status-colors.ts:37:export const TRANSFERABLE_ROW_LABEL_CLASS =
+src/lib/analysis-status-colors.ts:42:export const TRANSFERABLE_ROW_SURFACE_CLASS =
+design-prototypes/scripts/build-wizard-domain.mjs:13:export {VOICE_PROFILES,BENEFITS_TOP,BENEFITS_MORE} from '@/components/jobs/wizard/constants';`;
+src/lib/job-types.ts:73:export const impactAreaOptions = [
+src/lib/application-stage-dots.ts:13:export const JOB_LIST_STATUS_RAIL_DOT = {
+src/components/jobs/wizard/constants.ts:17:export const BENEFITS_TOP = [
+src/components/jobs/wizard/constants.ts:23:export const BENEFITS_MORE = [
+src/components/ui/dropdown-menu.tsx:65:function DropdownMenuSeparator({
+src/components/ui/dropdown-menu.tsx:68:}: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
+src/components/ui/dropdown-menu.tsx:70:    <DropdownMenuPrimitive.Separator
+src/components/ui/dropdown-menu.tsx:83:  DropdownMenuSeparator,
+src/components/ui/separator.tsx:6:function Separator({
+src/components/ui/separator.tsx:26:export { Separator }
+src/components/ui/avatar.tsx:8:function Avatar({
+src/components/ui/avatar.tsx:24:function AvatarFallback({
+src/components/ui/avatar.tsx:40:export { Avatar, AvatarFallback }

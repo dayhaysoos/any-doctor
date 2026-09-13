@@ -1,0 +1,1200 @@
+{
+  "cli": "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+  "doctor": "/Users/nickdejesus/Code/any-doctor/doctors/slop.mjs",
+  "node": "v26.5.0",
+  "flags": "run slop <fixture> --format json; --include-tests only where specified",
+  "passed": 48,
+  "failed": 0,
+  "skipped": 0,
+  "rows": [
+    {
+      "name": "test-consumer-default",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "test-consumer-included",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": true
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "renamed-barrel",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "reexport-without-final-caller",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "same-name-positive",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 7,
+            "message": "candidate: no consumer found for helper within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAGZ1bmN0aW9uOmhlbHBlciMwADcAbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "same-basename-dynamic",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a/helper.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a/helper.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a/helper.ts",
+            "line": 1,
+            "column": 7,
+            "message": "candidate: no consumer found for helper within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS9oZWxwZXIudHMAZDJhMDc5NWE0NDU3OGU1Y2JhZDc5NDk1MmY3OGNmYzdkNjA1ZGE3ODhjNzE2MmFlN2Y1OGU1Zjg5MzQ2N2NmZABmdW5jdGlvbjpoZWxwZXIjMAA3AGxpbmU",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "generated-target",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 0,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "generated-consumer",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "type-only-consumer",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "type-only-named",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "default-alias",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "star-cycle",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 4,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "namespace-member",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 2,
+            "column": 13,
+            "message": "candidate: no consumer found for unused within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkM2RkZTU0NGFmZTE5MDk5NDAyNjg2NWQ2ZDU1NmVlNGJlMjQ5NzBlZTg1ZmFlYzRlNjRlNzZiZGE2MDViYmEwAABub25lADEzAGxpbmU",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "namespace-escape",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [
+          "use.ts:1 namespace escapes or has computed member access"
+        ],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "shadowed-namespace",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 7,
+            "message": "candidate: no consumer found for helper within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAGZ1bmN0aW9uOmhlbHBlciMwADcAbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "tsconfig-alias",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "package-entry",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "declared-framework-entry",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "extension-index",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "genuine-positive",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 7,
+            "message": "candidate: no consumer found for helper within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAGZ1bmN0aW9uOmhlbHBlciMwADcAbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "unknown-dynamic",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [
+          "use.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+        ],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "unresolved-relative",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 7,
+            "message": "candidate: no consumer found for helper within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAGZ1bmN0aW9uOmhlbHBlciMwADcAbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [
+          "use.ts: unresolved internal module ./missing"
+        ],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "parse-failure",
+      "passed": true,
+      "status": 1,
+      "expected": {
+        "failure": true,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 0,
+        "analysisAvailable": false,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": [
+          {
+            "id": "slop",
+            "detail": "doctor crashed:\nError: Error: analysis failed to parse bad.ts: Expected `(` but found `{`\n    at Object.structures (file:///Users/nickdejesus/Code/any-doctor/bin/sdk.js:115:27)\n    at Module.doctor (file:///Users/nickdejesus/Code/any-doctor/doctors/slop.mjs:147:86)\n    at runOnce (file:///Users/nickdejesus/Code/any-doctor/bin/certify.js:15:24)\n    at main (file:///Users/nickdejesus/Code/any-doctor/bin/doctor-loader.mjs:78:34)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///Users/nickdejesus/Code/any-doctor/bin/doctor-loader.mjs:123:9"
+          }
+        ]
+      },
+      "stderr": "\u001b[31mdoctor crashed:\nError: Error: analysis failed to parse bad.ts: Expected `(` but found `{`\n    at Object.structures (file:///Users/nickdejesus/Code/any-doctor/bin/sdk.js:115:27)\n    at Module.doctor (file:///Users/nickdejesus/Code/any-doctor/doctors/slop.mjs:147:86)\n    at runOnce (file:///Users/nickdejesus/Code/any-doctor/bin/certify.js:15:24)\n    at main (file:///Users/nickdejesus/Code/any-doctor/bin/doctor-loader.mjs:78:34)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///Users/nickdejesus/Code/any-doctor/bin/doctor-loader.mjs:123:9\u001b[0m\n\u001b[31mdoctor crashed (results above are partial): slop\u001b[0m\n"
+    },
+    {
+      "name": "literal-whitespace",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "template-whitespace",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "regex-whitespace",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "substantial-duplicate",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 2,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 7,
+            "message": "matching source structure also in: b.ts; captured bindings (Boolean, Error) and contracts require review before consolidation",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYS50cwBmOTMwNjAyNzQ5ZGIwZjI1MzM2YTI3YjI4Y2YyMDk2MzQ4NTkwOGI4OGQxYjg3MDIzY2M3NGE4MTFkMjVkNmVkAGZ1bmN0aW9uOm5vcm1hbGl6ZSMwADcAcmFuZ2U",
+            "rule": "identical-helper-body-in-two-modules"
+          },
+          {
+            "file": "b.ts",
+            "line": 1,
+            "column": 7,
+            "message": "matching source structure also in: a.ts; captured bindings (Boolean, Error) and contracts require review before consolidation",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYi50cwBmOTMwNjAyNzQ5ZGIwZjI1MzM2YTI3YjI4Y2YyMDk2MzQ4NTkwOGI4OGQxYjg3MDIzY2M3NGE4MTFkMjVkNmVkAGZ1bmN0aW9uOm5vcm1hbGl6ZSMwADcAcmFuZ2U",
+            "rule": "identical-helper-body-in-two-modules"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "trivial-long-signature",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "workspace-package-entry",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "excluded-test-consumer",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 7,
+            "message": "candidate: no consumer found for helper within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**, **/*.test.ts. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBkMmEwNzk1YTQ0NTc4ZTVjYmFkNzk0OTUyZjc4Y2ZjN2Q2MDVkYTc4OGM3MTYyYWU3ZjU4ZTVmODkzNDY3Y2ZkAGZ1bmN0aW9uOmhlbHBlciMwADcAbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "same-line-surrounding-code",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 2,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 25,
+            "message": "matching source structure also in: b.ts; captured bindings (Boolean, Error) and contracts require review before consolidation",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYS50cwBmOTMwNjAyNzQ5ZGIwZjI1MzM2YTI3YjI4Y2YyMDk2MzQ4NTkwOGI4OGQxYjg3MDIzY2M3NGE4MTFkMjVkNmVkAGZ1bmN0aW9uOm5vcm1hbGl6ZSMwADI1AHJhbmdl",
+            "rule": "identical-helper-body-in-two-modules"
+          },
+          {
+            "file": "b.ts",
+            "line": 1,
+            "column": 25,
+            "message": "matching source structure also in: a.ts; captured bindings (Boolean, Error) and contracts require review before consolidation",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYi50cwBmOTMwNjAyNzQ5ZGIwZjI1MzM2YTI3YjI4Y2YyMDk2MzQ4NTkwOGI4OGQxYjg3MDIzY2M3NGE4MTFkMjVkNmVkAGZ1bmN0aW9uOm5vcm1hbGl6ZSMwADI1AHJhbmdl",
+            "rule": "identical-helper-body-in-two-modules"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "format-and-comments",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 2,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 7,
+            "message": "matching source structure also in: b.ts; captured bindings (Boolean, Error) and contracts require review before consolidation",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYS50cwBmOTMwNjAyNzQ5ZGIwZjI1MzM2YTI3YjI4Y2YyMDk2MzQ4NTkwOGI4OGQxYjg3MDIzY2M3NGE4MTFkMjVkNmVkAGZ1bmN0aW9uOm5vcm1hbGl6ZSMwADcAcmFuZ2U",
+            "rule": "identical-helper-body-in-two-modules"
+          },
+          {
+            "file": "b.ts",
+            "line": 1,
+            "column": 7,
+            "message": "matching source structure also in: a.ts; captured bindings (Boolean, Error) and contracts require review before consolidation",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYi50cwBmMTE2NmQ3ZDVkNmYxNjlhN2U4MTJiMDFhNWM5NDVhNzVlZjQxMjE4MjZhYzE2OTY5ZTFhNDMyY2E5ZWQ4ZjE4AGZ1bmN0aW9uOm5vcm1hbGl6ZSMwADcAcmFuZ2U",
+            "rule": "identical-helper-body-in-two-modules"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "different-captured-bindings",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 2,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 22,
+            "message": "matching source structure also in: b.ts; captured bindings (Boolean, Error, console, limit) and contracts require review before consolidation",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYS50cwBjNmFkYzc2ZWIyMTdlMGVlOGY2Yzc4YWVmZDQyMDViY2MxYzM4N2UzMzEyYWZjMTQ5MTgwMzVlYmZmZjg4YzliAGZ1bmN0aW9uOm5vcm1hbGl6ZSMwADIyAHJhbmdl",
+            "rule": "identical-helper-body-in-two-modules"
+          },
+          {
+            "file": "b.ts",
+            "line": 1,
+            "column": 22,
+            "message": "matching source structure also in: a.ts; captured bindings (Boolean, Error, console, limit) and contracts require review before consolidation",
+            "decisionKey": "c2xvcC9pZGVudGljYWwtaGVscGVyLWJvZHktaW4tdHdvLW1vZHVsZXMAYi50cwBjNmFkYzc2ZWIyMTdlMGVlOGY2Yzc4YWVmZDQyMDViY2MxYzM4N2UzMzEyYWZjMTQ5MTgwMzVlYmZmZjg4YzliAGZ1bmN0aW9uOm5vcm1hbGl6ZSMwADIyAHJhbmdl",
+            "rule": "identical-helper-body-in-two-modules"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "unsupported-config",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [
+          ".: File 'missing-package/tsconfig.json' not found.",
+          ":1 File 'missing-package/tsconfig.json' not found."
+        ],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "dynamic-namespace-binding",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 2,
+            "column": 13,
+            "message": "candidate: no consumer found for unused within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBlNTZlZmQ0MGQ4YjQ3Y2JlZDUzZWM2YjU5YmRlOTU3MzEyMTk5ZGQ3M2VjM2QyYzNhOTU1Zjg2OTlmNWY5OGU2AABub25lADEzAGxpbmU",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "dynamic-destructuring",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 2,
+            "column": 13,
+            "message": "candidate: no consumer found for unused within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBlNTZlZmQ0MGQ4YjQ3Y2JlZDUzZWM2YjU5YmRlOTU3MzEyMTk5ZGQ3M2VjM2QyYzNhOTU1Zjg2OTlmNWY5OGU2AABub25lADEzAGxpbmU",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "default-reexport-chain",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "local-export-specifier-positive",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 6,
+            "message": "candidate: no consumer found for helper within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwA4NjVhOTAyNTExYjllM2RlMWNkYTY4OWVlNThiNGRlYWYxODdmYjk1OWYwYjE0ZjA3YmM1N2QxMmIzYjMzZTk2AABub25lADYAbGluZQ",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "dynamic-then-member",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 2,
+            "column": 13,
+            "message": "candidate: no consumer found for unused within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwBlNTZlZmQ0MGQ4YjQ3Y2JlZDUzZWM2YjU5YmRlOTU3MzEyMTk5ZGQ3M2VjM2QyYzNhOTU1Zjg2OTlmNWY5OGU2AABub25lADEzAGxpbmU",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "vitest-config-entry",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "nitro-plugin-entry",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "plugin-name-lookalike",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:default"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:default"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 55,
+            "message": "candidate: no consumer found for default within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwA5OTU4MmQyNDFhY2RiODI3ZTJmZGIwZjU1YjNiMGJmM2Q0NDMwNjQzZjY2Y2EzOWQ3OTY4NzhkNzNiYjE3ZjgwAABub25lADU1AGxpbmU",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "review-tagged-template-raw",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 3,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "review-destructured-export-shadow",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 13,
+            "message": "candidate: no consumer found for helper within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwA2ZTAyNWJmMWZmMzNhNDBmZDA5NzU1Mzc3NDVhOGI1ZTMzNTc5NTc1NmEwMGVlM2I1ZTY5MjBlN2NjZjMyNDU0AABub25lADEzAGxpbmU",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "review-array-export-shadow",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [
+          {
+            "file": "a.ts",
+            "line": 1,
+            "column": 13,
+            "message": "candidate: no consumer found for helper within supported captured coverage (including tests, generated modules, types and re-exports). Exclusions: node_modules/**, .*/**. Undeclared external/framework usage and module side effects require review; this is not deletion authorization.",
+            "decisionKey": "c2xvcC9leHBvcnQtd2l0aG91dC1hbnktY29uc3VtZXIAYS50cwAyZmFjMWI1YjQ3NGExY2JmZjdmMWYyMjEwNzI2ZmJmMzBlMjQ3Yjk5M2VhMWE1ZDlkNWQ3ZWFkNDc1ZGY5MTQ4AABub25lADEzAGxpbmU",
+            "rule": "export-without-any-consumer"
+          }
+        ],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "review-stored-import-promise",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [
+          "use.ts:1 dynamic module namespace requires downstream value flow"
+        ],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "review-nested-import-type",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 2,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [],
+        "crashed": []
+      },
+      "stderr": ""
+    },
+    {
+      "name": "import-equals-uncertainty",
+      "passed": true,
+      "status": 0,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "observed": {
+        "exports": [],
+        "duplicates": 0,
+        "fileCount": 1,
+        "analysisAvailable": true,
+        "findings": [],
+        "coverageIssues": [
+          "use.cts:1 TypeScript import-equals value flow unsupported"
+        ],
+        "crashed": []
+      },
+      "stderr": ""
+    }
+  ]
+}
