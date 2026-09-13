@@ -1,3 +1,5 @@
+import { ProjectConsumers } from "./project-consumers.js";
+import { FunctionStructure } from "./function-structure.js";
 import { AnalysisFile, AnalysisSpans, AnalysisCalls, Mode } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls } from "./analysis.js";
 type Analyzer = typeof analyzeBindings;
@@ -8,8 +10,13 @@ export interface AnalysisRequestBody {
     kind?: unknown;
     file?: unknown;
     root?: unknown;
+    sourceDigest?: unknown;
 }
 export type AnalysisResponse = {
+    project: ProjectConsumers;
+} | {
+    structures: FunctionStructure[];
+} | {
     available: boolean;
     reason?: string;
 } | {

@@ -1,3 +1,8 @@
+import { createHash } from "node:crypto";
+import { inventory } from "./file-scope.js";
+import type { FileInventory } from "./file-scope.js";
+import type { ProjectConsumers } from "./project-consumers.js";
+import type { FunctionStructure } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
 import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, Finding, isTestPath, Match, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, withinDir } from "./contract.js";
@@ -33,23 +38,19 @@ export function probeAnalysisAvailable(root: string): boolean {
 // (isTestPath) and the run/verify derivation live in contract.ts; a run
 // opts back in with --include-tests. ctx.files.read() is never filtered:
 // an explicit path is a doctor's deliberate choice.
-export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): { ctx: DoctorCtx; getFindings(): Finding[] } {
+export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): { ctx: DoctorCtx; getFindings(): Finding[]; getAnalysisCoverage(): ProjectConsumers["coverage"] | undefined } {
   const findings: Finding[] = [];
+  const sourceCache = new Map<string,string>();
+  const digest = (source: string) => createHash("sha256").update(source).digest("hex");
+  function readSource(file: string): string {
+    let source=sourceCache.get(file);
+    if(source===undefined) {source=readFileWithin(root,file);sourceCache.set(file,source);}
+    return source;
+  }
   let availabilityCache: boolean | undefined;
 
-  function walk(dir: string, exts: Set<string>, out: string[]): void {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
-      const abs = path.join(dir, entry.name);
-      const rel = path.relative(root, abs);
-      // One predicate for files and directories: a test directory prunes
-      // the whole subtree; a test-named file is skipped alone.
-      if (!opts.includeTests && isTestPath(rel)) continue;
-      if (entry.isDirectory()) walk(abs, exts, out);
-      else if (exts.has(path.extname(entry.name))) out.push(rel);
-    }
-  }
-
+  let project: ProjectConsumers | undefined;
+  let fileInventory: FileInventory | undefined;
   // The one per-kind fetch with the one guard: availability check (the
   // loud failure names the kind and the needs declaration), channel call,
   // structural unwrap. bindings/spans/calls differ only in kind.
@@ -63,7 +64,7 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
         + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.",
       );
     }
-    const r = runAnalysis({ kind, file }, root);
+    const r = runAnalysis({ kind, file, sourceDigest: digest(readSource(file)) }, root);
     if (r.file === undefined || !(kind in r.file)) throw new Error(r.error ?? "ctx.analysis failed");
     return r.file as T extends "bindings" ? AnalysisFile : T extends "spans" ? AnalysisSpans : AnalysisCalls;
   };
@@ -73,37 +74,54 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
 
     files: {
       list(exts?: string[]): string[] {
-        const extSet = new Set((exts && exts.length ? exts : DEFAULT_EXTS)
-          .map(e => (e.startsWith(".") ? e : "." + e)));
-        const out: string[] = [];
-        walk(root, extSet, out);
-        return out.sort();
+        return inventory(root, exts).files.filter(f => f.role !== "generated" && (opts.includeTests || f.role !== "test")).map(f => f.file).sort();
+      },
+      inventory(): FileInventory {
+        return fileInventory ??= inventory(root, [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cts", ".cjs"]);
       },
 
       read(relativePath: string): string {
-        return readFileWithin(root, relativePath);
+        return readSource(relativePath);
       },
 
       readMasked(relativePath: string): string {
-        return maskNonCode(readFileWithin(root, relativePath));
+        return maskNonCode(readSource(relativePath));
       },
     },
 
     search: {
       pattern(pattern: string, language: "TypeScript" | "JavaScript" = "TypeScript"): Match[] {
-        return runSearch({ op: "pattern", pattern }, language, root);
+        return runSearch({ op: "pattern", pattern }, language, root, opts.includeTests);
       },
 
       rule(query: RuleQuery, language: "TypeScript" | "JavaScript" = "TypeScript"): Match[] {
-        return runSearch({ op: "rule", rule: validateRuleQuery(query) }, language, root);
+        return runSearch({ op: "rule", rule: validateRuleQuery(query) }, language, root, opts.includeTests);
       },
 
       rules(queries: NamedRuleQuery[], language: "TypeScript" | "JavaScript" = "TypeScript"): Match[] {
-        return runSearch({ op: "rules", rules: validateNamedRuleQueries(queries) }, language, root);
+        return runSearch({ op: "rules", rules: validateNamedRuleQueries(queries) }, language, root, opts.includeTests);
       },
     },
 
     analysis: {
+      consumers(file: string) {
+        if (!ctx.analysis.available) throw new Error("consumer analysis unavailable");
+        if (!project) {
+          const response = runAnalysis({ kind: "project" }, root);
+          if (!response.project) throw new Error(response.error ?? "consumer analysis failed");
+          project = response.project;
+          for (const [file, source] of sourceCache) if (project.coverage.sourceDigests[file] && digest(source) !== project.coverage.sourceDigests[file]) throw new Error(`source changed during consumer analysis: ${file}`);
+        }
+        if (!(file in project.files)) throw new Error(`consumer analysis outside captured inventory: ${file}`);
+        return { exports: project.files[file], coverage: project.coverage };
+      },
+      structures(file: string) {
+        if (!ctx.analysis.available) throw new Error("function structure analysis unavailable");
+        const response = runAnalysis({ kind: "structures", file, sourceDigest: digest(readSource(file)) }, root);
+        if (!response.structures) throw new Error(response.error ?? "function structure analysis failed");
+        return response.structures;
+      },
+
       // One channel question, cached per ctx — availability is cheap and
       // honest data, never a guess. The verify harness's forced-off
       // switch (fixture `analysis: "off"`) overrides a present engine so
@@ -140,7 +158,14 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
     },
   };
 
-  return { ctx, getFindings: () => findings.slice() };
+  return { ctx, getFindings: () => findings.slice(), getAnalysisCoverage: () => {
+    if(project) {
+      const files=inventory(root,[".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cts", ".cjs", ".json"]).files;
+      if(JSON.stringify(files)!==JSON.stringify(project.coverage.inventory.files)) throw new Error("source inventory changed during consumer analysis");
+      for(const [file,expected] of Object.entries(project.coverage.sourceDigests)) if(digest(readFileWithin(root,file))!==expected) throw new Error(`source changed during consumer analysis: ${file}`);
+    }
+    return project?.coverage;
+  } };
 }
 
 function escapeRegExp(s: string): string {
@@ -157,6 +182,7 @@ function readFileWithin(root: string, relativePath: string): string {
   if (!withinDir(abs, root)) {
     throw new Error(`ctx.files read escapes the repo root: ${relativePath}`);
   }
+  if (!withinDir(fs.realpathSync(abs), fs.realpathSync(root))) throw new Error(`ctx.files read escapes the repo root: ${relativePath}`);
   return fs.readFileSync(abs, "utf8");
 }
 
@@ -267,15 +293,15 @@ interface SearchResponse {
   error?: string;
 }
 
-function runSearch(query: EngineQuery, language: "TypeScript" | "JavaScript", root: string): Match[] {
+function runSearch(query: EngineQuery, language: "TypeScript" | "JavaScript", root: string, includeTests?: boolean): Match[] {
   let response: SearchResponse;
   try {
     const body =
       query.op === "rule"
-        ? { op: query.op, rule: query.rule, language, root }
+        ? { op: query.op, rule: query.rule, language, root, includeTests }
         : query.op === "rules"
-          ? { op: query.op, rules: query.rules, language, root }
-          : { op: query.op, pattern: query.pattern, language, root };
+          ? { op: query.op, rules: query.rules, language, root, includeTests }
+          : { op: query.op, pattern: query.pattern, language, root, includeTests };
     fs.writeSync(3, SEARCH_REQUEST + JSON.stringify(body) + "\n");
     response = readSearchResponse();
   } catch (e) {
@@ -299,13 +325,15 @@ function runSearch(query: EngineQuery, language: "TypeScript" | "JavaScript", ro
 // carry either the identity model or an error — availability is a normal
 // answer, never a thrown guess.
 interface AnalysisResponse {
+  project?: ProjectConsumers;
+  structures?: FunctionStructure[];
   available?: boolean;
   reason?: string;
   file?: AnalysisFile | AnalysisSpans | AnalysisCalls;
   error?: string;
 }
 
-function runAnalysis(body: { kind: "available" } | { kind: "bindings"; file: string } | { kind: "spans"; file: string } | { kind: "calls"; file: string }, root: string): AnalysisResponse {
+function runAnalysis(body: { kind: "project" } | { kind: "structures"; file: string; sourceDigest?: string } | { kind: "available" } | { kind: "bindings"; file: string; sourceDigest?: string } | { kind: "spans"; file: string; sourceDigest?: string } | { kind: "calls"; file: string; sourceDigest?: string }, root: string): AnalysisResponse {
   let response: AnalysisResponse;
   try {
     fs.writeSync(3, SEARCH_REQUEST + JSON.stringify({ op: "analysis", ...body, root }) + "\n");
@@ -341,7 +369,7 @@ function readSearchResponse(): SearchResponse {
 // kept, sigils stripped ($$$ARGS arrives as captures.ARGS — an array for
 // multi-metavariables, a single Capture otherwise). Lines are 1-based;
 // columns pass through as the engine reports them, as they always have.
-function toMatches(raw: RawSgMatch[], root: string): Match[] {
+function toMatches(raw: RawSgMatch[], root: string, includeTests?: boolean): Match[] {
   return raw.map(m => {
     const captures = capturesOf(m);
     return {

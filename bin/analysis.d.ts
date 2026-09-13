@@ -31,4 +31,14 @@ export type SpansResult = {
 };
 export declare function analyzeSpans(file: string, source: string): SpansResult;
 export declare function analyzeBindings(file: string, source: string): AnalysisResult;
+export type Node = {
+    type: string;
+    range?: [number, number];
+    [k: string]: unknown;
+};
 export declare function analyzeCalls(file: string, source: string): CallsResult;
+/** Host-only AST/scope seam. Doctors receive bounded derived facts, never ASTs. */
+export declare function analyzeSyntax(file: string, source: string): {
+    program: Node;
+    scopes: import("@typescript-eslint/scope-manager").ScopeManager;
+};

@@ -1,3 +1,4 @@
+import { readAnalysisConfig, fileRole, matchesPath } from "./file-scope.js";
 import * as path from "path";
 import { decodeSearchOp, includeTestsFor, isTestPath, SEARCH_REQUEST, searchBase, withinBase } from "./contract.js";
 import { runEngine } from "./engine.js";
@@ -30,7 +31,7 @@ export function handleSearchLine(line, mode, engine = runEngine) {
     if ("error" in decoded)
         return JSON.stringify({ error: decoded.error });
     if (decoded.op === "analysis") {
-        return JSON.stringify(handleAnalysisRequest({ kind: req.kind, file: req.file, root: req.root }, mode));
+        return JSON.stringify(handleAnalysisRequest({ kind: req.kind, file: req.file, root: req.root, sourceDigest: req.sourceDigest }, mode));
     }
     const language = typeof req.language === "string" ? req.language : "TypeScript";
     const query = decoded.op === "rule"
@@ -41,7 +42,9 @@ export function handleSearchLine(line, mode, engine = runEngine) {
     const r = engine(query, language, root);
     if (!r.ok)
         return JSON.stringify({ error: r.error });
-    const matches = includeTestsFor(mode) ? r.matches : r.matches.filter((m) => !isTestPath(matchRel(root, m)));
+    const config = readAnalysisConfig(root);
+    const eligible = r.matches.filter(m => fileRole(matchRel(root, m), config) !== "generated" && !config.exclude.some(p => matchesPath(matchRel(root, m), p)));
+    const matches = (mode.kind === "verify" && req.includeTests === false ? false : includeTestsFor(mode)) ? eligible : eligible.filter((m) => !isTestPath(matchRel(root, m)));
     return JSON.stringify({ matches });
 }
 // Engine paths arrive root-prefixed or already root-relative; either way

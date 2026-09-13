@@ -1,3 +1,4 @@
+import type { ProjectConsumers } from "./project-consumers.js";
 import { DoctorCtx, Finding } from "./contract.js";
 export declare function setAnalysisDisabled(disabled: boolean): void;
 export declare function probeAnalysisAvailable(root: string): boolean;
@@ -6,4 +7,5 @@ export declare function buildCtx(root: string, opts?: {
 }): {
     ctx: DoctorCtx;
     getFindings(): Finding[];
+    getAnalysisCoverage(): ProjectConsumers["coverage"] | undefined;
 };

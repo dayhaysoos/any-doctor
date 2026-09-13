@@ -221,7 +221,7 @@ export function analyzeBindings(file: string, source: string): AnalysisResult {
 // every specifier's local name, export-default function names) and the
 // object-rest exclusion idiom (identifiers bound beside a ...rest —
 // their unreadness is the point, not a defect).
-type Node = { type: string; range?: [number, number]; [k: string]: unknown };
+export type Node = { type: string; range?: [number, number]; [k: string]: unknown };
 
 function languageFacts(program: Node): { exported: Set<string>; excluded: Set<string> } {
   const exported = new Set<string>();
@@ -488,3 +488,14 @@ export function analyzeCalls(file: string, source: string): CallsResult {
 
 const FUNCTION_EXPRESSIONS = new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"]);
 const TRANSPARENT_EXPRESSIONS = new Set(["TSAsExpression", "TSTypeAssertion", "TSNonNullExpression", "TSSatisfiesExpression", "ChainExpression", "ParenthesizedExpression"]);
+
+/** Host-only AST/scope seam. Doctors receive bounded derived facts, never ASTs. */
+export function analyzeSyntax(file: string, source: string) {
+  const stack = loadStack();
+  const parsed = parseProgram(stack, file, source);
+  if (!parsed.ok) throw new Error(parsed.error);
+  if (stack.error !== undefined) throw new Error(stack.error);
+  try {
+    return { program: parsed.program, scopes: stack.analyze(parsed.program as never, { sourceType: "module" }) };
+  } catch (e) { throw new Error(`analysis failed to resolve scopes in ${file}: ${String(e)}`); }
+}

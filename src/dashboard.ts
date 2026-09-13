@@ -339,6 +339,7 @@ export interface DashboardFrameState {
   durationMs: number;
   useColor: boolean;
   notice?: string;
+  coverageNotice?: string;
   skippedUnsafe?: string[];
   cols: number;
   rows: number;
@@ -395,6 +396,7 @@ export function dashboardFrame(state: DashboardFrameState): string {
   if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
     headerLines.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
   }
+  if (state.coverageNotice) headerLines.push(c(state.coverageNotice, YELLOW));
   headerLines.push("");
 
   const viewport = Math.max(1, Math.min(layout.listHeight, layout.bodyRows));
@@ -698,6 +700,7 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
         useColor,
         notice,
         skippedUnsafe: input.outcome.skippedUnsafe,
+        coverageNotice: summary.coverageLines.length ? "Consumer analysis has bounded coverage; exclusions and limits: --format json" : undefined,
         cols: stdout.columns || 120,
         rows: stdout.rows || 34,
       });

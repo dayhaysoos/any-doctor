@@ -89,6 +89,7 @@ export interface RunSummary {
   hidden: number;
   score: ScoreResult;
   header: ScoreHeader;
+  coverageLines: string[];
   severityCounts: Record<Severity, number>;
   categories: { category: string; counts: Record<Severity, number> }[];
   // True when the scan saw zero files and produced zero findings — the
@@ -105,6 +106,13 @@ export function deriveSummary(outcome: RunOutcome): RunSummary {
   // and where the partial flag is set for every surface to honor.
   if ((outcome.crashed?.length ?? 0) > 0 || (outcome.broken?.length ?? 0) > 0) score.partialScan = true;
   const header = scoreHeaderLines(score);
+  const coverageLines: string[] = [];
+  for (const group of groups) if (group.analysisCoverage) {
+    const coverage = group.analysisCoverage;
+    coverageLines.push(`Consumer coverage: ${coverage.inventory.files.length} evidence files; exclusions: ${coverage.inventory.exclusions.join(", ")}. ${coverage.issues.length} coverage limits; absence is scoped to this snapshot.`);
+    if (coverage.issues.length > 5) coverageLines.push("Full coverage reasons and snapshot digest are available with --format json.");
+    for (const issue of coverage.issues.slice(0, 5)) coverageLines.push(`Consumer coverage limit: ${issue}`);
+  }
 
   const severityCounts: Record<Severity, number> = { error: 0, warning: 0, info: 0 };
   for (const g of groups) {
@@ -120,6 +128,7 @@ export function deriveSummary(outcome: RunOutcome): RunSummary {
     hidden,
     score,
     header,
+    coverageLines,
     severityCounts,
     categories: categoryRollup(groups),
     emptyScan: outcome.fileCount === 0 && total === 0,

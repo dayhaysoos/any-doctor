@@ -21,6 +21,7 @@ export interface RunSummary {
     hidden: number;
     score: ScoreResult;
     header: ScoreHeader;
+    coverageLines: string[];
     severityCounts: Record<Severity, number>;
     categories: {
         category: string;

@@ -1,3 +1,4 @@
+import { readAnalysisConfig, fileRole, matchesPath } from "./file-scope.js";
 import * as path from "path";
 import { decodeSearchOp, includeTestsFor, isTestPath, Mode, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, searchBase, withinBase } from "./contract.js";
 import { runEngine, EngineQuery, RawSgMatch } from "./engine.js";
@@ -24,7 +25,7 @@ type Engine = typeof runEngine;
 // to the sibling analysis host.
 export function handleSearchLine(line: string, mode: Mode, engine: Engine = runEngine): string | null {
   if (!line.startsWith(SEARCH_REQUEST)) return null;
-  let req: { op?: unknown; pattern?: unknown; rule?: unknown; rules?: unknown; kind?: unknown; file?: unknown; language?: unknown; root?: unknown };
+  let req: { op?: unknown; pattern?: unknown; rule?: unknown; rules?: unknown; kind?: unknown; file?: unknown; language?: unknown; root?: unknown; includeTests?: unknown; sourceDigest?: unknown };
   try {
     req = JSON.parse(line.slice(SEARCH_REQUEST.length));
   } catch {
@@ -40,7 +41,7 @@ export function handleSearchLine(line: string, mode: Mode, engine: Engine = runE
   const decoded = decodeSearchOp(req.op ?? "pattern");
   if ("error" in decoded) return JSON.stringify({ error: decoded.error });
   if (decoded.op === "analysis") {
-    return JSON.stringify(handleAnalysisRequest({ kind: req.kind, file: req.file, root: req.root }, mode));
+    return JSON.stringify(handleAnalysisRequest({ kind: req.kind, file: req.file, root: req.root, sourceDigest: req.sourceDigest }, mode));
   }
   const language = typeof req.language === "string" ? req.language : "TypeScript";
   const query: EngineQuery =
@@ -51,7 +52,9 @@ export function handleSearchLine(line: string, mode: Mode, engine: Engine = runE
         : { op: decoded.op, pattern: String(req.pattern ?? "") };
   const r = engine(query, language, root);
   if (!r.ok) return JSON.stringify({ error: r.error });
-  const matches = includeTestsFor(mode) ? r.matches : r.matches.filter((m) => !isTestPath(matchRel(root, m)));
+  const config = readAnalysisConfig(root);
+  const eligible = r.matches.filter(m => fileRole(matchRel(root,m),config) !== "generated" && !config.exclude.some(p => matchesPath(matchRel(root,m),p)));
+  const matches = (mode.kind === "verify" && req.includeTests === false ? false : includeTestsFor(mode)) ? eligible : eligible.filter((m) => !isTestPath(matchRel(root, m)));
   return JSON.stringify({ matches });
 }
 

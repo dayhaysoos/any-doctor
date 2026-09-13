@@ -105,6 +105,7 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
   const doctorWord = groups.length === 1 ? "doctor" : "doctors";
   lines.push(c(`Any Doctor — ${groups.length} ${doctorWord}`, BOLD));
   lines.push(c(summary.header.scoreLine, BOLD + scoreHeaderTone(sr)));
+  lines.push(...summary.coverageLines.map(line => c(line, DIM)));
   if (summary.header.cleanLine) {
     lines.push(c(summary.header.cleanLine, DIM));
   }
@@ -265,6 +266,7 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
           };
         }),
       })),
+      ...(gc.group.analysisCoverage ? { analysisCoverage: gc.group.analysisCoverage } : {}),
       ...(gc.narrowedIds.length > 0 ? { narrowed: gc.narrowedIds } : {}),
       ...(gc.group.meta.blindSpots !== undefined && gc.group.meta.blindSpots.length > 0 ? { blindSpots: gc.group.meta.blindSpots } : {}),
     })),

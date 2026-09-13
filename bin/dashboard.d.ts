@@ -62,6 +62,7 @@ export interface DashboardFrameState {
     durationMs: number;
     useColor: boolean;
     notice?: string;
+    coverageNotice?: string;
     skippedUnsafe?: string[];
     cols: number;
     rows: number;

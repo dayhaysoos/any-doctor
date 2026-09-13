@@ -486,3 +486,18 @@ export function analyzeCalls(file, source) {
 }
 const FUNCTION_EXPRESSIONS = new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"]);
 const TRANSPARENT_EXPRESSIONS = new Set(["TSAsExpression", "TSTypeAssertion", "TSNonNullExpression", "TSSatisfiesExpression", "ChainExpression", "ParenthesizedExpression"]);
+/** Host-only AST/scope seam. Doctors receive bounded derived facts, never ASTs. */
+export function analyzeSyntax(file, source) {
+    const stack = loadStack();
+    const parsed = parseProgram(stack, file, source);
+    if (!parsed.ok)
+        throw new Error(parsed.error);
+    if (stack.error !== undefined)
+        throw new Error(stack.error);
+    try {
+        return { program: parsed.program, scopes: stack.analyze(parsed.program, { sourceType: "module" }) };
+    }
+    catch (e) {
+        throw new Error(`analysis failed to resolve scopes in ${file}: ${String(e)}`);
+    }
+}

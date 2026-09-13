@@ -7,7 +7,7 @@ const consumes = (lines) => lines.join("\n");
 export const fixtures = [
   // --- identical-helper-body-in-two-modules ---
   {
-    name: "flags the same function body maintained in two modules",
+    name: "suppresses a two-statement generic slug helper even with a long signature",
     seed: {
       "src/slug-a.ts": [
         "export function slugifyTitle(name: string): string {",
@@ -28,15 +28,11 @@ export const fixtures = [
         "export function run(name: string) { return slugA(name) + slugB(name); }",
       ]),
     },
-    expected: [
-      { rule: "identical-helper-body-in-two-modules", file: "src/slug-a.ts", line: 1 },
-      { rule: "identical-helper-body-in-two-modules", file: "src/slug-b.ts", line: 2 },
-    ],
+    expected: [],
   },
   {
-    // Pins the duplicate check's degraded path (D26): without the engine,
-    // spans come from the brace-counting scan - same twins, same findings.
-    name: "degraded: twins still found without the analysis engine",
+    // Without syntax facts duplicate comparison now abstains visibly.
+    name: "degraded: duplicate check abstains without syntax facts",
     analysis: "off",
     seed: {
       "src/trim-a.ts": [
@@ -57,10 +53,7 @@ export const fixtures = [
         "export function show(v: string) { return trimA(v) + trimB(v); }",
       ]),
     },
-    expected: [
-      { rule: "identical-helper-body-in-two-modules", file: "src/trim-a.ts", line: 1 },
-      { rule: "identical-helper-body-in-two-modules", file: "src/trim-b.ts", line: 1 },
-    ],
+    expected: [],
   },
   {
     name: "accepts same-named helpers with different bodies",
@@ -501,3 +494,23 @@ export const fixtures = [
     expected: [],
   },
 ];
+
+// Actual default scope must retain test consumers without diagnosing tests.
+fixtures.push({name:"default scope: test consumers count but test diagnostics do not",includeTests:false,seed:{
+  "helper.ts":"export function helper(){return 1;}",
+  "helper.test.ts":'import {helper} from "./helper"; helper(); const unused=1;',
+},expected:[]});
+
+// Two explicit occurrence locations in the same file for every Slop check.
+fixtures.push({name:"locations: two substantial validation copies in one file and another module",seed:{
+  "a.ts":'export function validate(input:string){const parts=input.split(":"); if(parts.length!==2) throw new Error("bad"); const [key,value]=parts; if(!key) throw new Error("key"); return {key,value};}\nexport function validateAgain(input:string){const parts=input.split(":"); if(parts.length!==2) throw new Error("bad"); const [key,value]=parts; if(!key) throw new Error("key"); return {key,value};}',
+  "b.ts":'export function validate(input:string){const parts=input.split(":"); if(parts.length!==2) throw new Error("bad"); const [key,value]=parts; if(!key) throw new Error("key"); return {key,value};}',
+  "index.ts":'export * from "./a"; export {validate as other} from "./b";',
+},expected:[{rule:"identical-helper-body-in-two-modules",file:"a.ts",line:1},{rule:"identical-helper-body-in-two-modules",file:"a.ts",line:2},{rule:"identical-helper-body-in-two-modules",file:"b.ts",line:1}]});
+fixtures.push({name:"locations: two exports in a module",seed:{"values.ts":"export const first=1;\nexport const second=2;"},expected:[1,2].map(line=>({rule:"export-without-any-consumer",file:"values.ts",line}))});
+fixtures.push({name:"locations: two unread locals",seed:{"values.ts":"const first=1;\nconst second=2;"},expected:[1,2].map(line=>({rule:"unread-local-binding",file:"values.ts",line}))});
+fixtures.push({name:"locations: two unused named imports",seed:{"values.ts":'import {first} from "external";\nimport {second} from "external";'},expected:[1,2].map(line=>({rule:"named-import-without-reference",file:"values.ts",line}))});
+fixtures.push({name:"locations: two overlapping substring lines",seed:{"index.ts":'export function f(value:string){\nreturn value.includes("referral") || value.includes("refer");\n}\nexport function g(value:string){\nreturn value.includes("referral") || value.includes("refer");\n}'},expected:[2,5].map(line=>({rule:"prefix-overlapping-substring-match",file:"index.ts",line}))});
+fixtures.push({name:"locations: two hostname routing lines",seed:{"index.ts":'export function f(host:string){\nif(host.includes("localhost")) return LOCAL_URL;\nif(host.includes("staging")) return STAGING_URL;\n}'},expected:[2,3].map(line=>({rule:"environment-guessed-from-hostname-substring",file:"index.ts",line}))});
+fixtures.push({name:"locations: two boolean collapse lines",seed:{"index.ts":'export function f(input:any){\nconst enabled = input ?? detect();\nconsole.log(enabled === true ? "a" : "b");\nreturn enabled === true ? "x" : "y";\n}'},expected:[3,4].map(line=>({rule:"boolean-collapsed-into-three-state",file:"index.ts",line}))});
+fixtures.push({name:"locations: two unbounded abbreviation lines",seed:{"index.ts":'export function f(value:string){\nconsole.log(/ai/i.test(value));\nreturn /ai/i.test(value);\n}'},expected:[2,3].map(line=>({rule:"unanchored-abbreviation-regex",file:"index.ts",line}))});

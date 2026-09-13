@@ -26,7 +26,7 @@ export async function runCohort(spec, onProgress, exec = runDoctorCohort) {
         // Process-wide capability: any run's answer is every run's answer.
         analysisAvailable !== null && analysisAvailable !== void 0 ? analysisAvailable : (analysisAvailable = (_a = run.result.capabilities) === null || _a === void 0 ? void 0 : _a.analysis);
         doctorPaths.set(run.result.meta.id, doctor.programPath);
-        groups.push({ programName: path.basename(doctor.programPath), meta: run.result.meta, findings: run.result.findings });
+        groups.push({ ...(run.result.analysisCoverage ? { analysisCoverage: run.result.analysisCoverage } : {}), programName: path.basename(doctor.programPath), meta: run.result.meta, findings: run.result.findings });
     }
     return {
         groups,

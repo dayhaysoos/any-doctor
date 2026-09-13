@@ -26,21 +26,25 @@ export interface DoctorModule {
 // (certify, the loader frame) read .findings and .meta off it directly.
 export async function runOnce(root: string, mod: DoctorModule, opts: { includeTests: boolean }): Promise<RunResult> {
   const started = Date.now();
-  const { ctx, getFindings } = buildCtx(root, opts);
+  const { ctx, getFindings, getAnalysisCoverage } = buildCtx(root, opts);
   const fileCount = ctx.files.list().length;
   const result = mod.doctor!(ctx);
   if (!result || typeof (result as Promise<unknown>).then !== "function") {
     throw new Error("doctor() must be async — declare it `export async function doctor(ctx)`");
   }
-  return (result as Promise<void>).then(() => ({
-    protocolVersion: contract.PROTOCOL_VERSION,
-    kind: "run" as const,
-    root,
-    fileCount,
-    durationMs: Date.now() - started,
-    meta: mod.meta as DoctorMeta,
-    findings: getFindings() as Finding[],
-  }));
+  return (result as Promise<void>).then(() => {
+    const analysisCoverage = getAnalysisCoverage();
+    return {
+      protocolVersion: contract.PROTOCOL_VERSION,
+      kind: "run" as const,
+      root,
+      fileCount,
+      durationMs: Date.now() - started,
+      meta: mod.meta as DoctorMeta,
+      findings: getFindings() as Finding[],
+      ...(analysisCoverage ? { analysisCoverage } : {}),
+    };
+  });
 }
 
 // The claim contract (D23): certification requires each declared check to
@@ -174,7 +178,7 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
       // Verify always lists everything (includeTestsFor): the sandbox is
       // the doctor's own world — a seed named *.test.ts is deliberate
       // test data (effect-v4-kitlangton's sleep-in-test depends on it).
-      const result = await inSandbox(fixture.seed, (tmp) => runOnce(tmp, mod, { includeTests: true }));
+      const result = await inSandbox(fixture.seed, (tmp) => runOnce(tmp, mod, { includeTests: fixture.includeTests ?? true }));
       const diff = contract.compareFindings(fixture.expected, result.findings);
       const row = { name: fixture.name, ok: diff.missing.length === 0 && diff.unexpected.length === 0, ...diff };
       results.push(row); rowByFixture.set(fixture, row);

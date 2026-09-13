@@ -1,3 +1,6 @@
+import type { FileInventory } from "./file-scope.js";
+import type { ProjectConsumers, ExportConsumers } from "./project-consumers.js";
+import type { FunctionStructure } from "./function-structure.js";
 import * as os from "os";
 import * as path from "path";
 
@@ -57,6 +60,7 @@ export interface DoctorMeta {
 }
 
 export interface ReportGroup {
+  analysisCoverage?: ProjectConsumers["coverage"];
   programName: string;
   meta: DoctorMeta;
   findings: Finding[];
@@ -283,6 +287,8 @@ export interface DoctorCtx {
   root: string;
   files: {
     list(exts?: string[]): string[];
+    /** All authorized reference evidence, independently of diagnostic test policy. */
+    inventory(): FileInventory;
     read(relativePath: string): string;
     // The one masking implementation (D20 Stage 1): comments, strings, and regex literals
     // blanked, offsets and length preserved — a doctor indexes into it
@@ -312,6 +318,8 @@ export interface DoctorCtx {
     spans(file: string): AnalysisSpans;
     /** Calls, immediate uses, callback registrations and subtraction operands. */
     calls(file: string): AnalysisCalls;
+    consumers(file: string): { exports: ExportConsumers[]; coverage: ProjectConsumers["coverage"] };
+    structures(file: string): FunctionStructure[];
   };
   report: {
     finding(f: Finding): void;
@@ -335,6 +343,8 @@ export interface Fixture {
    * is not installed in the environment; "off" forces the degraded path,
    * pinning the narrowed behavior a check falls back to. */
   analysis?: "on" | "off";
+  /** Omitted preserves legacy fixtures; false exercises ordinary scan defaults. */
+  includeTests?: boolean;
 }
 
 export const PROTOCOL_VERSION = 1;
@@ -398,6 +408,7 @@ export interface RunResult {
   /** What the host could actually power for this run (D20 Stage 2): the
    * identity engine's presence, so "narrowed" rendering is data. */
   capabilities?: { analysis: boolean };
+  analysisCoverage?: ProjectConsumers["coverage"];
 }
 
 export interface FixtureDiff {

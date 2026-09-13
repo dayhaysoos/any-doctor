@@ -90,3 +90,9 @@ test('a wildcard line and an exact column cannot prove two distinct occurrences'
   assert.equal(results[0].ok,true);
   assert.equal(results.find(r=>r.name==='location coverage: todo').ok,false);
 });
+
+test('fixtures can exercise production file-list defaults independently of legacy include-tests', async () => {
+  const mod=todoDoctor('file');
+  const result=await certify(mod,[{name:'default',includeTests:false,seed:{'a.test.ts':'// TODO'},expected:[]},{name:'included',includeTests:true,seed:{'a.test.ts':'// TODO'},expected:[{rule:'todo',file:'a.test.ts',line:1}]}]);
+  assert.ok(result.every(r=>r.ok),JSON.stringify(result));
+});

@@ -1,3 +1,6 @@
+import type { FileInventory } from "./file-scope.js";
+import type { ProjectConsumers, ExportConsumers } from "./project-consumers.js";
+import type { FunctionStructure } from "./function-structure.js";
 export type Severity = "error" | "warning" | "info";
 export declare const SEVERITY_ORDER: Severity[];
 export declare function severityRank(s: Severity): number;
@@ -38,6 +41,7 @@ export interface DoctorMeta {
     checks?: CheckMeta[];
 }
 export interface ReportGroup {
+    analysisCoverage?: ProjectConsumers["coverage"];
     programName: string;
     meta: DoctorMeta;
     findings: Finding[];
@@ -204,6 +208,8 @@ export interface DoctorCtx {
     root: string;
     files: {
         list(exts?: string[]): string[];
+        /** All authorized reference evidence, independently of diagnostic test policy. */
+        inventory(): FileInventory;
         read(relativePath: string): string;
         readMasked(relativePath: string): string;
     };
@@ -229,6 +235,11 @@ export interface DoctorCtx {
         spans(file: string): AnalysisSpans;
         /** Calls, immediate uses, callback registrations and subtraction operands. */
         calls(file: string): AnalysisCalls;
+        consumers(file: string): {
+            exports: ExportConsumers[];
+            coverage: ProjectConsumers["coverage"];
+        };
+        structures(file: string): FunctionStructure[];
     };
     report: {
         finding(f: Finding): void;
@@ -250,6 +261,8 @@ export interface Fixture {
      * is not installed in the environment; "off" forces the degraded path,
      * pinning the narrowed behavior a check falls back to. */
     analysis?: "on" | "off";
+    /** Omitted preserves legacy fixtures; false exercises ordinary scan defaults. */
+    includeTests?: boolean;
 }
 export declare const PROTOCOL_VERSION = 1;
 export declare const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
@@ -289,6 +302,7 @@ export interface RunResult {
     capabilities?: {
         analysis: boolean;
     };
+    analysisCoverage?: ProjectConsumers["coverage"];
 }
 export interface FixtureDiff {
     missing: ExpectedFinding[];

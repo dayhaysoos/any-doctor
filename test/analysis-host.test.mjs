@@ -144,3 +144,8 @@ test("handleAnalysisRequest: spans ask routes to the spans analyzer with its own
     clearAnalysisCache();
   }
 });
+
+test('verify can request default test filtering for structural queries', () => {
+ const out=JSON.parse(handleSearchLine(request({pattern:'f()',root:path.join(os.tmpdir(), "any-doctor-verify-scope"),includeTests:false}),{kind:'verify'},()=>({ok:true,matches:[{file:'a.test.ts',text:'f()'},{file:'a.ts',text:'f()'}]})));
+ assert.deepEqual(out.matches.map(m=>m.file),['a.ts']);
+});

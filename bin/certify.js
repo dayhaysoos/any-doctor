@@ -10,21 +10,25 @@ import * as contract from "./contract.js";
 // (certify, the loader frame) read .findings and .meta off it directly.
 export async function runOnce(root, mod, opts) {
     const started = Date.now();
-    const { ctx, getFindings } = buildCtx(root, opts);
+    const { ctx, getFindings, getAnalysisCoverage } = buildCtx(root, opts);
     const fileCount = ctx.files.list().length;
     const result = mod.doctor(ctx);
     if (!result || typeof result.then !== "function") {
         throw new Error("doctor() must be async — declare it `export async function doctor(ctx)`");
     }
-    return result.then(() => ({
-        protocolVersion: contract.PROTOCOL_VERSION,
-        kind: "run",
-        root,
-        fileCount,
-        durationMs: Date.now() - started,
-        meta: mod.meta,
-        findings: getFindings(),
-    }));
+    return result.then(() => {
+        const analysisCoverage = getAnalysisCoverage();
+        return {
+            protocolVersion: contract.PROTOCOL_VERSION,
+            kind: "run",
+            root,
+            fileCount,
+            durationMs: Date.now() - started,
+            meta: mod.meta,
+            findings: getFindings(),
+            ...(analysisCoverage ? { analysisCoverage } : {}),
+        };
+    });
 }
 // The claim contract (D23): certification requires each declared check to
 // state the observable condition it establishes, its innocent lookalikes,
@@ -162,7 +166,7 @@ export async function certify(mod, fixtures) {
             // Verify always lists everything (includeTestsFor): the sandbox is
             // the doctor's own world — a seed named *.test.ts is deliberate
             // test data (effect-v4-kitlangton's sleep-in-test depends on it).
-            const result = await inSandbox(fixture.seed, (tmp) => runOnce(tmp, mod, { includeTests: true }));
+            const result = await inSandbox(fixture.seed, (tmp) => { var _a; return runOnce(tmp, mod, { includeTests: (_a = fixture.includeTests) !== null && _a !== void 0 ? _a : true }); });
             const diff = contract.compareFindings(fixture.expected, result.findings);
             const row = { name: fixture.name, ok: diff.missing.length === 0 && diff.unexpected.length === 0, ...diff };
             results.push(row);

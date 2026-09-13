@@ -64,6 +64,16 @@ export function deriveSummary(outcome) {
     if (((_b = (_a = outcome.crashed) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0) > 0 || ((_d = (_c = outcome.broken) === null || _c === void 0 ? void 0 : _c.length) !== null && _d !== void 0 ? _d : 0) > 0)
         score.partialScan = true;
     const header = scoreHeaderLines(score);
+    const coverageLines = [];
+    for (const group of groups)
+        if (group.analysisCoverage) {
+            const coverage = group.analysisCoverage;
+            coverageLines.push(`Consumer coverage: ${coverage.inventory.files.length} evidence files; exclusions: ${coverage.inventory.exclusions.join(", ")}. ${coverage.issues.length} coverage limits; absence is scoped to this snapshot.`);
+            if (coverage.issues.length > 5)
+                coverageLines.push("Full coverage reasons and snapshot digest are available with --format json.");
+            for (const issue of coverage.issues.slice(0, 5))
+                coverageLines.push(`Consumer coverage limit: ${issue}`);
+        }
     const severityCounts = { error: 0, warning: 0, info: 0 };
     for (const g of groups) {
         for (const f of g.findings)
@@ -77,6 +87,7 @@ export function deriveSummary(outcome) {
         hidden,
         score,
         header,
+        coverageLines,
         severityCounts,
         categories: categoryRollup(groups),
         emptyScan: outcome.fileCount === 0 && total === 0,
