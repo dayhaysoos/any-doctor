@@ -1,0 +1,790 @@
+{
+  "startingCommit": "a93313f3ddef2b69f50d8cf2072a323d979ebdf9",
+  "sourceCommit": "50efeab5303b622e5d00a2b48878001b0022e8d1",
+  "branch": "feature/doctor-sdk-foundations",
+  "artifact": {
+    "path": "<evidence-temp>/final/package/any-doctor-0.1.2.tgz",
+    "sha256": "a6182897ff0b59a55f078c3c370d1984339723cd0b094cd7951c8b7aa5eb7792",
+    "bytes": 275907,
+    "files": 144
+  },
+  "automated": {
+    "passed": 657,
+    "failed": 0,
+    "skipped": 0
+  },
+  "initialRed": {
+    "passed": 48,
+    "failed": 12,
+    "skipped": 0
+  },
+  "reviewRed": {
+    "passed": 10,
+    "failed": 5,
+    "skipped": 0
+  },
+  "local": {
+    "bundled": {
+      "passed": 265,
+      "failed": 0,
+      "skipped": 15
+    },
+    "async": {
+      "passed": 71,
+      "failed": 0,
+      "skipped": 0,
+      "profiles": {
+        "passed": 21,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "reference": {
+      "passed": 26,
+      "failed": 0,
+      "skipped": 1,
+      "profiles": {
+        "passed": 21,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "recipe-only": {
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "profiles": {
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "focused": {
+      "passed": 118,
+      "failed": 0,
+      "skipped": 0
+    },
+    "mutations": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "rows": [
+        {
+          "mutation": "lookalike-unknown",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: unhandled-value / unawaited-async-map / valid lookalike and shadowed producer",
+            "ok": false,
+            "missing": [],
+            "unexpected": [],
+            "semantic": {
+              "expected": "complete",
+              "actual": "narrowed"
+            },
+            "error": "semantic coverage: expected complete, received narrowed"
+          }
+        },
+        {
+          "mutation": "receiver-complete",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: unhandled-value / unawaited-async-map / unsupported receiver with positive neighbor",
+            "ok": false,
+            "missing": [],
+            "unexpected": [],
+            "semantic": {
+              "expected": "narrowed",
+              "actual": "complete"
+            },
+            "error": "semantic coverage: expected narrowed, received complete"
+          }
+        },
+        {
+          "mutation": "options-complete",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor",
+            "ok": false,
+            "missing": [],
+            "unexpected": [],
+            "semantic": {
+              "expected": "narrowed",
+              "actual": "complete"
+            },
+            "error": "semantic coverage: expected narrowed, received complete"
+          }
+        },
+        {
+          "mutation": "resource-complete",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: resource-without-release / animation-frame-without-release / unsupported cleanup transfer with positive neighbor",
+            "ok": false,
+            "missing": [],
+            "unexpected": [],
+            "semantic": {
+              "expected": "narrowed",
+              "actual": "complete"
+            },
+            "error": "semantic coverage: expected narrowed, received complete"
+          }
+        },
+        {
+          "mutation": "resource-known-report",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / unsupported cleanup transfer with positive neighbor",
+            "ok": false,
+            "missing": [],
+            "unexpected": [],
+            "semantic": {
+              "expected": "narrowed",
+              "actual": "complete"
+            },
+            "error": "semantic coverage: expected narrowed, received complete"
+          }
+        },
+        {
+          "mutation": "suppressed-findings",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / genuine absence positive",
+            "ok": false,
+            "missing": [
+              {
+                "rule": "fetch-calls-without-abortsignal",
+                "file": "profile.ts",
+                "line": 1,
+                "column": 0
+              }
+            ],
+            "unexpected": [],
+            "semantic": {
+              "expected": "complete",
+              "actual": "complete"
+            }
+          }
+        },
+        {
+          "mutation": "missing-expectation",
+          "exit": 1,
+          "passed": true,
+          "observed": "\u001b[31mdoctor crashed:\nclaim contract violations:\n  check \"fetch-calls-without-abortsignal\": profile \"genuine absence positive\": semantic expectation is required for analysis-on challenges\n  check \"unawaited-async-map\": profile \"genuine positive\": semantic expectation is required for analysis-on challenges\n  check \"uncleared-settimeout-in-effect\": profile \"genuine unreleased positive\": semantic expectation is required for analysis-on challenges\u001b[0m\n"
+        }
+      ]
+    },
+    "frozen": {
+      "files": 671,
+      "findings": 9,
+      "coverage": [
+        {
+          "check": "fetch-calls-without-abortsignal",
+          "reason": "unsupported-expression",
+          "occurrences": 12
+        },
+        {
+          "check": "fetch-calls-without-abortsignal",
+          "reason": "unresolved-identity",
+          "occurrences": 2027
+        },
+        {
+          "check": "unawaited-async-map",
+          "reason": "unsupported-expression",
+          "occurrences": 21
+        }
+      ]
+    },
+    "independent": {
+      "original": {
+        "passed": 55,
+        "failed": 0,
+        "skipped": 0
+      },
+      "fresh": {
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0
+      },
+      "locations": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "manifestBefore": {
+      "expected": 1530,
+      "matched": 1530,
+      "changed": []
+    },
+    "manifestAfter": {
+      "expected": 1530,
+      "matched": 1530,
+      "changed": []
+    }
+  },
+  "packed": {
+    "bundled": {
+      "passed": 265,
+      "failed": 0,
+      "skipped": 15
+    },
+    "async": {
+      "passed": 71,
+      "failed": 0,
+      "skipped": 0,
+      "profiles": {
+        "passed": 21,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "reference": {
+      "passed": 26,
+      "failed": 0,
+      "skipped": 1,
+      "profiles": {
+        "passed": 21,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "recipe-only": {
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "profiles": {
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "focused": {
+      "passed": 118,
+      "failed": 0,
+      "skipped": 0
+    },
+    "mutations": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "rows": [
+        {
+          "mutation": "lookalike-unknown",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: unhandled-value / unawaited-async-map / valid lookalike and shadowed producer",
+            "ok": false,
+            "missing": [],
+            "unexpected": [],
+            "semantic": {
+              "expected": "complete",
+              "actual": "narrowed"
+            },
+            "error": "semantic coverage: expected complete, received narrowed"
+          }
+        },
+        {
+          "mutation": "receiver-complete",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: unhandled-value / unawaited-async-map / unsupported receiver with positive neighbor",
+            "ok": false,
+            "missing": [],
+            "unexpected": [],
+            "semantic": {
+              "expected": "narrowed",
+              "actual": "complete"
+            },
+            "error": "semantic coverage: expected narrowed, received complete"
+          }
+        },
+        {
+          "mutation": "options-complete",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor",
+            "ok": false,
+            "missing": [],
+            "unexpected": [],
+            "semantic": {
+              "expected": "narrowed",
+              "actual": "complete"
+            },
+            "error": "semantic coverage: expected narrowed, received complete"
+          }
+        },
+        {
+          "mutation": "resource-complete",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: resource-without-release / animation-frame-without-release / unsupported cleanup transfer with positive neighbor",
+            "ok": false,
+            "missing": [],
+            "unexpected": [],
+            "semantic": {
+              "expected": "narrowed",
+              "actual": "complete"
+            },
+            "error": "semantic coverage: expected narrowed, received complete"
+          }
+        },
+        {
+          "mutation": "resource-known-report",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / unsupported cleanup transfer with positive neighbor",
+            "ok": false,
+            "missing": [],
+            "unexpected": [],
+            "semantic": {
+              "expected": "narrowed",
+              "actual": "complete"
+            },
+            "error": "semantic coverage: expected narrowed, received complete"
+          }
+        },
+        {
+          "mutation": "suppressed-findings",
+          "exit": 1,
+          "passed": true,
+          "observed": {
+            "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / genuine absence positive",
+            "ok": false,
+            "missing": [
+              {
+                "rule": "fetch-calls-without-abortsignal",
+                "file": "profile.ts",
+                "line": 1,
+                "column": 0
+              }
+            ],
+            "unexpected": [],
+            "semantic": {
+              "expected": "complete",
+              "actual": "complete"
+            }
+          }
+        },
+        {
+          "mutation": "missing-expectation",
+          "exit": 1,
+          "passed": true,
+          "observed": "\u001b[31mdoctor crashed:\nclaim contract violations:\n  check \"fetch-calls-without-abortsignal\": profile \"genuine absence positive\": semantic expectation is required for analysis-on challenges\n  check \"unawaited-async-map\": profile \"genuine positive\": semantic expectation is required for analysis-on challenges\n  check \"uncleared-settimeout-in-effect\": profile \"genuine unreleased positive\": semantic expectation is required for analysis-on challenges\u001b[0m\n"
+        }
+      ]
+    },
+    "frozen": {
+      "files": 671,
+      "findings": 9,
+      "coverage": [
+        {
+          "check": "fetch-calls-without-abortsignal",
+          "reason": "unsupported-expression",
+          "occurrences": 12
+        },
+        {
+          "check": "fetch-calls-without-abortsignal",
+          "reason": "unresolved-identity",
+          "occurrences": 2027
+        },
+        {
+          "check": "unawaited-async-map",
+          "reason": "unsupported-expression",
+          "occurrences": 21
+        }
+      ]
+    },
+    "independent": {
+      "original": {
+        "passed": 55,
+        "failed": 0,
+        "skipped": 0
+      },
+      "fresh": {
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0
+      },
+      "locations": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "manifestBefore": {
+      "expected": 1530,
+      "matched": 1530,
+      "changed": []
+    },
+    "manifestAfter": {
+      "expected": 1530,
+      "matched": 1530,
+      "changed": []
+    }
+  },
+  "optional": {
+    "recipeOnly": {
+      "author": {
+        "name": "native map location witness",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      "location": {
+        "name": "location coverage: recipe-only-map",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      "counts": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 7
+      },
+      "profiles": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 5
+      },
+      "runtimeNarrowed": [
+        "recipe-only-map"
+      ]
+    },
+    "exit": 0,
+    "providerAbsent": true,
+    "counts": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 59
+    },
+    "profiles": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 18
+    },
+    "executedOff": [
+      {
+        "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / analysis unavailable",
+        "ok": true,
+        "missing": [],
+        "unexpected": []
+      },
+      {
+        "name": "challenge profile: unhandled-value / unawaited-async-map / analysis unavailable",
+        "ok": true,
+        "missing": [],
+        "unexpected": []
+      },
+      {
+        "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / analysis unavailable",
+        "ok": true,
+        "missing": [],
+        "unexpected": []
+      }
+    ],
+    "skippedOn": [
+      {
+        "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / genuine absence positive",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / present option lookalike",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / shadowed call identity",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / immutable call alias",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / two same-line occurrences",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: unhandled-value / unawaited-async-map / genuine positive",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: unhandled-value / unawaited-async-map / valid lookalike and shadowed producer",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: unhandled-value / unawaited-async-map / ownership transfer",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: unhandled-value / unawaited-async-map / unsupported receiver with positive neighbor",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: unhandled-value / unawaited-async-map / two same-line occurrences",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / genuine unreleased positive",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / shadowed acquisition with positive neighbor",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / immutable handle alias release",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / different handle does not release acquisition",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / supported local cleanup transfer",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / unsupported cleanup transfer with positive neighbor",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      },
+      {
+        "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / two same-line occurrences",
+        "ok": true,
+        "missing": [],
+        "unexpected": [],
+        "skipped": "analysis engine unavailable \u2014 pins the analysis-on path"
+      }
+    ]
+  },
+  "optionalDashboard": {
+    "passed": 54,
+    "failed": 0,
+    "skipped": 0
+  },
+  "frames": {
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0,
+    "results": [
+      {
+        "quietDoctors": 0,
+        "terminal": {
+          "rows": 34,
+          "cols": 80
+        },
+        "frameHeight": 33,
+        "statusRows": []
+      },
+      {
+        "quietDoctors": 0,
+        "terminal": {
+          "rows": 34,
+          "cols": 140
+        },
+        "frameHeight": 33,
+        "statusRows": []
+      },
+      {
+        "quietDoctors": 1,
+        "terminal": {
+          "rows": 34,
+          "cols": 80
+        },
+        "frameHeight": 33,
+        "statusRows": [
+          "\u25b3 quiet-0 \u2014 narrowed"
+        ]
+      },
+      {
+        "quietDoctors": 1,
+        "terminal": {
+          "rows": 34,
+          "cols": 140
+        },
+        "frameHeight": 33,
+        "statusRows": [
+          "\u25b3 quiet-0 \u2014 narrowed"
+        ]
+      },
+      {
+        "quietDoctors": 5,
+        "terminal": {
+          "rows": 34,
+          "cols": 80
+        },
+        "frameHeight": 33,
+        "statusRows": [
+          "\u25b3 quiet-0 \u2014 narrowed",
+          "\u2714 quiet-1 \u2014 clean",
+          "\u25b3 quiet-2 \u2014 narrowed",
+          "\u2714 quiet-3 \u2014 clean",
+          "\u25b3 quiet-4 \u2014 narrowed"
+        ]
+      },
+      {
+        "quietDoctors": 5,
+        "terminal": {
+          "rows": 34,
+          "cols": 140
+        },
+        "frameHeight": 33,
+        "statusRows": [
+          "\u25b3 quiet-0 \u2014 narrowed",
+          "\u2714 quiet-1 \u2014 clean",
+          "\u25b3 quiet-2 \u2014 narrowed",
+          "\u2714 quiet-3 \u2014 clean",
+          "\u25b3 quiet-4 \u2014 narrowed"
+        ]
+      },
+      {
+        "quietDoctors": 40,
+        "terminal": {
+          "rows": 14,
+          "cols": 80
+        },
+        "frameHeight": 13,
+        "statusRows": [
+          "\u25b3 quiet-0 \u2014 narrowed",
+          "39 more quiet doctors \u2014 19 narrowed, 20 clean"
+        ]
+      },
+      {
+        "quietDoctors": 40,
+        "terminal": {
+          "rows": 14,
+          "cols": 140
+        },
+        "frameHeight": 13,
+        "statusRows": [
+          "\u25b3 quiet-0 \u2014 narrowed",
+          "39 more quiet doctors \u2014 19 narrowed, 20 clean"
+        ]
+      },
+      {
+        "quietDoctors": 40,
+        "terminal": {
+          "rows": 10,
+          "cols": 80
+        },
+        "frameHeight": 9,
+        "statusRows": [
+          "\u25b3 quiet-0 \u2014 narrowed",
+          "\u2714 quiet-1 \u2014 clean",
+          "38 more quiet doctors \u2014 19 narrowed, 19 clean"
+        ]
+      },
+      {
+        "quietDoctors": 40,
+        "terminal": {
+          "rows": 10,
+          "cols": 140
+        },
+        "frameHeight": 9,
+        "statusRows": [
+          "\u25b3 quiet-0 \u2014 narrowed",
+          "\u2714 quiet-1 \u2014 clean",
+          "38 more quiet doctors \u2014 19 narrowed, 19 clean"
+        ]
+      },
+      {
+        "quietDoctors": 40,
+        "terminal": {
+          "rows": 8,
+          "cols": 80
+        },
+        "frameHeight": 7,
+        "statusRows": [
+          "\u25b3 quiet-0 \u2014 narrowed",
+          "39 more quiet doctors \u2014 19 narrowed, 20 clean"
+        ]
+      },
+      {
+        "quietDoctors": 40,
+        "terminal": {
+          "rows": 8,
+          "cols": 140
+        },
+        "frameHeight": 7,
+        "statusRows": [
+          "\u25b3 quiet-0 \u2014 narrowed",
+          "39 more quiet doctors \u2014 19 narrowed, 20 clean"
+        ]
+      }
+    ]
+  },
+  "review": {
+    "standardsFindings": 0,
+    "initialSpecFindings": 1,
+    "resolvedSpecFindings": 1,
+    "remainingSpecFindings": 0,
+    "reviewedCommit": "50efeab5303b622e5d00a2b48878001b0022e8d1"
+  }
+}

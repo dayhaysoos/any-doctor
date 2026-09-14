@@ -1,0 +1,88 @@
+[
+  {
+    "file": "bin/certify.d.ts",
+    "reason": "Regenerated runtime or declaration matching the corresponding TypeScript implementation.",
+    "sha256": "325128ee285d57c4d5cf0c8f6f482669a263ef1577cff4bb45161ff11dba0534"
+  },
+  {
+    "file": "bin/certify.js",
+    "reason": "Regenerated runtime or declaration matching the corresponding TypeScript implementation.",
+    "sha256": "351ef4b246bb4e9bc916d8c136e9c889db738d78e255f8cb926ad112fcdde9de"
+  },
+  {
+    "file": "bin/dashboard.d.ts",
+    "reason": "Regenerated runtime or declaration matching the corresponding TypeScript implementation.",
+    "sha256": "fabe5ad1e2ba6db82038f6c7649d7e0e066fe6430e639dd0b71c3c5cb609d84a"
+  },
+  {
+    "file": "bin/dashboard.js",
+    "reason": "Regenerated runtime or declaration matching the corresponding TypeScript implementation.",
+    "sha256": "22a7491526d4f662fe52151f240a9995f2582cdf86b488b7e918f973bdc8bf4d"
+  },
+  {
+    "file": "dev/async-analysis/check-unavailable.mjs",
+    "reason": "Use the tested candidate canonical requirements instead of inspecting explicit metadata as policy.",
+    "sha256": "10953684721da0da6003f45b833e87318f6e5e5a483f48dddac8320cc65146d5"
+  },
+  {
+    "file": "dev/doctor-sdk/check-optional-provider.mjs",
+    "reason": "Assert the recipe-only warning author fixture and location gate skip with the absent provider.",
+    "sha256": "a1f4cf0df7036bdbbafe68d94dfcfb4f0f485d9a3970ae1fbfdf35b996f7a6df"
+  },
+  {
+    "file": "dev/doctor-sdk/run-semantic-mutations.mjs",
+    "reason": "Retain seven isolated mutation controls, including unchanged-finding semantic mismatches and missing expectations.",
+    "sha256": "6fcbaaa02326253ec86276c46882a420d28ff6da65235c66b73407873e64342a"
+  },
+  {
+    "file": "docs/doctor-sdk.md",
+    "reason": "Document mandatory semantic classifications and recipe-implied location witness eligibility.",
+    "sha256": "f10b6eb613b825268aed5ea7a18b653695182f34f700e209a70e938e863462f8"
+  },
+  {
+    "file": "fixtures/doctor-sdk-recipe-only.fixtures.mjs",
+    "reason": "Supply an analysis-on native-map positive author fixture with an exact location.",
+    "sha256": "a81d187e8fe204b2439285b4733c6035260db375aa3b0ccda0b709193c4de870"
+  },
+  {
+    "file": "fixtures/doctor-sdk-recipe-only.mjs",
+    "reason": "Declare file reporting unit on the warning recipe-only check without adding redundant needs.",
+    "sha256": "bf467ee03b5de9638c14fd6b6e59ad3badadb1078d5b7959bd0386a7160ed87e"
+  },
+  {
+    "file": "src/certify.ts",
+    "reason": "Use canonical implied needs for both location policies; require and validate explicit semantic expectations for every analysis-on profile.",
+    "sha256": "eeb2d587e82531afd4f362e10121d0900adaecba964831de872d13a8be5491dc"
+  },
+  {
+    "file": "src/dashboard.ts",
+    "reason": "Budget quiet statuses, notices and finding rows together; summarize omitted doctors and compress chrome for short terminals.",
+    "sha256": "3afe213b30a95bc6adf152a707caf99a3cee2ac4bf0859c868b2966b493c3a4f"
+  },
+  {
+    "file": "test/dashboard.test.mjs",
+    "reason": "Assert fixed-height mixed frames, omitted summaries, navigation and stale-row clearing; run same suite against installed modules.",
+    "sha256": "886c1df2e341278a70fd393f49290db39ca3136147c68cafe61440d5dd56c0fd"
+  },
+  {
+    "file": "test/sdk-invariants.test.mjs",
+    "reason": "Pin both location policies, every recipe-family semantic classification and mutation rejection independently of findings.",
+    "sha256": "25f82fb7cc49d29d9f6886b418fac3e0f3cae1a41db46ce44619bbba84eb4f5f"
+  },
+  {
+    "file": "docs/evidence/doctor-sdk-foundations/50efeab-final-invariants/verification-report.md",
+    "reason": "Final bounded verification report, red failures, review disposition and limitations."
+  },
+  {
+    "file": "docs/evidence/doctor-sdk-foundations/50efeab-final-invariants/results.json",
+    "reason": "Machine-readable counts, exact package provenance, mutations and frozen integrity."
+  },
+  {
+    "file": "docs/evidence/doctor-sdk-foundations/50efeab-final-invariants/evidence.tar.gz",
+    "reason": "Compressed sanitized failure and final logs, runners, seeds, manifests and commands."
+  },
+  {
+    "file": "docs/evidence/doctor-sdk-foundations/50efeab-final-invariants/changed-files.json",
+    "reason": "Every changed file with reason and implementation SHA-256."
+  }
+]
