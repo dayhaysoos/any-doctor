@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "knownFalseAssertionsInEvaluatedCorpora": [],
+  "missedCandidates": [
+    "Timer acquisitions reached only through a renamed native alias are not independently selected by Async; the evaluated alias case is a clean released control.",
+    "Unknown array receivers and local or cross-file type aliases are not promoted to native Array evidence.",
+    "Opaque external value consumers and cross-file helper implementations remain ownership-transfer unknowns.",
+    "Forwarded, mutated, reassigned, escaped, getter-backed and dynamic request options can remain unknown instead of becoming absence findings."
+  ],
+  "visibleUnknowns": [
+    "Unsupported expression, identity, owner, cleanup, transfer and option flows return named unknown SemanticResult values.",
+    "Async opts into contextual reporting only for unsupported resource-cleanup flow; fetch and promise-array unknowns abstain.",
+    "Analysis-unavailable verification passes 5 of 5 explicit assertions and names all three narrowed Async checks."
+  ],
+  "coverageLimits": [
+    "The adapter is local and syntax-based; it is not a whole-program interpreter or type checker.",
+    "Default diagnostic file selection and test exclusions still apply outside explicit verification sandboxes.",
+    "Challenge profiles test common mechanics but do not replace author fixtures, held-out labels or real-source review.",
+    "A returned or passed value establishes transfer, not downstream completion.",
+    "A present option establishes code evidence, not runtime cancellation or product intent.",
+    "Frozen Sift contains no evaluated unawaited-async-map finding, so that rule has counterexample and synthetic coverage but no retained Sift positive."
+  ],
+  "performanceLimit": "The final frozen-Sift scan is about 5.4x slower in wall time than baseline because recipe questions use synchronous per-occurrence host-channel round trips."
+}

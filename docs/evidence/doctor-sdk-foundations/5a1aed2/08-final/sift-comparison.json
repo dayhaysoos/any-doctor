@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "baselineFindings": 9,
+  "finalLocalFindings": 9,
+  "finalPackedFindings": 9,
+  "retained": [
+    "fetch-calls-without-abortsignal|convex/lib/emailClient.ts|30|27",
+    "fetch-calls-without-abortsignal|convex/lib/langfuse.ts|254|25",
+    "fetch-calls-without-abortsignal|extensions/sift-chrome/background.ts|89|25",
+    "fetch-calls-without-abortsignal|extensions/sift-chrome/src/api/client.ts|69|25",
+    "fetch-calls-without-abortsignal|src/components/EmailSignupForm.tsx|56|29",
+    "fetch-calls-without-abortsignal|src/routes/api/kit/subscribe.ts|146|39",
+    "fetch-calls-without-abortsignal|src/routes/api/kit/subscribe.ts|176|38",
+    "fetch-calls-without-abortsignal|src/routes/api/kit/subscribe.ts|199|37",
+    "uncleared-settimeout-in-effect|src/lib/theme.tsx|49|2"
+  ],
+  "removed": [],
+  "added": [],
+  "adjudication": {"reviewCandidate": 9, "confirmedCleanup": 0, "falsePositive": 0, "unknown": 0},
+  "verdict": "No real-source finding changed. All retained findings remain contextual review candidates under the source adjudications copied beside this comparison."
+}

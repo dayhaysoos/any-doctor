@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "target": "/tmp/any-doctor-frozen-sift",
+  "files": 671,
+  "baseline": {"analysisDurationMs": 4871, "wallSeconds": 5.88, "maximumResidentBytes": 651821056, "peakFootprintBytes": 773349256, "tarballBytes": 5162895},
+  "finalLocal": {"analysisDurationMs": 31580, "wallSeconds": 31.95, "maximumResidentBytes": 652541952, "peakFootprintBytes": 977117408, "tarballBytes": 5568622},
+  "finalPacked": {"analysisDurationMs": 31956, "wallSeconds": 32.33, "maximumResidentBytes": 659046400, "peakFootprintBytes": 1008380192, "tarballBytes": 5568622},
+  "localVsBaseline": {"analysisDurationPercent": 548.3, "wallPercent": 443.4, "maximumResidentPercent": 0.1, "peakFootprintPercent": 26.3, "tarballPercent": 7.9, "tarballBytes": 405727},
+  "packedVsBaseline": {"analysisDurationPercent": 556.0, "wallPercent": 449.8, "maximumResidentPercent": 1.1, "peakFootprintPercent": 30.4},
+  "interpretation": "The bounded semantics preserve findings but currently pay synchronous per-occurrence host-channel overhead. Peak RSS is nearly flat; macOS peak footprint and wall time increased. The tarball growth includes the accumulated checkpoint evidence because docs are shipped by the current package allowlist."
+}

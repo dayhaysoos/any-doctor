@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "verdict": "baseline and final runner bytes match",
+  "files": [
+    {"file": "original/challenges.py", "baselineSha256": "fd58fb6d65f63b5f2b5b734c50ead733c61af3c20df2136f531e9e16f968eae1", "finalSha256": "fd58fb6d65f63b5f2b5b734c50ead733c61af3c20df2136f531e9e16f968eae1"},
+    {"file": "original/degraded.py", "baselineSha256": "6de51a76ddee2c21a58622fada0d1dfbf4ce70d8edc53e259bd1f01f6f13ea37", "finalSha256": "6de51a76ddee2c21a58622fada0d1dfbf4ce70d8edc53e259bd1f01f6f13ea37"},
+    {"file": "original/degraded-identifiers.py", "baselineSha256": "34ad03f69c90444cd33c8bf3fd9e71a193cb3a0dd86c3f1f03014bd7aef66664", "finalSha256": "34ad03f69c90444cd33c8bf3fd9e71a193cb3a0dd86c3f1f03014bd7aef66664"},
+    {"file": "fresh/fresh.py", "baselineSha256": "e9193f9cb3de5f66fb95b97ee752b0f258f278545e0aefc9fd0aa7ece21c9819", "finalSha256": "e9193f9cb3de5f66fb95b97ee752b0f258f278545e0aefc9fd0aa7ece21c9819"}
+  ]
+}

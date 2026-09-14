@@ -1,0 +1,8 @@
+{
+  "expectedFiles": 1530,
+  "matched": 1530,
+  "missing": [],
+  "changed": [],
+  "manifestDigest": "336f413f63936775224d5f9c8c1f5ba9abe9a465c9ef300fba93fac3657797f2",
+  "passed": true
+}

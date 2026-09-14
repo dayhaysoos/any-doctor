@@ -199,7 +199,7 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
         setAnalysisDisabled(fixture.analysis==='off');
         const result=await inSandbox(fixture.seed,tmp=>runOnce(tmp,mod,{includeTests:true}));
         const diff=contract.compareFindings(fixture.expected,result.findings);
-        results.push({name,ok:!diff.missing.length&&!diff.unexpected.length,...diff,...(fixture.analysis==='off'?{skipped:'analysis unavailable path exercised; expected silence preserved'}:{})});
+        results.push({name,ok:!diff.missing.length&&!diff.unexpected.length,...diff});
       }catch(e){results.push(errorRow(name,e));}
       finally{setAnalysisDisabled(false);}
     }

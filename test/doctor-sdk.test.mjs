@@ -122,7 +122,7 @@ test('declared recipe profiles are named in JSON including unavailable paths',()
   const repo=fileURLToPath(new URL('../',import.meta.url));
   const run=spawnSync(process.execPath,[`${repo}bin/cli.js`,'verify',`${repo}fixtures/doctor-sdk-reference.mjs`,'--format','json'],{cwd:repo,encoding:'utf8',timeout:30000});
   assert.equal(run.status,0,run.stdout+run.stderr);const result=JSON.parse(run.stdout),profiles=result.results.filter(item=>item.name.startsWith('challenge profile:'));
-  assert.equal(profiles.length,19);assert.equal(profiles.filter(item=>!item.ok).length,0);assert.equal(profiles.filter(item=>item.skipped?.includes('analysis unavailable')).length,3);
+  assert.equal(profiles.length,19);assert.equal(profiles.filter(item=>!item.ok).length,0);assert.equal(profiles.filter(item=>item.skipped).length,0);assert.equal(profiles.filter(item=>item.name.endsWith('/ analysis unavailable')&&item.ok).length,3);
 });
 
 test('recipe profiles reject identity, unknown-as-absence and suppression mutations',()=>{

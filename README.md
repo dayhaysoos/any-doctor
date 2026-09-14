@@ -123,6 +123,9 @@ npx any-doctor@latest run --all --fail-on warning --base origin/main
 
 ## Docs
 
+- [Doctor SDK semantic queries and recipes](docs/doctor-sdk.md) — confined,
+  evidence-bearing analysis and automatic recipe challenge profiles
+
 | Doc | What it holds |
 |---|---|
 | [skill/any-doctor.skill.md](skill/any-doctor.skill.md) | The authoring contract — what your agent reads to write doctors |
