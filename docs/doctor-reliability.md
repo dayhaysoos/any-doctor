@@ -3,6 +3,12 @@
 A passing fixture suite establishes agreement on its cases. It does not establish
 precision on arbitrary repositories. Treat every check as a bounded claim.
 
+The planned [Doctor SDK foundations](plans/doctor-sdk/design.md) move recurring
+identity, value-flow, resource and option mechanics into host-owned semantic
+queries, then certify reusable recipes with shared challenge profiles. Until that
+plan is implemented, its terms describe intended behavior rather than available
+authoring features.
+
 The [vision](vision.md) includes project-specific policies and contextual review
 candidates alongside defects. Reliability means the evidence supports the stated
 interpretation; it does not require removing every useful judgment call from the

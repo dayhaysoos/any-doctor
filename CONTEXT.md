@@ -163,6 +163,37 @@ The interface shared by doctor programs, the runner, the report, the
 fixture harness, and the generator prompt. The single place where the
 shape of ctx, meta, findings, and the runner protocol is defined.
 
+## Doctor SDK (planned)
+
+The deeper semantic portion of the DoctorCtx interface: host-owned queries for
+identity, value disposition, resource lifetime and option presence. It hides the
+parser/scope/type adapters and returns bounded evidence plus an explicit known or
+unknown result. It is not initially an importable package; Confinement still gives
+doctor programs one route to product capabilities through `ctx`. See the
+[Doctor SDK design](docs/plans/doctor-sdk/design.md).
+
+## Semantic result (planned)
+
+The answer from one Doctor SDK query: a known value with supporting evidence, or
+an unknown result with a named reason. Unknown never means absent, discarded,
+unreleased or safe. A check that cannot support its claim from a known result
+abstains and exposes narrowed coverage.
+
+## Check recipe (planned)
+
+A host-owned composition of Doctor SDK queries for a recurring check family, such
+as an unhandled value, a resource without release, or a required/recommended call
+option. The recipe owns recurring mechanics, uncertainty, evidence and challenge
+selection; the doctor owns technology-specific selectors, meaning and copy.
+
+## Challenge profile (planned)
+
+A maintained certification corpus selected by a check recipe or declared semantic
+capability. It pairs genuine positives with lookalikes, shadowing, aliases,
+transfers, unknown cases, positive neighbors, unavailable analysis and exact
+occurrence witnesses. It supplements author fixtures and independent evaluation;
+it does not replace either.
+
 ## DoctorCtx (ctx)
 
 The capability boundary a doctor program is expected to use: read-only,

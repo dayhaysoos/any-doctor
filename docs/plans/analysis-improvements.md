@@ -2,7 +2,7 @@
 
 Status: A1 + A2 (the first delivery below) is implemented on branch
 `implement/analysis-a1-a2` — see D30 (including its identity-repair
-amendment) in [decisions](../../decisions.md) for the accepted choices,
+amendment) in [decisions](../decisions.md) for the accepted choices,
 evidence, and remaining limitations. An adversarial review's four findings
 (literal-preserving normalization, execution-bound provenance/evidence,
 evidence ranges for multiline expressions, linear duplicate matching) are
@@ -185,6 +185,11 @@ changing that flag while buffering/parsing the full output does not solve the
 pipeline. A1/A2 do not implicitly authorize rewriting the entire engine.
 
 ## Later improvements — independently scoped
+
+The [Doctor SDK foundations](doctor-sdk/design.md) turn the bounded value-flow,
+resource, option and uncertainty work below into an ordered implementation for
+reliable doctor authoring. That plan is the execution source when work targets the
+SDK or Async migration; this table remains the broader capability map.
 
 | Capability | Concrete payoff | Required limits/evidence |
 | --- | --- | --- |
