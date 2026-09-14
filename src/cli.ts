@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from "url";
 import { DOCTOR_FILE_RE } from "./contract.js";
 import { renderJson, renderReport, renderVerifyResult, reportDiffOf, unsafeSkipLine } from "./report.js";
 import { readKeyFor, resolveFinding, RunOutcome } from "./contract.js";
+import { buildRunCount, sendRunCount, telemetryEnabled } from "./telemetry.js";
 import { CohortSpec, runCohort } from "./cohort.js";
 import { countsOfSeverities, FailOn, gateVerdict, GateVerdict, isFailOn } from "./gate.js";
 import { DiffResult, runDiff } from "./diff.js";
@@ -479,6 +480,14 @@ async function cmdRun(args: string[]): Promise<number> {
   for (const c of ran.crashed) fail(c.detail);
   const outcome: RunOutcome = ran;
   const summary = deriveSummary(outcome);
+
+  // Anonymous run counts: one POST after the doctors finish — bundled
+  // ids plus a custom count, nothing else (see telemetry.ts). Never
+  // awaited, never fatal, off by env.
+  if (telemetryEnabled()) {
+    const counts = buildRunCount(doctors);
+    if (counts) void sendRunCount(counts);
+  }
 
   // Diff mode exists iff --base was passed AND the HEAD scan is whole:
   // a crashed HEAD doctor contributes no findings, so its base findings
@@ -1037,6 +1046,7 @@ function usage(): void {
   console.log(dim("doctors live in ./doctors/ (repo), ~/.any-doctor/doctors/ (global), and the bundled pack (lowest priority)."));
   console.log(dim("generation delegates to your installed agent — run and verify never touch a model."));
   console.log(dim("agents: 'any-doctor help agents' prints the machine interface (JSON scan, decide, decisions)."));
+  console.log(dim("telemetry: one anonymous count per run (bundled doctor ids only) — ANY_DOCTOR_NO_TELEMETRY=1 to turn it off."));
 }
 
 export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {

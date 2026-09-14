@@ -1,0 +1,14 @@
+{
+  "name": "any-doctor-metrics",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-01",
+  // Create the database once (`wrangler d1 create any-doctor-metrics`),
+  // paste its id here, apply schema.sql, then `wrangler deploy`.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "any-doctor-metrics",
+      "database_id": "CHANGE_ME"
+    }
+  ]
+}

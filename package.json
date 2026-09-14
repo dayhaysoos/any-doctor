@@ -17,7 +17,7 @@
     "build": "tsc -p tsconfig.json && node -e \"const fs=require('fs');['bin/cli.js','bin/doctor-loader.mjs'].forEach(f=>fs.chmodSync(f,0o755))\"",
     "prepublishOnly": "npm run build && npm test",
     "pretest": "npm run build",
-    "test": "node --test"
+    "test": "ANY_DOCTOR_NO_TELEMETRY=1 node --test"
   },
   "files": [
     "bin",
