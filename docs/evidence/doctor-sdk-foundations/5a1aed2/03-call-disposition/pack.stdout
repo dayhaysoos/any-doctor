@@ -1,0 +1,2261 @@
+[
+  {
+    "id": "any-doctor@0.1.2",
+    "name": "any-doctor",
+    "version": "0.1.2",
+    "size": 5317610,
+    "unpackedSize": 9273947,
+    "shasum": "2a6c71f668c02154750fbfb7eff85b3daf4115a7",
+    "integrity": "sha512-PWWN3h9dmRIHwoiBULFzT4IY8tyzB1p75YuJuRs4D4kpVP2LPFlODZbbNFPpXubH8vVI1t5A9bbH4gt5lJvErQ==",
+    "filename": "any-doctor-0.1.2.tgz",
+    "files": [
+      {
+        "path": "CONTEXT.md",
+        "size": 21944,
+        "mode": 420
+      },
+      {
+        "path": "README.md",
+        "size": 7538,
+        "mode": 420
+      },
+      {
+        "path": "bin/analysis-host.d.ts",
+        "size": 1259,
+        "mode": 420
+      },
+      {
+        "path": "bin/analysis-host.js",
+        "size": 7403,
+        "mode": 420
+      },
+      {
+        "path": "bin/analysis.d.ts",
+        "size": 1336,
+        "mode": 420
+      },
+      {
+        "path": "bin/analysis.js",
+        "size": 22418,
+        "mode": 420
+      },
+      {
+        "path": "bin/call-structure.d.ts",
+        "size": 449,
+        "mode": 420
+      },
+      {
+        "path": "bin/call-structure.js",
+        "size": 11830,
+        "mode": 420
+      },
+      {
+        "path": "bin/capabilities.d.ts",
+        "size": 545,
+        "mode": 420
+      },
+      {
+        "path": "bin/capabilities.js",
+        "size": 4931,
+        "mode": 420
+      },
+      {
+        "path": "bin/certify.d.ts",
+        "size": 657,
+        "mode": 420
+      },
+      {
+        "path": "bin/certify.js",
+        "size": 14426,
+        "mode": 420
+      },
+      {
+        "path": "bin/cli.d.ts",
+        "size": 331,
+        "mode": 420
+      },
+      {
+        "path": "bin/cli.js",
+        "size": 51002,
+        "mode": 493
+      },
+      {
+        "path": "bin/clipboard.d.ts",
+        "size": 64,
+        "mode": 420
+      },
+      {
+        "path": "bin/clipboard.js",
+        "size": 341,
+        "mode": 420
+      },
+      {
+        "path": "bin/cohort.d.ts",
+        "size": 595,
+        "mode": 420
+      },
+      {
+        "path": "bin/cohort.js",
+        "size": 2143,
+        "mode": 420
+      },
+      {
+        "path": "bin/contract.d.ts",
+        "size": 15671,
+        "mode": 420
+      },
+      {
+        "path": "bin/contract.js",
+        "size": 10203,
+        "mode": 420
+      },
+      {
+        "path": "bin/dashboard.d.ts",
+        "size": 3152,
+        "mode": 420
+      },
+      {
+        "path": "bin/dashboard.js",
+        "size": 42870,
+        "mode": 420
+      },
+      {
+        "path": "bin/diff.d.ts",
+        "size": 940,
+        "mode": 420
+      },
+      {
+        "path": "bin/diff.js",
+        "size": 7762,
+        "mode": 420
+      },
+      {
+        "path": "bin/discover.d.ts",
+        "size": 1060,
+        "mode": 420
+      },
+      {
+        "path": "bin/discover.js",
+        "size": 5827,
+        "mode": 420
+      },
+      {
+        "path": "bin/doctor-loader.d.mts",
+        "size": 48,
+        "mode": 420
+      },
+      {
+        "path": "bin/doctor-loader.mjs",
+        "size": 5179,
+        "mode": 493
+      },
+      {
+        "path": "bin/doctor-sdk.d.ts",
+        "size": 896,
+        "mode": 420
+      },
+      {
+        "path": "bin/doctor-sdk.js",
+        "size": 17583,
+        "mode": 420
+      },
+      {
+        "path": "bin/doctor-tree.d.ts",
+        "size": 1560,
+        "mode": 420
+      },
+      {
+        "path": "bin/doctor-tree.js",
+        "size": 4658,
+        "mode": 420
+      },
+      {
+        "path": "bin/engine.d.ts",
+        "size": 1161,
+        "mode": 420
+      },
+      {
+        "path": "bin/engine.js",
+        "size": 8739,
+        "mode": 420
+      },
+      {
+        "path": "bin/file-scope.d.ts",
+        "size": 637,
+        "mode": 420
+      },
+      {
+        "path": "bin/file-scope.js",
+        "size": 3007,
+        "mode": 420
+      },
+      {
+        "path": "bin/finding-state.d.ts",
+        "size": 2460,
+        "mode": 420
+      },
+      {
+        "path": "bin/finding-state.js",
+        "size": 9674,
+        "mode": 420
+      },
+      {
+        "path": "bin/function-structure.d.ts",
+        "size": 398,
+        "mode": 420
+      },
+      {
+        "path": "bin/function-structure.js",
+        "size": 3485,
+        "mode": 420
+      },
+      {
+        "path": "bin/fuzzy.d.ts",
+        "size": 174,
+        "mode": 420
+      },
+      {
+        "path": "bin/fuzzy.js",
+        "size": 910,
+        "mode": 420
+      },
+      {
+        "path": "bin/gate.d.ts",
+        "size": 566,
+        "mode": 420
+      },
+      {
+        "path": "bin/gate.js",
+        "size": 1404,
+        "mode": 420
+      },
+      {
+        "path": "bin/identity.d.ts",
+        "size": 2459,
+        "mode": 420
+      },
+      {
+        "path": "bin/identity.js",
+        "size": 22901,
+        "mode": 420
+      },
+      {
+        "path": "bin/import-guard.mjs",
+        "size": 1592,
+        "mode": 420
+      },
+      {
+        "path": "bin/keys.d.ts",
+        "size": 140,
+        "mode": 420
+      },
+      {
+        "path": "bin/keys.js",
+        "size": 2378,
+        "mode": 420
+      },
+      {
+        "path": "bin/mask.d.ts",
+        "size": 61,
+        "mode": 420
+      },
+      {
+        "path": "bin/mask.js",
+        "size": 5424,
+        "mode": 420
+      },
+      {
+        "path": "bin/palette.d.ts",
+        "size": 672,
+        "mode": 420
+      },
+      {
+        "path": "bin/palette.js",
+        "size": 1453,
+        "mode": 420
+      },
+      {
+        "path": "bin/picker.d.ts",
+        "size": 803,
+        "mode": 420
+      },
+      {
+        "path": "bin/picker.js",
+        "size": 6479,
+        "mode": 420
+      },
+      {
+        "path": "bin/project-consumers.d.ts",
+        "size": 839,
+        "mode": 420
+      },
+      {
+        "path": "bin/project-consumers.js",
+        "size": 54845,
+        "mode": 420
+      },
+      {
+        "path": "bin/prompts.d.ts",
+        "size": 402,
+        "mode": 420
+      },
+      {
+        "path": "bin/prompts.js",
+        "size": 4963,
+        "mode": 420
+      },
+      {
+        "path": "bin/report.d.ts",
+        "size": 1894,
+        "mode": 420
+      },
+      {
+        "path": "bin/report.js",
+        "size": 16810,
+        "mode": 420
+      },
+      {
+        "path": "bin/review.d.ts",
+        "size": 1752,
+        "mode": 420
+      },
+      {
+        "path": "bin/review.js",
+        "size": 5927,
+        "mode": 420
+      },
+      {
+        "path": "bin/runner.d.ts",
+        "size": 3244,
+        "mode": 420
+      },
+      {
+        "path": "bin/runner.js",
+        "size": 15695,
+        "mode": 420
+      },
+      {
+        "path": "bin/scan-capture.d.ts",
+        "size": 1001,
+        "mode": 420
+      },
+      {
+        "path": "bin/scan-capture.js",
+        "size": 3534,
+        "mode": 420
+      },
+      {
+        "path": "bin/score.d.ts",
+        "size": 1015,
+        "mode": 420
+      },
+      {
+        "path": "bin/score.js",
+        "size": 4088,
+        "mode": 420
+      },
+      {
+        "path": "bin/sdk.d.ts",
+        "size": 469,
+        "mode": 420
+      },
+      {
+        "path": "bin/sdk.js",
+        "size": 20430,
+        "mode": 420
+      },
+      {
+        "path": "bin/search-host.d.ts",
+        "size": 222,
+        "mode": 420
+      },
+      {
+        "path": "bin/search-host.js",
+        "size": 3260,
+        "mode": 420
+      },
+      {
+        "path": "bin/select.d.ts",
+        "size": 854,
+        "mode": 420
+      },
+      {
+        "path": "bin/select.js",
+        "size": 2145,
+        "mode": 420
+      },
+      {
+        "path": "bin/spinner.d.ts",
+        "size": 617,
+        "mode": 420
+      },
+      {
+        "path": "bin/spinner.js",
+        "size": 2915,
+        "mode": 420
+      },
+      {
+        "path": "bin/summary.d.ts",
+        "size": 874,
+        "mode": 420
+      },
+      {
+        "path": "bin/summary.js",
+        "size": 5364,
+        "mode": 420
+      },
+      {
+        "path": "bin/tty.d.ts",
+        "size": 1296,
+        "mode": 420
+      },
+      {
+        "path": "bin/tty.js",
+        "size": 3983,
+        "mode": 420
+      },
+      {
+        "path": "bin/value-flow.d.ts",
+        "size": 2028,
+        "mode": 420
+      },
+      {
+        "path": "bin/value-flow.js",
+        "size": 8435,
+        "mode": 420
+      },
+      {
+        "path": "docs/call-structure.md",
+        "size": 3580,
+        "mode": 420
+      },
+      {
+        "path": "docs/decisions.md",
+        "size": 69036,
+        "mode": 420
+      },
+      {
+        "path": "docs/doctor-reliability.md",
+        "size": 7651,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/counts.json",
+        "size": 2979,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/fixture-contract-changes.json",
+        "size": 7171,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/frozen-integrity.json",
+        "size": 191,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/handoff-integrity.json",
+        "size": 635,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/local-limits.json",
+        "size": 3902,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/package-verification.json",
+        "size": 22381,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/packed-limits.json",
+        "size": 4079,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/platform-proof.json",
+        "size": 169,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/preservation.json",
+        "size": 5853,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/raw-evidence.tar.gz",
+        "size": 926525,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/sift-source-review.json",
+        "size": 40922,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/source-gates.json",
+        "size": 4278,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/status.txt",
+        "size": 1052,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/verification-report.md",
+        "size": 17324,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/verification.json",
+        "size": 8820,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/async-modernization/working-files.json",
+        "size": 31568,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/baseline-package-lock.json",
+        "size": 24459,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/bundled-counts.json",
+        "size": 443,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/bundled-verify.txt",
+        "size": 16629,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/case-results.md",
+        "size": 3243,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/cases-after.json",
+        "size": 36417,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/cases-before.json",
+        "size": 31967,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/design.md",
+        "size": 2232,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/full-tests.txt",
+        "size": 37201,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/implementation-contract.md",
+        "size": 15997,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/internal-review.md",
+        "size": 2006,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/accepted-local-tests.log",
+        "size": 43811,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/before-tests.log",
+        "size": 3873,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/before-wrapped-mutation.log",
+        "size": 1217,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/cache-tests.log",
+        "size": 262,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/candidate-scopes.json",
+        "size": 69259,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/candidate-tests.log",
+        "size": 44036,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/candidate-verify.log",
+        "size": 16629,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/equivalent-tests.log",
+        "size": 3905,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/frozen-comparison.json",
+        "size": 294,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/independent-before-after.json",
+        "size": 16300,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/labeled-summary.json",
+        "size": 44114,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/loader-repair.diff",
+        "size": 12838,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/preservation.json",
+        "size": 584,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/raw-evidence.tar.gz",
+        "size": 950133,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/resolve-controls.log",
+        "size": 266,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/runtime-witnesses.json",
+        "size": 791,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/status.txt",
+        "size": 1317,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/verification-report.md",
+        "size": 10253,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/verification.json",
+        "size": 19114,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/loader-classification/working-files.json",
+        "size": 23486,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/new-export-reference-search.txt",
+        "size": 1272,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/performance.json",
+        "size": 4644,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/before-reexport.log",
+        "size": 1233,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/before-regressions.log",
+        "size": 6146,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/frozen-comparison.json",
+        "size": 475,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/independent-before-after.json",
+        "size": 10939,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/integrity.json",
+        "size": 634,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/labeled-local-summary.json",
+        "size": 22378,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/local-verify-all.log",
+        "size": 16629,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/npm-test.log",
+        "size": 39611,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/preservation-check.json",
+        "size": 201,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/raw-evidence.tar.gz",
+        "size": 340311,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/repair-source.diff",
+        "size": 5866,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/repair-tests.log",
+        "size": 2423,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/status-after.txt",
+        "size": 1196,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/verification-report.md",
+        "size": 8950,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/verification.json",
+        "size": 17468,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/repairs/working-files.json",
+        "size": 23007,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/before-after.json",
+        "size": 12441,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/frozen-after.json",
+        "size": 155,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/frozen-before.json",
+        "size": 154,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/frozen-comparison.json",
+        "size": 356,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/local-result-flow-scopes.json",
+        "size": 21672,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/package-verification.json",
+        "size": 20554,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/packed-result-flow-scopes.json",
+        "size": 21730,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/preservation.json",
+        "size": 632,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/raw-evidence.tar.gz",
+        "size": 427171,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/result-flow-repair.diff",
+        "size": 5861,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/seed-preservation.json",
+        "size": 2102,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/status.txt",
+        "size": 1365,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/verification-counts.json",
+        "size": 1597,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/verification-report.md",
+        "size": 11455,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/result-flow/working-files.json",
+        "size": 23988,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/sift-after.json",
+        "size": 440169,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/sift-before.json",
+        "size": 88675,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/sift-classifications.json",
+        "size": 359910,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/sift-manifest.json",
+        "size": 273354,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/slop-verify-before.txt",
+        "size": 3103,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/consumer-analysis/verification-report.md",
+        "size": 11586,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/counts.json",
+        "size": 2171,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/directive-contract.json",
+        "size": 250,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/framework-proof.json",
+        "size": 1067,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/frozen-after.json",
+        "size": 155,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/frozen-before.json",
+        "size": 122,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/frozen-comparison.json",
+        "size": 464,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/handoff-integrity.json",
+        "size": 501,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/legacy-fixture-disagreements.json",
+        "size": 6320,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/local-limitations.json",
+        "size": 3311,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/package-verification.json",
+        "size": 23966,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/packed-limitations.json",
+        "size": 3573,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/preservation.json",
+        "size": 605,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/raw-evidence.tar.gz",
+        "size": 1778025,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/source-review.json",
+        "size": 306288,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/status.txt",
+        "size": 686,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/verification-report.md",
+        "size": 16886,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/verification.json",
+        "size": 7699,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/convex-modernization/working-files.json",
+        "size": 26450,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/commands.json",
+        "size": 2754,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-expectations.json",
+        "size": 6105,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/await-array-only.ts",
+        "size": 85,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/combiner-spread-arguments.ts",
+        "size": 83,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/fetch-prototype-null.ts",
+        "size": 57,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/fetch-prototype-own-null.ts",
+        "size": 103,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/fetch-prototype-signal.ts",
+        "size": 91,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/fetch-request-copy.ts",
+        "size": 137,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/helper-void-array.ts",
+        "size": 113,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/push-spread-consumption.ts",
+        "size": 120,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/return-await-array.ts",
+        "size": 92,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/return-await-inline.ts",
+        "size": 74,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/return-choice-array.ts",
+        "size": 97,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/return-length-array.ts",
+        "size": 87,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/return-void-array.ts",
+        "size": 85,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/spread-helper-consumption.ts",
+        "size": 134,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/spread-opaque-consumption.ts",
+        "size": 71,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/timer-cleanup-call-parameter.ts",
+        "size": 206,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/timer-cleanup-factory.ts",
+        "size": 227,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/timer-guarded-callback.ts",
+        "size": 209,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/timer-return-await-cleanup.ts",
+        "size": 184,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh-seeds/yield-array.ts",
+        "size": 80,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/fresh.py",
+        "size": 5038,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/local-fresh-results.json",
+        "size": 23725,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/local-fresh-scan.json",
+        "size": 18484,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/packed-fresh-results.json",
+        "size": 23726,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/fresh/packed-fresh-scan.json",
+        "size": 18484,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/frozen-integrity.json",
+        "size": 231,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/install.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/install.stdout",
+        "size": 25,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/local-sift.json",
+        "size": 6840,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/local-sift.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/local-verify-all.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/local-verify-all.stdout",
+        "size": 17374,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/manifest.json",
+        "size": 95099,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/npm-test.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/npm-test.stdout",
+        "size": 46937,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/challenge-expectations.json",
+        "size": 14949,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/challenges.py",
+        "size": 11416,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/degraded-identifiers.py",
+        "size": 1658,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/degraded.py",
+        "size": 1576,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/local-challenges-results.json",
+        "size": 26102,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/local-challenges-scan.json",
+        "size": 16072,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/local-challenges.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/packed-challenges-results.json",
+        "size": 26193,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/packed-challenges-scan.json",
+        "size": 16072,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/packed-challenges.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-comment-before-signal.ts",
+        "size": 101,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-computed-signal.ts",
+        "size": 86,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-forwarded-init.ts",
+        "size": 74,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-global-member.ts",
+        "size": 44,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-inline-request.ts",
+        "size": 95,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-inline-signal.ts",
+        "size": 82,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-local-lookalike.ts",
+        "size": 46,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-nested-signal.ts",
+        "size": 59,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-no-call-comment.ts",
+        "size": 64,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-no-options.ts",
+        "size": 33,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-options-variable.ts",
+        "size": 105,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-overridden-signal.ts",
+        "size": 104,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-parameter-lookalike.ts",
+        "size": 61,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-request-object.ts",
+        "size": 118,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-shorthand-signal.ts",
+        "size": 85,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-signal-null.ts",
+        "size": 47,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-signal-undefined.ts",
+        "size": 52,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/fetch-spread-options.ts",
+        "size": 110,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-aliased-consumption.ts",
+        "size": 83,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-async-function-callback.ts",
+        "size": 51,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-await-array.ts",
+        "size": 28,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-await-object-containing-element.ts",
+        "size": 76,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-bare-discard.ts",
+        "size": 22,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-combined.ts",
+        "size": 60,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-combiner-unrelated-callback.ts",
+        "size": 65,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-const-enclosing-function.ts",
+        "size": 69,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-dropped-binding.ts",
+        "size": 34,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-filtered-chain-discard.ts",
+        "size": 38,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-for-await.ts",
+        "size": 93,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-helper-consumption.ts",
+        "size": 117,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-inline-combiner.ts",
+        "size": 41,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-length-in-combiner.ts",
+        "size": 69,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-local-object-method.ts",
+        "size": 91,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-location.ts",
+        "size": 35,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-nested-array-combiner.ts",
+        "size": 62,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-per-element-await.ts",
+        "size": 76,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-returned-binding.ts",
+        "size": 71,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-returned-direct.ts",
+        "size": 49,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-shadowed-combiner.ts",
+        "size": 95,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-spread-into-combiner.ts",
+        "size": 65,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/map-unrelated-scope-combiner.ts",
+        "size": 97,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-alias-effect.ts",
+        "size": 84,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-cleanup.ts",
+        "size": 120,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-concise-effect.ts",
+        "size": 79,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-globalthis-cleanup.ts",
+        "size": 142,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-helper-cleanup.ts",
+        "size": 153,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-local-clear-lookalike.ts",
+        "size": 147,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-local-effect-lookalike.ts",
+        "size": 82,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-local-timer-lookalike.ts",
+        "size": 103,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-namespace-effect.ts",
+        "size": 82,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-outside-effect.ts",
+        "size": 35,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-positive.ts",
+        "size": 89,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-shadowed-handle.ts",
+        "size": 137,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-unused-clear-helper.ts",
+        "size": 126,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-window-cleanup.ts",
+        "size": 134,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timer-wrong-handle.ts",
+        "size": 156,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/original/seeds/timers-same-line.ts",
+        "size": 100,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/pack.json",
+        "size": 46456,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/pack.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/packed-sift.json",
+        "size": 6840,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/packed-sift.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/packed-verify-all.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/packed-verify-all.stdout",
+        "size": 17374,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/performance.stderr",
+        "size": 777,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/sift-source-adjudication.json",
+        "size": 8742,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/00-baseline/verification-report.md",
+        "size": 2829,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/commands.json",
+        "size": 3572,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/frozen-integrity.json",
+        "size": 186,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/install.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/install.stdout",
+        "size": 25,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/local-fresh.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/local-fresh.stdout",
+        "size": 599,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/local-original.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/local-original.stdout",
+        "size": 563,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/local-sift.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/local-sift.stdout",
+        "size": 6841,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/local-unavailable.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/local-unavailable.stdout",
+        "size": 321,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/local-verify-all.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/local-verify-all.stdout",
+        "size": 17374,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/npm-test.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/npm-test.stdout",
+        "size": 47138,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/pack.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/pack.stdout",
+        "size": 49648,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/packed-fresh.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/packed-fresh.stdout",
+        "size": 600,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/packed-original.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/packed-original.stdout",
+        "size": 564,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/packed-sift.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/packed-sift.stdout",
+        "size": 6841,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/packed-unavailable.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/packed-unavailable.stdout",
+        "size": 321,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/packed-verify-all.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/packed-verify-all.stdout",
+        "size": 17374,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/results/local-challenges-results.json",
+        "size": 26055,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/results/local-challenges-scan.json",
+        "size": 16025,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/results/local-fresh-results.json",
+        "size": 23725,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/results/local-fresh-scan.json",
+        "size": 18440,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/results/local-unavailable.json",
+        "size": 470,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/results/packed-challenges-results.json",
+        "size": 26146,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/results/packed-challenges-scan.json",
+        "size": 16025,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/results/packed-fresh-results.json",
+        "size": 23726,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/results/packed-fresh-scan.json",
+        "size": 18440,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/results/packed-unavailable.json",
+        "size": 470,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/summary.json",
+        "size": 43766,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/01-semantic-result/verification-report.md",
+        "size": 2188,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/commands.json",
+        "size": 3572,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/frozen-integrity.json",
+        "size": 186,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/install.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/install.stdout",
+        "size": 25,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/local-fresh.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/local-fresh.stdout",
+        "size": 404,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/local-original.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/local-original.stdout",
+        "size": 563,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/local-sift.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/local-sift.stdout",
+        "size": 6841,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/local-unavailable.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/local-unavailable.stdout",
+        "size": 321,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/local-verify-all.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/local-verify-all.stdout",
+        "size": 17374,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/npm-test.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/npm-test.stdout",
+        "size": 47229,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/pack.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/pack.stdout",
+        "size": 56231,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/packed-fresh.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/packed-fresh.stdout",
+        "size": 405,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/packed-original.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/packed-original.stdout",
+        "size": 564,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/packed-sift.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/packed-sift.stdout",
+        "size": 6841,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/packed-unavailable.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/packed-unavailable.stdout",
+        "size": 321,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/packed-verify-all.stderr",
+        "size": 0,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/packed-verify-all.stdout",
+        "size": 17374,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/results/local-challenges-results.json",
+        "size": 26055,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/results/local-challenges-scan.json",
+        "size": 16025,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/results/local-fresh-results.json",
+        "size": 22305,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/results/local-fresh-scan.json",
+        "size": 17092,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/results/local-unavailable.json",
+        "size": 470,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/results/packed-challenges-results.json",
+        "size": 26146,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/results/packed-challenges-scan.json",
+        "size": 16025,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/results/packed-fresh-results.json",
+        "size": 22306,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/results/packed-fresh-scan.json",
+        "size": 17092,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/results/packed-unavailable.json",
+        "size": 470,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/summary.json",
+        "size": 43522,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/doctor-sdk-foundations/5a1aed2/02-expression-disposition/verification-report.md",
+        "size": 1932,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/repair-after-0.0.7/convex-verify.txt",
+        "size": 6044,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/repair-after-0.0.7/sift-convex-packed.json",
+        "size": 18197,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/repair-after-0.0.7/sift-convex-published.json",
+        "size": 30749,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/repair-after-0.0.7/sift-slop-packed.json",
+        "size": 44594,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/repair-after-0.0.7/sift-slop-published.json",
+        "size": 44388,
+        "mode": 420
+      },
+      {
+        "path": "docs/evidence/repair-after-0.0.7/tests.txt",
+        "size": 24683,
+        "mode": 420
+      },
+      {
+        "path": "docs/example-catalog.md",
+        "size": 5882,
+        "mode": 420
+      },
+      {
+        "path": "docs/features.md",
+        "size": 4001,
+        "mode": 420
+      },
+      {
+        "path": "docs/first-shot-results.md",
+        "size": 903,
+        "mode": 420
+      },
+      {
+        "path": "docs/HANDOFF.md",
+        "size": 7013,
+        "mode": 420
+      },
+      {
+        "path": "docs/intents.md",
+        "size": 1152,
+        "mode": 420
+      },
+      {
+        "path": "docs/kill-test.md",
+        "size": 2172,
+        "mode": 420
+      },
+      {
+        "path": "docs/plans/analysis-improvements.md",
+        "size": 16585,
+        "mode": 420
+      },
+      {
+        "path": "docs/plans/doctor-sdk/baseline.md",
+        "size": 7399,
+        "mode": 420
+      },
+      {
+        "path": "docs/plans/doctor-sdk/design.md",
+        "size": 10132,
+        "mode": 420
+      },
+      {
+        "path": "docs/plans/doctor-sdk/milestones.md",
+        "size": 12267,
+        "mode": 420
+      },
+      {
+        "path": "docs/plans/doctor-sdk/overnight-handoff.md",
+        "size": 5159,
+        "mode": 420
+      },
+      {
+        "path": "docs/plans/finding-lifecycle/design.md",
+        "size": 13402,
+        "mode": 420
+      },
+      {
+        "path": "docs/plans/finding-lifecycle/milestones.md",
+        "size": 6903,
+        "mode": 420
+      },
+      {
+        "path": "docs/plans/finding-lifecycle/proposal.md",
+        "size": 5633,
+        "mode": 420
+      },
+      {
+        "path": "docs/project-consumer-analysis.md",
+        "size": 12284,
+        "mode": 420
+      },
+      {
+        "path": "docs/repair-audit-007.md",
+        "size": 4312,
+        "mode": 420
+      },
+      {
+        "path": "docs/REPAIR-LOG.md",
+        "size": 3337,
+        "mode": 420
+      },
+      {
+        "path": "docs/research-openrouter-patterns.md",
+        "size": 7533,
+        "mode": 420
+      },
+      {
+        "path": "docs/research-shadcn-registry.md",
+        "size": 11995,
+        "mode": 420
+      },
+      {
+        "path": "docs/research.md",
+        "size": 3414,
+        "mode": 420
+      },
+      {
+        "path": "docs/RESULTS.md",
+        "size": 3533,
+        "mode": 420
+      },
+      {
+        "path": "docs/vision.md",
+        "size": 5384,
+        "mode": 420
+      },
+      {
+        "path": "doctors/async.fixtures.mjs",
+        "size": 14892,
+        "mode": 420
+      },
+      {
+        "path": "doctors/async.mjs",
+        "size": 13580,
+        "mode": 420
+      },
+      {
+        "path": "doctors/convex.fixtures.mjs",
+        "size": 44514,
+        "mode": 420
+      },
+      {
+        "path": "doctors/convex.mjs",
+        "size": 33467,
+        "mode": 420
+      },
+      {
+        "path": "doctors/effect-v4-kitlangton.fixtures.mjs",
+        "size": 11294,
+        "mode": 420
+      },
+      {
+        "path": "doctors/effect-v4-kitlangton.mjs",
+        "size": 22279,
+        "mode": 420
+      },
+      {
+        "path": "doctors/openrouter.fixtures.mjs",
+        "size": 6152,
+        "mode": 420
+      },
+      {
+        "path": "doctors/openrouter.mjs",
+        "size": 10379,
+        "mode": 420
+      },
+      {
+        "path": "doctors/slop.fixtures.mjs",
+        "size": 20354,
+        "mode": 420
+      },
+      {
+        "path": "doctors/slop.mjs",
+        "size": 21150,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/dynamic-import.ts",
+        "size": 166,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/index.ts",
+        "size": 563,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/jsx-use.tsx",
+        "size": 387,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/namespaced-api.ts",
+        "size": 395,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/normalize-dash.ts",
+        "size": 138,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/normalize-underscore.ts",
+        "size": 138,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/parts.tsx",
+        "size": 105,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/promise-batching.ts",
+        "size": 619,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/qa-guard.ts",
+        "size": 246,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/rest-exclusion.ts",
+        "size": 171,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/type-semicolons.ts",
+        "size": 165,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/widget.ts",
+        "size": 50,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/hooks/useChat.ts",
+        "size": 351,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/lib/ai/client.ts",
+        "size": 151,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/schemas/user.ts",
+        "size": 139,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/services/chat.ts",
+        "size": 510,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/services/user.ts",
+        "size": 252,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/utils/sync.ts",
+        "size": 389,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/billing-triple/billing.ts",
+        "size": 1179,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/billing-triple/expect.json",
+        "size": 563,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/dead-prompt-builders/expect.json",
+        "size": 373,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/dead-prompt-builders/prompts.ts",
+        "size": 816,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/discard-with-unrelated-combiner/convex/notes.ts",
+        "size": 318,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/discard-with-unrelated-combiner/expect.json",
+        "size": 319,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/ratelimiter-unbounded-collect/expect.json",
+        "size": 317,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/ratelimiter-unbounded-collect/rateLimiter.ts",
+        "size": 607,
+        "mode": 420
+      },
+      {
+        "path": "package.json",
+        "size": 1194,
+        "mode": 420
+      },
+      {
+        "path": "skill/agent-usage.md",
+        "size": 3936,
+        "mode": 420
+      },
+      {
+        "path": "skill/any-doctor.skill.md",
+        "size": 24667,
+        "mode": 420
+      }
+    ],
+    "entryCount": 449,
+    "bundled": []
+  }
+]

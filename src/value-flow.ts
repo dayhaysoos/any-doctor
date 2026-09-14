@@ -16,6 +16,7 @@ export interface FlowValue extends SourceRange {
   member?: string | null;
   callee?: number;
   arguments?: number[];
+  argumentRoles?: { value: number; spread: boolean }[];
   value?: number;
   alternatives?: number[];
   elements?: { value: number; spread: boolean }[];
@@ -24,7 +25,7 @@ export interface FlowValue extends SourceRange {
 }
 export interface ValueFlow {
   values: FlowValue[];
-  bindings: { binding: number; initializer?: number; primitive?: "string"; array: boolean }[];
+  bindings: { binding: number; initializer?: number; primitive?: "string"; array: boolean; parameter?: {functionStart:number;index:number}; rest?: boolean }[];
   uses: { value: number; kind: 'return' | 'yield' | 'await' | 'discard' | 'write'; functionStart: number | null; binding?: number; dead: boolean }[];
   loops: (SourceRange & { functionStart: number | null; iterable: number; binding: number | null; await: boolean })[];
 }
@@ -66,7 +67,8 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     else if (n.type === 'ObjectExpression') {v.kind='object';v.properties=(n.properties as Node[]).map(p=>({name:p.type==='SpreadElement'?null:key(p.key as Node,p.computed),spread:p.type==='SpreadElement',accessor:p.kind==='get'||p.kind==='set',value:value((p.type==='SpreadElement'?p.argument:p.value) as Node)}));}
     else if (n.type === 'CallExpression' || n.type === 'NewExpression') {
       v.kind=n.type==='CallExpression'?'call':'construct';v.target=target(n.callee as Node);v.callee=value(n.callee as Node);
-      v.arguments=(n.arguments as Node[]).map(value);const callee=unwrap(n.callee as Node);
+      v.argumentRoles=(n.arguments as Node[]).map(argument=>({value:value((argument.type==='SpreadElement'?argument.argument:argument) as Node),spread:argument.type==='SpreadElement'}));
+      v.arguments=v.argumentRoles.map(argument=>argument.value);const callee=unwrap(n.callee as Node);
       if(callee.type==='MemberExpression'){v.receiver=value(callee.object as Node);v.member=key(callee.property as Node,callee.computed);}
     } else if (functions.has(n.type)) {v.kind='function';v.async=!!n.async;}
     else if (n.type==='AwaitExpression' || n.type==='UnaryExpression' && n.operator==='void') {v.kind=n.type==='AwaitExpression'?'await':'void';v.value=value(n.argument as Node);}
@@ -82,7 +84,7 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     }
     if(functions.has(n.type)){
       if(n.type==='FunctionDeclaration'&&n.id){const b=target(n.id as Node).binding;if(b!==null)bindings.push({binding:b,initializer:value(n),array:false});}
-      for(const p of n.params as Node[])if(p.type==='Identifier'){const b=target(p).binding;if(b!==null)bindings.push({binding:b,...((p.typeAnnotation as Node|undefined)?.typeAnnotation && ((p.typeAnnotation as Node).typeAnnotation as Node).type==='TSStringKeyword'?{primitive:'string' as const}:{}),array:arrayType((p.typeAnnotation as Node|undefined)?.typeAnnotation as Node|undefined)});}
+      (n.params as Node[]).forEach((raw,index)=>{const p=(raw.type==='RestElement'?raw.argument:raw) as Node;if(p.type==='Identifier'){const b=target(p).binding;if(b!==null)bindings.push({binding:b,...((p.typeAnnotation as Node|undefined)?.typeAnnotation && ((p.typeAnnotation as Node).typeAnnotation as Node).type==='TSStringKeyword'?{primitive:'string' as const}:{}),array:raw.type==='RestElement'||arrayType((p.typeAnnotation as Node|undefined)?.typeAnnotation as Node|undefined),parameter:{functionStart:n.range![0],index},...(raw.type==='RestElement'?{rest:true}:{})});}});
       if(n.type==='ArrowFunctionExpression'&&(n.body as Node).type!=='BlockStatement')uses.push({value:value(n.body as Node),kind:'return',functionStart:n.range![0],dead:dead(n.body as Node)});
     }
     if(['ReturnStatement','YieldExpression','AwaitExpression','ExpressionStatement'].includes(n.type)){

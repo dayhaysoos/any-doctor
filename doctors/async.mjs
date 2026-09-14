@@ -156,55 +156,6 @@ function model(facts){
     if(v.kind==='call'&&['filter','slice','concat','map','flat','flatMap','toSorted','toReversed','toSpliced'].includes(v.member))return array(v.receiver,seen);
     return false;
   }
-  function combiner(c){
-    if(!['all','allSettled','race','any'].includes(c.member))return false;
-    return native(c.receiver,'Promise');
-  }
-  function same(id,c,parameter){
-    const raw=values.get(id);if(parameter!==undefined&&raw?.kind==='reference'&&raw.target.binding===parameter)return true;
-    const resolved=resolve(id);return resolved?.id===c.id || parameter!==undefined&&resolved?.kind==='reference'&&resolved.target.binding===parameter;
-  }
-  function iterable(id,c,parameter){
-    if(same(id,c,parameter))return true;
-    const v=resolve(id);return v?.kind==='array'&&v.elements.some(e=>e.spread&&same(e.value,c,parameter));
-  }
-  function contains(id,c,parameter,seen=new Set()){
-    if(same(id,c,parameter))return true;
-    const v=resolve(id);if(!v||seen.has(v.id))return false;seen=new Set(seen).add(v.id);
-    // Containers transfer values, but functions do not transfer their inner work.
-    const children=v.kind==='array'?v.elements:v.kind==='object'?v.properties:[];
-    return children.some(e=>contains(e.value,c,parameter,seen));
-  }
-  function arrayUse(c,parameter,owner=c.functionStart,seen=new Set()){
-    const key=c.id+':'+parameter+':'+owner;if(seen.has(key))return 'unknown';seen=new Set(seen).add(key);
-    const direct=u=>!u.dead&&u.functionStart===owner;
-    if(flow.uses.some(u=>direct(u)&&u.kind==='return'&&same(u.value,c,parameter)))return 'transferred';
-    for(const call of calls.filter(v=>v.functionStart===owner)){
-      if(combiner(call)&&iterable(call.arguments[0],c,parameter))return 'consumed';
-    }
-    for(const loop of flow.loops.filter(l=>l.functionStart===owner&&iterable(l.iterable,c,parameter))){
-      if(loop.await)return 'consumed';
-      if(flow.uses.some(u=>direct(u)&&u.kind==='await'&&values.get(u.value)?.start>=loop.start&&values.get(u.value)?.end<=loop.end&&values.get(u.value)?.kind==='reference'&&values.get(u.value).target.binding===loop.binding))return 'consumed';
-    }
-    let uncertain=flow.uses.some(u=>direct(u)&&u.kind==='return'&&contains(u.value,c,parameter)) || calls.some(call=>call.functionStart===owner&&same(call.receiver,c,parameter));
-    for(const call of calls.filter(v=>v.functionStart===owner&&!combiner(v))){
-      for(let i=0;i<call.arguments.length;i++)if(contains(call.arguments[i],c,parameter)){
-        if(!same(call.arguments[i],c,parameter)){uncertain=true;continue;}
-        const f=resolve(call.callee);
-        if(f?.kind==='function'){
-          const p=facts.structure.bindings.find(b=>b.parameter?.functionStart===f.start&&b.parameter.index===i);
-          const outcome=p?arrayUse(c,p.binding,f.start,seen):'unknown';
-          if(outcome==='consumed')return outcome;
-          if(outcome==='transferred'){const next=arrayUse(call,undefined,call.functionStart,seen);if(next!=='dropped')return next;}
-          if(outcome==='unknown')uncertain=true;
-        }else uncertain=true;
-      }
-    }
-    // Reassignment or opaque containment is uncertainty, not a dropped-value proof.
-    for(const b of flow.bindings)if(b.initializer===c.id&&!stable(b.binding))uncertain=true;
-    if(flow.uses.some(u=>u.kind==='write'&&u.value===c.id))uncertain=true;
-    return uncertain?'unknown':'dropped';
-  }
   function reachable(start){
     const result=new Set([start]),queue=[start];
     while(queue.length){const owner=queue.shift();for(const c of calls.filter(c=>c.functionStart===owner)){
@@ -226,5 +177,5 @@ function model(facts){
     return out;
   }
   const ref=id=>{const v=values.get(id);return {id:v.id,start:v.start,end:v.end}};
-  return {flow,calls,resolve,native,reactEffect,array,arrayUse,fetchSignal,reachable,handle,handles,ref};
+  return {flow,calls,resolve,native,reactEffect,array,fetchSignal,reachable,handle,handles,ref};
 }

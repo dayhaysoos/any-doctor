@@ -96,6 +96,13 @@ export function valueDispositionResult(
   const iterable=(id:number,parameter?:number)=>{if(same(id,parameter))return true;const value=resolve(id);return value?.kind==="array"&&!!value.elements?.some(item=>item.spread&&same(item.value,parameter));};
   const targetName=(id:number):string|null=>{const value=resolve(id);if(!value?.target||value.target.binding!==null||!value.target.root)return null;return [value.target.root,...value.target.members].join(".");};
   const calls=flow.values.filter(value=>value.kind==="call"&&!value.dead);
+  const consumerTakes=(call:FlowValue,parameter?:number):boolean=>{
+    const role=call.argumentRoles?.[0];if(!role)return false;
+    if(!role.spread)return iterable(role.value,parameter);
+    const spread=resolve(role.value);const first=spread?.kind==="array"?spread.elements?.[0]:undefined;
+    return !!first&&!first.spread&&same(first.value,parameter);
+  };
+  const spreadArgument=(call:FlowValue,parameter?:number):boolean=>(call.argumentRoles??[]).some(role=>role.spread&&same(role.value,parameter));
   const disposition=(parameter:number|undefined,owner:number|null,seen=new Set<string>()):ValueDisposition|"unknown"=>{
     const key=`${subject.id}:${parameter}:${owner}`;if(seen.has(key))return "unknown";seen=new Set(seen).add(key);
     const direct=(use:typeof flow.uses[number])=>!use.dead&&use.functionStart===owner;
@@ -104,14 +111,19 @@ export function valueDispositionResult(
       if(use){const value=values.get(use.value);if(value)evidence.push({kind:"expression",file,sourceDigest:digest,range:rangeOf(value),relationship:use.kind});}
       return "transferred";
     }
-    for(const call of calls.filter(value=>value.functionStart===owner))if(query.consumers.includes(targetName(call.callee!)??"")&&iterable(call.arguments![0],parameter))return "consumed";
+    for(const call of calls.filter(value=>value.functionStart===owner))if(query.consumers.includes(targetName(call.callee!)??"")&&consumerTakes(call,parameter))return "consumed";
     for(const loop of flow.loops.filter(loop=>loop.functionStart===owner&&iterable(loop.iterable,parameter))){if(loop.await||flow.uses.some(use=>direct(use)&&use.kind==="await"&&values.get(use.value)!.start>=loop.start&&values.get(use.value)!.end<=loop.end&&values.get(use.value)?.kind==="reference"&&values.get(use.value)?.target?.binding===loop.binding))return "consumed";}
+    for(const store of calls.filter(call=>call.functionStart===owner&&call.member==="push"&&call.receiver!==undefined&&spreadArgument(call,parameter))){
+      if(calls.some(call=>call.functionStart===owner&&query.consumers.includes(targetName(call.callee!)??"")&&consumerTakesValue(call,store.receiver!)))return "consumed";
+      return "transferred";
+    }
     let uncertain=calls.some(call=>call.functionStart===owner&&call.receiver!==undefined&&same(call.receiver,parameter));
     for(const call of calls.filter(value=>value.functionStart===owner&&!query.consumers.includes(targetName(value.callee!)??""))){
       for(let index=0;index<(call.arguments?.length??0);index++)if(contains(call.arguments![index],parameter)){
         if(!same(call.arguments![index],parameter)){uncertain=true;continue;}
         const fn=resolve(call.callee!);if(fn?.kind==="function"){
-          const binding=facts.structure.bindings.find(item=>item.parameter?.functionStart===fn.start&&item.parameter.index===index);
+          const role=call.argumentRoles?.[index],binding=flow.bindings.find(item=>item.parameter?.functionStart===fn.start&&item.parameter.index===index);
+          if(role?.spread&&!binding?.rest){uncertain=true;continue;}
           const nested=binding?disposition(binding.binding,fn.start,seen):"unknown";
           if(nested==="consumed")return nested;if(nested==="transferred"){const next=valueDispositionOfCall(call,owner,seen);if(next!=="discarded")return next;}if(nested==="unknown")uncertain=true;
         }else uncertain=true;
@@ -121,13 +133,17 @@ export function valueDispositionResult(
     if(flow.uses.some(use=>use.kind==="write"&&use.value===subject.id))uncertain=true;
     return uncertain?"unknown":"discarded";
   };
+  const consumerTakesValue=(call:FlowValue,valueId:number):boolean=>{
+    const role=call.argumentRoles?.[0];if(!role)return false;
+    if(!role.spread){const value=resolve(role.value);return value?.id===resolve(valueId)?.id||value?.kind==="array"&&!!value.elements?.some(item=>item.spread&&resolve(item.value)?.id===resolve(valueId)?.id);}
+    const spread=resolve(role.value),first=spread?.kind==="array"?spread.elements?.[0]:undefined;return !!first&&!first.spread&&resolve(first.value)?.id===resolve(valueId)?.id;
+  };
   const valueDispositionOfCall=(call:FlowValue,owner:number|null,seen:Set<string>):ValueDisposition|"unknown"=>{
     if(flow.uses.some(use=>!use.dead&&use.functionStart===owner&&(use.kind==="return"||use.kind==="yield")&&containsCall(use.value,call.id)))return "transferred";
-    if(calls.some(consumer=>consumer.functionStart===owner&&query.consumers.includes(targetName(consumer.callee!)??"")&&iterableCall(consumer.arguments![0],call.id)))return "consumed";
+    if(calls.some(consumer=>consumer.functionStart===owner&&query.consumers.includes(targetName(consumer.callee!)??"")&&consumerTakesValue(consumer,call.id)))return "consumed";
     return flow.uses.some(use=>!use.dead&&use.functionStart===owner&&use.kind==="discard"&&containsCall(use.value,call.id))?"discarded":"unknown";
   };
   const containsCall=(id:number,callId:number)=>resolve(id)?.id===callId;
-  const iterableCall=(id:number,callId:number)=>containsCall(id,callId);
   const result=disposition(undefined,subject.functionStart);
   return result==="unknown"?{version:SEMANTIC_RESULT_VERSION,status:"unknown",reason:"unsupported-expression",evidence}:{version:SEMANTIC_RESULT_VERSION,status:"known",value:result,evidence};
 }

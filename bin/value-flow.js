@@ -1,5 +1,5 @@
 export function valueFlow(nodes, parents, target, range, unwrap, functionStart) {
-    var _a, _b, _c, _d;
+    var _a, _b;
     const ids = new Map(), values = [], uses = [], bindings = [], loops = [];
     const functions = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression']);
     const dead = (n) => {
@@ -66,7 +66,8 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
             v.kind = n.type === 'CallExpression' ? 'call' : 'construct';
             v.target = target(n.callee);
             v.callee = value(n.callee);
-            v.arguments = n.arguments.map(value);
+            v.argumentRoles = n.arguments.map(argument => ({ value: value((argument.type === 'SpreadElement' ? argument.argument : argument)), spread: argument.type === 'SpreadElement' }));
+            v.arguments = v.argumentRoles.map(argument => argument.value);
             const callee = unwrap(n.callee);
             if (callee.type === 'MemberExpression') {
                 v.receiver = value(callee.object);
@@ -108,12 +109,11 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
                 if (b !== null)
                     bindings.push({ binding: b, initializer: value(n), array: false });
             }
-            for (const p of n.params)
-                if (p.type === 'Identifier') {
-                    const b = target(p).binding;
-                    if (b !== null)
-                        bindings.push({ binding: b, ...(((_c = p.typeAnnotation) === null || _c === void 0 ? void 0 : _c.typeAnnotation) && p.typeAnnotation.typeAnnotation.type === 'TSStringKeyword' ? { primitive: 'string' } : {}), array: arrayType((_d = p.typeAnnotation) === null || _d === void 0 ? void 0 : _d.typeAnnotation) });
-                }
+            n.params.forEach((raw, index) => { var _a, _b; const p = (raw.type === 'RestElement' ? raw.argument : raw); if (p.type === 'Identifier') {
+                const b = target(p).binding;
+                if (b !== null)
+                    bindings.push({ binding: b, ...(((_a = p.typeAnnotation) === null || _a === void 0 ? void 0 : _a.typeAnnotation) && p.typeAnnotation.typeAnnotation.type === 'TSStringKeyword' ? { primitive: 'string' } : {}), array: raw.type === 'RestElement' || arrayType((_b = p.typeAnnotation) === null || _b === void 0 ? void 0 : _b.typeAnnotation), parameter: { functionStart: n.range[0], index }, ...(raw.type === 'RestElement' ? { rest: true } : {}) });
+            } });
             if (n.type === 'ArrowFunctionExpression' && n.body.type !== 'BlockStatement')
                 uses.push({ value: value(n.body), kind: 'return', functionStart: n.range[0], dead: dead(n.body) });
         }

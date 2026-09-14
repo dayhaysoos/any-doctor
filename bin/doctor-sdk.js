@@ -106,8 +106,20 @@ export function valueDispositionResult(file, source, facts, expression, query) {
     const targetName = (id) => { const value = resolve(id); if (!(value === null || value === void 0 ? void 0 : value.target) || value.target.binding !== null || !value.target.root)
         return null; return [value.target.root, ...value.target.members].join("."); };
     const calls = flow.values.filter(value => value.kind === "call" && !value.dead);
+    const consumerTakes = (call, parameter) => {
+        var _a, _b;
+        const role = (_a = call.argumentRoles) === null || _a === void 0 ? void 0 : _a[0];
+        if (!role)
+            return false;
+        if (!role.spread)
+            return iterable(role.value, parameter);
+        const spread = resolve(role.value);
+        const first = (spread === null || spread === void 0 ? void 0 : spread.kind) === "array" ? (_b = spread.elements) === null || _b === void 0 ? void 0 : _b[0] : undefined;
+        return !!first && !first.spread && same(first.value, parameter);
+    };
+    const spreadArgument = (call, parameter) => { var _a; return ((_a = call.argumentRoles) !== null && _a !== void 0 ? _a : []).some(role => role.spread && same(role.value, parameter)); };
     const disposition = (parameter, owner, seen = new Set()) => {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         const key = `${subject.id}:${parameter}:${owner}`;
         if (seen.has(key))
             return "unknown";
@@ -123,11 +135,16 @@ export function valueDispositionResult(file, source, facts, expression, query) {
             return "transferred";
         }
         for (const call of calls.filter(value => value.functionStart === owner))
-            if (query.consumers.includes((_a = targetName(call.callee)) !== null && _a !== void 0 ? _a : "") && iterable(call.arguments[0], parameter))
+            if (query.consumers.includes((_a = targetName(call.callee)) !== null && _a !== void 0 ? _a : "") && consumerTakes(call, parameter))
                 return "consumed";
         for (const loop of flow.loops.filter(loop => loop.functionStart === owner && iterable(loop.iterable, parameter))) {
             if (loop.await || flow.uses.some(use => { var _a, _b, _c; return direct(use) && use.kind === "await" && values.get(use.value).start >= loop.start && values.get(use.value).end <= loop.end && ((_a = values.get(use.value)) === null || _a === void 0 ? void 0 : _a.kind) === "reference" && ((_c = (_b = values.get(use.value)) === null || _b === void 0 ? void 0 : _b.target) === null || _c === void 0 ? void 0 : _c.binding) === loop.binding; }))
                 return "consumed";
+        }
+        for (const store of calls.filter(call => call.functionStart === owner && call.member === "push" && call.receiver !== undefined && spreadArgument(call, parameter))) {
+            if (calls.some(call => { var _a; return call.functionStart === owner && query.consumers.includes((_a = targetName(call.callee)) !== null && _a !== void 0 ? _a : "") && consumerTakesValue(call, store.receiver); }))
+                return "consumed";
+            return "transferred";
         }
         let uncertain = calls.some(call => call.functionStart === owner && call.receiver !== undefined && same(call.receiver, parameter));
         for (const call of calls.filter(value => { var _a; return value.functionStart === owner && !query.consumers.includes((_a = targetName(value.callee)) !== null && _a !== void 0 ? _a : ""); })) {
@@ -139,7 +156,11 @@ export function valueDispositionResult(file, source, facts, expression, query) {
                     }
                     const fn = resolve(call.callee);
                     if ((fn === null || fn === void 0 ? void 0 : fn.kind) === "function") {
-                        const binding = facts.structure.bindings.find(item => { var _a; return ((_a = item.parameter) === null || _a === void 0 ? void 0 : _a.functionStart) === fn.start && item.parameter.index === index; });
+                        const role = (_d = call.argumentRoles) === null || _d === void 0 ? void 0 : _d[index], binding = flow.bindings.find(item => { var _a; return ((_a = item.parameter) === null || _a === void 0 ? void 0 : _a.functionStart) === fn.start && item.parameter.index === index; });
+                        if ((role === null || role === void 0 ? void 0 : role.spread) && !(binding === null || binding === void 0 ? void 0 : binding.rest)) {
+                            uncertain = true;
+                            continue;
+                        }
                         const nested = binding ? disposition(binding.binding, fn.start, seen) : "unknown";
                         if (nested === "consumed")
                             return nested;
@@ -162,15 +183,26 @@ export function valueDispositionResult(file, source, facts, expression, query) {
             uncertain = true;
         return uncertain ? "unknown" : "discarded";
     };
+    const consumerTakesValue = (call, valueId) => {
+        var _a, _b, _c, _d, _e, _f;
+        const role = (_a = call.argumentRoles) === null || _a === void 0 ? void 0 : _a[0];
+        if (!role)
+            return false;
+        if (!role.spread) {
+            const value = resolve(role.value);
+            return (value === null || value === void 0 ? void 0 : value.id) === ((_b = resolve(valueId)) === null || _b === void 0 ? void 0 : _b.id) || (value === null || value === void 0 ? void 0 : value.kind) === "array" && !!((_c = value.elements) === null || _c === void 0 ? void 0 : _c.some(item => { var _a, _b; return item.spread && ((_a = resolve(item.value)) === null || _a === void 0 ? void 0 : _a.id) === ((_b = resolve(valueId)) === null || _b === void 0 ? void 0 : _b.id); }));
+        }
+        const spread = resolve(role.value), first = (spread === null || spread === void 0 ? void 0 : spread.kind) === "array" ? (_d = spread.elements) === null || _d === void 0 ? void 0 : _d[0] : undefined;
+        return !!first && !first.spread && ((_e = resolve(first.value)) === null || _e === void 0 ? void 0 : _e.id) === ((_f = resolve(valueId)) === null || _f === void 0 ? void 0 : _f.id);
+    };
     const valueDispositionOfCall = (call, owner, seen) => {
         if (flow.uses.some(use => !use.dead && use.functionStart === owner && (use.kind === "return" || use.kind === "yield") && containsCall(use.value, call.id)))
             return "transferred";
-        if (calls.some(consumer => { var _a; return consumer.functionStart === owner && query.consumers.includes((_a = targetName(consumer.callee)) !== null && _a !== void 0 ? _a : "") && iterableCall(consumer.arguments[0], call.id); }))
+        if (calls.some(consumer => { var _a; return consumer.functionStart === owner && query.consumers.includes((_a = targetName(consumer.callee)) !== null && _a !== void 0 ? _a : "") && consumerTakesValue(consumer, call.id); }))
             return "consumed";
         return flow.uses.some(use => !use.dead && use.functionStart === owner && use.kind === "discard" && containsCall(use.value, call.id)) ? "discarded" : "unknown";
     };
     const containsCall = (id, callId) => { var _a; return ((_a = resolve(id)) === null || _a === void 0 ? void 0 : _a.id) === callId; };
-    const iterableCall = (id, callId) => containsCall(id, callId);
     const result = disposition(undefined, subject.functionStart);
     return result === "unknown" ? { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "unsupported-expression", evidence } : { version: SEMANTIC_RESULT_VERSION, status: "known", value: result, evidence };
 }

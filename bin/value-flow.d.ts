@@ -15,6 +15,10 @@ export interface FlowValue extends SourceRange {
     member?: string | null;
     callee?: number;
     arguments?: number[];
+    argumentRoles?: {
+        value: number;
+        spread: boolean;
+    }[];
     value?: number;
     alternatives?: number[];
     elements?: {
@@ -36,6 +40,11 @@ export interface ValueFlow {
         initializer?: number;
         primitive?: "string";
         array: boolean;
+        parameter?: {
+            functionStart: number;
+            index: number;
+        };
+        rest?: boolean;
     }[];
     uses: {
         value: number;
