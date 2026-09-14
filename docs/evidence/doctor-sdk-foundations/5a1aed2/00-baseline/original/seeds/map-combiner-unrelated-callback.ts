@@ -1,0 +1,1 @@
+await Promise.all([1].map(async ()=>{ [1,2].map(async x=>x); }));

@@ -1,0 +1,522 @@
+{
+  "label": "packed",
+  "exit": 0,
+  "passed": 9,
+  "failed": 11,
+  "skipped": 0,
+  "rows": [
+    {
+      "name": "return-await-array",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "source": "async function f(){const tasks=[1].map(async x=>x);return await tasks;}\n[1].map(async x=>x);",
+      "reason": "Await preserves an ordinary array; returning it transfers ownership.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": false,
+      "findings": [
+        {
+          "file": "return-await-array.ts",
+          "line": 1,
+          "column": 31,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tYXdhaXQtYXJyYXkudHMAYWEzZWQ0NGM1NjY0ODI5YTUxNjI5ZDQ1NDczZjA1OWQ2Yzc1MDRmMWI2MGRkMjliMmRiYWRkY2EyYzk3MTY0ZABmdW5jdGlvbjpmIzAAMzEAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "return-await-array.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tYXdhaXQtYXJyYXkudHMAYWEzZWQ0NGM1NjY0ODI5YTUxNjI5ZDQ1NDczZjA1OWQ2Yzc1MDRmMWI2MGRkMjliMmRiYWRkY2EyYzk3MTY0ZAAAbm9uZQAwAHJhbmdl",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "return-await-inline",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "source": "async function f(){return await [1].map(async x=>x);}\n[1].map(async x=>x);",
+      "reason": "Same transfer in inline expression.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": false,
+      "findings": [
+        {
+          "file": "return-await-inline.ts",
+          "line": 1,
+          "column": 32,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tYXdhaXQtaW5saW5lLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAZnVuY3Rpb246ZiMwADMyAHJhbmdl",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "return-await-inline.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tYXdhaXQtaW5saW5lLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "return-choice-array",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "source": "function f(flag){const tasks=[1].map(async x=>x);return flag?tasks:{tasks};}\n[1].map(async x=>x);",
+      "reason": "Both branches transfer promise array; cannot establish drop.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": false,
+      "findings": [
+        {
+          "file": "return-choice-array.ts",
+          "line": 1,
+          "column": 29,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tY2hvaWNlLWFycmF5LnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAZnVuY3Rpb246ZiMwADI5AHJhbmdl",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "return-choice-array.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tY2hvaWNlLWFycmF5LnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "yield-array",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "source": "function* f(){const tasks=[1].map(async x=>x);yield tasks;}\n[1].map(async x=>x);",
+      "reason": "Generator yields ownership to caller.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": false,
+      "findings": [
+        {
+          "file": "yield-array.ts",
+          "line": 1,
+          "column": 26,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAB5aWVsZC1hcnJheS50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAGZ1bmN0aW9uOmYjMAAyNgByYW5nZQ",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "yield-array.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAB5aWVsZC1hcnJheS50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAABub25lADAAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "spread-helper-consumption",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "source": "async function settle(...items){return Promise.all(items)}const tasks=[1].map(async x=>x);await settle(...tasks);\n[1].map(async x=>x);",
+      "reason": "Rest helper settles individual promises; spread is transfer.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": false,
+      "findings": [
+        {
+          "file": "spread-helper-consumption.ts",
+          "line": 1,
+          "column": 70,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABzcHJlYWQtaGVscGVyLWNvbnN1bXB0aW9uLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUANzAAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "spread-helper-consumption.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABzcHJlYWQtaGVscGVyLWNvbnN1bXB0aW9uLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "spread-opaque-consumption",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "source": "const tasks=[1].map(async x=>x);consume(...tasks);\n[1].map(async x=>x);",
+      "reason": "Unknown consumer receives individual promises; abstain.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": false,
+      "findings": [
+        {
+          "file": "spread-opaque-consumption.ts",
+          "line": 1,
+          "column": 12,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABzcHJlYWQtb3BhcXVlLWNvbnN1bXB0aW9uLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMTIAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "spread-opaque-consumption.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABzcHJlYWQtb3BhcXVlLWNvbnN1bXB0aW9uLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "push-spread-consumption",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "source": "const tasks=[1].map(async x=>x);const pending=[];pending.push(...tasks);await Promise.all(pending);\n[1].map(async x=>x);",
+      "reason": "Array push transfers individual promises to settled array.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": false,
+      "findings": [
+        {
+          "file": "push-spread-consumption.ts",
+          "line": 1,
+          "column": 12,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABwdXNoLXNwcmVhZC1jb25zdW1wdGlvbi50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAABub25lADEyAHJhbmdl",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "push-spread-consumption.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABwdXNoLXNwcmVhZC1jb25zdW1wdGlvbi50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAABub25lADAAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "combiner-spread-arguments",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "source": "const tasks=[1].map(async x=>x);await Promise.all(...[tasks]);\n[1].map(async x=>x);",
+      "reason": "Argument spread passes tasks as first iterable.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": false,
+      "findings": [
+        {
+          "file": "combiner-spread-arguments.ts",
+          "line": 1,
+          "column": 12,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABjb21iaW5lci1zcHJlYWQtYXJndW1lbnRzLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMTIAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "combiner-spread-arguments.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABjb21iaW5lci1zcHJlYWQtYXJndW1lbnRzLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "return-void-array",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "source": "function f(){const tasks=[1].map(async x=>x);return void tasks;}\n[1].map(async x=>x);",
+      "reason": "Void discards array; ownership does not transfer.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "return-void-array.ts",
+          "line": 1,
+          "column": 25,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tdm9pZC1hcnJheS50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAGZ1bmN0aW9uOmYjMAAyNQByYW5nZQ",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "return-void-array.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tdm9pZC1hcnJheS50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAABub25lADAAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "return-length-array",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "source": "function f(){const tasks=[1].map(async x=>x);return tasks.length;}\n[1].map(async x=>x);",
+      "reason": "Returning length does not transfer promises.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "return-length-array.ts",
+          "line": 1,
+          "column": 25,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tbGVuZ3RoLWFycmF5LnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAZnVuY3Rpb246ZiMwADI1AHJhbmdl",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "return-length-array.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tbGVuZ3RoLWFycmF5LnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "await-array-only",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "source": "async function f(){const tasks=[1].map(async x=>x);await tasks;}\n[1].map(async x=>x);",
+      "reason": "Awaiting array without transfer drops elements.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "await-array-only.ts",
+          "line": 1,
+          "column": 31,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABhd2FpdC1hcnJheS1vbmx5LnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAZnVuY3Rpb246ZiMwADMxAHJhbmdl",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "await-array-only.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABhd2FpdC1hcnJheS1vbmx5LnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "helper-void-array",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "source": "function ignore(...items){return undefined}const tasks=[1].map(async x=>x);ignore(...tasks);\n[1].map(async x=>x);",
+      "reason": "Known helper discards elements.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "helper-void-array.ts",
+          "line": 1,
+          "column": 55,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABoZWxwZXItdm9pZC1hcnJheS50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAABub25lADU1AHJhbmdl",
+          "rule": "unawaited-async-map"
+        },
+        {
+          "file": "helper-void-array.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABoZWxwZXItdm9pZC1hcnJheS50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAABub25lADAAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "fetch-prototype-signal",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "source": "const c=new AbortController();fetch(\"/\",{__proto__:{signal:c.signal}});\nfetch(\"/positive\");",
+      "reason": "Dictionary inherited property supplies signal.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": false,
+      "findings": [
+        {
+          "file": "fetch-prototype-signal.ts",
+          "line": 1,
+          "column": 30,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1wcm90b3R5cGUtc2lnbmFsLnRzAGUxZTIzODRlODgxNTg2NDQ0NGJmN2E0Yjg2MTA2NTJlYzBiMTdiN2UwNGVjNDA3NDUxMmVjMzY1YjdhODkyNGIAAG5vbmUAMzAAcmFuZ2U",
+          "rule": "fetch-calls-without-abortsignal"
+        },
+        {
+          "file": "fetch-prototype-signal.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1wcm90b3R5cGUtc2lnbmFsLnRzADhkOTc2ODQ3NGU0MjU3M2QzYWQxYzFiMjkyM2RmMzk0ODFjMDA2YzIzYzEzMTgzZWQwZTNkMmYzY2Q0YzIzZWIAAG5vbmUAMAByYW5nZQ",
+          "rule": "fetch-calls-without-abortsignal"
+        }
+      ]
+    },
+    {
+      "name": "fetch-prototype-null",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 1,
+      "source": "fetch(\"/\",{__proto__:{signal:null}});\nfetch(\"/positive\");",
+      "reason": "Inherited null lacks cancellation.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "fetch-prototype-null.ts",
+          "line": 1,
+          "column": 0,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1wcm90b3R5cGUtbnVsbC50cwBlOGQ5NTcxZjc3YjM1MmYzMjM4NjU3MjU0MzIwMThiMTU1ZWI2MWI4MmY3MTYwYjg2Y2RmOWIxOWYzNDRlYmRjAABub25lADAAcmFuZ2U",
+          "rule": "fetch-calls-without-abortsignal"
+        },
+        {
+          "file": "fetch-prototype-null.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1wcm90b3R5cGUtbnVsbC50cwA4ZDk3Njg0NzRlNDI1NzNkM2FkMWMxYjI5MjNkZjM5NDgxYzAwNmMyM2MxMzE4M2VkMGUzZDJmM2NkNGMyM2ViAABub25lADAAcmFuZ2U",
+          "rule": "fetch-calls-without-abortsignal"
+        }
+      ]
+    },
+    {
+      "name": "fetch-prototype-own-null",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 1,
+      "source": "const c=new AbortController();fetch(\"/\",{__proto__:{signal:c.signal},signal:null});\nfetch(\"/positive\");",
+      "reason": "Own null overrides inherited signal.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "fetch-prototype-own-null.ts",
+          "line": 1,
+          "column": 30,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1wcm90b3R5cGUtb3duLW51bGwudHMANWRjMzczOTMxMTVhNGFiYTU2MzczM2E0MWIwN2Q4MTFmYWVhNTRlMTBhODJjZmZhMzkwMTA0Y2UyZWNkOGFiYQAAbm9uZQAzMAByYW5nZQ",
+          "rule": "fetch-calls-without-abortsignal"
+        },
+        {
+          "file": "fetch-prototype-own-null.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1wcm90b3R5cGUtb3duLW51bGwudHMAOGQ5NzY4NDc0ZTQyNTczZDNhZDFjMWIyOTIzZGYzOTQ4MWMwMDZjMjNjMTMxODNlZDBlM2QyZjNjZDRjMjNlYgAAbm9uZQAwAHJhbmdl",
+          "rule": "fetch-calls-without-abortsignal"
+        }
+      ]
+    },
+    {
+      "name": "fetch-request-copy",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "source": "const c=new AbortController();const r=new Request(\"https://example.invalid\",{signal:c.signal});fetch(new Request(r));\nfetch(\"/positive\");",
+      "reason": "Request copy retains signal.",
+      "actualSubject": 0,
+      "controlCount": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "fetch-request-copy.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1yZXF1ZXN0LWNvcHkudHMAOGQ5NzY4NDc0ZTQyNTczZDNhZDFjMWIyOTIzZGYzOTQ4MWMwMDZjMjNjMTMxODNlZDBlM2QyZjNjZDRjMjNlYgAAbm9uZQAwAHJhbmdl",
+          "rule": "fetch-calls-without-abortsignal"
+        }
+      ]
+    },
+    {
+      "name": "timer-return-await-cleanup",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 0,
+      "source": "import {useEffect} from \"react\";useEffect(()=>{const h=setTimeout(()=>{},1);return ()=>{clearTimeout(h)}},[]);\nimport {useEffect} from \"react\";useEffect(()=>{setTimeout(()=>{},1)},[]);",
+      "reason": "Normal cleanup control.",
+      "actualSubject": 0,
+      "controlCount": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "timer-return-await-cleanup.ts",
+          "line": 2,
+          "column": 47,
+          "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLXJldHVybi1hd2FpdC1jbGVhbnVwLnRzADNiNmMwNTc2YjQzMjljNWE5YWE2MmQyMmIzMTIzNmU5NjExMjIxNWNlYzE1NGVlM2RmZGY0NjNlNzVlODUzZjgAYXJyb3c6ADMANDcAcmFuZ2U",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    },
+    {
+      "name": "timer-guarded-callback",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 1,
+      "source": "import {useEffect} from \"react\";useEffect(()=>{let alive=true;setTimeout(()=>{if(!alive)return;work()},1);return()=>{alive=false}},[]);\nimport {useEffect} from \"react\";useEffect(()=>{setTimeout(()=>{},1)},[]);",
+      "reason": "Timer remains scheduled; wording must preserve cancellation guards.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "timer-guarded-callback.ts",
+          "line": 1,
+          "column": 62,
+          "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWd1YXJkZWQtY2FsbGJhY2sudHMANmFlYTk5YWI5NTc4ZDgwOTU5NGVkMDc0MWU4MmU5M2NhZmM5MDYyY2E4NzM2YzQwMDE1YzVjMzZmMjhkMGJlMwBhcnJvdzoAMAA2MgByYW5nZQ",
+          "rule": "uncleared-settimeout-in-effect"
+        },
+        {
+          "file": "timer-guarded-callback.ts",
+          "line": 2,
+          "column": 47,
+          "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWd1YXJkZWQtY2FsbGJhY2sudHMAM2I2YzA1NzZiNDMyOWM1YTlhYTYyZDIyYjMxMjM2ZTk2MTEyMjE1Y2VjMTU0ZWUzZGZkZjQ2M2U3NWU4NTNmOABhcnJvdzoAMwA0NwByYW5nZQ",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    },
+    {
+      "name": "timer-cleanup-call-parameter",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 0,
+      "source": "import {useEffect} from \"react\";function stop(h){clearTimeout(h)}useEffect(()=>{const h=setTimeout(()=>{},1);return()=>stop(h)},[]);\nimport {useEffect} from \"react\";useEffect(()=>{setTimeout(()=>{},1)},[]);",
+      "reason": "Direct helper actually cancels handle.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": false,
+      "findings": [
+        {
+          "file": "timer-cleanup-call-parameter.ts",
+          "line": 1,
+          "column": 88,
+          "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWNsZWFudXAtY2FsbC1wYXJhbWV0ZXIudHMAM2I2YzA1NzZiNDMyOWM1YTlhYTYyZDIyYjMxMjM2ZTk2MTEyMjE1Y2VjMTU0ZWUzZGZkZjQ2M2U3NWU4NTNmOABhcnJvdzoAMAA4OAByYW5nZQ",
+          "rule": "uncleared-settimeout-in-effect"
+        },
+        {
+          "file": "timer-cleanup-call-parameter.ts",
+          "line": 2,
+          "column": 47,
+          "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWNsZWFudXAtY2FsbC1wYXJhbWV0ZXIudHMAM2I2YzA1NzZiNDMyOWM1YTlhYTYyZDIyYjMxMjM2ZTk2MTEyMjE1Y2VjMTU0ZWUzZGZkZjQ2M2U3NWU4NTNmOABhcnJvdzoAMwA0NwByYW5nZQ",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    },
+    {
+      "name": "timer-cleanup-factory",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 0,
+      "source": "import {useEffect} from \"react\";function makeCleanup(h){return()=>clearTimeout(h)}useEffect(()=>{const h=setTimeout(()=>{},1);return makeCleanup(h)},[]);\nimport {useEffect} from \"react\";useEffect(()=>{setTimeout(()=>{},1)},[]);",
+      "reason": "Known documented unresolved factory; unnecessary review candidate.",
+      "actualSubject": 1,
+      "controlCount": 1,
+      "passed": false,
+      "findings": [
+        {
+          "file": "timer-cleanup-factory.ts",
+          "line": 1,
+          "column": 105,
+          "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWNsZWFudXAtZmFjdG9yeS50cwAzYjZjMDU3NmI0MzI5YzVhOWFhNjJkMjJiMzEyMzZlOTYxMTIyMTVjZWMxNTRlZTNkZmRmNDYzZTc1ZTg1M2Y4AGFycm93OgAxADEwNQByYW5nZQ",
+          "rule": "uncleared-settimeout-in-effect"
+        },
+        {
+          "file": "timer-cleanup-factory.ts",
+          "line": 2,
+          "column": 47,
+          "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWNsZWFudXAtZmFjdG9yeS50cwAzYjZjMDU3NmI0MzI5YzVhOWFhNjJkMjJiMzEyMzZlOTYxMTIyMTVjZWMxNTRlZTNkZmRmNDYzZTc1ZTg1M2Y4AGFycm93OgAzADQ3AHJhbmdl",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    }
+  ]
+}

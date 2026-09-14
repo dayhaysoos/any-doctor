@@ -1,0 +1,1 @@
+function fetch(value){return value;} fetch(1);

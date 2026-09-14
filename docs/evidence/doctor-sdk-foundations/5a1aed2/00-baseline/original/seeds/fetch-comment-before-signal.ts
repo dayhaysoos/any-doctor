@@ -1,0 +1,1 @@
+const c=new AbortController(); fetch("https://example.invalid",{/* cancellation */ signal:c.signal});

@@ -1,0 +1,1 @@
+const work=()=>{ [1,2].map(async x=>x); }; await Promise.all([work]);

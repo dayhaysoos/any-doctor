@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": 0,
+  "commands": [
+    {"name":"confirm-candidate","command":"git branch --show-current && git rev-parse HEAD && git status --short --branch","exit":0},
+    {"name":"npm-test","command":"npm test","exit":0,"stdout":"npm-test.stdout","stderr":"npm-test.stderr"},
+    {"name":"local-verify-all","command":"node bin/cli.js verify --all","exit":0,"stdout":"local-verify-all.stdout","stderr":"local-verify-all.stderr"},
+    {"name":"local-original","command":"python3 original/challenges.py local <repo>","exit":0,"result":"original/local-challenges-results.json"},
+    {"name":"local-fresh","command":"python3 fresh/fresh.py local <repo>","exit":0,"result":"fresh/local-fresh-results.json","note":"Command exit is not the evaluation result; JSON retains 11 failed expectations."},
+    {"name":"local-sift","command":"node bin/cli.js run doctors/async.mjs /tmp/any-doctor-frozen-sift --format json","exit":0,"stdout":"local-sift.json","stderr":"local-sift.stderr"},
+    {"name":"pack","command":"npm pack --ignore-scripts --pack-destination <checkpoint0-temp>/package --json","exit":0,"stdout":"pack.json","stderr":"pack.stderr"},
+    {"name":"install","command":"npm install --prefix <checkpoint0-temp>/consumer --ignore-scripts --no-audit --no-fund <checkpoint0-temp>/package/any-doctor-0.1.2.tgz","exit":0,"stdout":"install.stdout","stderr":"install.stderr"},
+    {"name":"packed-verify-all","command":"node <checkpoint0-temp>/consumer/node_modules/any-doctor/bin/cli.js verify --all","exit":0,"stdout":"packed-verify-all.stdout","stderr":"packed-verify-all.stderr"},
+    {"name":"packed-original","command":"python3 original/challenges.py packed <checkpoint0-temp>/consumer/node_modules/any-doctor","exit":0,"result":"original/packed-challenges-results.json"},
+    {"name":"packed-fresh","command":"python3 fresh/fresh.py packed <checkpoint0-temp>/consumer/node_modules/any-doctor","exit":0,"result":"fresh/packed-fresh-results.json","note":"Command exit is not the evaluation result; JSON retains 11 failed expectations."},
+    {"name":"packed-sift","command":"node <checkpoint0-temp>/consumer/node_modules/any-doctor/bin/cli.js run <checkpoint0-temp>/consumer/node_modules/any-doctor/doctors/async.mjs /tmp/any-doctor-frozen-sift --format json","exit":0,"stdout":"packed-sift.json","stderr":"packed-sift.stderr"},
+    {"name":"frozen-integrity","command":"compare all files in docs/evidence/consumer-analysis/sift-manifest.json with /tmp/any-doctor-frozen-sift by byte count and SHA-256","exit":0,"result":"frozen-integrity.json"},
+    {"name":"performance","command":"/usr/bin/time -l node bin/cli.js run doctors/async.mjs /tmp/any-doctor-frozen-sift --format json","exit":0,"stderr":"performance.stderr"}
+  ]
+}

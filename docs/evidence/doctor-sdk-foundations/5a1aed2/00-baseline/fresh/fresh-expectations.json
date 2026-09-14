@@ -1,0 +1,142 @@
+[
+  {
+    "name": "return-await-array",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "async function f(){const tasks=[1].map(async x=>x);return await tasks;}\n[1].map(async x=>x);",
+    "reason": "Await preserves an ordinary array; returning it transfers ownership."
+  },
+  {
+    "name": "return-await-inline",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "async function f(){return await [1].map(async x=>x);}\n[1].map(async x=>x);",
+    "reason": "Same transfer in inline expression."
+  },
+  {
+    "name": "return-choice-array",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "function f(flag){const tasks=[1].map(async x=>x);return flag?tasks:{tasks};}\n[1].map(async x=>x);",
+    "reason": "Both branches transfer promise array; cannot establish drop."
+  },
+  {
+    "name": "yield-array",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "function* f(){const tasks=[1].map(async x=>x);yield tasks;}\n[1].map(async x=>x);",
+    "reason": "Generator yields ownership to caller."
+  },
+  {
+    "name": "spread-helper-consumption",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "async function settle(...items){return Promise.all(items)}const tasks=[1].map(async x=>x);await settle(...tasks);\n[1].map(async x=>x);",
+    "reason": "Rest helper settles individual promises; spread is transfer."
+  },
+  {
+    "name": "spread-opaque-consumption",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "const tasks=[1].map(async x=>x);consume(...tasks);\n[1].map(async x=>x);",
+    "reason": "Unknown consumer receives individual promises; abstain."
+  },
+  {
+    "name": "push-spread-consumption",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "const tasks=[1].map(async x=>x);const pending=[];pending.push(...tasks);await Promise.all(pending);\n[1].map(async x=>x);",
+    "reason": "Array push transfers individual promises to settled array."
+  },
+  {
+    "name": "combiner-spread-arguments",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "const tasks=[1].map(async x=>x);await Promise.all(...[tasks]);\n[1].map(async x=>x);",
+    "reason": "Argument spread passes tasks as first iterable."
+  },
+  {
+    "name": "return-void-array",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "function f(){const tasks=[1].map(async x=>x);return void tasks;}\n[1].map(async x=>x);",
+    "reason": "Void discards array; ownership does not transfer."
+  },
+  {
+    "name": "return-length-array",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "function f(){const tasks=[1].map(async x=>x);return tasks.length;}\n[1].map(async x=>x);",
+    "reason": "Returning length does not transfer promises."
+  },
+  {
+    "name": "await-array-only",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "async function f(){const tasks=[1].map(async x=>x);await tasks;}\n[1].map(async x=>x);",
+    "reason": "Awaiting array without transfer drops elements."
+  },
+  {
+    "name": "helper-void-array",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "function ignore(...items){return undefined}const tasks=[1].map(async x=>x);ignore(...tasks);\n[1].map(async x=>x);",
+    "reason": "Known helper discards elements."
+  },
+  {
+    "name": "fetch-prototype-signal",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "const c=new AbortController();fetch(\"/\",{__proto__:{signal:c.signal}});\nfetch(\"/positive\");",
+    "reason": "Dictionary inherited property supplies signal."
+  },
+  {
+    "name": "fetch-prototype-null",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 1,
+    "source": "fetch(\"/\",{__proto__:{signal:null}});\nfetch(\"/positive\");",
+    "reason": "Inherited null lacks cancellation."
+  },
+  {
+    "name": "fetch-prototype-own-null",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 1,
+    "source": "const c=new AbortController();fetch(\"/\",{__proto__:{signal:c.signal},signal:null});\nfetch(\"/positive\");",
+    "reason": "Own null overrides inherited signal."
+  },
+  {
+    "name": "fetch-request-copy",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "const c=new AbortController();const r=new Request(\"https://example.invalid\",{signal:c.signal});fetch(new Request(r));\nfetch(\"/positive\");",
+    "reason": "Request copy retains signal."
+  },
+  {
+    "name": "timer-return-await-cleanup",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 0,
+    "source": "import {useEffect} from \"react\";useEffect(()=>{const h=setTimeout(()=>{},1);return ()=>{clearTimeout(h)}},[]);\nimport {useEffect} from \"react\";useEffect(()=>{setTimeout(()=>{},1)},[]);",
+    "reason": "Normal cleanup control."
+  },
+  {
+    "name": "timer-guarded-callback",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 1,
+    "source": "import {useEffect} from \"react\";useEffect(()=>{let alive=true;setTimeout(()=>{if(!alive)return;work()},1);return()=>{alive=false}},[]);\nimport {useEffect} from \"react\";useEffect(()=>{setTimeout(()=>{},1)},[]);",
+    "reason": "Timer remains scheduled; wording must preserve cancellation guards."
+  },
+  {
+    "name": "timer-cleanup-call-parameter",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 0,
+    "source": "import {useEffect} from \"react\";function stop(h){clearTimeout(h)}useEffect(()=>{const h=setTimeout(()=>{},1);return()=>stop(h)},[]);\nimport {useEffect} from \"react\";useEffect(()=>{setTimeout(()=>{},1)},[]);",
+    "reason": "Direct helper actually cancels handle."
+  },
+  {
+    "name": "timer-cleanup-factory",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 0,
+    "source": "import {useEffect} from \"react\";function makeCleanup(h){return()=>clearTimeout(h)}useEffect(()=>{const h=setTimeout(()=>{},1);return makeCleanup(h)},[]);\nimport {useEffect} from \"react\";useEffect(()=>{setTimeout(()=>{},1)},[]);",
+    "reason": "Known documented unresolved factory; unnecessary review candidate."
+  }
+]

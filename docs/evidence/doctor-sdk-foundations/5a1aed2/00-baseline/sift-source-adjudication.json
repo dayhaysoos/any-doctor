@@ -1,0 +1,87 @@
+{
+  "source": "docs/evidence/async-modernization/sift-source-review.json",
+  "findings": 9,
+  "rows": [
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "convex/lib/emailClient.ts",
+      "line": 30,
+      "column": 27,
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "sourceExcerpt": "25: export async function sendEmail(\n26:   apiKey: string,\n27:   options: SendEmailOptions,\n28: ): Promise<SendEmailResult> {\n29:   try {\n30:     const response = await fetch(\"https://api.resend.com/emails\", {\n31:       method: \"POST\",\n32:       headers: {\n33:         Authorization: `Bearer ${apiKey}`,\n34:         \"Content-Type\": \"application/json\",\n35:       },\n36:       body: JSON.stringify({\n37:         from: options.from,\n38:         to: options.to,\n39:         subject: options.subject,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "convex/lib/langfuse.ts",
+      "line": 254,
+      "column": 25,
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "sourceExcerpt": "249:  */\n250: export async function fetchOpenRouterGenerationRest(params: {\n251:   id: string;\n252:   apiKey: string;\n253: }): Promise<OpenRouterGenerationRestPayload[\"data\"] | undefined> {\n254:   const response = await fetch(\n255:     `https://openrouter.ai/api/v1/generation?id=${encodeURIComponent(params.id)}`,\n256:     {\n257:       headers: {\n258:         Authorization: `Bearer ${params.apiKey}`,\n259:         \"Content-Type\": \"application/json\",\n260:       },\n261:     }\n262:   );\n263:   if (!response.ok) return undefined;"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "extensions/sift-chrome/background.ts",
+      "line": 89,
+      "column": 25,
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "sourceExcerpt": "84: }: {\n85:   convexUrl: string;\n86:   pairingCode: string;\n87:   extensionName: string;\n88: }): Promise<PairingExchangeResult> {\n89:   const response = await fetch(`${normalizeUrl(convexUrl)}/api/mutation`, {\n90:     method: \"POST\",\n91:     headers: {\n92:       \"Content-Type\": \"application/json\",\n93:     },\n94:     body: JSON.stringify({\n95:       path: \"extensionAuth:exchangePairingCode\",\n96:       args: {\n97:         pairingCode,\n98:         extensionName,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "extensions/sift-chrome/src/api/client.ts",
+      "line": 69,
+      "column": 25,
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "sourceExcerpt": "64:   kind: ConvexKind,\n65:   path: string,\n66:   args: Record<string, unknown>\n67: ): Promise<T> {\n68:   const endpoint = `${normalizeConvexUrl(convexUrl)}/api/${kind}`;\n69:   const response = await fetch(endpoint, {\n70:     method: \"POST\",\n71:     headers: {\n72:       \"Content-Type\": \"application/json\",\n73:     },\n74:     body: JSON.stringify({ path, args }),\n75:   });\n76: \n77:   let payload: ConvexEnvelope<T> | null = null;\n78:   try {"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "src/components/EmailSignupForm.tsx",
+      "line": 56,
+      "column": 29,
+      "classification": "review_candidate",
+      "reason": "Newly detected multiline signup request. No cancellation signal is present, but submission completion may be deliberate. Informational policy review, not a measured lifecycle bug.",
+      "sourceExcerpt": "51:     setIsSubmitting(true);\n52:     setSubmitStatus(\"idle\");\n53:     setErrorMessage(\"\");\n54: \n55:     try {\n56:       const response = await fetch(\"/api/kit/subscribe\", {\n57:         method: \"POST\",\n58:         headers: {\n59:           \"Content-Type\": \"application/json\",\n60:         },\n61:         body: JSON.stringify({\n62:           email_address: data.email,\n63:           first_name: data.firstName,\n64:           role: data.role,\n65:           website: data.website,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "src/routes/api/kit/subscribe.ts",
+      "line": 146,
+      "column": 39,
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "sourceExcerpt": "141:           if (!kitApiKey) {\n142:             return jsonResponse({ error: \"Kit integration not configured\" }, 500);\n143:           }\n144: \n145:           // Step 1: Create the subscriber\n146:           const createResponse = await fetch(\n147:             \"https://api.kit.com/v4/subscribers\",\n148:             {\n149:               method: \"POST\",\n150:               headers: {\n151:                 \"Content-Type\": \"application/json\",\n152:                 \"X-Kit-Api-Key\": kitApiKey,\n153:               },\n154:               body: JSON.stringify({\n155:                 email_address,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "src/routes/api/kit/subscribe.ts",
+      "line": 176,
+      "column": 38,
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "sourceExcerpt": "171:           const subscriberId = createData?.subscriber?.id;\n172: \n173:           // Step 2: Add tag based on role\n174:           const tagId = ROLE_TAG_IDS[role];\n175:           if (tagId && subscriberId) {\n176:             const tagResponse = await fetch(\n177:               `https://api.kit.com/v4/tags/${tagId}/subscribers`,\n178:               {\n179:               method: \"POST\",\n180:               headers: {\n181:                 \"Content-Type\": \"application/json\",\n182:                 \"X-Kit-Api-Key\": kitApiKey,\n183:               },\n184:               body: JSON.stringify({\n185:                 email_address,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "src/routes/api/kit/subscribe.ts",
+      "line": 199,
+      "column": 37,
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "sourceExcerpt": "194:               });\n195:             }\n196:           }\n197: \n198:           // Step 3: Add subscriber to double opt-in form (triggers incentive email)\n199:           const formResponse = await fetch(\n200:             `https://api.kit.com/v4/forms/${KIT_FORM_ID}/subscribers`,\n201:             {\n202:               method: \"POST\",\n203:               headers: {\n204:                 \"Content-Type\": \"application/json\",\n205:                 \"X-Kit-Api-Key\": kitApiKey,\n206:               },\n207:               body: JSON.stringify({\n208:                 email_address,"
+    },
+    {
+      "rule": "uncleared-settimeout-in-effect",
+      "file": "src/lib/theme.tsx",
+      "line": 49,
+      "column": 2,
+      "classification": "review_candidate",
+      "reason": "Timer in applyTheme is reached by the React effect and has no returned cleanup cancellation. Removing a transition class after 200ms is deliberate completion work; cancellation could leave the class behind. Review candidate, not authorization to add cleanup blindly.",
+      "sourceExcerpt": "44:   } else {\n45:     root.classList.remove(\"dark\");\n46:   }\n47: \n48:   // Remove transition class after animation completes\n49:   setTimeout(() => {\n50:     root.classList.remove(\"theme-transition\");\n51:   }, 200);\n52: }\n53: \n54: export function ThemeProvider({ children }: { children: ReactNode }) {\n55:   const [theme, setThemeState] = useState<Theme>(() => getInitialTheme());\n56: \n57:   // Apply theme on mount\n58:   useEffect(() => {"
+    }
+  ]
+}

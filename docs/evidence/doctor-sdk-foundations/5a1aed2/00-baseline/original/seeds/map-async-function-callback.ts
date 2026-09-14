@@ -1,0 +1,1 @@
+const tasks=[1,2].map(async function(x){return x});
