@@ -206,6 +206,115 @@ export function valueDispositionResult(file, source, facts, expression, query) {
     const result = disposition(undefined, subject.functionStart);
     return result === "unknown" ? { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "unsupported-expression", evidence } : { version: SEMANTIC_RESULT_VERSION, status: "known", value: result, evidence };
 }
+/** Host-owned resource matching through returned cleanup functions and directly
+ * called local helpers/factories. It proves release only for the exact handle. */
+export function resourceLifetimeResult(file, source, facts, acquisition, query) {
+    var _a;
+    const digest = createHash('sha256').update(source).digest('hex'), flow = facts.structure.flow, values = new Map(flow.values.map(value => [value.id, value])), bindings = new Map(flow.bindings.map(binding => [binding.binding, binding])), states = new Map(facts.structure.bindings.map(binding => [binding.binding, binding]));
+    const pick = (ref) => { const byId = values.get(ref.id); return (byId === null || byId === void 0 ? void 0 : byId.start) === ref.start && byId.end === ref.end ? byId : flow.values.find(value => value.start === ref.start && value.end === ref.end); };
+    const subject = pick(acquisition), owner = pick(query.owner);
+    if (!subject || subject.kind !== 'call' || !owner || owner.kind !== 'function')
+        return unknown('unsupported-expression');
+    const evidence = [{ kind: 'expression', file, sourceDigest: digest, range: rangeOf(subject), relationship: 'acquisition' }];
+    const stable = (binding) => { var _a, _b; return !((_a = states.get(binding)) === null || _a === void 0 ? void 0 : _a.reassigned) && !((_b = states.get(binding)) === null || _b === void 0 ? void 0 : _b.mutated); };
+    const resolve = (id, seen = new Set()) => { var _a, _b, _c, _d; const value = values.get(id); if (!value || seen.has(id))
+        return null; seen = new Set(seen).add(id); if (value.kind === 'reference' && ((_a = value.target) === null || _a === void 0 ? void 0 : _a.binding) !== null && ((_b = value.target) === null || _b === void 0 ? void 0 : _b.binding) !== undefined) {
+        const binding = value.target.binding, initializer = (_c = bindings.get(binding)) === null || _c === void 0 ? void 0 : _c.initializer;
+        if (stable(binding) && initializer !== undefined)
+            return (_d = resolve(initializer, seen)) !== null && _d !== void 0 ? _d : value;
+    } return value; };
+    const name = (id) => { const value = resolve(id); if (!(value === null || value === void 0 ? void 0 : value.target) || value.target.binding !== null || !value.target.root)
+        return null; return [value.target.root, ...value.target.members].join('.'); };
+    const acquisitionBindings = new Set();
+    for (const binding of flow.bindings)
+        if (binding.initializer === subject.id && stable(binding.binding))
+            acquisitionBindings.add(binding.binding);
+    for (const use of flow.uses)
+        if (!use.dead && use.kind === 'write' && use.value === subject.id && use.binding !== undefined && !flow.uses.some(other => !other.dead && other.kind === 'write' && other.binding === use.binding && other.value !== subject.id))
+            acquisitionBindings.add(use.binding);
+    const isHandle = (id, env, seen = new Set()) => { var _a, _b, _c; const value = values.get(id); if (!value || seen.has(id))
+        return false; seen = new Set(seen).add(id); if (value.kind === 'reference' && ((_a = value.target) === null || _a === void 0 ? void 0 : _a.binding) !== null && ((_b = value.target) === null || _b === void 0 ? void 0 : _b.binding) !== undefined) {
+        const binding = value.target.binding;
+        if (env.has(binding) || acquisitionBindings.has(binding))
+            return true;
+        const initializer = (_c = bindings.get(binding)) === null || _c === void 0 ? void 0 : _c.initializer;
+        return stable(binding) && initializer !== undefined && isHandle(initializer, env, seen);
+    } return false; };
+    const calls = flow.values.filter(value => value.kind === 'call' && !value.dead);
+    const reachable = new Set([owner.start]), queue = [owner.start];
+    while (queue.length) {
+        const current = queue.shift();
+        for (const call of calls.filter(value => value.functionStart === current)) {
+            const fn = resolve(call.callee);
+            if ((fn === null || fn === void 0 ? void 0 : fn.kind) === 'function' && !reachable.has(fn.start)) {
+                reachable.add(fn.start);
+                queue.push(fn.start);
+            }
+        }
+    }
+    if (subject.functionStart !== owner.start && !reachable.has((_a = subject.functionStart) !== null && _a !== void 0 ? _a : -1))
+        return unknown('outside-owner', evidence);
+    const bindArgs = (call, fn, parent) => { var _a; const out = new Set(); for (const parameter of flow.bindings.filter(binding => { var _a; return ((_a = binding.parameter) === null || _a === void 0 ? void 0 : _a.functionStart) === fn.start; })) {
+        const actual = (_a = call.arguments) === null || _a === void 0 ? void 0 : _a[parameter.parameter.index];
+        if (actual !== undefined && isHandle(actual, parent))
+            out.add(parameter.binding);
+    } return out; };
+    const cleanupContexts = (id, parent, seen = new Set()) => { var _a; const value = resolve(id); if (!value || seen.has(value.id))
+        return null; seen = new Set(seen).add(value.id); if (value.kind === 'function')
+        return [{ start: value.start, handles: new Set(parent), conditional: !!value.conditional }]; if (value.kind === 'call') {
+        const fn = resolve(value.callee);
+        if ((fn === null || fn === void 0 ? void 0 : fn.kind) !== 'function')
+            return null;
+        const env = bindArgs(value, fn, parent), returns = flow.uses.filter(use => !use.dead && use.kind === 'return' && use.functionStart === fn.start);
+        if (!returns.length)
+            return [];
+        const all = returns.flatMap(use => { var _a; return (_a = cleanupContexts(use.value, env, seen)) !== null && _a !== void 0 ? _a : []; });
+        return all.length ? all : null;
+    } if (value.kind === 'choice') {
+        const branches = (_a = value.alternatives) === null || _a === void 0 ? void 0 : _a.map(item => cleanupContexts(item, parent, seen));
+        return (branches === null || branches === void 0 ? void 0 : branches.every(Boolean)) ? branches.flatMap(item => item) : null;
+    } return null; };
+    const returned = flow.uses.filter(use => !use.dead && use.kind === 'return' && use.functionStart === owner.start);
+    if (!returned.length)
+        return { version: SEMANTIC_RESULT_VERSION, status: 'known', value: 'unreleased', evidence };
+    const contexts = returned.flatMap(use => { var _a; return (_a = cleanupContexts(use.value, new Set())) !== null && _a !== void 0 ? _a : []; });
+    if (!contexts.length)
+        return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'unsupported-expression', evidence };
+    const inspect = (context, seen = new Set()) => {
+        var _a, _b, _c;
+        const key = `${context.start}:${[...context.handles].sort().join(',')}`;
+        if (seen.has(key))
+            return 'unknown';
+        seen = new Set(seen).add(key);
+        let uncertain = false;
+        for (const call of calls.filter(value => value.functionStart === context.start)) {
+            if (query.release.includes((_a = name(call.callee)) !== null && _a !== void 0 ? _a : '') && ((_b = call.arguments) === null || _b === void 0 ? void 0 : _b[0]) !== undefined && isHandle(call.arguments[0], context.handles)) {
+                if (call.conditional)
+                    return 'unknown';
+                evidence.push({ kind: 'expression', file, sourceDigest: digest, range: rangeOf(call), relationship: 'release' });
+                return 'released';
+            }
+            const carries = ((_c = call.arguments) !== null && _c !== void 0 ? _c : []).some(argument => isHandle(argument, context.handles));
+            const fn = resolve(call.callee);
+            if ((fn === null || fn === void 0 ? void 0 : fn.kind) === 'function') {
+                const nested = inspect({ start: fn.start, handles: bindArgs(call, fn, context.handles), conditional: context.conditional || !!call.conditional }, seen);
+                if (nested === 'released')
+                    return nested;
+                if (nested === 'unknown')
+                    uncertain = true;
+            }
+            else if (carries)
+                uncertain = true;
+        }
+        return uncertain ? 'unknown' : 'unreleased';
+    };
+    const outcomes = contexts.map(context => ({ context, value: inspect(context) }));
+    if (outcomes.every(item => item.value === 'released') || outcomes.some(item => item.value === 'released' && !item.context.conditional) && outcomes.every(item => item.value === 'released' || item.context.conditional))
+        return { version: SEMANTIC_RESULT_VERSION, status: 'known', value: 'released', evidence };
+    if (outcomes.some(item => item.value === 'unknown') || new Set(outcomes.map(item => item.value)).size > 1)
+        return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'unsupported-expression', evidence };
+    return { version: SEMANTIC_RESULT_VERSION, status: 'known', value: 'unreleased', evidence };
+}
 function originOf(target) {
     if (target.source && target.importedName)
         return { kind: "import", source: target.source, name: target.importedName };

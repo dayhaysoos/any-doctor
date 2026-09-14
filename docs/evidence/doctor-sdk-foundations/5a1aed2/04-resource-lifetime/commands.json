@@ -1,0 +1,166 @@
+[
+  {
+    "name": "npm-test",
+    "command": [
+      "npm",
+      "test"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 73797
+  },
+  {
+    "name": "local-verify-all",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "bin/cli.js",
+      "verify",
+      "--all"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 1247
+  },
+  {
+    "name": "local-original",
+    "command": [
+      "python3",
+      "<checkpoint4-temp>/inputs/challenges.py",
+      "local",
+      "<repo>"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 537
+  },
+  {
+    "name": "local-fresh",
+    "command": [
+      "python3",
+      "<checkpoint4-temp>/inputs/fresh.py",
+      "local",
+      "<repo>"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 499
+  },
+  {
+    "name": "local-unavailable",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "dev/async-analysis/check-unavailable.mjs",
+      "<repo>",
+      "<checkpoint4-temp>/local-unavailable"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 41
+  },
+  {
+    "name": "local-sift",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "bin/cli.js",
+      "run",
+      "doctors/async.mjs",
+      "/tmp/any-doctor-frozen-sift",
+      "--format",
+      "json"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 51815
+  },
+  {
+    "name": "pack",
+    "command": [
+      "npm",
+      "pack",
+      "--ignore-scripts",
+      "--pack-destination",
+      "<checkpoint4-temp>/package",
+      "--json"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 853
+  },
+  {
+    "name": "install",
+    "command": [
+      "npm",
+      "install",
+      "--ignore-scripts",
+      "--no-audit",
+      "--no-fund",
+      "<checkpoint4-temp>/package/any-doctor-0.1.2.tgz"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 2255
+  },
+  {
+    "name": "packed-verify-all",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "<checkpoint4-temp>/consumer/node_modules/any-doctor/bin/cli.js",
+      "verify",
+      "--all"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 1676
+  },
+  {
+    "name": "packed-original",
+    "command": [
+      "python3",
+      "<checkpoint4-temp>/inputs/challenges.py",
+      "packed",
+      "<checkpoint4-temp>/consumer/node_modules/any-doctor"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 537
+  },
+  {
+    "name": "packed-fresh",
+    "command": [
+      "python3",
+      "<checkpoint4-temp>/inputs/fresh.py",
+      "packed",
+      "<checkpoint4-temp>/consumer/node_modules/any-doctor"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 481
+  },
+  {
+    "name": "packed-unavailable",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "<repo>/dev/async-analysis/check-unavailable.mjs",
+      "<checkpoint4-temp>/consumer/node_modules/any-doctor",
+      "<checkpoint4-temp>/packed-unavailable"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 43
+  },
+  {
+    "name": "packed-sift",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "<checkpoint4-temp>/consumer/node_modules/any-doctor/bin/cli.js",
+      "run",
+      "<checkpoint4-temp>/consumer/node_modules/any-doctor/doctors/async.mjs",
+      "/tmp/any-doctor-frozen-sift",
+      "--format",
+      "json"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 52068
+  }
+]

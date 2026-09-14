@@ -9,6 +9,7 @@ export interface FlowValue extends SourceRange {
   kind: 'unknown' | 'reference' | 'member' | 'literal' | 'array' | 'object' | 'call' | 'construct' | 'function' | 'await' | 'void' | 'choice';
   functionStart: number | null;
   dead: boolean;
+  conditional?: boolean;
   target?: CallTarget;
   primitive?: "string";
   literal?: string | number | boolean | null;
@@ -49,6 +50,18 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     }
     return false;
   };
+  const conditional = (n: Node): boolean => {
+    let child=n,p=parents.get(child);
+    while(p){
+      if(functions.has(p.type))break;
+      if(p.type==='IfStatement'||p.type==='ConditionalExpression'){
+        const test=unwrap(p.test as Node);
+        if(!(test.type==='Literal'&&typeof test.value==='boolean')&&child!==p.test)return true;
+      }
+      child=p;p=parents.get(p);
+    }
+    return false;
+  };
   const key = (n: Node, computed: unknown): string | null => {
     n = unwrap(n);
     return !computed && n.type === 'Identifier' ? String(n.name)
@@ -56,7 +69,7 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
   };
   const value = (input: Node): number => {
     const n = unwrap(input); const prior = ids.get(n); if (prior !== undefined) return prior;
-    const id = values.length, v: FlowValue = { id, ...range(n), kind:'unknown', functionStart:functionStart(n), dead:dead(n) };
+    const id = values.length, v: FlowValue = { id, ...range(n), kind:'unknown', functionStart:functionStart(n), dead:dead(n), ...(conditional(n)?{conditional:true}:{}) };
     ids.set(n,id); values.push(v);
     if (n.type === 'Identifier') { v.kind='reference';v.target=target(n); }
     else if (n.type === 'Literal' && (n.value === null || ['string','number','boolean'].includes(typeof n.value))) { v.kind='literal';v.literal=n.value as FlowValue['literal']; }

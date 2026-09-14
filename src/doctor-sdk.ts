@@ -2,13 +2,13 @@ import { createHash } from "node:crypto";
 import type {
   AnalysisCalls, CallTarget, ExpressionRef, IdentityOrigin, IdentityQuery,
   IdentityValue, SemanticEvidence, SemanticResult, SourceRange, ValueDisposition,
-  ValueDispositionQuery,
+  ValueDispositionQuery, ResourceLifetime, ResourceLifetimeQuery,
 } from "./contract.js";
 import { SEMANTIC_RESULT_VERSION } from "./contract.js";
 
 type FlowValue = AnalysisCalls["structure"]["flow"]["values"][number];
 
-const unknown = <T>(reason: "provider-failure" | "unsupported-expression" | "unresolved-identity", evidence?: SemanticEvidence[]): SemanticResult<T> => ({
+  const unknown = <T>(reason: "provider-failure" | "unsupported-expression" | "unresolved-identity" | "outside-owner", evidence?: SemanticEvidence[]): SemanticResult<T> => ({
   version: SEMANTIC_RESULT_VERSION,
   status: "unknown",
   reason,
@@ -146,6 +146,33 @@ export function valueDispositionResult(
   const containsCall=(id:number,callId:number)=>resolve(id)?.id===callId;
   const result=disposition(undefined,subject.functionStart);
   return result==="unknown"?{version:SEMANTIC_RESULT_VERSION,status:"unknown",reason:"unsupported-expression",evidence}:{version:SEMANTIC_RESULT_VERSION,status:"known",value:result,evidence};
+}
+
+/** Host-owned resource matching through returned cleanup functions and directly
+ * called local helpers/factories. It proves release only for the exact handle. */
+export function resourceLifetimeResult(file:string,source:string,facts:AnalysisCalls,acquisition:ExpressionRef,query:ResourceLifetimeQuery):SemanticResult<ResourceLifetime>{
+  const digest=createHash('sha256').update(source).digest('hex'),flow=facts.structure.flow,values=new Map(flow.values.map(value=>[value.id,value])),bindings=new Map(flow.bindings.map(binding=>[binding.binding,binding])),states=new Map(facts.structure.bindings.map(binding=>[binding.binding,binding]));
+  const pick=(ref:ExpressionRef)=>{const byId=values.get(ref.id);return byId?.start===ref.start&&byId.end===ref.end?byId:flow.values.find(value=>value.start===ref.start&&value.end===ref.end);};
+  const subject=pick(acquisition),owner=pick(query.owner);if(!subject||subject.kind!=='call'||!owner||owner.kind!=='function')return unknown('unsupported-expression');
+  const evidence:SemanticEvidence[]=[{kind:'expression',file,sourceDigest:digest,range:rangeOf(subject),relationship:'acquisition'}];
+  const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
+  const resolve=(id:number,seen=new Set<number>()):FlowValue|null=>{const value=values.get(id);if(!value||seen.has(id))return null;seen=new Set(seen).add(id);if(value.kind==='reference'&&value.target?.binding!==null&&value.target?.binding!==undefined){const binding=value.target.binding,initializer=bindings.get(binding)?.initializer;if(stable(binding)&&initializer!==undefined)return resolve(initializer,seen)??value;}return value;};
+  const name=(id:number):string|null=>{const value=resolve(id);if(!value?.target||value.target.binding!==null||!value.target.root)return null;return [value.target.root,...value.target.members].join('.');};
+  const acquisitionBindings=new Set<number>();for(const binding of flow.bindings)if(binding.initializer===subject.id&&stable(binding.binding))acquisitionBindings.add(binding.binding);for(const use of flow.uses)if(!use.dead&&use.kind==='write'&&use.value===subject.id&&use.binding!==undefined&&!flow.uses.some(other=>!other.dead&&other.kind==='write'&&other.binding===use.binding&&other.value!==subject.id))acquisitionBindings.add(use.binding);
+  const isHandle=(id:number,env:ReadonlySet<number>,seen=new Set<number>()):boolean=>{const value=values.get(id);if(!value||seen.has(id))return false;seen=new Set(seen).add(id);if(value.kind==='reference'&&value.target?.binding!==null&&value.target?.binding!==undefined){const binding=value.target.binding;if(env.has(binding)||acquisitionBindings.has(binding))return true;const initializer=bindings.get(binding)?.initializer;return stable(binding)&&initializer!==undefined&&isHandle(initializer,env,seen);}return false;};
+  const calls=flow.values.filter(value=>value.kind==='call'&&!value.dead);
+  const reachable=new Set<number>([owner.start]),queue=[owner.start];while(queue.length){const current=queue.shift()!;for(const call of calls.filter(value=>value.functionStart===current)){const fn=resolve(call.callee!);if(fn?.kind==='function'&&!reachable.has(fn.start)){reachable.add(fn.start);queue.push(fn.start);}}}
+  if(subject.functionStart!==owner.start&&!reachable.has(subject.functionStart??-1))return unknown('outside-owner',evidence);
+  type Context={start:number;handles:Set<number>;conditional:boolean};
+  const bindArgs=(call:FlowValue,fn:FlowValue,parent:ReadonlySet<number>):Set<number>=>{const out=new Set<number>();for(const parameter of flow.bindings.filter(binding=>binding.parameter?.functionStart===fn.start)){const actual=call.arguments?.[parameter.parameter!.index];if(actual!==undefined&&isHandle(actual,parent))out.add(parameter.binding);}return out;};
+  const cleanupContexts=(id:number,parent:ReadonlySet<number>,seen=new Set<number>()):Context[]|null=>{const value=resolve(id);if(!value||seen.has(value.id))return null;seen=new Set(seen).add(value.id);if(value.kind==='function')return [{start:value.start,handles:new Set(parent),conditional:!!value.conditional}];if(value.kind==='call'){const fn=resolve(value.callee!);if(fn?.kind!=='function')return null;const env=bindArgs(value,fn,parent),returns=flow.uses.filter(use=>!use.dead&&use.kind==='return'&&use.functionStart===fn.start);if(!returns.length)return [];const all=returns.flatMap(use=>cleanupContexts(use.value,env,seen)??[]);return all.length?all:null;}if(value.kind==='choice'){const branches=value.alternatives?.map(item=>cleanupContexts(item,parent,seen));return branches?.every(Boolean)?branches.flatMap(item=>item!):null;}return null;};
+  const returned=flow.uses.filter(use=>!use.dead&&use.kind==='return'&&use.functionStart===owner.start);if(!returned.length)return {version:SEMANTIC_RESULT_VERSION,status:'known',value:'unreleased',evidence};
+  const contexts=returned.flatMap(use=>cleanupContexts(use.value,new Set())??[]);if(!contexts.length)return {version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'unsupported-expression',evidence};
+  const inspect=(context:Context,seen=new Set<string>()):'released'|'unreleased'|'unknown'=>{const key=`${context.start}:${[...context.handles].sort().join(',')}`;if(seen.has(key))return 'unknown';seen=new Set(seen).add(key);let uncertain=false;for(const call of calls.filter(value=>value.functionStart===context.start)){
+    if(query.release.includes(name(call.callee!)??'')&&call.arguments?.[0]!==undefined&&isHandle(call.arguments[0],context.handles)){if(call.conditional)return 'unknown';evidence.push({kind:'expression',file,sourceDigest:digest,range:rangeOf(call),relationship:'release'});return 'released';}
+    const carries=(call.arguments??[]).some(argument=>isHandle(argument,context.handles));const fn=resolve(call.callee!);if(fn?.kind==='function'){const nested=inspect({start:fn.start,handles:bindArgs(call,fn,context.handles),conditional:context.conditional||!!call.conditional},seen);if(nested==='released')return nested;if(nested==='unknown')uncertain=true;}else if(carries)uncertain=true;
+  }return uncertain?'unknown':'unreleased';};
+  const outcomes=contexts.map(context=>({context,value:inspect(context)}));if(outcomes.every(item=>item.value==='released')||outcomes.some(item=>item.value==='released'&&!item.context.conditional)&&outcomes.every(item=>item.value==='released'||item.context.conditional))return {version:SEMANTIC_RESULT_VERSION,status:'known',value:'released',evidence};if(outcomes.some(item=>item.value==='unknown')||new Set(outcomes.map(item=>item.value)).size>1)return {version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'unsupported-expression',evidence};return {version:SEMANTIC_RESULT_VERSION,status:'known',value:'unreleased',evidence};
 }
 
 function originOf(target: CallTarget): IdentityOrigin | null {

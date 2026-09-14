@@ -8,6 +8,7 @@ export interface FlowValue extends SourceRange {
     kind: 'unknown' | 'reference' | 'member' | 'literal' | 'array' | 'object' | 'call' | 'construct' | 'function' | 'await' | 'void' | 'choice';
     functionStart: number | null;
     dead: boolean;
+    conditional?: boolean;
     target?: CallTarget;
     primitive?: "string";
     literal?: string | number | boolean | null;

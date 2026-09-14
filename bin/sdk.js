@@ -167,6 +167,19 @@ export function buildCtx(root, opts = {}) {
                     return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" };
                 }
             },
+            resourceLifetime(file, acquisition, query) {
+                if (analysisForcedOff || !ctx.analysis.available)
+                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'analysis-unavailable' };
+                try {
+                    const response = runAnalysis({ kind: 'resource-lifetime', file, expression: acquisition, query, sourceDigest: digest(readSource(file)) }, root);
+                    if (response.semantic)
+                        return response.semantic;
+                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+                }
+                catch {
+                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+                }
+            },
         },
         report: {
             finding(f) {

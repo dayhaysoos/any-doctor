@@ -24,7 +24,7 @@ export const meta = {
       why:'Awaiting an array, its container or its length does not await the array elements. A combiner consumes its actual iterable, not all values in its source span.',
       fix:'If the work must finish here, await Promise.all on the actual promise array and handle errors. For sequential processing, use a for...of loop with await inside; merely removing async does not make asynchronous work sequential. Preserve intentional ownership transfers.',
       lookalikes:['returned promise arrays','aliases passed to a native combiner','per-element awaits','unrelated map methods','unresolved transfers']},
-    {id:'uncleared-settimeout-in-effect',revision:2,reportingUnit:'occurrence',needs:['calls'],onUnknown:'skip',severity:'warning',
+    {id:'uncleared-settimeout-in-effect',revision:2,reportingUnit:'occurrence',needs:['calls','identity','resource-lifetime'],onUnknown:'skip',severity:'warning',
       description:'Review an effect timer with no matching cancellation in its returned cleanup.',
       claim:'A native setTimeout reachable from a resolved React effect has no supported returned-cleanup cancellation of its actual handle.',
       impact:'The callback may outlive the effect that scheduled it; whether that is wrong depends on the intended lifetime.',
@@ -51,14 +51,12 @@ export async function doctor(ctx) {
     }
     for(const effect of m.calls.filter(c=>m.reactEffect(c.callee))){
       const setup=m.resolve(effect.arguments[0]);if(setup?.kind!=='function')continue;
-      const active=m.reachable(setup.start), cleanup=new Set();
-      for(const u of m.flow.uses.filter(u=>u.kind==='return'&&!u.dead&&u.functionStart===setup.start)){
-        const f=m.resolve(u.value);if(f?.kind==='function')for(const start of m.reachable(f.start))cleanup.add(start);
-      }
-      const clears=m.calls.filter(c=>cleanup.has(c.functionStart)&&m.native(c.callee,'clearTimeout'));
-      for(const timer of m.calls.filter(c=>active.has(c.functionStart)&&m.native(c.callee,'setTimeout'))){
-        const handles=m.handles(timer);
-        if(!clears.some(c=>handles.has(m.handle(c.arguments[0]))))report('uncleared-settimeout-in-effect',timer,'No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.');
+      for(const timer of m.calls){
+        const timerIdentity=ctx.analysis.identity(file,m.ref(timer.callee),{globals:['setTimeout','window.setTimeout','globalThis.setTimeout']});
+        if(timerIdentity.status!=='known'||!timerIdentity.value.matches)continue;
+        const lifetime=ctx.analysis.resourceLifetime(file,m.ref(timer.id),{owner:m.ref(setup.id),release:['clearTimeout','window.clearTimeout','globalThis.clearTimeout']});
+        if(lifetime.status==='known'&&lifetime.value==='unreleased')report('uncleared-settimeout-in-effect',timer,'No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.');
+        if(lifetime.status==='unknown'&&lifetime.reason!=='outside-owner')report('uncleared-settimeout-in-effect',timer,'Cleanup analysis is uncertain for this timer. No supported matching cancellation was established; inspect opaque, conditional or reassigned cleanup flow before editing.');
       }
     }
   }
@@ -156,26 +154,6 @@ function model(facts){
     if(v.kind==='call'&&['filter','slice','concat','map','flat','flatMap','toSorted','toReversed','toSpliced'].includes(v.member))return array(v.receiver,seen);
     return false;
   }
-  function reachable(start){
-    const result=new Set([start]),queue=[start];
-    while(queue.length){const owner=queue.shift();for(const c of calls.filter(c=>c.functionStart===owner)){
-      const f=resolve(c.callee);if(f?.kind==='function'&&!result.has(f.start)){result.add(f.start);queue.push(f.start);}
-    }}return result;
-  }
-  function handle(id,seen=new Set()){
-    const raw=values.get(id);if(!raw||seen.has(id))return null;seen=new Set(seen).add(id);
-    if(raw.kind==='reference'&&raw.target.binding!==null){
-      const b=bindings.get(raw.target.binding),init=values.get(b?.initializer);
-      if(stable(raw.target.binding)&&init?.kind==='reference')return handle(init.id,seen);
-      return raw.target.binding;
-    }
-    return null;
-  }
-  function handles(c){const out=new Set();for(const b of bindings.values())if(b.initializer===c.id)out.add(b.binding);
-    for(const u of flow.uses)if(!u.dead&&u.kind==='write'&&u.value===c.id)out.add(u.binding);
-    for(const binding of out)if(flow.uses.some(u=>!u.dead&&u.kind==='write'&&u.binding===binding&&u.value!==c.id))out.delete(binding);
-    return out;
-  }
   const ref=id=>{const v=values.get(id);return {id:v.id,start:v.start,end:v.end}};
-  return {flow,calls,resolve,native,reactEffect,array,fetchSignal,reachable,handle,handles,ref};
+  return {flow,calls,resolve,native,reactEffect,array,fetchSignal,ref};
 }

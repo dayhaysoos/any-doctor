@@ -320,6 +320,7 @@ export type UnknownReason =
   | "analysis-unavailable"
   | "provider-failure"
   | "unsupported-expression"
+  | "outside-owner"
   | "unresolved-identity"
   | "source-changed";
 export interface SemanticEvidence {
@@ -344,6 +345,8 @@ export type IdentityOrigin =
 export interface IdentityValue { matches: boolean; origin: IdentityOrigin }
 export interface ValueDispositionQuery { consumers: string[] }
 export type ValueDisposition = "consumed" | "transferred" | "discarded";
+export interface ResourceLifetimeQuery { release: string[]; owner: ExpressionRef }
+export type ResourceLifetime = "released" | "unreleased";
 
 export interface DoctorCtx {
   root: string;
@@ -386,6 +389,9 @@ export interface DoctorCtx {
     /** Classify what supported local flow establishes for one exact value.
      * Awaiting an ordinary array does not consume the promises it contains. */
     valueDisposition(file: string, expression: ExpressionRef, query: ValueDispositionQuery): SemanticResult<ValueDisposition>;
+    /** Match an acquisition's exact handles to releases executed by the
+     * owner's returned cleanup. Conditional or opaque cleanup stays unknown. */
+    resourceLifetime(file: string, acquisition: ExpressionRef, query: ResourceLifetimeQuery): SemanticResult<ResourceLifetime>;
     consumers(file: string): { exports: ExportConsumers[]; coverage: ProjectConsumers["coverage"] };
     structures(file: string): FunctionStructure[];
   };

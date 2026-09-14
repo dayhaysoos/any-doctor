@@ -257,7 +257,7 @@ export interface AnalysisCalls {
 /** Doctor SDK semantic results are versioned, JSON-safe answers tied to the
  * exact source snapshot analyzed. Unknown is never absence. */
 export declare const SEMANTIC_RESULT_VERSION: 1;
-export type UnknownReason = "analysis-unavailable" | "provider-failure" | "unsupported-expression" | "unresolved-identity" | "source-changed";
+export type UnknownReason = "analysis-unavailable" | "provider-failure" | "unsupported-expression" | "outside-owner" | "unresolved-identity" | "source-changed";
 export interface SemanticEvidence {
     kind: "expression" | "binding" | "alias";
     file: string;
@@ -307,6 +307,11 @@ export interface ValueDispositionQuery {
     consumers: string[];
 }
 export type ValueDisposition = "consumed" | "transferred" | "discarded";
+export interface ResourceLifetimeQuery {
+    release: string[];
+    owner: ExpressionRef;
+}
+export type ResourceLifetime = "released" | "unreleased";
 export interface DoctorCtx {
     root: string;
     files: {
@@ -344,6 +349,9 @@ export interface DoctorCtx {
         /** Classify what supported local flow establishes for one exact value.
          * Awaiting an ordinary array does not consume the promises it contains. */
         valueDisposition(file: string, expression: ExpressionRef, query: ValueDispositionQuery): SemanticResult<ValueDisposition>;
+        /** Match an acquisition's exact handles to releases executed by the
+         * owner's returned cleanup. Conditional or opaque cleanup stays unknown. */
+        resourceLifetime(file: string, acquisition: ExpressionRef, query: ResourceLifetimeQuery): SemanticResult<ResourceLifetime>;
         consumers(file: string): {
             exports: ExportConsumers[];
             coverage: ProjectConsumers["coverage"];

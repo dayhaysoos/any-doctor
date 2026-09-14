@@ -5,7 +5,7 @@ import type { ProjectConsumers } from "./project-consumers.js";
 import type { FunctionStructure } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, ExpressionRef, Finding, IdentityQuery, IdentityValue, isTestPath, Match, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, SemanticResult, SEMANTIC_RESULT_VERSION, ValueDisposition, ValueDispositionQuery, withinDir } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, ExpressionRef, Finding, IdentityQuery, IdentityValue, isTestPath, Match, NamedRuleQuery, ResourceLifetime, ResourceLifetimeQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, SemanticResult, SEMANTIC_RESULT_VERSION, ValueDisposition, ValueDispositionQuery, withinDir } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 import { EngineQuery, RawSgCapture, RawSgMatch } from "./engine.js";
 
@@ -166,6 +166,10 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
           if (response.semantic) return response.semantic as SemanticResult<ValueDisposition>;
           return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" };
         } catch { return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" }; }
+      },
+      resourceLifetime(file:string,acquisition:ExpressionRef,query:ResourceLifetimeQuery):SemanticResult<ResourceLifetime>{
+        if(analysisForcedOff||!ctx.analysis.available)return {version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'analysis-unavailable'};
+        try{const response=runAnalysis({kind:'resource-lifetime',file,expression:acquisition,query,sourceDigest:digest(readSource(file))},root);if(response.semantic)return response.semantic as SemanticResult<ResourceLifetime>;return {version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'provider-failure'};}catch{return {version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'provider-failure'};}
       },
     },
 
@@ -348,11 +352,11 @@ interface AnalysisResponse {
   available?: boolean;
   reason?: string;
   file?: AnalysisFile | AnalysisSpans | AnalysisCalls;
-  semantic?: SemanticResult<IdentityValue | ValueDisposition>;
+  semantic?: SemanticResult<IdentityValue | ValueDisposition | ResourceLifetime>;
   error?: string;
 }
 
-function runAnalysis(body: { kind: "project" } | { kind: "structures"; file: string; sourceDigest?: string } | { kind: "available" } | { kind: "bindings"; file: string; sourceDigest?: string } | { kind: "spans"; file: string; sourceDigest?: string } | { kind: "calls"; file: string; sourceDigest?: string } | { kind: "identity"; file: string; expression: ExpressionRef; query: IdentityQuery; sourceDigest?: string } | {kind:"value-disposition";file:string;expression:ExpressionRef;query:ValueDispositionQuery;sourceDigest?:string}, root: string): AnalysisResponse {
+function runAnalysis(body: { kind: "project" } | { kind: "structures"; file: string; sourceDigest?: string } | { kind: "available" } | { kind: "bindings"; file: string; sourceDigest?: string } | { kind: "spans"; file: string; sourceDigest?: string } | { kind: "calls"; file: string; sourceDigest?: string } | { kind: "identity"; file: string; expression: ExpressionRef; query: IdentityQuery; sourceDigest?: string } | {kind:"value-disposition";file:string;expression:ExpressionRef;query:ValueDispositionQuery;sourceDigest?:string}|{kind:'resource-lifetime';file:string;expression:ExpressionRef;query:ResourceLifetimeQuery;sourceDigest?:string}, root: string): AnalysisResponse {
   let response: AnalysisResponse;
   try {
     fs.writeSync(3, SEARCH_REQUEST + JSON.stringify({ op: "analysis", ...body, root }) + "\n");

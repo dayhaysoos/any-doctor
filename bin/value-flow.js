@@ -20,6 +20,21 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         }
         return false;
     };
+    const conditional = (n) => {
+        let child = n, p = parents.get(child);
+        while (p) {
+            if (functions.has(p.type))
+                break;
+            if (p.type === 'IfStatement' || p.type === 'ConditionalExpression') {
+                const test = unwrap(p.test);
+                if (!(test.type === 'Literal' && typeof test.value === 'boolean') && child !== p.test)
+                    return true;
+            }
+            child = p;
+            p = parents.get(p);
+        }
+        return false;
+    };
     const key = (n, computed) => {
         n = unwrap(n);
         return !computed && n.type === 'Identifier' ? String(n.name)
@@ -30,7 +45,7 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         const prior = ids.get(n);
         if (prior !== undefined)
             return prior;
-        const id = values.length, v = { id, ...range(n), kind: 'unknown', functionStart: functionStart(n), dead: dead(n) };
+        const id = values.length, v = { id, ...range(n), kind: 'unknown', functionStart: functionStart(n), dead: dead(n), ...(conditional(n) ? { conditional: true } : {}) };
         ids.set(n, id);
         values.push(v);
         if (n.type === 'Identifier') {
