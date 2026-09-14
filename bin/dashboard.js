@@ -71,12 +71,16 @@ function wordWrap(text, width) {
 // lines (the notice line is always reserved), plus the bottom terminal row,
 // which is never written so no repaint can make the terminal scroll.
 const CHROME_ROWS = 9;
-export function resolveDashboardLayout(cols, rows, itemCount) {
-    const bodyRows = Math.max(1, rows - CHROME_ROWS);
+export function resolveDashboardLayout(cols, rows, itemCount, quietCount = 0, noticeRows = 0) {
+    // Status rows share the terminal budget with the body. Reserve at least half
+    // the remaining space for the selected finding tree and its detail pane.
+    const availableRows = Math.max(0, rows - CHROME_ROWS - noticeRows);
+    const quietRows = Math.min(quietCount, Math.floor(availableRows / 2));
+    const bodyRows = availableRows - quietRows;
     if (cols >= SPLIT_MIN_COLS) {
         const listWidth = Math.min(56, Math.max(32, Math.floor(cols * 0.44)));
         const detailWidth = cols - listWidth - 2;
-        return { mode: "split", listWidth, detailWidth, listHeight: bodyRows, detailHeight: bodyRows, bodyRows };
+        return { mode: "split", listWidth, detailWidth, listHeight: bodyRows, detailHeight: bodyRows, bodyRows, quietRows };
     }
     const listHeight = Math.min(Math.max(2, Math.ceil(bodyRows * 0.4)), Math.max(1, itemCount));
     return {
@@ -86,6 +90,7 @@ export function resolveDashboardLayout(cols, rows, itemCount) {
         listHeight,
         detailHeight: Math.max(1, bodyRows - listHeight - 2),
         bodyRows,
+        quietRows,
     };
 }
 // The one way to ask what a row toggles — doctor rows answer their
@@ -233,11 +238,16 @@ function itemRowText(it, isSelected, readKeys, c, showCheckId = true, reviewed, 
     return `${isSelected ? c("›", BOLD) : " "}${glyph} ${c(it.site.file + ":" + it.site.line, wrap)}${suffix}${mark}`;
 }
 export function dashboardFrame(state) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
     const { tree, selectedRow, readKeys, useColor, cols, rows } = state;
     const c = colorizer(useColor);
     const findings = tree.flatMap(d => d.checks.flatMap(g => g.items));
-    const layout = resolveDashboardLayout(cols, rows, findings.length);
+    const quietDoctors = state.filesTotal > 0 ? (_a = state.zeroFindingDoctors) !== null && _a !== void 0 ? _a : [] : [];
+    const notices = [
+        ...(((_b = state.skippedUnsafe) === null || _b === void 0 ? void 0 : _b.length) ? [`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`] : []),
+        ...(state.coverageNotice ? [state.coverageNotice] : []),
+    ];
+    const layout = resolveDashboardLayout(cols, rows, findings.length, quietDoctors.length, notices.length);
     const barWidth = Math.min(46, Math.max(16, cols - 60));
     // The header is the SELECTED doctor's report — never a cohort total,
     // which read as belonging to whichever row was on screen. Rows are
@@ -246,7 +256,7 @@ export function dashboardFrame(state) {
         ? { dispositionByReadKey: state.dispositionByReadKey, reassessPairs: state.reassessPairs, ambiguousReadKeys: state.ambiguousReadKeys }
         : undefined);
     const sel = rowsData[selectedRow];
-    const scopedId = (_f = (_d = (_b = (_a = sel === null || sel === void 0 ? void 0 : sel.doctor) === null || _a === void 0 ? void 0 : _a.doctorId) !== null && _b !== void 0 ? _b : (_c = sel === null || sel === void 0 ? void 0 : sel.check) === null || _c === void 0 ? void 0 : _c.doctorId) !== null && _d !== void 0 ? _d : (_e = sel === null || sel === void 0 ? void 0 : sel.item) === null || _e === void 0 ? void 0 : _e.doctorId) !== null && _f !== void 0 ? _f : (_g = tree[0]) === null || _g === void 0 ? void 0 : _g.doctorId;
+    const scopedId = (_h = (_f = (_d = (_c = sel === null || sel === void 0 ? void 0 : sel.doctor) === null || _c === void 0 ? void 0 : _c.doctorId) !== null && _d !== void 0 ? _d : (_e = sel === null || sel === void 0 ? void 0 : sel.check) === null || _e === void 0 ? void 0 : _e.doctorId) !== null && _f !== void 0 ? _f : (_g = sel === null || sel === void 0 ? void 0 : sel.item) === null || _g === void 0 ? void 0 : _g.doctorId) !== null && _h !== void 0 ? _h : (_j = tree[0]) === null || _j === void 0 ? void 0 : _j.doctorId;
     const scoped = tree.find(d => d.doctorId === scopedId);
     // The header's third line, one shape for every header state — a
     // count, the clean fraction (or the raw file count when there is
@@ -274,21 +284,22 @@ export function dashboardFrame(state) {
         headerLines.push(c(summaryLine(0, h.cleanLine, state.durationMs), DIM));
     }
     else {
-        const narrowed = ((_h = state.zeroFindingDoctors) === null || _h === void 0 ? void 0 : _h.some(doctor => doctor.narrowed)) === true;
+        const narrowed = ((_k = state.zeroFindingDoctors) === null || _k === void 0 ? void 0 : _k.some(doctor => doctor.narrowed)) === true;
         headerLines.push(c(narrowed ? "No findings established — semantic coverage narrowed" : "No findings", BOLD + (narrowed ? YELLOW : GREEN)));
         headerLines.push(c(scoreBar(narrowed ? 0 : 100, barWidth), narrowed ? YELLOW : GREEN));
         headerLines.push(c(summaryLine(0, null, state.durationMs), DIM));
     }
-    // Zero-finding doctors remain visible beside the selected finding tree.
-    if (state.filesTotal > 0)
-        for (const doctor of (_j = state.zeroFindingDoctors) !== null && _j !== void 0 ? _j : []) {
-            headerLines.push(c(`${doctor.narrowed ? "△" : "✔"} ${doctor.id} — ${doctor.narrowed ? "narrowed" : "clean"}`, doctor.narrowed ? YELLOW : GREEN));
-        }
-    if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
-        headerLines.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
+    // The final reserved status row summarizes any cohort that cannot fit.
+    const visibleQuiet = quietDoctors.length > layout.quietRows ? Math.max(0, layout.quietRows - 1) : layout.quietRows;
+    for (const doctor of quietDoctors.slice(0, visibleQuiet)) {
+        headerLines.push(c(`${doctor.narrowed ? "△" : "✔"} ${doctor.id} — ${doctor.narrowed ? "narrowed" : "clean"}`, doctor.narrowed ? YELLOW : GREEN));
     }
-    if (state.coverageNotice)
-        headerLines.push(c(state.coverageNotice, YELLOW));
+    if (layout.quietRows > visibleQuiet) {
+        const omitted = quietDoctors.slice(visibleQuiet), narrowed = omitted.filter(doctor => doctor.narrowed).length;
+        headerLines.push(c(`${omitted.length} more quiet doctors — ${narrowed} narrowed, ${omitted.length - narrowed} clean`, narrowed ? YELLOW : GREEN));
+    }
+    for (const notice of notices)
+        headerLines.push(c(notice, YELLOW));
     headerLines.push("");
     const viewport = Math.max(1, Math.min(layout.listHeight, layout.bodyRows));
     let firstVisible = Math.max(0, Math.min(selectedRow - viewport + 1, Math.max(0, rowsData.length - viewport)));
@@ -305,12 +316,12 @@ export function dashboardFrame(state) {
     const selRow = rowsData[selectedRow];
     // A DECIDED row tells the decision's story first — the reason is what
     // a reviewer needs, and u to reverse is the action.
-    if ((selRow === null || selRow === void 0 ? void 0 : selRow.item) && selRow.reviewed !== undefined && ((_k = state.reasonByReadKey) === null || _k === void 0 ? void 0 : _k.has(selRow.item.readKey)) === true) {
+    if ((selRow === null || selRow === void 0 ? void 0 : selRow.item) && selRow.reviewed !== undefined && ((_l = state.reasonByReadKey) === null || _l === void 0 ? void 0 : _l.has(selRow.item.readKey)) === true) {
         const sel = selRow.item;
         detail.push(c(`${sel.site.file}:${sel.site.line}`, BOLD));
         detail.push(c(selRow.reviewed === "accepted" ? "✓ accepted" : "⊘ not applicable", DIM));
         detail.push("");
-        proseSection(detail, "Reason", (_l = state.reasonByReadKey.get(sel.readKey)) !== null && _l !== void 0 ? _l : "", layout.detailWidth - 2, c);
+        proseSection(detail, "Reason", (_m = state.reasonByReadKey.get(sel.readKey)) !== null && _m !== void 0 ? _m : "", layout.detailWidth - 2, c);
         detail.push("");
         proseSection(detail, "Undo", "u reverses this decision — the finding returns to the active list", layout.detailWidth - 2, c);
     }
@@ -319,11 +330,11 @@ export function dashboardFrame(state) {
         detail.push(c(`${sel.site.file}:${sel.site.line}`, BOLD));
         detail.push(c(`${cap(sel.category)} · ${sel.severity}`, DIM));
         detail.push("");
-        const impact = (_m = sel.impact) !== null && _m !== void 0 ? _m : sel.description;
+        const impact = (_o = sel.impact) !== null && _o !== void 0 ? _o : sel.description;
         for (const l of wordWrap(impact, layout.detailWidth - 2))
             detail.push(c(l, SEVERITY_COLOR[sel.severity]));
         detail.push("");
-        proseSection(detail, "Why", (_o = sel.why) !== null && _o !== void 0 ? _o : "Not documented for this check.", layout.detailWidth - 2, c);
+        proseSection(detail, "Why", (_p = sel.why) !== null && _p !== void 0 ? _p : "Not documented for this check.", layout.detailWidth - 2, c);
         detail.push("");
         detail.push(c("Code", DIM));
         for (const l of codeFrameLines(state.readSource(sel.site.file), sel.site.line, layout.detailWidth - 2, useColor))
@@ -372,7 +383,7 @@ export function dashboardFrame(state) {
     const body = [];
     if (layout.mode === "split") {
         for (let i = 0; i < layout.bodyRows; i++) {
-            body.push(padVisible(truncateVisible((_p = listLines[i]) !== null && _p !== void 0 ? _p : "", layout.listWidth), layout.listWidth) + "  " + ((_q = detail[i]) !== null && _q !== void 0 ? _q : ""));
+            body.push(padVisible(truncateVisible((_q = listLines[i]) !== null && _q !== void 0 ? _q : "", layout.listWidth), layout.listWidth) + "  " + ((_r = detail[i]) !== null && _r !== void 0 ? _r : ""));
         }
     }
     else {
@@ -383,7 +394,7 @@ export function dashboardFrame(state) {
             ...detail,
         ];
         for (let i = 0; i < layout.bodyRows; i++)
-            body.push((_r = stacked[i]) !== null && _r !== void 0 ? _r : "");
+            body.push((_s = stacked[i]) !== null && _s !== void 0 ? _s : "");
     }
     // Fixed-shape footer: the notice line is always present (blank when idle)
     // so showing or clearing a notice never changes the frame height.

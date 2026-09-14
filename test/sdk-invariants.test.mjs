@@ -30,7 +30,7 @@ for(const broken of [false,true])test(`maintained lookalike semantic coverage ${
  try{
   let source=fs.readFileSync(new URL('../fixtures/doctor-sdk-recipe-only.mjs',import.meta.url),'utf8');
   if(broken)source=source.replace('meta.checks[0].recipe.query,{rule:',"{...meta.checks[0].recipe.query,producer:{member:'map',receiver:'array',asyncArgument:call.target?.root==='object'?99:0}},{rule:");
-  fs.writeFileSync(path.join(tmp,'doctor.mjs'),source);fs.writeFileSync(path.join(tmp,'doctor.fixtures.mjs'),'export const fixtures=[];');
+  fs.writeFileSync(path.join(tmp,'doctor.mjs'),source);fs.copyFileSync(new URL('../fixtures/doctor-sdk-recipe-only.fixtures.mjs',import.meta.url),path.join(tmp,'doctor.fixtures.mjs'));
   const run=spawnSync(process.execPath,[path.join(root,'bin/cli.js'),'verify',path.join(tmp,'doctor.mjs'),'--format','json'],{encoding:'utf8'});
   const json=JSON.parse(run.stdout);const valid=json.results.find(r=>r.name.includes('valid lookalike'));
   assert.equal(run.status,broken?1:0,run.stdout+run.stderr);
@@ -51,4 +51,53 @@ test('recipe-only metadata skips analysis-on profiles when the host channel is u
  const rows=(await certify(mod,[])).filter(row=>row.name.startsWith('challenge profile:'));
  assert.equal(rows.length,6);assert.equal(rows.filter(row=>row.skipped).length,5);
  const off=rows.find(row=>row.name.endsWith(' / analysis unavailable'));assert.equal(off.ok,true);assert.ok(!off.skipped);
+});
+
+
+test('recipe-only location coverage skips without an analysis host',async()=>{
+ const {certify}=await import(path.join(root,'bin/certify.js'));
+ const mod=await import('../fixtures/doctor-sdk-recipe-only.mjs');
+ const {fixtures}=await import('../fixtures/doctor-sdk-recipe-only.fixtures.mjs');
+ const rows=await certify(mod,fixtures);
+ const author=rows.find(r=>r.name==='native map location witness');
+ const location=rows.find(r=>r.name==='location coverage: recipe-only-map');
+ assert.match(author.skipped,/analysis engine unavailable/);
+ assert.equal(location.ok,true,location.error);
+ assert.match(location.skipped,/analysis engine unavailable/);
+});
+
+test('analysis-off author fixture cannot witness recipe-implied location coverage',()=>{
+ const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'sdk-off-witness-'));
+ try {
+  const source=fs.readFileSync(new URL('../fixtures/doctor-sdk-recipe-only.mjs',import.meta.url),'utf8')
+   .replace('if(!ctx.analysis.available)return;',"if(ctx.files.list().includes('off.ts'))ctx.report.finding({rule:'recipe-only-map',file:'off.ts',line:1,column:0}); if(!ctx.analysis.available)return;");
+  fs.writeFileSync(path.join(tmp,'doctor.mjs'),source);
+  fs.writeFileSync(path.join(tmp,'doctor.fixtures.mjs'),`export const fixtures=[{name:'off-only witness',analysis:'off',seed:{'off.ts':'[1].map(async x=>x);'},expected:[{rule:'recipe-only-map',file:'off.ts',line:1,column:0}]}];`);
+  const run=spawnSync(process.execPath,[path.join(root,'bin/cli.js'),'verify',path.join(tmp,'doctor.mjs'),'--format','json'],{encoding:'utf8'});
+  const rows=JSON.parse(run.stdout).results;
+  assert.equal(rows.find(r=>r.name==='off-only witness').ok,true);
+  assert.equal(run.status,1,'off-only location witness must fail certification');
+  assert.match(rows.find(r=>r.name==='location coverage: recipe-only-map').error,/requires a passing positive fixture/);
+ } finally {fs.rmSync(tmp,{recursive:true,force:true});}
+});
+
+test('all maintained analysis-on profiles explicitly classify semantic coverage',async()=>{
+ const {challengeProfileFixtures}=await import(path.join(root,'bin/certify.js'));
+ const expected={
+  'unhandled-value':['complete','complete','complete','narrowed','complete'],
+  'required-or-recommended-option':['complete','complete','complete','complete','narrowed','complete'],
+  'resource-without-release':['complete','complete','complete','complete','complete','narrowed','complete'],
+ };
+ for(const file of ['doctors/async.mjs','fixtures/doctor-sdk-reference.mjs']){
+  const {meta}=await import(path.join(root,file));
+  for(const check of meta.checks)assert.deepEqual(challengeProfileFixtures(check).filter(f=>f.analysis!=='off').map(f=>f.expectedSemantic),expected[check.recipe.name],check.recipe.name);
+ }
+});
+
+test('semantic mutations are rejected independently of unchanged finding projections',()=>{
+ const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'sdk-semantic-mutations-'));
+ try {
+  const run=spawnSync(process.execPath,[fileURLToPath(new URL('../dev/doctor-sdk/run-semantic-mutations.mjs',import.meta.url)),root,tmp],{encoding:'utf8',maxBuffer:20e6});
+  assert.equal(run.status,0,run.stdout+run.stderr);
+ } finally {fs.rmSync(tmp,{recursive:true,force:true});}
 });

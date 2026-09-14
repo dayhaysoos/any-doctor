@@ -32,6 +32,11 @@ const counts=rows=>({passed:rows.filter(r=>r.ok&&!r.skipped).length,failed:rows.
 // This synthetic doctor deliberately omits needs: the recipe implies them.
 const recipeOnly='node_modules/any-doctor/fixtures/doctor-sdk-recipe-only.mjs';
 const recipeResult=JSON.parse(run('recipe-only-json','node',[cli,'verify',recipeOnly,'--format','json']).stdout);
+const author=recipeResult.results.find(row=>row.name==='native map location witness');
+const location=recipeResult.results.find(row=>row.name==='location coverage: recipe-only-map');
+assert.ok(author.ok&&author.skipped?.includes('analysis engine unavailable'));
+assert.ok(location.ok&&location.skipped?.includes('analysis engine unavailable'));
+assert.deepEqual(counts(recipeResult.results),{passed:2,failed:0,skipped:7});
 const recipeProfiles=recipeResult.results.filter(row=>row.name.startsWith('challenge profile:'));
 assert.equal(recipeProfiles.length,6);
 assert.equal(recipeProfiles.filter(row=>row.skipped).length,5);
@@ -45,5 +50,5 @@ const recipeRun=JSON.parse(run('recipe-only-run','node',[cli,'run',recipeOnly,'r
 assert.equal(recipeRun.counts.total,0);assert.equal(recipeRun.groups[0].semantic.incomplete,true);
 assert.deepEqual(recipeRun.groups[0].narrowed,['recipe-only-map']);
 assert.deepEqual(recipeRun.groups[0].semantic.capabilities.map(item=>[item.name,item.available]),[['calls',false],['value-disposition',false]]);
-const summary={recipeOnly:{counts:counts(recipeResult.results),profiles:counts(recipeProfiles),runtimeNarrowed:recipeRun.groups[0].narrowed},exit:0,providerAbsent:true,counts:counts(result.results),profiles:counts(profiles),executedOff:off,skippedOn:on};
+const summary={recipeOnly:{author,location,counts:counts(recipeResult.results),profiles:counts(recipeProfiles),runtimeNarrowed:recipeRun.groups[0].narrowed},exit:0,providerAbsent:true,counts:counts(result.results),profiles:counts(profiles),executedOff:off,skippedOn:on};
 fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary,null,2));

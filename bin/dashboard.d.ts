@@ -18,8 +18,9 @@ export interface DashboardLayout {
     listHeight: number;
     detailHeight: number;
     bodyRows: number;
+    quietRows: number;
 }
-export declare function resolveDashboardLayout(cols: number, rows: number, itemCount: number): DashboardLayout;
+export declare function resolveDashboardLayout(cols: number, rows: number, itemCount: number, quietCount?: number, noticeRows?: number): DashboardLayout;
 export type RowKind = "section" | "check" | "item" | "more";
 interface ListRow {
     kind: RowKind;

@@ -1,6 +1,7 @@
 import fs from 'node:fs';import path from 'node:path';import {pathToFileURL} from 'node:url';
 const base=fs.realpathSync(process.argv[2]), out=path.resolve(process.argv[3]);fs.mkdirSync(out,{recursive:true});
 const load=p=>import(pathToFileURL(path.join(base,p)));
+const {checkAnalysisNeeds}=await load('bin/contract.js');
 const {doctor,meta}=await load('doctors/async.mjs');const {buildCtx,setAnalysisDisabled}=await load('bin/sdk.js');
 const {deriveSummary}=await load('bin/summary.js');const {renderJson,renderReport}=await load('bin/report.js');
 const seed=path.join(out,'seed');fs.mkdirSync(seed);fs.writeFileSync(path.join(seed,'example.ts'),'import {useEffect} from "react";fetch("/");[1].map(async x=>x);useEffect(()=>setTimeout(()=>{},1),[]);');
@@ -8,5 +9,5 @@ setAnalysisDisabled(true);const {ctx,getFindings}=buildCtx(seed);await doctor(ct
 const outcome={groups:[{programName:'async',meta,findings:getFindings()}],crashed:[],skippedUnsafe:[],doctorPaths:new Map(),fileCount:1,durationMs:0,targetDir:seed,analysisAvailable:ctx.analysis.available};
 const summary=deriveSummary(outcome),json=JSON.parse(renderJson(outcome,summary,{failOn:'none',mode:'full',fails:false,reason:null}));
 const prose=renderReport(outcome,false);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(json,null,2));fs.writeFileSync(path.join(out,'report.txt'),prose);
-const expected=meta.checks.map(c=>c.id).sort();const rows=[{name:'no unsupported findings',passed:getFindings().length===0},{name:'analysis unavailable flag',passed:json.analysisAvailable===false},{name:'all three narrowed check ids in JSON',passed:JSON.stringify(json.groups[0].narrowed.sort())===JSON.stringify(expected)},{name:'unavailable coverage in prose',passed:expected.every(id=>prose.includes(id))&&/narrowed/i.test(prose)},{name:'all checks declare calls and skip',passed:meta.checks.every(c=>c.needs.includes('calls')&&c.onUnknown==='skip')}];
+const expected=meta.checks.map(c=>c.id).sort();const rows=[{name:'no unsupported findings',passed:getFindings().length===0},{name:'analysis unavailable flag',passed:json.analysisAvailable===false},{name:'all three narrowed check ids in JSON',passed:JSON.stringify(json.groups[0].narrowed.sort())===JSON.stringify(expected)},{name:'unavailable coverage in prose',passed:expected.every(id=>prose.includes(id))&&/narrowed/i.test(prose)},{name:'all checks require calls and skip',passed:meta.checks.every(c=>checkAnalysisNeeds(c).includes('calls')&&c.onUnknown==='skip')}];
 const result={passed:rows.filter(r=>r.passed).length,failed:rows.filter(r=>!r.passed).length,skipped:0,rows};fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));process.exitCode=result.failed?1:0;

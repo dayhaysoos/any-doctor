@@ -91,14 +91,19 @@ export interface DashboardLayout {
   listHeight: number;
   detailHeight: number;
   bodyRows: number;
+  quietRows: number;
 }
 
-export function resolveDashboardLayout(cols: number, rows: number, itemCount: number): DashboardLayout {
-  const bodyRows = Math.max(1, rows - CHROME_ROWS);
+export function resolveDashboardLayout(cols: number, rows: number, itemCount: number, quietCount = 0, noticeRows = 0): DashboardLayout {
+  // Status rows share the terminal budget with the body. Reserve at least half
+  // the remaining space for the selected finding tree and its detail pane.
+  const availableRows = Math.max(0, rows - CHROME_ROWS - noticeRows);
+  const quietRows = Math.min(quietCount, Math.floor(availableRows / 2));
+  const bodyRows = availableRows - quietRows;
   if (cols >= SPLIT_MIN_COLS) {
     const listWidth = Math.min(56, Math.max(32, Math.floor(cols * 0.44)));
     const detailWidth = cols - listWidth - 2;
-    return { mode: "split", listWidth, detailWidth, listHeight: bodyRows, detailHeight: bodyRows, bodyRows };
+    return { mode: "split", listWidth, detailWidth, listHeight: bodyRows, detailHeight: bodyRows, bodyRows, quietRows };
   }
   const listHeight = Math.min(Math.max(2, Math.ceil(bodyRows * 0.4)), Math.max(1, itemCount));
   return {
@@ -108,6 +113,7 @@ export function resolveDashboardLayout(cols: number, rows: number, itemCount: nu
     listHeight,
     detailHeight: Math.max(1, bodyRows - listHeight - 2),
     bodyRows,
+    quietRows,
   };
 }
 
@@ -350,7 +356,12 @@ export function dashboardFrame(state: DashboardFrameState): string {
   const { tree, selectedRow, readKeys, useColor, cols, rows } = state;
   const c = colorizer(useColor);
   const findings = tree.flatMap(d => d.checks.flatMap(g => g.items));
-  const layout = resolveDashboardLayout(cols, rows, findings.length);
+  const quietDoctors = state.filesTotal > 0 ? state.zeroFindingDoctors ?? [] : [];
+  const notices = [
+    ...(state.skippedUnsafe?.length ? [`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`] : []),
+    ...(state.coverageNotice ? [state.coverageNotice] : []),
+  ];
+  const layout = resolveDashboardLayout(cols, rows, findings.length, quietDoctors.length, notices.length);
   const barWidth = Math.min(46, Math.max(16, cols - 60));
 
   // The header is the SELECTED doctor's report — never a cohort total,
@@ -395,14 +406,16 @@ export function dashboardFrame(state: DashboardFrameState): string {
     headerLines.push(c(scoreBar(narrowed ? 0 : 100, barWidth), narrowed ? YELLOW : GREEN));
     headerLines.push(c(summaryLine(0, null, state.durationMs), DIM));
   }
-  // Zero-finding doctors remain visible beside the selected finding tree.
-  if (state.filesTotal > 0) for (const doctor of state.zeroFindingDoctors ?? []) {
+  // The final reserved status row summarizes any cohort that cannot fit.
+  const visibleQuiet = quietDoctors.length > layout.quietRows ? Math.max(0, layout.quietRows - 1) : layout.quietRows;
+  for (const doctor of quietDoctors.slice(0, visibleQuiet)) {
     headerLines.push(c(`${doctor.narrowed ? "△" : "✔"} ${doctor.id} — ${doctor.narrowed ? "narrowed" : "clean"}`, doctor.narrowed ? YELLOW : GREEN));
   }
-  if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
-    headerLines.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
+  if (layout.quietRows > visibleQuiet) {
+    const omitted = quietDoctors.slice(visibleQuiet), narrowed = omitted.filter(doctor => doctor.narrowed).length;
+    headerLines.push(c(`${omitted.length} more quiet doctors — ${narrowed} narrowed, ${omitted.length - narrowed} clean`, narrowed ? YELLOW : GREEN));
   }
-  if (state.coverageNotice) headerLines.push(c(state.coverageNotice, YELLOW));
+  for (const notice of notices) headerLines.push(c(notice, YELLOW));
   headerLines.push("");
 
   const viewport = Math.max(1, Math.min(layout.listHeight, layout.bodyRows));

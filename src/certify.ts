@@ -247,14 +247,14 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
       results.push({ ...okRow(name), skipped: "reporting unit undeclared — location coverage not exercised" });
       continue;
     }
-    if (check.needs?.length && await skipFor(true)) {
+    if (contract.checkAnalysisNeeds(check).length > 0 && await skipFor(true)) {
       results.push(skipRow(name));
       continue;
     }
     const witness = fixtures.find((fixture) => {
       const row = rowByFixture.get(fixture);
       if (row === undefined || !row.ok || row.skipped !== undefined) return false;
-      if (check.needs !== undefined && check.needs.length > 0 && fixture.analysis === "off") return false;
+      if (contract.checkAnalysisNeeds(check).length > 0 && fixture.analysis === "off") return false;
       const hits = fixture.expected.filter(f => f.rule === check.id);
       if (check.reportingUnit !== "occurrence") return hits.length > 0;
       return distinctLocationsInFile(hits);
@@ -309,14 +309,25 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
 }
 
 const occurrence=(source:string,rule:string,needle:string,nth=0):ExpectedFinding=>{const offset=[...source.matchAll(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'))][nth]?.index;if(offset===undefined)throw new Error(`profile occurrence missing: ${needle}`);const before=source.slice(0,offset),line=before.split('\n').length,column=offset-(before.lastIndexOf('\n')+1);return {rule,file:'profile.ts',line,column};};
-type ChallengeFixture = Fixture & { expectedSemantic?: 'complete' | 'narrowed' };
-const profile=(name:string,source:string,expected:ExpectedFinding[],analysis?:'on'|'off',expectedSemantic?:'complete'|'narrowed'):ChallengeFixture=>({name,seed:{'profile.ts':source},expected,...(analysis?{analysis}:{}),...(expectedSemantic?{expectedSemantic}:{})});
+type ChallengeFixture = Fixture & (
+  | { analysis: 'on'; expectedSemantic: 'complete' | 'narrowed' }
+  | { analysis: 'off'; expectedSemantic?: never }
+);
+const profile = (name: string, source: string, expected: ExpectedFinding[], semantic: 'complete' | 'narrowed' | 'unavailable'): ChallengeFixture => {
+  const fixture = {name, seed: {'profile.ts': source}, expected};
+  return semantic === 'unavailable' ? {...fixture, analysis: 'off'} : {...fixture, analysis: 'on', expectedSemantic: semantic};
+};
 
 /** Deterministic extension point for maintained recipe challenge cases. */
 export function challengeProfileFixtures(check:CheckMeta):ChallengeFixture[]{
   const declaration=check.recipe;if(!declaration)return [];
   const fixtures=declaration.name==='unhandled-value'?unhandledProfile(check.id,declaration):declaration.name==='resource-without-release'?resourceProfile(check.id,declaration):optionProfile(check.id,declaration);
   if(!fixtures.length)throw new Error(`recipe ${declaration.name} has no applicable challenge profile for this declaration`);
+  for (const fixture of fixtures) {
+    if (fixture.analysis !== 'off' && !['complete', 'narrowed'].includes(fixture.expectedSemantic)) {
+      throw new Error(`profile "${fixture.name}": semantic expectation is required for analysis-on challenges`);
+    }
+  }
   return fixtures;
 }
 
@@ -324,12 +335,12 @@ function unhandledProfile(rule:string,declaration:Extract<RecipeProfileDeclarati
   const member=declaration.query.producer.member,p=`[1].${member}(async value=>value)`;
   const positive=`${p};`,lookalike=`const object={${member}:async callback=>callback(1)};object.${member}(async value=>value);`,transfer=`function own(){return ${p}}`,unknown=`const items=getItems();items.${member}(async value=>value);\n${positive}`,same=`${positive}${positive}`;
   return [
-    profile('genuine positive',positive,[occurrence(positive,rule,p)]),
-    profile('valid lookalike and shadowed producer',lookalike,[],undefined,'complete'),
-    profile('ownership transfer',transfer,[]),
-    profile('unsupported receiver with positive neighbor',unknown,[occurrence(unknown,rule,p)],undefined,'narrowed'),
-    profile('two same-line occurrences',same,[occurrence(same,rule,p,0),occurrence(same,rule,p,1)]),
-    profile('analysis unavailable',positive,[],'off'),
+    profile('genuine positive',positive,[occurrence(positive,rule,p)],'complete'),
+    profile('valid lookalike and shadowed producer',lookalike,[],'complete'),
+    profile('ownership transfer',transfer,[],'complete'),
+    profile('unsupported receiver with positive neighbor',unknown,[occurrence(unknown,rule,p)],'narrowed'),
+    profile('two same-line occurrences',same,[occurrence(same,rule,p,0),occurrence(same,rule,p,1)],'complete'),
+    profile('analysis unavailable',positive,[],'unavailable'),
   ];
 }
 
@@ -353,13 +364,13 @@ function optionProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,
   const present=`${head}${callee}("payload",{${option}:${value}});`,shadow=`${head}${target.shadow.replace('__ARGS__','"payload",{}')}`;
   const alias=`${head}const invoke=${callee};invoke("payload",{});`,unknown=`${head}const options={};configure(options);${callee}("payload",options);\n${positive};`,same=`${head}${positive};${positive};`,positiveSource=`${head}${positive};`;
   return [
-    profile('genuine absence positive',positiveSource,[occurrence(positiveSource,rule,positive)]),
-    profile('present option lookalike',present,[],undefined,'complete'),
-    profile('shadowed call identity',shadow,[],undefined,'complete'),
-    profile('immutable call alias',alias,[occurrence(alias,rule,'invoke("payload",{})')]),
-    profile('unknown options with positive neighbor',unknown,[occurrence(unknown,rule,positive)]),
-    profile('two same-line occurrences',same,[occurrence(same,rule,positive,0),occurrence(same,rule,positive,1)]),
-    profile('analysis unavailable',positiveSource,[],'off'),
+    profile('genuine absence positive',positiveSource,[occurrence(positiveSource,rule,positive)],'complete'),
+    profile('present option lookalike',present,[],'complete'),
+    profile('shadowed call identity',shadow,[],'complete'),
+    profile('immutable call alias',alias,[occurrence(alias,rule,'invoke("payload",{})')],'complete'),
+    profile('unknown options with positive neighbor',unknown,[occurrence(unknown,rule,positive)],'narrowed'),
+    profile('two same-line occurrences',same,[occurrence(same,rule,positive,0),occurrence(same,rule,positive,1)],'complete'),
+    profile('analysis unavailable',positiveSource,[],'unavailable'),
   ];
 }
 
@@ -373,14 +384,14 @@ function resourceProfile(rule:string,declaration:Extract<RecipeProfileDeclaratio
   const unsupportedExpected=declaration.query.reportUnknown?.includes('unsupported-expression')?[occurrence(unsupported,rule,call,0),occurrence(unsupported,rule,call,1)]:[occurrence(unsupported,rule,call,1)];
   const same=`${head}${owner}(()=>{${call};${call};},[]);`;
   return [
-    profile('genuine unreleased positive',positive,[occurrence(positive,rule,call)]),
-    profile('shadowed acquisition with positive neighbor',lookalike,[occurrence(lookalike,rule,call,1)],undefined,'complete'),
-    profile('immutable handle alias release',releasedAlias,[]),
-    profile('different handle does not release acquisition',wrongHandle,[occurrence(wrongHandle,rule,call)]),
-    profile('supported local cleanup transfer',helper,[]),
-    profile('unsupported cleanup transfer with positive neighbor',unsupported,unsupportedExpected),
-    profile('two same-line occurrences',same,[occurrence(same,rule,call,0),occurrence(same,rule,call,1)]),
-    profile('analysis unavailable',positive,[],'off'),
+    profile('genuine unreleased positive',positive,[occurrence(positive,rule,call)],'complete'),
+    profile('shadowed acquisition with positive neighbor',lookalike,[occurrence(lookalike,rule,call,1)],'complete'),
+    profile('immutable handle alias release',releasedAlias,[],'complete'),
+    profile('different handle does not release acquisition',wrongHandle,[occurrence(wrongHandle,rule,call)],'complete'),
+    profile('supported local cleanup transfer',helper,[],'complete'),
+    profile('unsupported cleanup transfer with positive neighbor',unsupported,unsupportedExpected,'narrowed'),
+    profile('two same-line occurrences',same,[occurrence(same,rule,call,0),occurrence(same,rule,call,1)],'complete'),
+    profile('analysis unavailable',positive,[],'unavailable'),
   ];
 }
 

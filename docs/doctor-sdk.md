@@ -147,14 +147,19 @@ node bin/cli.js verify path/to/doctor.mjs
 node bin/cli.js verify path/to/doctor.mjs --format json
 ```
 
-Maintained lookalikes assert complete semantic coverage for the challenged check,
-independently of findings. Unsupported-receiver profiles assert narrowed coverage
-and the exact unrelated positive. A zero-finding unknown answer cannot pass a
-known-clear expectation; JSON rows expose expected and actual semantic status.
+Every maintained analysis-on profile explicitly requires complete or narrowed
+semantic coverage for the challenged check, independently of findings. Positive,
+lookalike, alias, supported transfer and occurrence profiles require complete
+coverage. Unsupported receiver, option and cleanup-transfer profiles require
+narrowed coverage and preserve their exact neighboring positives. Missing semantic
+expectations fail profile validation. JSON rows expose expected and actual status;
+matching findings alone cannot satisfy a wrong semantic answer.
 
 The JSON `results` array names every exercised challenge and each unavailable
 path. When the optional analysis provider is absent, analysis-on profiles are
-explicit skips, matching author fixtures and location checks. Each explicit
+explicit skips, matching author fixtures and location checks, including checks
+whose analysis needs are implied only by a recipe. Analysis-off author fixtures
+cannot witness location coverage for these checks. Each explicit
 `analysis: "off"` profile still executes to certify the unavailable path. With
 the provider installed, every profile runs. Author fixtures remain required; profiles do not replace held-out cases or
 real-source adjudication.

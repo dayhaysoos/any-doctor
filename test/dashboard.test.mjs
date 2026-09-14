@@ -5,19 +5,21 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
+const candidate=process.env.DOCTOR_CANDIDATE_ROOT ?? new URL("../", import.meta.url).pathname;
+
 // The clipboard is injected via deps in runDashboardOn tests, keeping them
 // deterministic and spawn-free.
-const { buildListRows, scoreBar, runDashboardOn, dashboardFrame } = await import("../bin/dashboard.js");
-const { buildTree } = await import("../bin/doctor-tree.js");
-const { reviewOf } = await import("../bin/review.js");
-const { encodeDecisionKey } = await import("../bin/finding-state.js");
-const { captureScan } = await import("../bin/scan-capture.js");
-const deriveSummaryOf = (await import("../bin/summary.js")).deriveSummary;
-const { doctorDigests } = await import("../bin/identity.js");
+const { buildListRows, scoreBar, runDashboardOn, dashboardFrame } = await import(`${candidate}/bin/dashboard.js`);
+const { buildTree } = await import(`${candidate}/bin/doctor-tree.js`);
+const { reviewOf } = await import(`${candidate}/bin/review.js`);
+const { encodeDecisionKey } = await import(`${candidate}/bin/finding-state.js`);
+const { captureScan } = await import(`${candidate}/bin/scan-capture.js`);
+const deriveSummaryOf = (await import(`${candidate}/bin/summary.js`)).deriveSummary;
+const { doctorDigests } = await import(`${candidate}/bin/identity.js`);
 const provOf = (doctorId, programText) => ({ revisions: new Map(), programDigests: new Map([[doctorId, doctorDigests([{ id: doctorId, programPath: "/fixture" }], () => programText)[0].digest]]) });
 
 
-const { deriveSummary } = await import("../bin/summary.js");
+const { deriveSummary } = await import(`${candidate}/bin/summary.js`);
 // The tree consumes the Summary's check buckets; tests build them the way
 // production does — through the one derivation.
 const gcOf = (groups) => deriveSummary({ groups, crashed: [], skippedUnsafe: [], doctorPaths: new Map(), fileCount: 0, durationMs: 0, targetDir: "." }).groupChecks;
@@ -49,7 +51,7 @@ const groups = [
 ];
 
 test("buildListRows: multi-doctor frames render collapsible doctor rows", async () => {
-  const { initialExpanded } = await import("../bin/doctor-tree.js");
+  const { initialExpanded } = await import(`${candidate}/bin/doctor-tree.js`);
   const gc = gcOf(groups);
   const expanded = initialExpanded(buildTree(gc, 10));
   assert.ok(expanded.has("stripe-doctor"), "the error-carrying top doctor opens on entry");
@@ -255,8 +257,8 @@ const multiGroups = [{
 }];
 
 test("tree: checks render as severity-ordered rows; errors start expanded, warnings collapsed", async () => {
-  const { buildListRows } = await import("../bin/dashboard.js");
-  const { initialExpanded } = await import("../bin/doctor-tree.js");
+  const { buildListRows } = await import(`${candidate}/bin/dashboard.js`);
+  const { initialExpanded } = await import(`${candidate}/bin/doctor-tree.js`);
   const gc = gcOf(multiGroups);
   const expanded = initialExpanded(buildTree(gc, 10));
   assert.deepEqual([...expanded], ["multi-doctor/bad-error"], "only the error check opens on entry");
@@ -271,8 +273,8 @@ test("tree: checks render as severity-ordered rows; errors start expanded, warni
 });
 
 test("tree: expanding a warning check reveals its instances in the frame", async () => {
-  const { dashboardFrame } = await import("../bin/dashboard.js");
-  const { initialExpanded } = await import("../bin/doctor-tree.js");
+  const { dashboardFrame } = await import(`${candidate}/bin/dashboard.js`);
+  const { initialExpanded } = await import(`${candidate}/bin/doctor-tree.js`);
   const gc = gcOf(multiGroups);
   const base = { tree: buildTree(gc, 10), selectedRow: 1, readKeys: new Set(), readSource: () => null, filesTotal: 1, durationMs: 5, useColor: false, cols: 120, rows: 34 };
   const closed = dashboardFrame({ ...base, expanded: initialExpanded(buildTree(gc, 10)) });
@@ -282,8 +284,8 @@ test("tree: expanding a warning check reveals its instances in the frame", async
 });
 
 test("tree: a check row's detail pane tells the check's story", async () => {
-  const { dashboardFrame } = await import("../bin/dashboard.js");
-  const { initialExpanded } = await import("../bin/doctor-tree.js");
+  const { dashboardFrame } = await import(`${candidate}/bin/dashboard.js`);
+  const { initialExpanded } = await import(`${candidate}/bin/doctor-tree.js`);
   const gc = gcOf(multiGroups);
   const out = dashboardFrame({ tree: buildTree(gc, 10), selectedRow: 1, readKeys: new Set(), readSource: () => null, expanded: initialExpanded(buildTree(gc, 10)), filesTotal: 1, durationMs: 5, useColor: false, cols: 120, rows: 34 });
   assert.ok(out.includes("multi-doctor/bad-error"), "checkKey in the detail pane");
@@ -292,8 +294,8 @@ test("tree: a check row's detail pane tells the check's story", async () => {
 });
 
 test("tree: 60 findings in one check show 50 instances plus the re-scan affordance", async () => {
-  const { buildListRows } = await import("../bin/dashboard.js");
-  const { initialExpanded, FINDINGS_PER_CHECK } = await import("../bin/doctor-tree.js");
+  const { buildListRows } = await import(`${candidate}/bin/dashboard.js`);
+  const { initialExpanded, FINDINGS_PER_CHECK } = await import(`${candidate}/bin/doctor-tree.js`);
   assert.equal(FINDINGS_PER_CHECK, 50);
   const findings = Array.from({ length: 60 }, (_, i) => ({ rule: "bad-error", file: "a.ts", line: i + 1 }));
   const gc = gcOf([{ ...multiGroups[0], findings: [...findings, { rule: "meh-warn", file: "b.ts", line: 3 }] }]);
@@ -306,8 +308,8 @@ test("tree: 60 findings in one check show 50 instances plus the re-scan affordan
 });
 
 test("tree: single-doctor frames stay exactly flat — headers, no tree", async () => {
-  const { buildListRows } = await import("../bin/dashboard.js");
-  const { initialExpanded } = await import("../bin/doctor-tree.js");
+  const { buildListRows } = await import(`${candidate}/bin/dashboard.js`);
+  const { initialExpanded } = await import(`${candidate}/bin/doctor-tree.js`);
   const gc = gcOf([groups[0]]);
   assert.deepEqual([...initialExpanded(buildTree(gc, 10))], [], "nothing to expand in a single-doctor frame");
   const rows = buildListRows(buildTree(gc, 10), false, 0, new Set(), initialExpanded(buildTree(gc, 10)));
@@ -353,8 +355,8 @@ const aggregateGroups = [
 ];
 
 test("aggregate: doctors sort worst-severity-first and the top doctor opens", async () => {
-  const { buildListRows } = await import("../bin/dashboard.js");
-  const { initialExpanded } = await import("../bin/doctor-tree.js");
+  const { buildListRows } = await import(`${candidate}/bin/dashboard.js`);
+  const { initialExpanded } = await import(`${candidate}/bin/doctor-tree.js`);
   const gc = gcOf(aggregateGroups);
   const expanded = initialExpanded(buildTree(gc, 10));
   assert.ok(expanded.has("multi-doctor"), "the error-carrying doctor is expanded");
@@ -386,8 +388,8 @@ test("aggregate: enter on a doctor row toggles it and the doctor detail pane ren
 });
 
 test("tree: children hang off connectors; guides hold the column under an expanded check", async () => {
-  const { buildListRows } = await import("../bin/dashboard.js");
-  const { initialExpanded } = await import("../bin/doctor-tree.js");
+  const { buildListRows } = await import(`${candidate}/bin/dashboard.js`);
+  const { initialExpanded } = await import(`${candidate}/bin/doctor-tree.js`);
   const gc = gcOf(aggregateGroups);
   const expanded = new Set([...initialExpanded(buildTree(gc, 10)), "multi-doctor/meh-warn"]);
   const rows = buildListRows(buildTree(gc, 10), false, 0, new Set(), expanded);
@@ -428,8 +430,8 @@ test("tree: back collapses up — instance to check, check to doctor", async () 
 });
 
 test("tree: one multi-check doctor run directly nests like the aggregate", async () => {
-  const { buildListRows } = await import("../bin/dashboard.js");
-  const { initialExpanded } = await import("../bin/doctor-tree.js");
+  const { buildListRows } = await import(`${candidate}/bin/dashboard.js`);
+  const { initialExpanded } = await import(`${candidate}/bin/doctor-tree.js`);
   const gc = gcOf(multiGroups);
   const rows = buildListRows(buildTree(gc, 10), false, 1, new Set(), initialExpanded(buildTree(gc, 10)));
   const texts = rows.map(r => r.text);
@@ -478,8 +480,8 @@ test("runDashboard: `c` copies at the level you are on", async () => {
 });
 
 test("rows reference their items directly — no index bookkeeping", async () => {
-  const { buildListRows } = await import("../bin/dashboard.js");
-  const { buildTree, initialExpanded } = await import("../bin/doctor-tree.js");
+  const { buildListRows } = await import(`${candidate}/bin/dashboard.js`);
+  const { buildTree, initialExpanded } = await import(`${candidate}/bin/doctor-tree.js`);
   const tree = buildTree(gcOf(groups), 10);
   const treeItems = tree.flatMap(d => d.checks.flatMap(g => g.items));
   const rows = buildListRows(tree, false, 0, new Set(), initialExpanded(tree));
@@ -488,8 +490,8 @@ test("rows reference their items directly — no index bookkeeping", async () =>
 });
 
 test("more-row on a flat doctor carries its story — the detail pane never blanks", async () => {
-  const { buildListRows } = await import("../bin/dashboard.js");
-  const { buildTree, FINDINGS_PER_CHECK } = await import("../bin/doctor-tree.js");
+  const { buildListRows } = await import(`${candidate}/bin/dashboard.js`);
+  const { buildTree, FINDINGS_PER_CHECK } = await import(`${candidate}/bin/doctor-tree.js`);
   const many = Array.from({ length: FINDINGS_PER_CHECK + 10 }, (_, i) => ({ file: "src/big.ts", line: i + 1 }));
   const groups = [
     { programName: "flat.mjs", meta: { id: "flat-doctor", description: "Flat", severity: "warning" }, findings: many },
@@ -530,7 +532,7 @@ test("runDashboard: copied prompts resolve the re-run command per doctor", async
 });
 
 test("dashboard and report render the same finding count for one duplicate-laden outcome", async () => {
-  const { renderReport } = await import("../bin/report.js");
+  const { renderReport } = await import(`${candidate}/bin/report.js`);
   const dupGroups = [
     { programName: "a.mjs", meta: { id: "a", description: "x", severity: "warning" }, findings: [{ file: "src/a.ts", line: 1 }] },
     { programName: "b.mjs", meta: { id: "b", description: "x", severity: "warning" }, findings: [{ file: "src/a.ts", line: 1 }] },
@@ -586,8 +588,8 @@ test("dashboard tree keeps a same-doctor second check at one site (both diagnose
 });
 
 test("tree: the doctor row shows its own score against the same denominator", async () => {
-  const { buildTree } = await import("../bin/doctor-tree.js");
-  const { buildListRows } = await import("../bin/dashboard.js");
+  const { buildTree } = await import(`${candidate}/bin/doctor-tree.js`);
+  const { buildListRows } = await import(`${candidate}/bin/dashboard.js`);
   const twoDoctors = [
     { programName: "a.mjs", meta: { id: "a", description: "x", severity: "warning" }, findings: [{ file: "f1.ts", line: 1 }, { file: "f2.ts", line: 1 }] },
     { programName: "b.mjs", meta: { id: "b", description: "x", severity: "warning" }, findings: [{ file: "f1.ts", line: 9 }] },
@@ -601,8 +603,8 @@ test("tree: the doctor row shows its own score against the same denominator", as
 });
 
 test("dashboard header: the selected doctor's score, never a cohort total", async () => {
-  const { dashboardFrame } = await import("../bin/dashboard.js");
-  const { buildTree } = await import("../bin/doctor-tree.js");
+  const { dashboardFrame } = await import(`${candidate}/bin/dashboard.js`);
+  const { buildTree } = await import(`${candidate}/bin/doctor-tree.js`);
   const twoDoctors = [
     { programName: "a.mjs", meta: { id: "a", description: "x", severity: "warning" }, findings: [{ file: "f1.ts", line: 1 }, { file: "f2.ts", line: 1 }] },
     { programName: "b.mjs", meta: { id: "b", description: "x", severity: "warning" }, findings: [{ file: "f1.ts", line: 9 }] },
@@ -612,7 +614,7 @@ test("dashboard header: the selected doctor's score, never a cohort total", asyn
   const state = (selectedRow) => ({ tree, selectedRow, readKeys: new Set(), readSource: () => null, expanded: new Set(["a", "b"]), filesTotal: 10, durationMs: 5, useColor: false, cols: 120, rows: 34 });
 
   // Selection on doctor a's row: the header is a's report.
-  const rowsA = (await import("../bin/dashboard.js")).buildListRows(tree, false, 0, new Set(), new Set(["a", "b"]));
+  const rowsA = (await import(`${candidate}/bin/dashboard.js`)).buildListRows(tree, false, 0, new Set(), new Set(["a", "b"]));
   const aRow = rowsA.findIndex(r => r.doctor?.doctorId === "a");
   const frameA = dashboardFrame(state(aRow));
   assert.match(frameA, /a  Score: 90 \/ 100/);
@@ -629,14 +631,14 @@ test("dashboard header: the selected doctor's score, never a cohort total", asyn
 });
 
 test("dashboard header: a clean scan has no score to scope — No findings", async () => {
-  const { dashboardFrame } = await import("../bin/dashboard.js");
+  const { dashboardFrame } = await import(`${candidate}/bin/dashboard.js`);
   const frame = dashboardFrame({ tree: [], selectedRow: 0, readKeys: new Set(), readSource: () => null, filesTotal: 6, durationMs: 5, useColor: false, cols: 120, rows: 34 });
   assert.match(frame, /No findings/);
   assert.match(frame, /0 findings · 6 files/);
 });
 
 test("dashboard header: zero groups over zero files is n/a in yellow, never a green 100", async () => {
-  const { dashboardFrame } = await import("../bin/dashboard.js");
+  const { dashboardFrame } = await import(`${candidate}/bin/dashboard.js`);
   const plain = dashboardFrame({ tree: [], selectedRow: 0, readKeys: new Set(), readSource: () => null, filesTotal: 0, durationMs: 114, useColor: false, cols: 120, rows: 34 });
   assert.match(plain, /Score: n\/a — no files scanned/);
   assert.match(plain, /0 findings · 0 files · 114ms/);
@@ -648,8 +650,8 @@ test("dashboard header: zero groups over zero files is n/a in yellow, never a gr
 });
 
 test("dashboard header: a doctor over zero scanned files reports n/a, not Excellent", async () => {
-  const { buildListRows, dashboardFrame } = await import("../bin/dashboard.js");
-  const { buildTree } = await import("../bin/doctor-tree.js");
+  const { buildListRows, dashboardFrame } = await import(`${candidate}/bin/dashboard.js`);
+  const { buildTree } = await import(`${candidate}/bin/doctor-tree.js`);
   // Two doctors whose findings name files outside the default-extension
   // walk: tree rows exist, but the scan's denominator is zero.
   const mk = (id, file) => ({ programName: id + ".mjs", meta: { id, description: "x", severity: "warning" }, findings: [{ file, line: 1 }] });
@@ -666,7 +668,7 @@ test("dashboard header: a doctor over zero scanned files reports n/a, not Excell
 });
 
 test("tree: a doctor with zero findings contributes no node — clean cohorts render, never crash", async () => {
-  const { buildTree } = await import("../bin/doctor-tree.js");
+  const { buildTree } = await import(`${candidate}/bin/doctor-tree.js`);
   const clean = { programName: "clean.mjs", meta: { id: "clean-doctor", description: "x", severity: "warning" }, findings: [] };
   assert.deepEqual(buildTree(gcOf([clean]), 10), [], "the empty-bucket group is filtered before any checks[0] deref");
   const mixed = buildTree(gcOf([groups[0], clean]), 10);
@@ -843,3 +845,26 @@ for(const narrowed of [false,true])test(`runDashboard: mixed run discloses ${nar
   assert.match(stdout.frames.at(-1),expected);assert.match(stdout.frames.at(-1),/stripe-doctor/);
   stdin.send('q');assert.equal(await settle(done),'resolved');
 });
+
+
+for(const [count,narrowed,rows] of [[0,false,34],[1,false,34],[1,true,34],[5,true,34],[40,true,14]])
+ for(const cols of [80,140])test(`quiet status budget: ${count} quiet doctors, narrowed=${narrowed}, ${cols}x${rows}`,async()=>{
+  const quiet=Array.from({length:count},(_,i)=>({programName:`quiet-${i}.mjs`,meta:{id:`quiet-${i}`,description:'Quiet',severity:'warning',checks:[{id:'q',description:'Quiet',needs:['calls']}]},findings:[]}));
+  const input=dashInput([...groups,...quiet]);input.outcome.analysisAvailable=!narrowed;
+  const stdin=new FakeStdin(),stdout=new FakeStdout();stdout.rows=rows;stdout.columns=cols;
+  const done=runDashboardOn({stdin,stdout},input,copyAlways);
+  try {
+   stdin.send('j');stdin.send('j');stdin.send('c');
+   const frames=stdout.frames.filter(f=>f.includes('\x1b[H'));
+   assert.ok(frames.length>=3,'navigation and notice repaint');
+   for(const frame of frames){
+    assert.equal(frame.split('\n').length,rows-1,`quiet=${count}: every repaint stays rows - 1`);
+    assert.equal((frame.match(/\x1b\[K/g)||[]).length,rows-1,'each repainted row clears stale text');
+    assert.match(frame,/\x1b\[J/,'clear below the frame');
+    assert.match(frame,/stripe-doctor/);
+    if(count&&count<40)for(let i=0;i<count;i++)assert.match(frame,new RegExp(`${narrowed?'△':'✔'} quiet-${i} — ${narrowed?'narrowed':'clean'}`));
+    if(count===40)assert.match(frame,/\d+ (?:more|omitted) quiet doctors/,'excess statuses have a bounded omitted-count row');
+   }
+   assert.notEqual(frames[0],frames[1],'selected tree still changes through navigation');
+  } finally {stdin.send('q');await done;}
+ });

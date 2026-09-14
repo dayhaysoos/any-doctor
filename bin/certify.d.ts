@@ -13,9 +13,13 @@ export declare class ClaimContractViolation extends Error {
 }
 export declare function validateClaimContract(mod: DoctorModule): void;
 export declare function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<FixtureResult[]>;
-type ChallengeFixture = Fixture & {
-    expectedSemantic?: 'complete' | 'narrowed';
-};
+type ChallengeFixture = Fixture & ({
+    analysis: 'on';
+    expectedSemantic: 'complete' | 'narrowed';
+} | {
+    analysis: 'off';
+    expectedSemantic?: never;
+});
 /** Deterministic extension point for maintained recipe challenge cases. */
 export declare function challengeProfileFixtures(check: CheckMeta): ChallengeFixture[];
 export {};

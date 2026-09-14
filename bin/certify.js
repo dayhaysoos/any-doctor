@@ -141,7 +141,7 @@ function distinctLocationsInFile(hits) {
 // The certification entry point: every policy, in gate order, as result
 // rows a verify frame can carry.
 export async function certify(mod, fixtures) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d;
     validateClaimContract(mod);
     const results = [];
     // Only a doctor whose checks declare analysis needs can have
@@ -250,7 +250,7 @@ export async function certify(mod, fixtures) {
             results.push({ ...okRow(name), skipped: "reporting unit undeclared — location coverage not exercised" });
             continue;
         }
-        if (((_c = check.needs) === null || _c === void 0 ? void 0 : _c.length) && await skipFor(true)) {
+        if (contract.checkAnalysisNeeds(check).length > 0 && await skipFor(true)) {
             results.push(skipRow(name));
             continue;
         }
@@ -258,7 +258,7 @@ export async function certify(mod, fixtures) {
             const row = rowByFixture.get(fixture);
             if (row === undefined || !row.ok || row.skipped !== undefined)
                 return false;
-            if (check.needs !== undefined && check.needs.length > 0 && fixture.analysis === "off")
+            if (contract.checkAnalysisNeeds(check).length > 0 && fixture.analysis === "off")
                 return false;
             const hits = fixture.expected.filter(f => f.rule === check.id);
             if (check.reportingUnit !== "occurrence")
@@ -271,7 +271,7 @@ export async function certify(mod, fixtures) {
             const reason = check.reportingUnit === "occurrence"
                 ? "requires a passing fixture with two distinct locations of this check in one file"
                 : "requires a passing positive fixture for this check";
-            const severity = (_d = check.severity) !== null && _d !== void 0 ? _d : mod.meta.severity;
+            const severity = (_c = check.severity) !== null && _c !== void 0 ? _c : mod.meta.severity;
             results.push(severity === "info" ? { ...okRow(name), skipped: reason } : errorRow(name, reason));
         }
     }
@@ -298,7 +298,7 @@ export async function certify(mod, fixtures) {
                 results.push({ ...okRow(name), ok: false, error: "unreadable expect.json: " + (e instanceof Error ? e.message : String(e)) });
                 continue;
             }
-            const expected = (_e = manifest === null || manifest === void 0 ? void 0 : manifest.expect) === null || _e === void 0 ? void 0 : _e[String(mod.meta.id)];
+            const expected = (_d = manifest === null || manifest === void 0 ? void 0 : manifest.expect) === null || _d === void 0 ? void 0 : _d[String(mod.meta.id)];
             if (!Array.isArray(expected))
                 continue;
             try {
@@ -321,7 +321,10 @@ export async function certify(mod, fixtures) {
 }
 const occurrence = (source, rule, needle, nth = 0) => { var _a; const offset = (_a = [...source.matchAll(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'))][nth]) === null || _a === void 0 ? void 0 : _a.index; if (offset === undefined)
     throw new Error(`profile occurrence missing: ${needle}`); const before = source.slice(0, offset), line = before.split('\n').length, column = offset - (before.lastIndexOf('\n') + 1); return { rule, file: 'profile.ts', line, column }; };
-const profile = (name, source, expected, analysis, expectedSemantic) => ({ name, seed: { 'profile.ts': source }, expected, ...(analysis ? { analysis } : {}), ...(expectedSemantic ? { expectedSemantic } : {}) });
+const profile = (name, source, expected, semantic) => {
+    const fixture = { name, seed: { 'profile.ts': source }, expected };
+    return semantic === 'unavailable' ? { ...fixture, analysis: 'off' } : { ...fixture, analysis: 'on', expectedSemantic: semantic };
+};
 /** Deterministic extension point for maintained recipe challenge cases. */
 export function challengeProfileFixtures(check) {
     const declaration = check.recipe;
@@ -330,18 +333,23 @@ export function challengeProfileFixtures(check) {
     const fixtures = declaration.name === 'unhandled-value' ? unhandledProfile(check.id, declaration) : declaration.name === 'resource-without-release' ? resourceProfile(check.id, declaration) : optionProfile(check.id, declaration);
     if (!fixtures.length)
         throw new Error(`recipe ${declaration.name} has no applicable challenge profile for this declaration`);
+    for (const fixture of fixtures) {
+        if (fixture.analysis !== 'off' && !['complete', 'narrowed'].includes(fixture.expectedSemantic)) {
+            throw new Error(`profile "${fixture.name}": semantic expectation is required for analysis-on challenges`);
+        }
+    }
     return fixtures;
 }
 function unhandledProfile(rule, declaration) {
     const member = declaration.query.producer.member, p = `[1].${member}(async value=>value)`;
     const positive = `${p};`, lookalike = `const object={${member}:async callback=>callback(1)};object.${member}(async value=>value);`, transfer = `function own(){return ${p}}`, unknown = `const items=getItems();items.${member}(async value=>value);\n${positive}`, same = `${positive}${positive}`;
     return [
-        profile('genuine positive', positive, [occurrence(positive, rule, p)]),
-        profile('valid lookalike and shadowed producer', lookalike, [], undefined, 'complete'),
-        profile('ownership transfer', transfer, []),
-        profile('unsupported receiver with positive neighbor', unknown, [occurrence(unknown, rule, p)], undefined, 'narrowed'),
-        profile('two same-line occurrences', same, [occurrence(same, rule, p, 0), occurrence(same, rule, p, 1)]),
-        profile('analysis unavailable', positive, [], 'off'),
+        profile('genuine positive', positive, [occurrence(positive, rule, p)], 'complete'),
+        profile('valid lookalike and shadowed producer', lookalike, [], 'complete'),
+        profile('ownership transfer', transfer, [], 'complete'),
+        profile('unsupported receiver with positive neighbor', unknown, [occurrence(unknown, rule, p)], 'narrowed'),
+        profile('two same-line occurrences', same, [occurrence(same, rule, p, 0), occurrence(same, rule, p, 1)], 'complete'),
+        profile('analysis unavailable', positive, [], 'unavailable'),
     ];
 }
 function identityFixture(query, alias) {
@@ -375,13 +383,13 @@ function optionProfile(rule, declaration) {
     const present = `${head}${callee}("payload",{${option}:${value}});`, shadow = `${head}${target.shadow.replace('__ARGS__', '"payload",{}')}`;
     const alias = `${head}const invoke=${callee};invoke("payload",{});`, unknown = `${head}const options={};configure(options);${callee}("payload",options);\n${positive};`, same = `${head}${positive};${positive};`, positiveSource = `${head}${positive};`;
     return [
-        profile('genuine absence positive', positiveSource, [occurrence(positiveSource, rule, positive)]),
-        profile('present option lookalike', present, [], undefined, 'complete'),
-        profile('shadowed call identity', shadow, [], undefined, 'complete'),
-        profile('immutable call alias', alias, [occurrence(alias, rule, 'invoke("payload",{})')]),
-        profile('unknown options with positive neighbor', unknown, [occurrence(unknown, rule, positive)]),
-        profile('two same-line occurrences', same, [occurrence(same, rule, positive, 0), occurrence(same, rule, positive, 1)]),
-        profile('analysis unavailable', positiveSource, [], 'off'),
+        profile('genuine absence positive', positiveSource, [occurrence(positiveSource, rule, positive)], 'complete'),
+        profile('present option lookalike', present, [], 'complete'),
+        profile('shadowed call identity', shadow, [], 'complete'),
+        profile('immutable call alias', alias, [occurrence(alias, rule, 'invoke("payload",{})')], 'complete'),
+        profile('unknown options with positive neighbor', unknown, [occurrence(unknown, rule, positive)], 'narrowed'),
+        profile('two same-line occurrences', same, [occurrence(same, rule, positive, 0), occurrence(same, rule, positive, 1)], 'complete'),
+        profile('analysis unavailable', positiveSource, [], 'unavailable'),
     ];
 }
 function resourceProfile(rule, declaration) {
@@ -397,14 +405,14 @@ function resourceProfile(rule, declaration) {
     const unsupportedExpected = ((_a = declaration.query.reportUnknown) === null || _a === void 0 ? void 0 : _a.includes('unsupported-expression')) ? [occurrence(unsupported, rule, call, 0), occurrence(unsupported, rule, call, 1)] : [occurrence(unsupported, rule, call, 1)];
     const same = `${head}${owner}(()=>{${call};${call};},[]);`;
     return [
-        profile('genuine unreleased positive', positive, [occurrence(positive, rule, call)]),
-        profile('shadowed acquisition with positive neighbor', lookalike, [occurrence(lookalike, rule, call, 1)], undefined, 'complete'),
-        profile('immutable handle alias release', releasedAlias, []),
-        profile('different handle does not release acquisition', wrongHandle, [occurrence(wrongHandle, rule, call)]),
-        profile('supported local cleanup transfer', helper, []),
-        profile('unsupported cleanup transfer with positive neighbor', unsupported, unsupportedExpected),
-        profile('two same-line occurrences', same, [occurrence(same, rule, call, 0), occurrence(same, rule, call, 1)]),
-        profile('analysis unavailable', positive, [], 'off'),
+        profile('genuine unreleased positive', positive, [occurrence(positive, rule, call)], 'complete'),
+        profile('shadowed acquisition with positive neighbor', lookalike, [occurrence(lookalike, rule, call, 1)], 'complete'),
+        profile('immutable handle alias release', releasedAlias, [], 'complete'),
+        profile('different handle does not release acquisition', wrongHandle, [occurrence(wrongHandle, rule, call)], 'complete'),
+        profile('supported local cleanup transfer', helper, [], 'complete'),
+        profile('unsupported cleanup transfer with positive neighbor', unsupported, unsupportedExpected, 'narrowed'),
+        profile('two same-line occurrences', same, [occurrence(same, rule, call, 0), occurrence(same, rule, call, 1)], 'complete'),
+        profile('analysis unavailable', positive, [], 'unavailable'),
     ];
 }
 // A shipped corpus directory, resolved next to the compiled module (bin/'s
