@@ -1,3 +1,5 @@
+import { eastAsianWidth } from "get-east-asian-width";
+import { stripVTControlCharacters } from "node:util";
 import { createKeyFeed } from "./keys.js";
 
 // The tty session: the one place that owns the interactive terminal loop —
@@ -44,19 +46,49 @@ export interface TtyStdout {
   write(s: string): unknown;
 }
 
+// Conventional terminal cells: East Asian wide/fullwidth and emoji clusters
+// occupy two cells; ambiguous characters occupy one. Grapheme boundaries come
+// from the runtime's ICU. get-east-asian-width supplies the Unicode width table.
+const graphemes = new Intl.Segmenter("en", { granularity: "grapheme" });
+
+// Content is one inert line. Preserve SGR styling, remove other VT commands,
+// cursor-moving C0/C1 controls, line separators and bidi layout controls. This
+// also removes stray ESC bytes from malformed sequences. Paint commands belong
+// to paintFrame, never to doctor-controlled text.
+function safeLine(s: string): string {
+  return s.split(/(\x1b\[[0-9;:]*m)/g).map((part, i) => i % 2 ? part
+    : stripVTControlCharacters(part).replace(/[\x00-\x1f\x7f-\x9f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, "")).join("");
+}
+
+function clusterWidth(cluster: string): number {
+  // Text-default symbols (e.g. warning/info) stay text-width unless VS16 or
+  // a ZWJ emoji sequence requests emoji presentation. No per-glyph exceptions.
+  if (/\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\u20E3/u.test(cluster)
+    || (cluster.includes("\u200d") && /\p{Extended_Pictographic}/u.test(cluster))) return 2;
+  const base = [...cluster].find(ch => !/[\p{Mark}\p{Default_Ignorable_Code_Point}]/u.test(ch));
+  return base === undefined ? 0 : eastAsianWidth(base.codePointAt(0)!, { ambiguousAsWide: false });
+}
+
 export function visibleWidth(s: string): number {
-  return s.replace(/\x1b\[[0-9;]*m/g, "").length;
+  let width = 0;
+  for (const { segment } of graphemes.segment(stripVTControlCharacters(safeLine(s)))) width += clusterWidth(segment);
+  return width;
 }
 
 export function truncateVisible(s: string, width: number): string {
-  if (visibleWidth(s) <= width) return s;
-  let out = "";
-  let w = 0;
-  for (const ch of s.replace(/\x1b\[[0-9;]*m/g, "")) {
-    const charWidth = visibleWidth(ch);
-    if (w + charWidth > width - 1) break;
-    out += ch;
-    w += charWidth;
+  const limit = Math.max(0, Math.floor(width));
+  if (limit === 0) return "";
+  const safe = safeLine(s);
+  if (visibleWidth(safe) <= limit) return safe;
+  // Truncation deliberately removes styling. Segment the plain text first so
+  // even an SGR transition inside a combining/ZWJ cluster cannot split it or
+  // leave an active color behind. Fitting, safe strings retain their bytes.
+  let out = "", cells = 0;
+  for (const { segment } of graphemes.segment(stripVTControlCharacters(safe))) {
+    const next = clusterWidth(segment);
+    if (cells + next > limit - 1) break;
+    out += segment;
+    cells += next;
   }
   return out + "…";
 }

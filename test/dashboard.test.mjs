@@ -16,14 +16,14 @@ const { reviewOf } = await import(`${candidate}/bin/review.js`);
 const { encodeDecisionKey } = await import(`${candidate}/bin/finding-state.js`);
 const { captureScan } = await import(`${candidate}/bin/scan-capture.js`);
 const deriveSummaryOf = (await import(`${candidate}/bin/summary.js`)).deriveSummary;
-const { visibleWidth } = await import(`${candidate}/bin/tty.js`);
+import { terminalCells, plainSgr } from "./support/terminal-cells.mjs";
 const widthMeasurements = [];
-// TTY paint controls move/clear the cursor; preserve SGR color for visibleWidth.
+// TTY paint controls move/clear the cursor; preserve SGR color for the independent cell oracle.
 const unpaint = frame => frame.replace(/\x1b\[(?:\?2026[hl]|H|K|J)/g, '');
-const physicalRows = (lines, cols) => lines.reduce((total, line) => total + Math.max(1, Math.ceil(visibleWidth(line) / cols)), 0);
+const physicalRows = (lines, cols) => lines.reduce((total, line) => total + Math.max(1, Math.ceil(terminalCells(line) / cols)), 0);
 function assertFrameFits(frame, {cols, rows, label, useColor}) {
   const lines = unpaint(frame).split('\n');
-  const widths = lines.map(visibleWidth);
+  const widths = lines.map(terminalCells);
   const measurement = {label, cols, rows, useColor, logicalLines: lines.length,
     maximumVisibleWidth: Math.max(...widths), physicalRows: physicalRows(lines, cols)};
   widthMeasurements.push(measurement);
@@ -967,4 +967,48 @@ for(const useColor of [false,true])test(`non-BMP notice text obeys the same visi
   assertFrameFits(frame,{cols,rows:8,useColor,label:'non-BMP notice'});
   assert.match(frame,/△/);
  }
+});
+
+
+const unicodeSizes = [[20,8],[40,8],[80,3],[80,8],[80,34],[140,34]];
+for (const [cols, rows] of unicodeSizes) test(`Unicode dashboard independent cells ${cols}x${rows}`, () => {
+  const long = '界界界e\u0301🧪👩‍💻❤️'.repeat(12);
+  const custom = [{...groups[0], meta:{...groups[0].meta,id:`医師-${long}`}, findings:[{rule:'charges-create',file:`src/文件-${long}.ts`,line:1}]}];
+  const widths = [];
+  for (const useColor of [false,true]) {
+    const frame = dashboardFrame({tree:buildTree(gcOf(custom),2),selectedRow:1,readKeys:new Set(),readSource:()=>[long],filesTotal:2,durationMs:2,useColor,cols,rows,
+      zeroFindingDoctors:Array.from({length:40},(_,i)=>({id:`界-${long}-${i}`,narrowed:i%2===0})),
+      coverageNotice:`semantic coverage narrowed ${long}`,skippedUnsafe:[`unsafe-${long}`],notice:`copied ${long}`});
+    assertFrameFits(frame,{cols,rows,useColor,label:'Unicode matrix'});
+    const plain=plainSgr(frame);
+    assert.match(plain,/△/, 'narrowed coverage is disclosed');
+    assert.match(plain,/\d+ more quiet/, 'omitted quiet doctors stay represented');
+    if(cols>=80) assert.match(plain,/\d+ narrowed, \d+ clean/);
+    widths.push(frame.split('\n').map(terminalCells));
+  }
+  assert.deepEqual(widths[0], widths[1], 'color does not change terminal-cell widths');
+});
+
+for(const useColor of [false,true])test(`CJK physical-row reproduction 20x8 color=${useColor}`,()=>{
+ const custom=[{...groups[0],meta:{...groups[0].meta,id:'doctor-'+'界'.repeat(30)},findings:[{rule:'charges-create',file:`src/${'界'.repeat(30)}.ts`,line:1}]}];
+ const frame=dashboardFrame({tree:buildTree(gcOf(custom),2),selectedRow:1,readKeys:new Set(),readSource:()=>null,filesTotal:2,durationMs:2,useColor,cols:20,rows:8,
+  zeroFindingDoctors:[{id:'quiet-'+'界'.repeat(20),narrowed:true}]});
+ assertFrameFits(frame,{cols:20,rows:8,useColor,label:'CJK reproduction'});
+ assert.match(plainSgr(frame),/△/);
+});
+
+for(const useColor of [false,true])test(`Unicode compact repaint color=${useColor}`,async()=>{
+ const custom=[{...groups[0],meta:{...groups[0].meta,id:'医師-界👩‍💻'},findings:[{rule:'charges-create',file:'src/文件-e\u0301🧪.ts',line:1}]}];
+ const input=dashInput([...custom,groups[1]]);input.useColor=useColor;
+ const stdin=new FakeStdin(),stdout=new FakeStdout();stdout.columns=20;stdout.rows=8;
+ const done=runDashboardOn({stdin,stdout},input,copyAlways);
+ try{
+  stdin.send('j');stdin.send('c');stdin.send('k');
+  const frames=stdout.frames.filter(f=>f.includes('\x1b[H'));
+  assert.ok(frames.length>=4);assert.notEqual(frames[0],frames[1]);
+  for(const frame of frames){
+   assertFrameFits(frame,{cols:20,rows:8,useColor,label:'Unicode painted navigation'});
+   assert.equal((frame.match(/\x1b\[K/g)||[]).length,7);assert.match(frame,/\x1b\[J/);
+  }
+ }finally{stdin.send('q');await done;}
 });
