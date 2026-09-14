@@ -54,7 +54,7 @@ function dedupeGroups(groups) {
     return { groups: out, hidden };
 }
 export function deriveSummary(outcome) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f;
     const { groups, hidden } = dedupeGroups(outcome.groups);
     const total = groups.reduce((n, g) => n + g.findings.length, 0);
     const score = computeScore(groups, outcome.fileCount);
@@ -63,6 +63,8 @@ export function deriveSummary(outcome) {
     // and where the partial flag is set for every surface to honor.
     if (((_b = (_a = outcome.crashed) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0) > 0 || ((_d = (_c = outcome.broken) === null || _c === void 0 ? void 0 : _c.length) !== null && _d !== void 0 ? _d : 0) > 0)
         score.partialScan = true;
+    if (groups.some(group => { var _a; return ((_a = group.semantic) === null || _a === void 0 ? void 0 : _a.incomplete) === true; }))
+        score.narrowedScan = true;
     const header = scoreHeaderLines(score);
     const coverageLines = [];
     for (const group of groups)
@@ -74,12 +76,35 @@ export function deriveSummary(outcome) {
             for (const issue of coverage.issues.slice(0, 5))
                 coverageLines.push(`Consumer coverage limit: ${issue}`);
         }
+    for (const group of groups) {
+        const semantic = group.semantic;
+        if (!semantic)
+            continue;
+        coverageLines.push(`Semantic provider: ${semantic.provider.id}@${semantic.provider.version} (${semantic.provider.available ? 'available' : 'unavailable'}); protocol v${semantic.protocolVersion}.`);
+        for (const narrowing of semantic.narrowed.slice(0, 8)) {
+            const subject = narrowing.check ? `${group.meta.id}/${narrowing.check}` : (_f = (_e = narrowing.recipe) !== null && _e !== void 0 ? _e : narrowing.capability) !== null && _f !== void 0 ? _f : group.meta.id;
+            const affected = narrowing.occurrences > 0 ? `${narrowing.occurrences} occurrence${narrowing.occurrences === 1 ? '' : 's'} in ${narrowing.files.length} file${narrowing.files.length === 1 ? '' : 's'}` : 'declared path unavailable';
+            coverageLines.push(`Semantic narrowing: ${subject} — ${narrowing.reason} (${affected}).`);
+        }
+        if (semantic.narrowed.length > 8)
+            coverageLines.push('Additional semantic narrowing details are available with --format json.');
+    }
     const severityCounts = { error: 0, warning: 0, info: 0 };
     for (const g of groups) {
         for (const f of g.findings)
             severityCounts[findingSeverity(g, f)]++;
     }
-    const groupChecks = groups.map(g => ({ group: g, checks: expandChecks(g), narrowedIds: outcome.analysisAvailable === false ? narrowedCheckIds(g.meta) : [] }));
+    const groupChecks = groups.map(g => {
+        var _a, _b;
+        return ({
+            group: g,
+            checks: expandChecks(g),
+            narrowedIds: [...new Set([
+                    ...(outcome.analysisAvailable === false ? narrowedCheckIds(g.meta) : []),
+                    ...((_b = (_a = g.semantic) === null || _a === void 0 ? void 0 : _a.narrowed.flatMap(item => item.check ? [item.check] : [])) !== null && _b !== void 0 ? _b : []),
+                ])],
+        });
+    });
     return {
         groups,
         groupChecks,

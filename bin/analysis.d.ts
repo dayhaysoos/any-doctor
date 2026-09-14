@@ -7,6 +7,9 @@ export type AnalysisStatusResult = AnalysisStatus | {
     available: false;
     reason: string;
 };
+export declare const SEMANTIC_PROVIDER_ID = "any-doctor/syntax-flow";
+export declare const SEMANTIC_PROVIDER_VERSION = "1";
+export declare function semanticProviderProvenance(): import("./contract.js").SemanticProviderProvenance;
 export declare function analysisStatus(): AnalysisStatusResult;
 export type AnalysisResult = {
     ok: true;

@@ -15,6 +15,8 @@ export interface ScoreResult {
   // doctor's absence RAISED the score). Set by the derivation, which is
   // the only place that knows; per-doctor scores are never partial.
   partialScan?: boolean;
+  /** Semantic analysis abstained for at least one declared check. */
+  narrowedScan?: boolean;
 }
 
 // A file's burden by its worst finding: an error makes the file fully
@@ -81,6 +83,7 @@ export interface ScoreHeader {
   // True when doctors crashed: same yellow tone, same n/a — a partial
   // score is not a score.
   partialScan: boolean;
+  narrowedScan: boolean;
 }
 
 // The one composer for the score's header lines (D19): report and
@@ -93,16 +96,20 @@ export interface ScoreHeader {
 // doctors' silence must never read as cleanliness.
 export function scoreHeaderLines(s: ScoreResult): ScoreHeader {
   if (isEmptyScan(s)) {
-    return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true, partialScan: false };
+    return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true, partialScan: false, narrowedScan: false };
   }
   if (s.partialScan === true) {
-    return { scoreLine: "Score: n/a — partial scan (a doctor failed — crashed or broken; results above are incomplete)", cleanLine: null, emptyScan: false, partialScan: true };
+    return { scoreLine: "Score: n/a — partial scan (a doctor failed — crashed or broken; results above are incomplete)", cleanLine: null, emptyScan: false, partialScan: true, narrowedScan: false };
+  }
+  if (s.narrowedScan === true) {
+    return { scoreLine: "Score: n/a — narrowed semantic scan (some checks abstained; results are incomplete)", cleanLine: null, emptyScan: false, partialScan: false, narrowedScan: true };
   }
   return {
     scoreLine: `Score: ${s.score} / 100 — ${s.grade}`,
     cleanLine: `${s.filesClean}/${s.filesTotal} files clean`,
     emptyScan: false,
     partialScan: false,
+    narrowedScan: false,
   };
 }
 

@@ -4,7 +4,7 @@ import { functionStructures } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
 import { searchBase, SEMANTIC_RESULT_VERSION, withinBase, withinDir } from "./contract.js";
-import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls } from "./analysis.js";
+import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls, semanticProviderProvenance } from "./analysis.js";
 import { identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
 // One cache per host process. The host lives in the runner process, so
 // the lifetime is the any-doctor invocation; across a cohort's doctors
@@ -28,7 +28,10 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
     }
     if (req.kind === "available") {
         const s = status();
-        return s.available ? { available: true } : { available: false, reason: s.reason };
+        const provider = status === analysisStatus ? semanticProviderProvenance() : undefined;
+        return s.available
+            ? { available: true, ...(provider ? { provider } : {}) }
+            : { available: false, reason: s.reason, ...(provider ? { provider } : {}) };
     }
     if ((req.kind === "identity" || req.kind === "value-disposition" || req.kind === "resource-lifetime" || req.kind === "option-presence" || req.kind === "recipe-unhandled-value" || req.kind === "recipe-resource-without-release" || req.kind === "recipe-required-option") && !status().available) {
         return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" } };

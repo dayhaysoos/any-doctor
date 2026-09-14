@@ -105,6 +105,7 @@ export function deriveSummary(outcome: RunOutcome): RunSummary {
   // silence as cleanliness — the derivation is where crashes are known,
   // and where the partial flag is set for every surface to honor.
   if ((outcome.crashed?.length ?? 0) > 0 || (outcome.broken?.length ?? 0) > 0) score.partialScan = true;
+  if (groups.some(group=>group.semantic?.incomplete===true)) score.narrowedScan = true;
   const header = scoreHeaderLines(score);
   const coverageLines: string[] = [];
   for (const group of groups) if (group.analysisCoverage) {
@@ -113,13 +114,30 @@ export function deriveSummary(outcome: RunOutcome): RunSummary {
     if (coverage.issues.length > 5) coverageLines.push("Full coverage reasons and snapshot digest are available with --format json.");
     for (const issue of coverage.issues.slice(0, 5)) coverageLines.push(`Consumer coverage limit: ${issue}`);
   }
+  for(const group of groups){
+    const semantic=group.semantic;if(!semantic)continue;
+    coverageLines.push(`Semantic provider: ${semantic.provider.id}@${semantic.provider.version} (${semantic.provider.available?'available':'unavailable'}); protocol v${semantic.protocolVersion}.`);
+    for(const narrowing of semantic.narrowed.slice(0,8)){
+      const subject=narrowing.check?`${group.meta.id}/${narrowing.check}`:narrowing.recipe??narrowing.capability??group.meta.id;
+      const affected=narrowing.occurrences>0?`${narrowing.occurrences} occurrence${narrowing.occurrences===1?'':'s'} in ${narrowing.files.length} file${narrowing.files.length===1?'':'s'}`:'declared path unavailable';
+      coverageLines.push(`Semantic narrowing: ${subject} — ${narrowing.reason} (${affected}).`);
+    }
+    if(semantic.narrowed.length>8)coverageLines.push('Additional semantic narrowing details are available with --format json.');
+  }
 
   const severityCounts: Record<Severity, number> = { error: 0, warning: 0, info: 0 };
   for (const g of groups) {
     for (const f of g.findings) severityCounts[findingSeverity(g, f)]++;
   }
 
-  const groupChecks: GroupChecks[] = groups.map(g => ({ group: g, checks: expandChecks(g), narrowedIds: outcome.analysisAvailable === false ? narrowedCheckIds(g.meta) : [] }));
+  const groupChecks: GroupChecks[] = groups.map(g => ({
+    group:g,
+    checks:expandChecks(g),
+    narrowedIds:[...new Set([
+      ...(outcome.analysisAvailable===false?narrowedCheckIds(g.meta):[]),
+      ...(g.semantic?.narrowed.flatMap(item=>item.check?[item.check]:[])??[]),
+    ])],
+  }));
 
   return {
     groups,

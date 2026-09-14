@@ -11,6 +11,26 @@ import { SEMANTIC_RESULT_VERSION } from "./contract.js";
 
 type FlowValue = AnalysisCalls["structure"]["flow"]["values"][number];
 
+interface PreparedFacts {
+  values: Map<number,FlowValue>;
+  byRange: Map<string,FlowValue>;
+  bindings: Map<number,AnalysisCalls["structure"]["flow"]["bindings"][number]>;
+  states: Map<number,AnalysisCalls["structure"]["bindings"][number]>;
+  source?: string;
+  digest?: string;
+}
+const preparedFactsCache=new WeakMap<AnalysisCalls,PreparedFacts>();
+function preparedFacts(facts:AnalysisCalls,source?:string):PreparedFacts{
+  let prepared=preparedFactsCache.get(facts);
+  if(!prepared){const flow=facts.structure.flow;prepared={values:new Map(flow.values.map(value=>[value.id,value])),byRange:new Map(flow.values.map(value=>[`${value.start}:${value.end}`,value])),bindings:new Map(flow.bindings.map(binding=>[binding.binding,binding])),states:new Map(facts.structure.bindings.map(binding=>[binding.binding,binding]))};preparedFactsCache.set(facts,prepared);}
+  if(source!==undefined&&prepared.source!==source){prepared.source=source;prepared.digest=createHash('sha256').update(source).digest('hex');}
+  return prepared;
+}
+function expressionValue(prepared:PreparedFacts,expression:ExpressionRef):FlowValue|undefined{
+  const byId=prepared.values.get(expression.id);
+  return byId?.start===expression.start&&byId.end===expression.end?byId:prepared.byRange.get(`${expression.start}:${expression.end}`);
+}
+
   const unknown = <T>(reason: "provider-failure" | "unsupported-expression" | "unresolved-identity" | "outside-owner", evidence?: SemanticEvidence[]): SemanticResult<T> => ({
   version: SEMANTIC_RESULT_VERSION,
   status: "unknown",
@@ -27,18 +47,13 @@ export function identityResult(
   expression: ExpressionRef,
   query: IdentityQuery,
 ): SemanticResult<IdentityValue> {
-  const digest = createHash("sha256").update(source).digest("hex");
+  const prepared=preparedFacts(facts,source),digest=prepared.digest!;
   const flow = facts.structure.flow;
-  const values = new Map(flow.values.map((value) => [value.id, value]));
-  const bindings = new Map(flow.bindings.map((binding) => [binding.binding, binding]));
-  const states = new Map(facts.structure.bindings.map((binding) => [binding.binding, binding]));
+  const {values,bindings,states}=prepared;
   // Expression coordinates are the stable transport identity. The numeric id
   // is a same-projection fast path, not a promise that provider traversal ids
   // remain identical across independently materialized models.
-  const byId = values.get(expression.id);
-  const start = byId?.start === expression.start && byId.end === expression.end
-    ? byId
-    : flow.values.find((value) => value.start === expression.start && value.end === expression.end);
+  const start=expressionValue(prepared,expression);
   if (!start) return unknown("unsupported-expression");
 
   const evidence: SemanticEvidence[] = [];
@@ -87,9 +102,8 @@ export function valueDispositionResult(
   expression: ExpressionRef,
   query: ValueDispositionQuery,
 ): SemanticResult<ValueDisposition> {
-  const digest=createHash("sha256").update(source).digest("hex"),flow=facts.structure.flow;
-  const values=new Map(flow.values.map(value=>[value.id,value])),bindings=new Map(flow.bindings.map(binding=>[binding.binding,binding])),states=new Map(facts.structure.bindings.map(binding=>[binding.binding,binding]));
-  const byId=values.get(expression.id),subject=byId?.start===expression.start&&byId.end===expression.end?byId:flow.values.find(value=>value.start===expression.start&&value.end===expression.end);
+  const prepared=preparedFacts(facts,source),digest=prepared.digest!,flow=facts.structure.flow,{values,bindings,states}=prepared;
+  const subject=expressionValue(prepared,expression);
   if(!subject)return unknown("unsupported-expression");
   const evidence:SemanticEvidence[]=[{kind:"expression",file,sourceDigest:digest,range:rangeOf(subject)}];
   const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
@@ -154,8 +168,8 @@ export function valueDispositionResult(
 /** Host-owned resource matching through returned cleanup functions and directly
  * called local helpers/factories. It proves release only for the exact handle. */
 export function resourceLifetimeResult(file:string,source:string,facts:AnalysisCalls,acquisition:ExpressionRef,query:ResourceLifetimeQuery):SemanticResult<ResourceLifetime>{
-  const digest=createHash('sha256').update(source).digest('hex'),flow=facts.structure.flow,values=new Map(flow.values.map(value=>[value.id,value])),bindings=new Map(flow.bindings.map(binding=>[binding.binding,binding])),states=new Map(facts.structure.bindings.map(binding=>[binding.binding,binding]));
-  const pick=(ref:ExpressionRef)=>{const byId=values.get(ref.id);return byId?.start===ref.start&&byId.end===ref.end?byId:flow.values.find(value=>value.start===ref.start&&value.end===ref.end);};
+  const prepared=preparedFacts(facts,source),digest=prepared.digest!,flow=facts.structure.flow,{values,bindings,states}=prepared;
+  const pick=(ref:ExpressionRef)=>expressionValue(prepared,ref);
   const subject=pick(acquisition),owner=pick(query.owner);if(!subject||subject.kind!=='call'||!owner||owner.kind!=='function')return unknown('unsupported-expression');
   const evidence:SemanticEvidence[]=[{kind:'expression',file,sourceDigest:digest,range:rangeOf(subject),relationship:'acquisition'}];
   const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
@@ -184,9 +198,8 @@ export function resourceLifetimeResult(file:string,source:string,facts:AnalysisC
 export function optionPresenceResult(
   file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:OptionPresenceQuery,
 ):SemanticResult<OptionPresence>{
-  const digest=createHash("sha256").update(source).digest("hex"),flow=facts.structure.flow;
-  const values=new Map(flow.values.map(value=>[value.id,value])),bindings=new Map(flow.bindings.map(binding=>[binding.binding,binding])),states=new Map(facts.structure.bindings.map(binding=>[binding.binding,binding]));
-  const byId=values.get(expression.id),subject=byId?.start===expression.start&&byId.end===expression.end?byId:flow.values.find(value=>value.start===expression.start&&value.end===expression.end);
+  const prepared=preparedFacts(facts,source),digest=prepared.digest!,flow=facts.structure.flow,{values,bindings,states}=prepared;
+  const subject=expressionValue(prepared,expression);
   if(!subject||subject.kind!=="call"&&subject.kind!=="construct")return unknown("unsupported-expression");
   const evidence:SemanticEvidence[]=[];
   const add=(value:FlowValue,relationship:string)=>{if(!evidence.some(item=>item.range.start===value.start&&item.range.end===value.end&&item.relationship===relationship))evidence.push({kind:"expression",file,sourceDigest:digest,range:rangeOf(value),relationship});};
@@ -236,8 +249,8 @@ const recipeKnown=(value:RecipeDecision,evidence:SemanticEvidence[]):SemanticRes
 /** Recipe: resolve a configured producer and report only when its exact value is
  * established as discarded. Array identity is owned here, not by consumers. */
 export function unhandledValueRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:UnhandledValueRecipeQuery):SemanticResult<RecipeDecision>{
-  const flow=facts.structure.flow,values=new Map(flow.values.map(value=>[value.id,value])),bindings=new Map(flow.bindings.map(binding=>[binding.binding,binding])),states=new Map(facts.structure.bindings.map(binding=>[binding.binding,binding]));
-  const subject=values.get(expression.id)?.start===expression.start&&values.get(expression.id)?.end===expression.end?values.get(expression.id):flow.values.find(value=>value.start===expression.start&&value.end===expression.end);
+  const prepared=preparedFacts(facts),flow=facts.structure.flow,{values,bindings,states}=prepared;
+  const subject=expressionValue(prepared,expression);
   if(!subject||subject.kind!=='call')return unknown('unsupported-expression');
   if(subject.member!==query.producer.member)return recipeKnown('clear',[]);
   const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
@@ -251,9 +264,20 @@ export function unhandledValueRecipeResult(file:string,source:string,facts:Analy
 
 /** Recipe: combine configured call identity with structured option presence. */
 export function requiredOptionRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:RequiredOptionRecipeQuery):SemanticResult<RecipeDecision>{
-  const values=facts.structure.flow.values,subject=values.find(value=>value.id===expression.id&&value.start===expression.start&&value.end===expression.end)??values.find(value=>value.start===expression.start&&value.end===expression.end);
+  const prepared=preparedFacts(facts),values=prepared.values,subject=expressionValue(prepared,expression);
   if(!subject||subject.kind!=='call'||subject.callee===undefined)return unknown('unsupported-expression');
-  const identity=identityResult(file,source,facts,semanticRef(values[subject.callee]),query.call);if(identity.status==='unknown')return recipeUnknown(identity);if(!identity.value.matches)return recipeKnown('clear',identity.evidence);
+  // Doctors commonly offer every call in a file to a recipe. An unbound call
+  // whose complete lexical spelling differs from every configured global is a
+  // known non-candidate, not uncertainty about the configured check. Bound
+  // references (which may be immutable aliases), imports, and incomplete
+  // targets continue through full identity analysis.
+  const rawTarget=subject.target;
+  if(rawTarget&&rawTarget.binding===null&&!rawTarget.source&&rawTarget.root){
+    const rawName=[rawTarget.root,...rawTarget.members].join('.');
+    if(!(query.call.globals??[]).includes(rawName))return recipeKnown('clear',[]);
+  }
+  const callee=values.get(subject.callee);if(!callee)return unknown('unsupported-expression');
+  const identity=identityResult(file,source,facts,semanticRef(callee),query.call);if(identity.status==='unknown')return recipeUnknown(identity);if(!identity.value.matches)return recipeKnown('clear',identity.evidence);
   const option=optionPresenceResult(file,source,facts,semanticRef(subject),query.option);if(option.status==='unknown')return recipeUnknown(option);
   return recipeKnown(option.value==='absent'?'report':'clear',[...identity.evidence,...option.evidence]);
 }
@@ -261,8 +285,8 @@ export function requiredOptionRecipeResult(file:string,source:string,facts:Analy
 /** Recipe: find a configured owner, validate acquisition identity and classify
  * the exact handle in that owner's returned cleanup. */
 export function resourceWithoutReleaseRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:ResourceWithoutReleaseRecipeQuery):SemanticResult<RecipeDecision>{
-  const flow=facts.structure.flow,values=new Map(flow.values.map(value=>[value.id,value])),bindings=new Map(flow.bindings.map(binding=>[binding.binding,binding])),states=new Map(facts.structure.bindings.map(binding=>[binding.binding,binding]));
-  const subject=values.get(expression.id)?.start===expression.start&&values.get(expression.id)?.end===expression.end?values.get(expression.id):flow.values.find(value=>value.start===expression.start&&value.end===expression.end);
+  const prepared=preparedFacts(facts),flow=facts.structure.flow,{values,bindings,states}=prepared;
+  const subject=expressionValue(prepared,expression);
   if(!subject||subject.kind!=='call'||subject.callee===undefined)return unknown('unsupported-expression');
   const acquisitionIdentity=identityResult(file,source,facts,semanticRef(values.get(subject.callee)!),query.acquisition);if(acquisitionIdentity.status==='unknown')return recipeUnknown(acquisitionIdentity);if(!acquisitionIdentity.value.matches)return recipeKnown('clear',acquisitionIdentity.evidence);
   const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;

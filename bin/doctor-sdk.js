@@ -1,5 +1,23 @@
 import { createHash } from "node:crypto";
 import { SEMANTIC_RESULT_VERSION } from "./contract.js";
+const preparedFactsCache = new WeakMap();
+function preparedFacts(facts, source) {
+    let prepared = preparedFactsCache.get(facts);
+    if (!prepared) {
+        const flow = facts.structure.flow;
+        prepared = { values: new Map(flow.values.map(value => [value.id, value])), byRange: new Map(flow.values.map(value => [`${value.start}:${value.end}`, value])), bindings: new Map(flow.bindings.map(binding => [binding.binding, binding])), states: new Map(facts.structure.bindings.map(binding => [binding.binding, binding])) };
+        preparedFactsCache.set(facts, prepared);
+    }
+    if (source !== undefined && prepared.source !== source) {
+        prepared.source = source;
+        prepared.digest = createHash('sha256').update(source).digest('hex');
+    }
+    return prepared;
+}
+function expressionValue(prepared, expression) {
+    const byId = prepared.values.get(expression.id);
+    return (byId === null || byId === void 0 ? void 0 : byId.start) === expression.start && byId.end === expression.end ? byId : prepared.byRange.get(`${expression.start}:${expression.end}`);
+}
 const unknown = (reason, evidence) => ({
     version: SEMANTIC_RESULT_VERSION,
     status: "unknown",
@@ -10,18 +28,13 @@ const unknown = (reason, evidence) => ({
  * parsing, alias resolution, shadowing and evidence stay behind this seam. */
 export function identityResult(file, source, facts, expression, query) {
     var _a;
-    const digest = createHash("sha256").update(source).digest("hex");
+    const prepared = preparedFacts(facts, source), digest = prepared.digest;
     const flow = facts.structure.flow;
-    const values = new Map(flow.values.map((value) => [value.id, value]));
-    const bindings = new Map(flow.bindings.map((binding) => [binding.binding, binding]));
-    const states = new Map(facts.structure.bindings.map((binding) => [binding.binding, binding]));
+    const { values, bindings, states } = prepared;
     // Expression coordinates are the stable transport identity. The numeric id
     // is a same-projection fast path, not a promise that provider traversal ids
     // remain identical across independently materialized models.
-    const byId = values.get(expression.id);
-    const start = (byId === null || byId === void 0 ? void 0 : byId.start) === expression.start && byId.end === expression.end
-        ? byId
-        : flow.values.find((value) => value.start === expression.start && value.end === expression.end);
+    const start = expressionValue(prepared, expression);
     if (!start)
         return unknown("unsupported-expression");
     const evidence = [];
@@ -71,9 +84,8 @@ export function identityResult(file, source, facts, expression, query) {
  * immutable aliases and the already-supported local relationships; unsupported
  * transfers stay unknown instead of becoming discarded. */
 export function valueDispositionResult(file, source, facts, expression, query) {
-    const digest = createHash("sha256").update(source).digest("hex"), flow = facts.structure.flow;
-    const values = new Map(flow.values.map(value => [value.id, value])), bindings = new Map(flow.bindings.map(binding => [binding.binding, binding])), states = new Map(facts.structure.bindings.map(binding => [binding.binding, binding]));
-    const byId = values.get(expression.id), subject = (byId === null || byId === void 0 ? void 0 : byId.start) === expression.start && byId.end === expression.end ? byId : flow.values.find(value => value.start === expression.start && value.end === expression.end);
+    const prepared = preparedFacts(facts, source), digest = prepared.digest, flow = facts.structure.flow, { values, bindings, states } = prepared;
+    const subject = expressionValue(prepared, expression);
     if (!subject)
         return unknown("unsupported-expression");
     const evidence = [{ kind: "expression", file, sourceDigest: digest, range: rangeOf(subject) }];
@@ -210,8 +222,8 @@ export function valueDispositionResult(file, source, facts, expression, query) {
  * called local helpers/factories. It proves release only for the exact handle. */
 export function resourceLifetimeResult(file, source, facts, acquisition, query) {
     var _a;
-    const digest = createHash('sha256').update(source).digest('hex'), flow = facts.structure.flow, values = new Map(flow.values.map(value => [value.id, value])), bindings = new Map(flow.bindings.map(binding => [binding.binding, binding])), states = new Map(facts.structure.bindings.map(binding => [binding.binding, binding]));
-    const pick = (ref) => { const byId = values.get(ref.id); return (byId === null || byId === void 0 ? void 0 : byId.start) === ref.start && byId.end === ref.end ? byId : flow.values.find(value => value.start === ref.start && value.end === ref.end); };
+    const prepared = preparedFacts(facts, source), digest = prepared.digest, flow = facts.structure.flow, { values, bindings, states } = prepared;
+    const pick = (ref) => expressionValue(prepared, ref);
     const subject = pick(acquisition), owner = pick(query.owner);
     if (!subject || subject.kind !== 'call' || !owner || owner.kind !== 'function')
         return unknown('unsupported-expression');
@@ -319,9 +331,8 @@ export function resourceLifetimeResult(file, source, facts, acquisition, query) 
  * spreads override inherited values. `undefined` is an ignored WebIDL member,
  * while `null` establishes absence for nullable request options such as signal. */
 export function optionPresenceResult(file, source, facts, expression, query) {
-    const digest = createHash("sha256").update(source).digest("hex"), flow = facts.structure.flow;
-    const values = new Map(flow.values.map(value => [value.id, value])), bindings = new Map(flow.bindings.map(binding => [binding.binding, binding])), states = new Map(facts.structure.bindings.map(binding => [binding.binding, binding]));
-    const byId = values.get(expression.id), subject = (byId === null || byId === void 0 ? void 0 : byId.start) === expression.start && byId.end === expression.end ? byId : flow.values.find(value => value.start === expression.start && value.end === expression.end);
+    const prepared = preparedFacts(facts, source), digest = prepared.digest, flow = facts.structure.flow, { values, bindings, states } = prepared;
+    const subject = expressionValue(prepared, expression);
     if (!subject || subject.kind !== "call" && subject.kind !== "construct")
         return unknown("unsupported-expression");
     const evidence = [];
@@ -426,9 +437,9 @@ const recipeKnown = (value, evidence) => ({ version: SEMANTIC_RESULT_VERSION, st
 /** Recipe: resolve a configured producer and report only when its exact value is
  * established as discarded. Array identity is owned here, not by consumers. */
 export function unhandledValueRecipeResult(file, source, facts, expression, query) {
-    var _a, _b, _c;
-    const flow = facts.structure.flow, values = new Map(flow.values.map(value => [value.id, value])), bindings = new Map(flow.bindings.map(binding => [binding.binding, binding])), states = new Map(facts.structure.bindings.map(binding => [binding.binding, binding]));
-    const subject = ((_a = values.get(expression.id)) === null || _a === void 0 ? void 0 : _a.start) === expression.start && ((_b = values.get(expression.id)) === null || _b === void 0 ? void 0 : _b.end) === expression.end ? values.get(expression.id) : flow.values.find(value => value.start === expression.start && value.end === expression.end);
+    var _a;
+    const prepared = preparedFacts(facts), flow = facts.structure.flow, { values, bindings, states } = prepared;
+    const subject = expressionValue(prepared, expression);
     if (!subject || subject.kind !== 'call')
         return unknown('unsupported-expression');
     if (subject.member !== query.producer.member)
@@ -453,7 +464,7 @@ export function unhandledValueRecipeResult(file, source, facts, expression, quer
     const receiver = array(subject.receiver);
     if (receiver === 'unknown')
         return unknown('unsupported-expression');
-    const callback = resolve((_c = subject.arguments) === null || _c === void 0 ? void 0 : _c[query.producer.asyncArgument]);
+    const callback = resolve((_a = subject.arguments) === null || _a === void 0 ? void 0 : _a[query.producer.asyncArgument]);
     if ((callback === null || callback === void 0 ? void 0 : callback.kind) !== 'function')
         return unknown('unsupported-expression');
     if (!callback.async)
@@ -466,10 +477,24 @@ export function unhandledValueRecipeResult(file, source, facts, expression, quer
 /** Recipe: combine configured call identity with structured option presence. */
 export function requiredOptionRecipeResult(file, source, facts, expression, query) {
     var _a;
-    const values = facts.structure.flow.values, subject = (_a = values.find(value => value.id === expression.id && value.start === expression.start && value.end === expression.end)) !== null && _a !== void 0 ? _a : values.find(value => value.start === expression.start && value.end === expression.end);
+    const prepared = preparedFacts(facts), values = prepared.values, subject = expressionValue(prepared, expression);
     if (!subject || subject.kind !== 'call' || subject.callee === undefined)
         return unknown('unsupported-expression');
-    const identity = identityResult(file, source, facts, semanticRef(values[subject.callee]), query.call);
+    // Doctors commonly offer every call in a file to a recipe. An unbound call
+    // whose complete lexical spelling differs from every configured global is a
+    // known non-candidate, not uncertainty about the configured check. Bound
+    // references (which may be immutable aliases), imports, and incomplete
+    // targets continue through full identity analysis.
+    const rawTarget = subject.target;
+    if (rawTarget && rawTarget.binding === null && !rawTarget.source && rawTarget.root) {
+        const rawName = [rawTarget.root, ...rawTarget.members].join('.');
+        if (!((_a = query.call.globals) !== null && _a !== void 0 ? _a : []).includes(rawName))
+            return recipeKnown('clear', []);
+    }
+    const callee = values.get(subject.callee);
+    if (!callee)
+        return unknown('unsupported-expression');
+    const identity = identityResult(file, source, facts, semanticRef(callee), query.call);
     if (identity.status === 'unknown')
         return recipeUnknown(identity);
     if (!identity.value.matches)
@@ -482,9 +507,9 @@ export function requiredOptionRecipeResult(file, source, facts, expression, quer
 /** Recipe: find a configured owner, validate acquisition identity and classify
  * the exact handle in that owner's returned cleanup. */
 export function resourceWithoutReleaseRecipeResult(file, source, facts, expression, query) {
-    var _a, _b, _c;
-    const flow = facts.structure.flow, values = new Map(flow.values.map(value => [value.id, value])), bindings = new Map(flow.bindings.map(binding => [binding.binding, binding])), states = new Map(facts.structure.bindings.map(binding => [binding.binding, binding]));
-    const subject = ((_a = values.get(expression.id)) === null || _a === void 0 ? void 0 : _a.start) === expression.start && ((_b = values.get(expression.id)) === null || _b === void 0 ? void 0 : _b.end) === expression.end ? values.get(expression.id) : flow.values.find(value => value.start === expression.start && value.end === expression.end);
+    var _a;
+    const prepared = preparedFacts(facts), flow = facts.structure.flow, { values, bindings, states } = prepared;
+    const subject = expressionValue(prepared, expression);
     if (!subject || subject.kind !== 'call' || subject.callee === undefined)
         return unknown('unsupported-expression');
     const acquisitionIdentity = identityResult(file, source, facts, semanticRef(values.get(subject.callee)), query.acquisition);
@@ -506,7 +531,7 @@ export function resourceWithoutReleaseRecipeResult(file, source, facts, expressi
         if (ownerIdentity.status !== 'known' || !ownerIdentity.value.matches)
             continue;
         sawOwner = true;
-        const owner = resolve((_c = ownerCall.arguments) === null || _c === void 0 ? void 0 : _c[query.owner.argument]);
+        const owner = resolve((_a = ownerCall.arguments) === null || _a === void 0 ? void 0 : _a[query.owner.argument]);
         if ((owner === null || owner === void 0 ? void 0 : owner.kind) !== 'function')
             continue;
         const lifetime = resourceLifetimeResult(file, source, facts, semanticRef(subject), { owner: semanticRef(owner), release: query.release });

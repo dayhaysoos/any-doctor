@@ -6,6 +6,8 @@ export interface ScoreResult {
     filesTotal: number;
     emptyScan: boolean;
     partialScan?: boolean;
+    /** Semantic analysis abstained for at least one declared check. */
+    narrowedScan?: boolean;
 }
 export declare function findingSeverity(g: ReportGroup, f: Finding): Severity;
 export declare function gradeFor(score: number): string;
@@ -22,6 +24,7 @@ export interface ScoreHeader {
     cleanLine: string | null;
     emptyScan: boolean;
     partialScan: boolean;
+    narrowedScan: boolean;
 }
 export declare function scoreHeaderLines(s: ScoreResult): ScoreHeader;
 export declare function categoryRollup(groups: ReportGroup[]): {

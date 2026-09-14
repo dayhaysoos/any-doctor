@@ -24,7 +24,7 @@
     "doctors",
     "fixtures",
     "skill",
-    "docs",
+    "docs/*.md",
     "CONTEXT.md",
     "README.md"
   ],

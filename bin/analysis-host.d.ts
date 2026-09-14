@@ -21,6 +21,7 @@ export type AnalysisResponse = {
 } | {
     available: boolean;
     reason?: string;
+    provider?: import("./contract.js").SemanticProviderProvenance;
 } | {
     file: AnalysisFile;
 } | {

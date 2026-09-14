@@ -61,16 +61,20 @@ export function isEmptyScan(s) {
 // doctors' silence must never read as cleanliness.
 export function scoreHeaderLines(s) {
     if (isEmptyScan(s)) {
-        return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true, partialScan: false };
+        return { scoreLine: "Score: n/a — no files scanned", cleanLine: null, emptyScan: true, partialScan: false, narrowedScan: false };
     }
     if (s.partialScan === true) {
-        return { scoreLine: "Score: n/a — partial scan (a doctor failed — crashed or broken; results above are incomplete)", cleanLine: null, emptyScan: false, partialScan: true };
+        return { scoreLine: "Score: n/a — partial scan (a doctor failed — crashed or broken; results above are incomplete)", cleanLine: null, emptyScan: false, partialScan: true, narrowedScan: false };
+    }
+    if (s.narrowedScan === true) {
+        return { scoreLine: "Score: n/a — narrowed semantic scan (some checks abstained; results are incomplete)", cleanLine: null, emptyScan: false, partialScan: false, narrowedScan: true };
     }
     return {
         scoreLine: `Score: ${s.score} / 100 — ${s.grade}`,
         cleanLine: `${s.filesClean}/${s.filesTotal} files clean`,
         emptyScan: false,
         partialScan: false,
+        narrowedScan: false,
     };
 }
 export function categoryRollup(groups) {

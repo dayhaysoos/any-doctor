@@ -10,7 +10,7 @@ import * as contract from "./contract.js";
 // (certify, the loader frame) read .findings and .meta off it directly.
 export async function runOnce(root, mod, opts) {
     const started = Date.now();
-    const { ctx, getFindings, getAnalysisCoverage } = buildCtx(root, opts);
+    const { ctx, getFindings, getAnalysisCoverage, getSemanticReport } = buildCtx(root, opts);
     const fileCount = ctx.files.list().length;
     const result = mod.doctor(ctx);
     if (!result || typeof result.then !== "function") {
@@ -18,6 +18,7 @@ export async function runOnce(root, mod, opts) {
     }
     return result.then(() => {
         const analysisCoverage = getAnalysisCoverage();
+        const semantic = getSemanticReport(mod.meta);
         return {
             protocolVersion: contract.PROTOCOL_VERSION,
             kind: "run",
@@ -26,6 +27,7 @@ export async function runOnce(root, mod, opts) {
             durationMs: Date.now() - started,
             meta: mod.meta,
             findings: getFindings(),
+            ...(semantic ? { semantic } : {}),
             ...(analysisCoverage ? { analysisCoverage } : {}),
         };
     });
@@ -61,6 +63,16 @@ export function validateClaimContract(mod) {
         if (Array.isArray(c.needs) && c.needs.length > 0
             && (c.onUnknown !== "narrow" && c.onUnknown !== "skip")) {
             problems.push(`check "${String(c.id)}": onUnknown is required when needs is declared — "narrow" or "skip"`);
+        }
+        if (c.recipe !== undefined) {
+            try {
+                const fixtures = challengeProfileFixtures(c);
+                if (fixtures.length === 0)
+                    problems.push(`check "${String(c.id)}": recipe declaration produced no challenge profiles`);
+            }
+            catch (e) {
+                problems.push(`check "${String(c.id)}": ${e instanceof Error ? e.message : String(e)}`);
+            }
         }
     }
     if (problems.length > 0)
@@ -307,7 +319,10 @@ export function challengeProfileFixtures(check) {
     const declaration = check.recipe;
     if (!declaration)
         return [];
-    return declaration.name === 'unhandled-value' ? unhandledProfile(check.id, declaration) : declaration.name === 'resource-without-release' ? resourceProfile(check.id, declaration) : optionProfile(check.id, declaration);
+    const fixtures = declaration.name === 'unhandled-value' ? unhandledProfile(check.id, declaration) : declaration.name === 'resource-without-release' ? resourceProfile(check.id, declaration) : optionProfile(check.id, declaration);
+    if (!fixtures.length)
+        throw new Error(`recipe ${declaration.name} has no applicable challenge profile for this declaration`);
+    return fixtures;
 }
 function unhandledProfile(rule, declaration) {
     const member = declaration.query.producer.member, p = `[1].${member}(async value=>value)`;
@@ -321,36 +336,65 @@ function unhandledProfile(rule, declaration) {
         profile('analysis unavailable', positive, [], 'off'),
     ];
 }
+function identityFixture(query, alias) {
+    var _a, _b;
+    const global = (_a = query.globals) === null || _a === void 0 ? void 0 : _a[0];
+    if (global) {
+        const root = global.split('.')[0];
+        return { head: '', callee: global, shadow: `function probe(${root}){${global}(__ARGS__)}` };
+    }
+    for (const spec of (_b = query.imports) !== null && _b !== void 0 ? _b : []) {
+        for (const name of spec.names) {
+            if (name.startsWith('*.')) {
+                const member = name.slice(2);
+                return { head: `import * as ${alias} from ${JSON.stringify(spec.source)};\n`, callee: `${alias}.${member}`, shadow: `function probe(${alias}){${alias}.${member}(__ARGS__)}` };
+            }
+            if (name.startsWith('default.')) {
+                const member = name.slice('default.'.length);
+                return { head: `import ${alias} from ${JSON.stringify(spec.source)};\n`, callee: `${alias}.${member}`, shadow: `function probe(${alias}){${alias}.${member}(__ARGS__)}` };
+            }
+            if (name === 'default')
+                return { head: `import ${alias} from ${JSON.stringify(spec.source)};\n`, callee: alias, shadow: `function probe(${alias}){${alias}(__ARGS__)}` };
+            if (!name.includes('.'))
+                return { head: `import {${name} as ${alias}} from ${JSON.stringify(spec.source)};\n`, callee: alias, shadow: `function probe(${alias}){${alias}(__ARGS__)}` };
+        }
+    }
+    throw new Error(`identity query cannot generate a challenge target; declare a global, named import, default import, or namespace member`);
+}
 function optionProfile(rule, declaration) {
-    var _a;
-    const query = declaration.query, callee = (_a = query.call.globals) === null || _a === void 0 ? void 0 : _a[0];
-    if (!callee)
-        return [];
+    const query = declaration.query, target = identityFixture(query.call, 'profileCall'), callee = target.callee, head = target.head;
     const option = query.option.option, positive = `${callee}("payload",{})`, value = option === 'signal' ? 'new AbortController().signal' : 'true';
-    const present = `${callee}("payload",{${option}:${value}});`, root = callee.split('.')[0], shadow = callee.includes('.') ? `function probe(${root}){${callee}("payload",{})}` : `function probe(${callee}){${callee}("payload",{})}`;
-    const alias = `const invoke=${callee};invoke("payload",{});`, unknown = `const options={};configure(options);${callee}("payload",options);\n${positive};`, same = `${positive};${positive};`;
+    const present = `${head}${callee}("payload",{${option}:${value}});`, shadow = `${head}${target.shadow.replace('__ARGS__', '"payload",{}')}`;
+    const alias = `${head}const invoke=${callee};invoke("payload",{});`, unknown = `${head}const options={};configure(options);${callee}("payload",options);\n${positive};`, same = `${head}${positive};${positive};`, positiveSource = `${head}${positive};`;
     return [
-        profile('genuine absence positive', `${positive};`, [occurrence(`${positive};`, rule, positive)]),
+        profile('genuine absence positive', positiveSource, [occurrence(positiveSource, rule, positive)]),
         profile('present option lookalike', present, []),
         profile('shadowed call identity', shadow, []),
-        profile('global call alias', alias, [occurrence(alias, rule, 'invoke("payload",{})')]),
+        profile('immutable call alias', alias, [occurrence(alias, rule, 'invoke("payload",{})')]),
         profile('unknown options with positive neighbor', unknown, [occurrence(unknown, rule, positive)]),
         profile('two same-line occurrences', same, [occurrence(same, rule, positive, 0), occurrence(same, rule, positive, 1)]),
-        profile('analysis unavailable', `${positive};`, [], 'off'),
+        profile('analysis unavailable', positiveSource, [], 'off'),
     ];
 }
 function resourceProfile(rule, declaration) {
-    var _a, _b, _c, _d, _e, _f;
-    const query = declaration.query, acquire = (_a = query.acquisition.globals) === null || _a === void 0 ? void 0 : _a[0], ownerSource = (_c = (_b = query.owner.identity.imports) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.source, ownerName = (_e = (_d = query.owner.identity.imports) === null || _d === void 0 ? void 0 : _d[0]) === null || _e === void 0 ? void 0 : _e.names.find(name => !name.includes('.') && !name.includes('*')), release = query.release[0];
-    if (!acquire || !ownerSource || !ownerName || !release)
-        return [];
-    const head = `import {${ownerName} as owner} from ${JSON.stringify(ownerSource)};\n`, call = `${acquire}(()=>{},1)`, positive = `${head}owner(()=>{${call};},[]);`, lookalike = `${head}owner(()=>{function probe(${acquire}){${acquire}(()=>{},1)}\n${call};},[]);`, released = `${head}owner(()=>{const handle=${call};return()=>${release}(handle)},[]);`, conditional = `${head}owner(()=>{const handle=${call};return()=>{if(flag)${release}(handle)}},[]);\nowner(()=>{${call};},[]);`, same = `${head}owner(()=>{${call};${call};},[]);`;
-    const conditionalExpected = ((_f = declaration.query.reportUnknown) === null || _f === void 0 ? void 0 : _f.includes('unsupported-expression')) ? [occurrence(conditional, rule, call, 0), occurrence(conditional, rule, call, 1)] : [occurrence(conditional, rule, call, 1)];
+    var _a;
+    const query = declaration.query, acquisition = identityFixture(query.acquisition, 'profileAcquire'), ownerTarget = identityFixture(query.owner.identity, 'profileOwner'), release = query.release[0];
+    if (!release)
+        throw new Error('resource recipe needs at least one release identity');
+    const head = acquisition.head + ownerTarget.head, acquire = acquisition.callee, owner = ownerTarget.callee, call = `${acquire}(()=>{},1)`, positive = `${head}${owner}(()=>{${call};},[]);`, lookalike = `${head}${owner}(()=>{${acquisition.shadow.replace('__ARGS__', '()=>{},1')}\n${call};},[]);`;
+    const releasedAlias = `${head}${owner}(()=>{const handle=${call};const alias=handle;return()=>${release}(alias)},[]);`;
+    const wrongHandle = `${head}${owner}(()=>{const handle=${call};return()=>{const other=0;${release}(other)}},[]);`;
+    const helper = `${head}function transfer(handle){${release}(handle)}\n${owner}(()=>{const handle=${call};return()=>transfer(handle)},[]);`;
+    const unsupported = `${head}${owner}(()=>{const handle=${call};return()=>externalTransfer(handle)},[]);\n${owner}(()=>{${call};},[]);`;
+    const unsupportedExpected = ((_a = declaration.query.reportUnknown) === null || _a === void 0 ? void 0 : _a.includes('unsupported-expression')) ? [occurrence(unsupported, rule, call, 0), occurrence(unsupported, rule, call, 1)] : [occurrence(unsupported, rule, call, 1)];
+    const same = `${head}${owner}(()=>{${call};${call};},[]);`;
     return [
         profile('genuine unreleased positive', positive, [occurrence(positive, rule, call)]),
         profile('shadowed acquisition with positive neighbor', lookalike, [occurrence(lookalike, rule, call, 1)]),
-        profile('exact handle release', released, []),
-        profile('unknown cleanup with positive neighbor', conditional, conditionalExpected),
+        profile('immutable handle alias release', releasedAlias, []),
+        profile('different handle does not release acquisition', wrongHandle, [occurrence(wrongHandle, rule, call)]),
+        profile('supported local cleanup transfer', helper, []),
+        profile('unsupported cleanup transfer with positive neighbor', unsupported, unsupportedExpected),
         profile('two same-line occurrences', same, [occurrence(same, rule, call, 0), occurrence(same, rule, call, 1)]),
         profile('analysis unavailable', positive, [], 'off'),
     ];

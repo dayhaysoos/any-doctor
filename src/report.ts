@@ -146,7 +146,7 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
   }
 
   if (total === 0) {
-    lines.push(c("No findings", BOLD + GREEN));
+    lines.push(summary.score.narrowedScan===true?c("No findings established — semantic coverage narrowed",BOLD+YELLOW):c("No findings", BOLD + GREEN));
     if (groups.length > 1) {
       lines.push("");
       for (const g of groups) {
@@ -197,7 +197,7 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
     // with zero findings, where a narrowed clean must never read as a
     // full-power clean.
     if (gc.narrowedIds.length > 0) {
-      lines.push(`  ${c(narrowedLine(gc.narrowedIds), YELLOW)}`);
+      lines.push(`  ${c(narrowedLine(gc.narrowedIds,g.semantic?.incomplete===true), YELLOW)}`);
       lines.push("");
     }
     if (g.findings.length > 0 && g.meta.blindSpots && g.meta.blindSpots.length > 0) {
@@ -238,7 +238,7 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
     // An invalidated grade is withheld in JSON exactly as in prose: a
     // partial (crashed/broken) or empty scan emits null score/grade —
     // never a vacuous 100/Excellent the flag then contradicts.
-    score: summary.score.partialScan === true || summary.score.emptyScan === true
+    score: summary.score.partialScan === true || summary.score.emptyScan === true || summary.score.narrowedScan === true
       ? { ...summary.score, score: null, grade: null }
       : summary.score,
     counts: { ...summary.severityCounts, total: summary.total, hiddenDuplicates: summary.hidden },
@@ -267,6 +267,7 @@ export function renderJson(input: RunOutcome, summary: RunSummary, gate: GateVer
         }),
       })),
       ...(gc.group.analysisCoverage ? { analysisCoverage: gc.group.analysisCoverage } : {}),
+      ...(gc.group.semantic ? { semantic: gc.group.semantic } : {}),
       ...(gc.narrowedIds.length > 0 ? { narrowed: gc.narrowedIds } : {}),
       ...(gc.group.meta.blindSpots !== undefined && gc.group.meta.blindSpots.length > 0 ? { blindSpots: gc.group.meta.blindSpots } : {}),
     })),
@@ -349,8 +350,10 @@ function pushReviewNotices(
 
 // The narrowed notice's one wording (D20 Stage 2) — one source for every
 // branch that renders it (clean, findings, and empty-scan).
-function narrowedLine(checkIds: string[]): string {
-  return `narrowed: analysis engine unavailable — ${checkIds.join(", ")} ran in degraded mode`;
+function narrowedLine(checkIds: string[],semantic=false): string {
+  return semantic
+    ? `narrowed: semantic analysis incomplete — ${checkIds.join(", ")} abstained or ran in degraded mode`
+    : `narrowed: analysis engine unavailable — ${checkIds.join(", ")} ran in degraded mode`;
 }
 
 // Degradation honesty survives every outcome shape: a run without the
@@ -359,16 +362,16 @@ function narrowedLine(checkIds: string[]): string {
 // silent). The narrowed ids arrive as Summary data.
 function pushNarrowedNotices(
   lines: string[],
-  summary: { groupChecks: { narrowedIds: string[] }[] },
+  summary: { groupChecks: { narrowedIds: string[]; group:{semantic?:{incomplete:boolean}} }[] },
   c: (s: string, wrap?: string) => string,
 ): void {
   const notices = summary.groupChecks
-    .map((gc) => gc.narrowedIds)
-    .filter((ids) => ids.length > 0);
+    .map((gc) => ({ids:gc.narrowedIds,semantic:gc.group.semantic?.incomplete===true}))
+    .filter((notice) => notice.ids.length > 0);
   if (notices.length > 0) {
     lines.push("");
-    for (const ids of notices) {
-      lines.push(c(narrowedLine(ids), YELLOW));
+    for (const notice of notices) {
+      lines.push(c(narrowedLine(notice.ids,notice.semantic), YELLOW));
     }
   }
 }

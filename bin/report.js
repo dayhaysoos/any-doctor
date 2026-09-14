@@ -45,6 +45,7 @@ export function reportDiffOf(diff) {
     };
 }
 export function renderReport(input, useColor, diff, review) {
+    var _a;
     const c = colorizer(useColor);
     const lines = [];
     const summary = deriveSummary(input);
@@ -100,7 +101,7 @@ export function renderReport(input, useColor, diff, review) {
         return lines.join("\n");
     }
     if (total === 0) {
-        lines.push(c("No findings", BOLD + GREEN));
+        lines.push(summary.score.narrowedScan === true ? c("No findings established — semantic coverage narrowed", BOLD + YELLOW) : c("No findings", BOLD + GREEN));
         if (groups.length > 1) {
             lines.push("");
             for (const g of groups) {
@@ -150,7 +151,7 @@ export function renderReport(input, useColor, diff, review) {
         // with zero findings, where a narrowed clean must never read as a
         // full-power clean.
         if (gc.narrowedIds.length > 0) {
-            lines.push(`  ${c(narrowedLine(gc.narrowedIds), YELLOW)}`);
+            lines.push(`  ${c(narrowedLine(gc.narrowedIds, ((_a = g.semantic) === null || _a === void 0 ? void 0 : _a.incomplete) === true), YELLOW)}`);
             lines.push("");
         }
         if (g.findings.length > 0 && g.meta.blindSpots && g.meta.blindSpots.length > 0) {
@@ -175,7 +176,7 @@ export function renderJson(input, summary, gate, diff, review) {
         // An invalidated grade is withheld in JSON exactly as in prose: a
         // partial (crashed/broken) or empty scan emits null score/grade —
         // never a vacuous 100/Excellent the flag then contradicts.
-        score: summary.score.partialScan === true || summary.score.emptyScan === true
+        score: summary.score.partialScan === true || summary.score.emptyScan === true || summary.score.narrowedScan === true
             ? { ...summary.score, score: null, grade: null }
             : summary.score,
         counts: { ...summary.severityCounts, total: summary.total, hiddenDuplicates: summary.hidden },
@@ -205,6 +206,7 @@ export function renderJson(input, summary, gate, diff, review) {
                 }),
             })),
             ...(gc.group.analysisCoverage ? { analysisCoverage: gc.group.analysisCoverage } : {}),
+            ...(gc.group.semantic ? { semantic: gc.group.semantic } : {}),
             ...(gc.narrowedIds.length > 0 ? { narrowed: gc.narrowedIds } : {}),
             ...(gc.group.meta.blindSpots !== undefined && gc.group.meta.blindSpots.length > 0 ? { blindSpots: gc.group.meta.blindSpots } : {}),
         })),
@@ -280,8 +282,10 @@ function pushReviewNotices(lines, review, c) {
 }
 // The narrowed notice's one wording (D20 Stage 2) — one source for every
 // branch that renders it (clean, findings, and empty-scan).
-function narrowedLine(checkIds) {
-    return `narrowed: analysis engine unavailable — ${checkIds.join(", ")} ran in degraded mode`;
+function narrowedLine(checkIds, semantic = false) {
+    return semantic
+        ? `narrowed: semantic analysis incomplete — ${checkIds.join(", ")} abstained or ran in degraded mode`
+        : `narrowed: analysis engine unavailable — ${checkIds.join(", ")} ran in degraded mode`;
 }
 // Degradation honesty survives every outcome shape: a run without the
 // analysis engine says so whether it ended clean, with findings, or —
@@ -289,12 +293,12 @@ function narrowedLine(checkIds) {
 // silent). The narrowed ids arrive as Summary data.
 function pushNarrowedNotices(lines, summary, c) {
     const notices = summary.groupChecks
-        .map((gc) => gc.narrowedIds)
-        .filter((ids) => ids.length > 0);
+        .map((gc) => { var _a; return ({ ids: gc.narrowedIds, semantic: ((_a = gc.group.semantic) === null || _a === void 0 ? void 0 : _a.incomplete) === true }); })
+        .filter((notice) => notice.ids.length > 0);
     if (notices.length > 0) {
         lines.push("");
-        for (const ids of notices) {
-            lines.push(c(narrowedLine(ids), YELLOW));
+        for (const notice of notices) {
+            lines.push(c(narrowedLine(notice.ids, notice.semantic), YELLOW));
         }
     }
 }

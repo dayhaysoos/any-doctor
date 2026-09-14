@@ -9,4 +9,5 @@ export declare function scoreHeaderTone(score: {
     score: number;
     filesTotal: number;
     partialScan?: boolean;
+    narrowedScan?: boolean;
 }): string;

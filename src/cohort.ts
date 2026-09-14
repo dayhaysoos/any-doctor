@@ -75,7 +75,7 @@ export async function runCohort(
     // Process-wide capability: any run's answer is every run's answer.
     analysisAvailable ??= run.result.capabilities?.analysis;
     doctorPaths.set(run.result.meta.id, doctor.programPath);
-    groups.push({ ...(run.result.analysisCoverage ? { analysisCoverage: run.result.analysisCoverage } : {}), programName: path.basename(doctor.programPath), meta: run.result.meta, findings: run.result.findings });
+    groups.push({ ...(run.result.analysisCoverage ? { analysisCoverage: run.result.analysisCoverage } : {}), ...(run.result.semantic ? { semantic: run.result.semantic } : {}), programName: path.basename(doctor.programPath), meta: run.result.meta, findings: run.result.findings });
   }
 
   return {

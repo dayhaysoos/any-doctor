@@ -38,6 +38,31 @@ let loaded: LoadedStack | null = null;
 
 const require_ = createRequire(import.meta.url);
 
+export const SEMANTIC_PROVIDER_ID = "any-doctor/syntax-flow";
+export const SEMANTIC_PROVIDER_VERSION = "1";
+
+function dependencyVersion(id: string): string {
+  try {
+    return (require_(`${id}/package.json`) as { version: string }).version;
+  } catch {
+    return "unavailable";
+  }
+}
+
+export function semanticProviderProvenance(): import("./contract.js").SemanticProviderProvenance {
+  const state = analysisStatus();
+  return {
+    id: SEMANTIC_PROVIDER_ID,
+    version: SEMANTIC_PROVIDER_VERSION,
+    available: state.available,
+    ...(!state.available ? { reason: state.reason } : {}),
+    dependencies: [
+      { id: "oxc-parser", version: dependencyVersion("oxc-parser") },
+      { id: "@typescript-eslint/scope-manager", version: dependencyVersion("@typescript-eslint/scope-manager") },
+    ],
+  };
+}
+
 function loadStack(): LoadedStack {
   if (loaded !== null) return loaded;
   try {

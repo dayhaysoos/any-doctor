@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { SEARCH_REQUEST, SEARCH_RESULT, SEMANTIC_RESULT_VERSION, withinDir } from "./contract.js";
 import { maskNonCode } from "./mask.js";
+import { identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
 // The verify harness forces the degraded path per fixture (fixture
 // `analysis: "off"`): the loader flips this switch before running that
 // fixture's sandbox, and every ctx in the child answers accordingly.
@@ -35,16 +36,36 @@ export function probeAnalysisAvailable(root) {
 export function buildCtx(root, opts = {}) {
     const findings = [];
     const sourceCache = new Map();
+    const sourceStats = new Map();
+    const analysisFiles = new Map();
+    const narrowings = new Map();
+    const execution = { semanticQueries: 0, modelRequests: 0, modelCacheHits: 0 };
     const digest = (source) => createHash("sha256").update(source).digest("hex");
     function readSource(file) {
         let source = sourceCache.get(file);
         if (source === undefined) {
+            const abs = path.resolve(root, file);
             source = readFileWithin(root, file);
+            const stat = fs.statSync(abs);
             sourceCache.set(file, source);
+            sourceStats.set(file, { size: stat.size, mtimeMs: stat.mtimeMs });
         }
         return source;
     }
+    function sourceChanged(file) {
+        const expected = sourceStats.get(file);
+        if (!expected)
+            return false;
+        try {
+            const stat = fs.statSync(path.resolve(root, file));
+            return stat.size !== expected.size || stat.mtimeMs !== expected.mtimeMs;
+        }
+        catch {
+            return true;
+        }
+    }
     let availabilityCache;
+    let providerCache;
     let project;
     let fileInventory;
     // The one per-kind fetch with the one guard: availability check (the
@@ -56,11 +77,36 @@ export function buildCtx(root, opts = {}) {
             throw new Error(`ctx.analysis.${kind} requires the analysis engine and it is unavailable`
                 + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.");
         }
+        execution.modelRequests++;
         const r = runAnalysis({ kind, file, sourceDigest: digest(readSource(file)) }, root);
         if (r.file === undefined || !(kind in r.file))
             throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
+        analysisFiles.set(`${kind}:${file}`, r.file);
         return r.file;
     };
+    const cachedAnalysisFile = (kind, file) => {
+        const cached = analysisFiles.get(`${kind}:${file}`);
+        if (cached)
+            execution.modelCacheHits++;
+        return (cached !== null && cached !== void 0 ? cached : analysisFile(kind, file));
+    };
+    function recordUnknown(result, file, context) {
+        if (result.status !== "unknown")
+            return result;
+        const key = JSON.stringify([context.check, context.capability, context.recipe, result.reason]);
+        const existing = narrowings.get(key);
+        if (existing) {
+            existing.occurrences++;
+            const affected = existing.files.find(item => item.file === file);
+            if (affected)
+                affected.occurrences++;
+            else
+                existing.files.push({ file, occurrences: 1 });
+        }
+        else
+            narrowings.set(key, { ...context, reason: result.reason, occurrences: 1, files: [{ file, occurrences: 1 }] });
+        return result;
+    }
     const ctx = {
         root,
         files: {
@@ -124,7 +170,9 @@ export function buildCtx(root, opts = {}) {
                     // No host channel → no analysis: the honest answer for a
                     // narrowing decision, not a crash (bindings() is the loud path).
                     try {
-                        availabilityCache = Boolean(runAnalysis({ kind: "available" }, root).available);
+                        const response = runAnalysis({ kind: "available" }, root);
+                        availabilityCache = Boolean(response.available);
+                        providerCache = response.provider;
                     }
                     catch {
                         availabilityCache = false;
@@ -133,64 +181,65 @@ export function buildCtx(root, opts = {}) {
                 return availabilityCache && !analysisForcedOff;
             },
             bindings(file) {
-                return analysisFile("bindings", file);
+                return cachedAnalysisFile("bindings", file);
             },
             spans(file) {
-                return analysisFile("spans", file);
+                return cachedAnalysisFile("spans", file);
             },
             calls(file) {
-                return analysisFile("calls", file);
+                return cachedAnalysisFile("calls", file);
             },
             identity(file, expression, query) {
+                execution.semanticQueries++;
+                const unavailable = { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" };
                 if (analysisForcedOff || !ctx.analysis.available)
-                    return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" };
+                    return recordUnknown(unavailable, file, { capability: "identity" });
+                if (sourceChanged(file))
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "source-changed" }, file, { capability: "identity" });
                 try {
-                    const response = runAnalysis({ kind: "identity", file, expression, query, sourceDigest: digest(readSource(file)) }, root);
-                    if (response.semantic)
-                        return response.semantic;
-                    return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" };
+                    return recordUnknown(identityResult(file, readSource(file), cachedAnalysisFile("calls", file), expression, query), file, { capability: "identity" });
                 }
                 catch {
-                    return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" };
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" }, file, { capability: "identity" });
                 }
             },
             valueDisposition(file, expression, query) {
+                execution.semanticQueries++;
                 if (analysisForcedOff || !ctx.analysis.available)
-                    return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" };
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" }, file, { capability: "value-disposition" });
+                if (sourceChanged(file))
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "source-changed" }, file, { capability: "value-disposition" });
                 try {
-                    const response = runAnalysis({ kind: "value-disposition", file, expression, query, sourceDigest: digest(readSource(file)) }, root);
-                    if (response.semantic)
-                        return response.semantic;
-                    return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" };
+                    return recordUnknown(valueDispositionResult(file, readSource(file), cachedAnalysisFile("calls", file), expression, query), file, { capability: "value-disposition" });
                 }
                 catch {
-                    return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" };
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" }, file, { capability: "value-disposition" });
                 }
             },
             resourceLifetime(file, acquisition, query) {
+                execution.semanticQueries++;
                 if (analysisForcedOff || !ctx.analysis.available)
-                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'analysis-unavailable' };
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'analysis-unavailable' }, file, { capability: 'resource-lifetime' });
+                if (sourceChanged(file))
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'source-changed' }, file, { capability: 'resource-lifetime' });
                 try {
-                    const response = runAnalysis({ kind: 'resource-lifetime', file, expression: acquisition, query, sourceDigest: digest(readSource(file)) }, root);
-                    if (response.semantic)
-                        return response.semantic;
-                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+                    return recordUnknown(resourceLifetimeResult(file, readSource(file), cachedAnalysisFile('calls', file), acquisition, query), file, { capability: 'resource-lifetime' });
                 }
                 catch {
-                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' }, file, { capability: 'resource-lifetime' });
                 }
             },
             optionPresence(file, call, query) {
+                execution.semanticQueries++;
                 if (analysisForcedOff || !ctx.analysis.available)
-                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'analysis-unavailable' };
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'analysis-unavailable' }, file, { capability: 'option-presence' });
+                if (sourceChanged(file))
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'source-changed' }, file, { capability: 'option-presence' });
                 try {
-                    const response = runAnalysis({ kind: 'option-presence', file, expression: call, query, sourceDigest: digest(readSource(file)) }, root);
-                    if (response.semantic)
-                        return response.semantic;
-                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+                    return recordUnknown(optionPresenceResult(file, readSource(file), cachedAnalysisFile('calls', file), call, query), file, { capability: 'option-presence' });
                 }
                 catch {
-                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' }, file, { capability: 'option-presence' });
                 }
             },
         },
@@ -206,24 +255,29 @@ export function buildCtx(root, opts = {}) {
         },
     };
     function recipe(kind, file, expression, query, finding) {
-        var _a, _b, _c;
+        var _a, _b;
+        execution.semanticQueries++;
+        const recipeName = kind === 'recipe-unhandled-value' ? 'unhandled-value' : kind === 'recipe-resource-without-release' ? 'resource-without-release' : 'required-or-recommended-option';
+        const context = { check: finding.rule, recipe: recipeName };
         if (analysisForcedOff || !ctx.analysis.available)
-            return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'analysis-unavailable' };
+            return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'analysis-unavailable' }, file, context);
+        if (sourceChanged(file))
+            return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'source-changed' }, file, context);
         let result;
         try {
-            const response = runAnalysis({ kind, file, expression, query, sourceDigest: digest(readSource(file)) }, root);
-            result = (_a = response.semantic) !== null && _a !== void 0 ? _a : { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+            const facts = cachedAnalysisFile('calls', file), source = readSource(file);
+            result = kind === 'recipe-unhandled-value' ? unhandledValueRecipeResult(file, source, facts, expression, query) : kind === 'recipe-resource-without-release' ? resourceWithoutReleaseRecipeResult(file, source, facts, expression, query) : requiredOptionRecipeResult(file, source, facts, expression, query);
         }
         catch {
-            return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+            return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' }, file, context);
         }
-        if (result.status === 'known' && result.value === 'report' || result.status === 'unknown' && ((_b = query.reportUnknown) === null || _b === void 0 ? void 0 : _b.includes(result.reason))) {
-            const value = (_c = ctx.analysis.calls(file).structure.flow.values.find(item => item.id === expression.id && item.start === expression.start && item.end === expression.end)) !== null && _c !== void 0 ? _c : ctx.analysis.calls(file).structure.flow.values.find(item => item.start === expression.start && item.end === expression.end);
+        if (result.status === 'known' && result.value === 'report' || result.status === 'unknown' && ((_a = query.reportUnknown) === null || _a === void 0 ? void 0 : _a.includes(result.reason))) {
+            const value = (_b = cachedAnalysisFile('calls', file).structure.flow.values.find(item => item.id === expression.id && item.start === expression.start && item.end === expression.end)) !== null && _b !== void 0 ? _b : cachedAnalysisFile('calls', file).structure.flow.values.find(item => item.start === expression.start && item.end === expression.end);
             if (!value)
-                return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'source-changed' };
+                return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'source-changed' }, file, context);
             ctx.report.finding({ rule: finding.rule, file, line: value.line, column: value.column, evidence: { endLine: value.endLine, endColumn: value.endColumn }, ...(finding.message ? { message: finding.message } : {}) });
         }
-        return result;
+        return recordUnknown(result, file, context);
     }
     return { ctx, getFindings: () => findings.slice(), getAnalysisCoverage: () => {
             if (project) {
@@ -235,6 +289,20 @@ export function buildCtx(root, opts = {}) {
                         throw new Error(`source changed during consumer analysis: ${file}`);
             }
             return project === null || project === void 0 ? void 0 : project.coverage;
+        }, getSemanticReport: (meta) => {
+            var _a, _b;
+            const checks = (_a = meta.checks) !== null && _a !== void 0 ? _a : [], capabilityNames = [...new Set(checks.flatMap(check => { var _a; return (_a = check.needs) !== null && _a !== void 0 ? _a : []; }))], recipeDeclarations = checks.flatMap(check => check.recipe ? [{ check: check.id, name: check.recipe.name }] : []);
+            if (!capabilityNames.length && !recipeDeclarations.length && !narrowings.size)
+                return undefined;
+            const available = ctx.analysis.available;
+            const unavailableReason = (_b = providerCache === null || providerCache === void 0 ? void 0 : providerCache.reason) !== null && _b !== void 0 ? _b : "analysis engine unavailable";
+            const provider = providerCache !== null && providerCache !== void 0 ? providerCache : { id: "any-doctor/syntax-flow", version: "1", available, ...(!available ? { reason: unavailableReason } : {}), dependencies: [] };
+            const synthesized = [];
+            if (!available)
+                for (const declaration of recipeDeclarations)
+                    synthesized.push({ check: declaration.check, recipe: declaration.name, reason: "analysis-unavailable", occurrences: 0, files: [] });
+            const narrowed = [...narrowings.values(), ...synthesized];
+            return { protocolVersion: SEMANTIC_RESULT_VERSION, provider, capabilities: capabilityNames.map(name => ({ name, available, ...(!available ? { reason: unavailableReason } : {}) })), recipes: recipeDeclarations.map(item => ({ ...item, available, ...(!available ? { reason: unavailableReason } : {}) })), narrowed, incomplete: narrowed.length > 0, execution: { ...execution } };
         } };
 }
 function escapeRegExp(s) {

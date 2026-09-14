@@ -4,7 +4,7 @@ import { functionStructures, FunctionStructure } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
 import { AnalysisFile, AnalysisSpans, AnalysisCalls, ExpressionRef, IdentityQuery, IdentityValue, Mode, OptionPresence, OptionPresenceQuery, RecipeDecision, RequiredOptionRecipeQuery, ResourceLifetime, ResourceLifetimeQuery, ResourceWithoutReleaseRecipeQuery, searchBase, SemanticResult, SEMANTIC_RESULT_VERSION, UnhandledValueRecipeQuery, ValueDisposition, ValueDispositionQuery, withinBase, withinDir } from "./contract.js";
-import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls, AnalysisResult, AnalysisStatusResult, SpansResult } from "./analysis.js";
+import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls, AnalysisResult, AnalysisStatusResult, semanticProviderProvenance, SpansResult } from "./analysis.js";
 import { identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
 
 // The analysis host: the identity engine's side of the channel, a sibling
@@ -48,7 +48,7 @@ export interface AnalysisRequestBody {
 export type AnalysisResponse =
   | { project: ProjectConsumers }
   | { structures: FunctionStructure[] }
-  | { available: boolean; reason?: string }
+  | { available: boolean; reason?: string; provider?: import("./contract.js").SemanticProviderProvenance }
   | { file: AnalysisFile }
   | { file: AnalysisSpans }
   | { file: AnalysisCalls }
@@ -70,7 +70,10 @@ export function handleAnalysisRequest(
   }
   if (req.kind === "available") {
     const s: AnalysisStatusResult = status();
-    return s.available ? { available: true } : { available: false, reason: s.reason };
+    const provider = status === analysisStatus ? semanticProviderProvenance() : undefined;
+    return s.available
+      ? { available: true, ...(provider ? { provider } : {}) }
+      : { available: false, reason: s.reason, ...(provider ? { provider } : {}) };
   }
   if ((req.kind === "identity" || req.kind === "value-disposition" || req.kind === "resource-lifetime" || req.kind === "option-presence" || req.kind === "recipe-unhandled-value" || req.kind === "recipe-resource-without-release" || req.kind === "recipe-required-option") && !status().available) {
     return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" } };

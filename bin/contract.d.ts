@@ -45,6 +45,7 @@ export interface DoctorMeta {
 }
 export interface ReportGroup {
     analysisCoverage?: ProjectConsumers["coverage"];
+    semantic?: SemanticRunReport;
     programName: string;
     meta: DoctorMeta;
     findings: Finding[];
@@ -359,6 +360,49 @@ export type RecipeProfileDeclaration = {
     name: "required-or-recommended-option";
     query: RequiredOptionRecipeQuery;
 };
+export interface SemanticProviderProvenance {
+    id: string;
+    version: string;
+    available: boolean;
+    reason?: string;
+    dependencies: {
+        id: string;
+        version: string;
+    }[];
+}
+export interface SemanticAvailability {
+    name: string;
+    available: boolean;
+    reason?: string;
+}
+export interface SemanticRecipeAvailability extends SemanticAvailability {
+    check: string;
+}
+export interface SemanticNarrowing {
+    check?: string;
+    capability?: string;
+    recipe?: RecipeName;
+    reason: UnknownReason;
+    occurrences: number;
+    files: {
+        file: string;
+        occurrences: number;
+    }[];
+}
+/** Host-owned account of the semantic engine used by one doctor run. */
+export interface SemanticRunReport {
+    protocolVersion: typeof SEMANTIC_RESULT_VERSION;
+    provider: SemanticProviderProvenance;
+    capabilities: SemanticAvailability[];
+    recipes: SemanticRecipeAvailability[];
+    narrowed: SemanticNarrowing[];
+    incomplete: boolean;
+    execution: {
+        semanticQueries: number;
+        modelRequests: number;
+        modelCacheHits: number;
+    };
+}
 export interface DoctorCtx {
     root: string;
     files: {
@@ -476,6 +520,7 @@ export interface RunResult {
     capabilities?: {
         analysis: boolean;
     };
+    semantic?: SemanticRunReport;
     analysisCoverage?: ProjectConsumers["coverage"];
 }
 export interface FixtureDiff {

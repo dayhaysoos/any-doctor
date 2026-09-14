@@ -11,6 +11,13 @@ Every semantic answer is either `known` with source-digested evidence or
 answer and report an occurrence only when their result and declared unknown
 policy permit it.
 
+The host also records every unknown independently of the doctor's finding policy.
+Machine output exposes `semantic.incomplete`, aggregates affected occurrences by
+check or capability, recipe, reason and file, and withholds the numeric score and
+grade whenever semantic coverage narrowed. Human output names the narrowed check
+and reason. This means `reportUnknown` may opt into a contextual review finding,
+but omitting it can never turn an uncertain run into a fully clean report.
+
 ## Using a recipe
 
 Doctors remain single-file confined programs: do not import SDK modules. Read
@@ -126,6 +133,30 @@ node bin/cli.js verify path/to/doctor.mjs --format json
 The JSON `results` array names every exercised challenge and each unavailable
 path. Author fixtures remain required; profiles do not replace held-out cases or
 real-source adjudication.
+
+Certification accepts global, named-import, default-import and namespace-member
+identities used by the recipe declarations above. Every accepted recipe
+declaration must produce a nonempty challenge profile. If a declaration cannot
+be materialized, verification fails the claim contract with the check, recipe
+and unsupported identity shape instead of silently running zero challenges.
+
+## Run provenance
+
+JSON run groups include a `semantic` object for doctors that declare or invoke
+semantic capabilities. It records:
+
+- semantic result protocol version;
+- provider identity and version plus the resolved parser and scope-provider
+  package versions;
+- availability and unavailable reason for every declared capability;
+- availability per declared check recipe;
+- every narrowed reason and affected file/occurrence count;
+- per-run model-request and cache-reuse counters.
+
+Doctors without semantic declarations remain compatible and do not receive a
+synthetic semantic report. The SDK reuses the per-file call model already fetched
+through `ctx.analysis.calls`; repeated recipe questions do not reparse the file
+or make another synchronous host round trip.
 
 ## Current boundary
 

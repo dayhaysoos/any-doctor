@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {analyzeCalls} from '../bin/analysis.js';
 import {identityResult,optionPresenceResult,resourceLifetimeResult,valueDispositionResult} from '../bin/doctor-sdk.js';
+import {challengeProfileFixtures} from '../bin/certify.js';
 
 function identities(source){
   const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
@@ -122,11 +123,51 @@ test('declared recipe profiles are named in JSON including unavailable paths',()
   const repo=fileURLToPath(new URL('../',import.meta.url));
   const run=spawnSync(process.execPath,[`${repo}bin/cli.js`,'verify',`${repo}fixtures/doctor-sdk-reference.mjs`,'--format','json'],{cwd:repo,encoding:'utf8',timeout:30000});
   assert.equal(run.status,0,run.stdout+run.stderr);const result=JSON.parse(run.stdout),profiles=result.results.filter(item=>item.name.startsWith('challenge profile:'));
-  assert.equal(profiles.length,19);assert.equal(profiles.filter(item=>!item.ok).length,0);assert.equal(profiles.filter(item=>item.skipped).length,0);assert.equal(profiles.filter(item=>item.name.endsWith('/ analysis unavailable')&&item.ok).length,3);
+  assert.equal(profiles.length,21);assert.equal(profiles.filter(item=>!item.ok).length,0);assert.equal(profiles.filter(item=>item.skipped).length,0);assert.equal(profiles.filter(item=>item.name.endsWith('/ analysis unavailable')&&item.ok).length,3);
+});
+
+test('valid import and global identity recipe declarations always receive profiles',()=>{
+  const base={claim:'x',lookalikes:['x'],reportingUnit:'occurrence',onUnknown:'skip'};
+  const option={...base,id:'import-option',recipe:{name:'required-or-recommended-option',query:{call:{imports:[{source:'client',names:['request']}]},option:{option:'signal',sources:['RequestInit']}}}};
+  const resource={...base,id:'mixed-resource',recipe:{name:'resource-without-release',query:{acquisition:{imports:[{source:'timers',names:['start']}]},owner:{identity:{globals:['register']},argument:0},release:['stop']}}};
+  assert.ok(challengeProfileFixtures(option).length>0);
+  assert.ok(challengeProfileFixtures(resource).length>0);
+  assert.throws(()=>challengeProfileFixtures({...base,id:'unsupported',recipe:{name:'required-or-recommended-option',query:{call:{},option:{option:'signal',sources:['RequestInit']}}}}),/cannot generate a challenge target/);
+});
+
+test('unknown recipe analysis narrows JSON and human reports without suppressing an unrelated positive',()=>{
+  const repo=fileURLToPath(new URL('../',import.meta.url)),tmp=fs.mkdtempSync(path.join(os.tmpdir(),'doctor-sdk-unknown-'));
+  try{
+    fs.writeFileSync(path.join(tmp,'example.ts'),'const options = {}; configure(options); fetch("/api/data", options);');
+    const exactRun=spawnSync(process.execPath,[`${repo}bin/cli.js`,'run',`${repo}doctors/async.mjs`,tmp,'--format','json'],{cwd:repo,encoding:'utf8',timeout:30000});
+    assert.equal(exactRun.status,0,exactRun.stdout+exactRun.stderr);const exact=JSON.parse(exactRun.stdout);
+    assert.equal(exact.counts.total,0);assert.equal(exact.score.score,null);assert.equal(exact.groups[0].semantic.incomplete,true);
+    fs.writeFileSync(path.join(tmp,'example.ts'),'const options = {}; configure(options); fetch("/unknown", options); fetch("/positive", {});');
+    const jsonRun=spawnSync(process.execPath,[`${repo}bin/cli.js`,'run',`${repo}doctors/async.mjs`,tmp,'--format','json'],{cwd:repo,encoding:'utf8',timeout:30000});
+    assert.equal(jsonRun.status,0,jsonRun.stdout+jsonRun.stderr);const json=JSON.parse(jsonRun.stdout),semantic=json.groups[0].semantic;
+    assert.equal(json.counts.total,1,'the unrelated known absence remains a finding');
+    assert.equal(json.score.score,null);assert.equal(json.score.grade,null);assert.equal(json.score.narrowedScan,true);
+    assert.equal(semantic.incomplete,true);assert.equal(semantic.protocolVersion,1);assert.equal(semantic.provider.id,'any-doctor/syntax-flow');
+    assert.ok(semantic.provider.dependencies.some(item=>item.id==='oxc-parser'&&item.version!=='unavailable'));
+    const narrowed=semantic.narrowed.find(item=>item.check==='fetch-calls-without-abortsignal'&&item.reason==='unsupported-expression');assert.ok(narrowed);assert.equal(narrowed.occurrences,1);assert.deepEqual(narrowed.files,[{file:'example.ts',occurrences:1}]);
+    assert.ok(semantic.capabilities.some(item=>item.name==='option-presence'&&item.available));assert.ok(semantic.recipes.some(item=>item.name==='required-or-recommended-option'&&item.available));
+    assert.ok(semantic.execution.semanticQueries>semantic.execution.modelRequests,'semantic occurrence questions reuse file models');
+    const human=spawnSync(process.execPath,[`${repo}bin/cli.js`,'run',`${repo}doctors/async.mjs`,tmp],{cwd:repo,encoding:'utf8',timeout:30000});
+    assert.equal(human.status,0,human.stdout+human.stderr);assert.match(human.stdout,/Score: n\/a — narrowed semantic scan/);assert.match(human.stdout,/async\/fetch-calls-without-abortsignal — unsupported-expression/);assert.doesNotMatch(human.stdout,/Excellent/);
+  }finally{fs.rmSync(tmp,{recursive:true,force:true});}
 });
 
 test('recipe profiles reject identity, unknown-as-absence and suppression mutations',()=>{
   const repo=fileURLToPath(new URL('../',import.meta.url)),parent=fs.mkdtempSync(path.join(os.tmpdir(),'doctor-sdk-mutations-')),output=path.join(parent,'results');
   try{const run=spawnSync(process.execPath,[`${repo}dev/doctor-sdk/run-profile-mutations.mjs`,output],{cwd:repo,encoding:'utf8',timeout:30000});assert.equal(run.status,0,run.stdout+run.stderr);const result=JSON.parse(fs.readFileSync(path.join(output,'mutation-results.json'),'utf8'));assert.deepEqual(result.mutations.map(item=>item.mutation),['broken-identity','unknown-as-absent','suppressed-reporting']);assert.ok(result.mutations.every(item=>item.exit!==0&&item.failedProfiles.length));}
   finally{fs.rmSync(parent,{recursive:true,force:true});}
+});
+
+test('package contents retain public docs and exclude internal evidence',()=>{
+  const repo=fileURLToPath(new URL('../',import.meta.url));
+  const run=spawnSync('npm',['pack','--dry-run','--json','--ignore-scripts'],{cwd:repo,encoding:'utf8',timeout:30000});
+  assert.equal(run.status,0,run.stdout+run.stderr);const files=JSON.parse(run.stdout)[0].files.map(item=>item.path);
+  assert.ok(files.includes('docs/doctor-sdk.md'));
+  assert.ok(!files.some(file=>file.startsWith('docs/evidence/')));
+  assert.ok(!files.some(file=>file.startsWith('docs/plans/')));
 });
