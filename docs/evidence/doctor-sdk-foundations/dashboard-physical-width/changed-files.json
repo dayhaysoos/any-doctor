@@ -1,0 +1,48 @@
+[
+  {
+    "path": "src/dashboard.ts",
+    "reason": "Normalize every emitted frame line at one final width boundary; put narrowed/clean status before omitted-summary prose.",
+    "sha256": "a1c2f259f0514247df967f1191f970e3f3ba36dd69215e797f06cb97c8b3e851",
+    "bytes": 43785
+  },
+  {
+    "path": "src/tty.ts",
+    "reason": "Align non-BMP truncation increments with existing visibleWidth accounting.",
+    "sha256": "6b4e75ff1180f1135779892e5db0f8d425952e29eaa4e7f9baadb8d8f5e9750a",
+    "bytes": 5295
+  },
+  {
+    "path": "test/dashboard.test.mjs",
+    "reason": "Fail on width and calculated physical rows, preserve quiet counts, and cover ANSI, long text, narrow footers, navigation and repainting.",
+    "sha256": "1790fc40d1842d005073d4d98eb0f884ecd782ded5ca8012ed1560c5b3a7c381",
+    "bytes": 53088
+  },
+  {
+    "path": "bin/dashboard.js",
+    "reason": "Regenerated dashboard runtime.",
+    "sha256": "02b09b2ea1eb3060003ec075839fedbf21576fdf3e607c220f96b6ad67cf241c",
+    "bytes": 46105
+  },
+  {
+    "path": "bin/tty.js",
+    "reason": "Regenerated shared terminal runtime.",
+    "sha256": "ae7362eb2daa66678c17c9ef4662a9c9d6ca302d66227b9886336c1bbab9565b",
+    "bytes": 4046
+  },
+  {
+    "path": "docs/evidence/doctor-sdk-foundations/dashboard-physical-width/verification-report.md",
+    "reason": "Supersede the logical-only dashboard claim with physical-width verification."
+  },
+  {
+    "path": "docs/evidence/doctor-sdk-foundations/dashboard-physical-width/results.json",
+    "reason": "Retain exact counts, package provenance, review and all 44 red/final matrix records."
+  },
+  {
+    "path": "docs/evidence/doctor-sdk-foundations/dashboard-physical-width/evidence.tar.gz",
+    "reason": "Compress raw red/final measurements, logs, commands, review and digests."
+  },
+  {
+    "path": "docs/evidence/doctor-sdk-foundations/dashboard-physical-width/changed-files.json",
+    "reason": "Explain every changed file and record implementation digests."
+  }
+]

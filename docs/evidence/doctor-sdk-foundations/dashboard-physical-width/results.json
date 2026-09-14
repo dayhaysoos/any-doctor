@@ -1,0 +1,924 @@
+{
+  "branch": "feature/doctor-sdk-foundations",
+  "reviewedStart": "32cd39fe73ca4e517067f43419c315e34b4982f4",
+  "sourceCandidate": "f4efb938dff8fb26686fe6696a070d40cc83014f",
+  "sourceWorkingTree": "clean",
+  "evidenceCommit": "Resolve with git log -1 --format=%H -- docs/evidence/doctor-sdk-foundations/dashboard-physical-width; final HEAD receipt retained externally after commit.",
+  "artifact": {
+    "path": "/private/tmp/any-doctor-dashboard-width/final/package/any-doctor-0.1.2.tgz",
+    "bytes": 276026,
+    "files": 144,
+    "sha256": "13fece891a95e6938a07ac117177089bdd6df7b126d7cf9cf881e5dc5b8bd2f1"
+  },
+  "counts": {
+    "fullAutomated": {
+      "passed": 721,
+      "failed": 0,
+      "skipped": 0
+    },
+    "local": {
+      "bundled": {
+        "passed": 265,
+        "failed": 0,
+        "skipped": 15
+      },
+      "focused": {
+        "passed": 182,
+        "failed": 0,
+        "skipped": 0
+      },
+      "mutations": {
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "packed": {
+      "bundled": {
+        "passed": 265,
+        "failed": 0,
+        "skipped": 15
+      },
+      "focused": {
+        "passed": 182,
+        "failed": 0,
+        "skipped": 0
+      },
+      "mutations": {
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "packedDashboard": {
+      "passed": 118,
+      "failed": 0,
+      "skipped": 0
+    },
+    "optionalDashboard": {
+      "passed": 118,
+      "failed": 0,
+      "skipped": 0
+    },
+    "optionalRecipeOnly": {
+      "passed": 2,
+      "failed": 0,
+      "skipped": 7
+    },
+    "optionalAsync": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 59
+    },
+    "independentDashboardLocalAndPackedEach": {
+      "passed": 118,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "red": {
+    "initial": {
+      "passed": 75,
+      "failed": 41,
+      "skipped": 0,
+      "testSetupErrors": 2
+    },
+    "correctedBaseline": {
+      "passed": 77,
+      "failed": 39,
+      "skipped": 0
+    },
+    "nonBmpAdditional": {
+      "passed": 0,
+      "failed": 2,
+      "skipped": 0
+    }
+  },
+  "parity": {
+    "measuredFrames": 142,
+    "matrixFrames": 44,
+    "localPackedOptionalMeasurementsEqual": true,
+    "colorParity": true,
+    "protectedSystemsUnchanged": true,
+    "changedFiles": [
+      "bin/dashboard.js",
+      "bin/tty.js",
+      "src/dashboard.ts",
+      "src/tty.ts",
+      "test/dashboard.test.mjs"
+    ],
+    "frozenScanRerun": false,
+    "packageVersion": "0.1.2"
+  },
+  "review": {
+    "base": "32cd39fe73ca4e517067f43419c315e34b4982f4",
+    "candidate": "f4efb938dff8fb26686fe6696a070d40cc83014f",
+    "standards": {
+      "findings": 0,
+      "summary": "Dashboard layout remains with its owner; shared ANSI width primitives, raw-mode lifecycle, repaint clearing, navigation and scoring contracts are preserved. Generated output matches source."
+    },
+    "spec": {
+      "findings": 0,
+      "summary": "Final normalization bounds every component. Independently reran 118 dashboard tests locally and packed, and verified long selected IDs retain the cohort row at 80x3 and 80x4. All 142 local/packed measurements match. The requested existing width model is the evidence boundary."
+    },
+    "edgeDisposition": "Standards reviewer raised a possible long-ID disclosure loss at rows 3/4. Spec reviewer reproduced both sizes and confirmed the reserved cohort row retains 40 more quiet doctors \u2014 20 narrowed, 20 clean. No repair required."
+  },
+  "redMatrix": [
+    {
+      "label": "width boundary: 80x34, quiet=0, narrowed=false, color=false",
+      "cols": 80,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 34
+    },
+    {
+      "label": "width boundary: 80x34, quiet=1, narrowed=false, color=false",
+      "cols": 80,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 34
+    },
+    {
+      "label": "width boundary: 80x34, quiet=1, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 34
+    },
+    {
+      "label": "width boundary: 80x34, quiet=5, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 34
+    },
+    {
+      "label": "width boundary: 80x3, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 3,
+      "useColor": false,
+      "logicalLines": 2,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 3
+    },
+    {
+      "label": "width boundary: 80x4, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 4,
+      "useColor": false,
+      "logicalLines": 3,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 5
+    },
+    {
+      "label": "width boundary: 80x5, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 5,
+      "useColor": false,
+      "logicalLines": 4,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 6
+    },
+    {
+      "label": "width boundary: 80x8, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 8,
+      "useColor": false,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 8
+    },
+    {
+      "label": "width boundary: 80x10, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 10,
+      "useColor": false,
+      "logicalLines": 9,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 10
+    },
+    {
+      "label": "width boundary: 80x14, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 14,
+      "useColor": false,
+      "logicalLines": 13,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 14
+    },
+    {
+      "label": "width boundary: 80x34, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 34
+    },
+    {
+      "label": "width boundary: 140x34, quiet=0, narrowed=false, color=false",
+      "cols": 140,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=1, narrowed=false, color=false",
+      "cols": 140,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=1, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=5, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x3, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 3,
+      "useColor": false,
+      "logicalLines": 2,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 2
+    },
+    {
+      "label": "width boundary: 140x4, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 4,
+      "useColor": false,
+      "logicalLines": 3,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 3
+    },
+    {
+      "label": "width boundary: 140x5, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 5,
+      "useColor": false,
+      "logicalLines": 4,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 4
+    },
+    {
+      "label": "width boundary: 140x8, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 8,
+      "useColor": false,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 7
+    },
+    {
+      "label": "width boundary: 140x10, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 10,
+      "useColor": false,
+      "logicalLines": 9,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 9
+    },
+    {
+      "label": "width boundary: 140x14, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 14,
+      "useColor": false,
+      "logicalLines": 13,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 13
+    },
+    {
+      "label": "width boundary: 140x34, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 80x34, quiet=0, narrowed=false, color=true",
+      "cols": 80,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 34
+    },
+    {
+      "label": "width boundary: 80x34, quiet=1, narrowed=false, color=true",
+      "cols": 80,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 34
+    },
+    {
+      "label": "width boundary: 80x34, quiet=1, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 34
+    },
+    {
+      "label": "width boundary: 80x34, quiet=5, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 34
+    },
+    {
+      "label": "width boundary: 80x3, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 3,
+      "useColor": true,
+      "logicalLines": 2,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 3
+    },
+    {
+      "label": "width boundary: 80x4, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 4,
+      "useColor": true,
+      "logicalLines": 3,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 5
+    },
+    {
+      "label": "width boundary: 80x5, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 5,
+      "useColor": true,
+      "logicalLines": 4,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 6
+    },
+    {
+      "label": "width boundary: 80x8, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 8,
+      "useColor": true,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 8
+    },
+    {
+      "label": "width boundary: 80x10, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 10,
+      "useColor": true,
+      "logicalLines": 9,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 10
+    },
+    {
+      "label": "width boundary: 80x14, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 14,
+      "useColor": true,
+      "logicalLines": 13,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 14
+    },
+    {
+      "label": "width boundary: 80x34, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 95,
+      "physicalRows": 34
+    },
+    {
+      "label": "width boundary: 140x34, quiet=0, narrowed=false, color=true",
+      "cols": 140,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=1, narrowed=false, color=true",
+      "cols": 140,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=1, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=5, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x3, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 3,
+      "useColor": true,
+      "logicalLines": 2,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 2
+    },
+    {
+      "label": "width boundary: 140x4, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 4,
+      "useColor": true,
+      "logicalLines": 3,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 3
+    },
+    {
+      "label": "width boundary: 140x5, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 5,
+      "useColor": true,
+      "logicalLines": 4,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 4
+    },
+    {
+      "label": "width boundary: 140x8, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 8,
+      "useColor": true,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 7
+    },
+    {
+      "label": "width boundary: 140x10, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 10,
+      "useColor": true,
+      "logicalLines": 9,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 9
+    },
+    {
+      "label": "width boundary: 140x14, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 14,
+      "useColor": true,
+      "logicalLines": 13,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 13
+    },
+    {
+      "label": "width boundary: 140x34, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    }
+  ],
+  "finalMatrix": [
+    {
+      "label": "width boundary: 80x34, quiet=0, narrowed=false, color=false",
+      "cols": 80,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 80x34, quiet=1, narrowed=false, color=false",
+      "cols": 80,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 80x34, quiet=1, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 80x34, quiet=5, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 80x3, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 3,
+      "useColor": false,
+      "logicalLines": 2,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 2
+    },
+    {
+      "label": "width boundary: 80x4, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 4,
+      "useColor": false,
+      "logicalLines": 3,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 3
+    },
+    {
+      "label": "width boundary: 80x5, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 5,
+      "useColor": false,
+      "logicalLines": 4,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 4
+    },
+    {
+      "label": "width boundary: 80x8, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 8,
+      "useColor": false,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 7
+    },
+    {
+      "label": "width boundary: 80x10, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 10,
+      "useColor": false,
+      "logicalLines": 9,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 9
+    },
+    {
+      "label": "width boundary: 80x14, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 14,
+      "useColor": false,
+      "logicalLines": 13,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 13
+    },
+    {
+      "label": "width boundary: 80x34, quiet=40, narrowed=true, color=false",
+      "cols": 80,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=0, narrowed=false, color=false",
+      "cols": 140,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=1, narrowed=false, color=false",
+      "cols": 140,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=1, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=5, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x3, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 3,
+      "useColor": false,
+      "logicalLines": 2,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 2
+    },
+    {
+      "label": "width boundary: 140x4, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 4,
+      "useColor": false,
+      "logicalLines": 3,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 3
+    },
+    {
+      "label": "width boundary: 140x5, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 5,
+      "useColor": false,
+      "logicalLines": 4,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 4
+    },
+    {
+      "label": "width boundary: 140x8, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 8,
+      "useColor": false,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 7
+    },
+    {
+      "label": "width boundary: 140x10, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 10,
+      "useColor": false,
+      "logicalLines": 9,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 9
+    },
+    {
+      "label": "width boundary: 140x14, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 14,
+      "useColor": false,
+      "logicalLines": 13,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 13
+    },
+    {
+      "label": "width boundary: 140x34, quiet=40, narrowed=true, color=false",
+      "cols": 140,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 80x34, quiet=0, narrowed=false, color=true",
+      "cols": 80,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 80x34, quiet=1, narrowed=false, color=true",
+      "cols": 80,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 80x34, quiet=1, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 80x34, quiet=5, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 80x3, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 3,
+      "useColor": true,
+      "logicalLines": 2,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 2
+    },
+    {
+      "label": "width boundary: 80x4, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 4,
+      "useColor": true,
+      "logicalLines": 3,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 3
+    },
+    {
+      "label": "width boundary: 80x5, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 5,
+      "useColor": true,
+      "logicalLines": 4,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 4
+    },
+    {
+      "label": "width boundary: 80x8, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 8,
+      "useColor": true,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 7
+    },
+    {
+      "label": "width boundary: 80x10, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 10,
+      "useColor": true,
+      "logicalLines": 9,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 9
+    },
+    {
+      "label": "width boundary: 80x14, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 14,
+      "useColor": true,
+      "logicalLines": 13,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 13
+    },
+    {
+      "label": "width boundary: 80x34, quiet=40, narrowed=true, color=true",
+      "cols": 80,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=0, narrowed=false, color=true",
+      "cols": 140,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=1, narrowed=false, color=true",
+      "cols": 140,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=1, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x34, quiet=5, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    },
+    {
+      "label": "width boundary: 140x3, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 3,
+      "useColor": true,
+      "logicalLines": 2,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 2
+    },
+    {
+      "label": "width boundary: 140x4, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 4,
+      "useColor": true,
+      "logicalLines": 3,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 3
+    },
+    {
+      "label": "width boundary: 140x5, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 5,
+      "useColor": true,
+      "logicalLines": 4,
+      "maximumVisibleWidth": 120,
+      "physicalRows": 4
+    },
+    {
+      "label": "width boundary: 140x8, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 8,
+      "useColor": true,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 7
+    },
+    {
+      "label": "width boundary: 140x10, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 10,
+      "useColor": true,
+      "logicalLines": 9,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 9
+    },
+    {
+      "label": "width boundary: 140x14, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 14,
+      "useColor": true,
+      "logicalLines": 13,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 13
+    },
+    {
+      "label": "width boundary: 140x34, quiet=40, narrowed=true, color=true",
+      "cols": 140,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 96,
+      "physicalRows": 33
+    }
+  ],
+  "fullMeasurements": "evidence.tar.gz: final/*measurements.json (142 measurements per final candidate)",
+  "frozenScanRerun": false
+}
