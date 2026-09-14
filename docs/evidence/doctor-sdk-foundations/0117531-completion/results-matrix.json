@@ -1,0 +1,336 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "01175319105915b93287622173330643165e8870",
+  "counts": {
+    "npmTest": {
+      "passed": 576,
+      "failed": 0,
+      "skipped": 0
+    },
+    "local": {
+      "allDoctors": {
+        "passed": 265,
+        "failed": 0,
+        "skipped": 15
+      },
+      "original": {
+        "passed": 55,
+        "failed": 0,
+        "skipped": 0
+      },
+      "locations": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "fresh": {
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0,
+        "failures": []
+      },
+      "unavailable": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      "sift": {
+        "analysisAvailable": true,
+        "files": 671,
+        "findings": 9,
+        "counts": {
+          "error": 0,
+          "warning": 1,
+          "info": 8,
+          "total": 9,
+          "hiddenDuplicates": 0
+        }
+      }
+    },
+    "packed": {
+      "allDoctors": {
+        "passed": 265,
+        "failed": 0,
+        "skipped": 15
+      },
+      "original": {
+        "passed": 55,
+        "failed": 0,
+        "skipped": 0
+      },
+      "locations": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "fresh": {
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0,
+        "failures": []
+      },
+      "unavailable": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      "sift": {
+        "analysisAvailable": true,
+        "files": 671,
+        "findings": 9,
+        "counts": {
+          "error": 0,
+          "warning": 1,
+          "info": 8,
+          "total": 9,
+          "hiddenDuplicates": 0
+        }
+      }
+    }
+  },
+  "frozen": {
+    "expectedFiles": 1530,
+    "matched": 1530,
+    "missing": [],
+    "changed": [],
+    "manifestDigest": "336f413f63936775224d5f9c8c1f5ba9abe9a465c9ef300fba93fac3657797f2",
+    "passed": true
+  },
+  "profiles": {
+    "local": {
+      "passed": 21,
+      "failed": 0,
+      "unavailableProfiles": [
+        "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / analysis unavailable",
+        "challenge profile: unhandled-value / unawaited-async-map / analysis unavailable",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / analysis unavailable"
+      ]
+    },
+    "packed": {
+      "passed": 21,
+      "failed": 0,
+      "unavailableProfiles": [
+        "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / analysis unavailable",
+        "challenge profile: unhandled-value / unawaited-async-map / analysis unavailable",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / analysis unavailable"
+      ]
+    }
+  },
+  "unknownReporting": {
+    "local": {
+      "findings": 1,
+      "score": {
+        "score": null,
+        "grade": null,
+        "filesClean": 0,
+        "filesTotal": 1,
+        "emptyScan": false,
+        "narrowedScan": true
+      },
+      "narrowed": [
+        {
+          "check": "fetch-calls-without-abortsignal",
+          "recipe": "required-or-recommended-option",
+          "reason": "unsupported-expression",
+          "occurrences": 1,
+          "files": [
+            {
+              "file": "example.ts",
+              "occurrences": 1
+            }
+          ]
+        }
+      ]
+    },
+    "packed": {
+      "findings": 1,
+      "score": {
+        "score": null,
+        "grade": null,
+        "filesClean": 0,
+        "filesTotal": 1,
+        "emptyScan": false,
+        "narrowedScan": true
+      },
+      "narrowed": [
+        {
+          "check": "fetch-calls-without-abortsignal",
+          "recipe": "required-or-recommended-option",
+          "reason": "unsupported-expression",
+          "occurrences": 1,
+          "files": [
+            {
+              "file": "example.ts",
+              "occurrences": 1
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "mutations": {
+    "local": {
+      "schemaVersion": 1,
+      "mutations": [
+        {
+          "mutation": "broken-identity",
+          "exit": 1,
+          "intendedProfile": "shadowed call identity",
+          "failedProfiles": [
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / shadowed call identity",
+            "challenge profile: unhandled-value / unawaited-async-map / valid lookalike and shadowed producer"
+          ]
+        },
+        {
+          "mutation": "unknown-as-absent",
+          "exit": 1,
+          "intendedProfile": "unknown options with positive neighbor",
+          "failedProfiles": [
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor"
+          ]
+        },
+        {
+          "mutation": "suppressed-reporting",
+          "exit": 1,
+          "intendedProfile": "genuine absence positive",
+          "failedProfiles": [
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / genuine absence positive",
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / immutable call alias",
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor",
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / two same-line occurrences",
+            "challenge profile: unhandled-value / unawaited-async-map / genuine positive",
+            "challenge profile: unhandled-value / unawaited-async-map / unsupported receiver with positive neighbor",
+            "challenge profile: unhandled-value / unawaited-async-map / two same-line occurrences",
+            "challenge profile: resource-without-release / uncleared-settimeout-in-effect / genuine unreleased positive",
+            "challenge profile: resource-without-release / uncleared-settimeout-in-effect / shadowed acquisition with positive neighbor",
+            "challenge profile: resource-without-release / uncleared-settimeout-in-effect / different handle does not release acquisition",
+            "challenge profile: resource-without-release / uncleared-settimeout-in-effect / unsupported cleanup transfer with positive neighbor",
+            "challenge profile: resource-without-release / uncleared-settimeout-in-effect / two same-line occurrences"
+          ]
+        }
+      ]
+    },
+    "packed": {
+      "schemaVersion": 1,
+      "mutations": [
+        {
+          "mutation": "broken-identity",
+          "exit": 1,
+          "intendedProfile": "shadowed call identity",
+          "failedProfiles": [
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / shadowed call identity",
+            "challenge profile: unhandled-value / unawaited-async-map / valid lookalike and shadowed producer"
+          ]
+        },
+        {
+          "mutation": "unknown-as-absent",
+          "exit": 1,
+          "intendedProfile": "unknown options with positive neighbor",
+          "failedProfiles": [
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor"
+          ]
+        },
+        {
+          "mutation": "suppressed-reporting",
+          "exit": 1,
+          "intendedProfile": "genuine absence positive",
+          "failedProfiles": [
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / genuine absence positive",
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / immutable call alias",
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor",
+            "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / two same-line occurrences",
+            "challenge profile: unhandled-value / unawaited-async-map / genuine positive",
+            "challenge profile: unhandled-value / unawaited-async-map / unsupported receiver with positive neighbor",
+            "challenge profile: unhandled-value / unawaited-async-map / two same-line occurrences",
+            "challenge profile: resource-without-release / uncleared-settimeout-in-effect / genuine unreleased positive",
+            "challenge profile: resource-without-release / uncleared-settimeout-in-effect / shadowed acquisition with positive neighbor",
+            "challenge profile: resource-without-release / uncleared-settimeout-in-effect / different handle does not release acquisition",
+            "challenge profile: resource-without-release / uncleared-settimeout-in-effect / unsupported cleanup transfer with positive neighbor",
+            "challenge profile: resource-without-release / uncleared-settimeout-in-effect / two same-line occurrences"
+          ]
+        }
+      ]
+    }
+  },
+  "localSift": {
+    "files": 671,
+    "counts": {
+      "error": 0,
+      "warning": 1,
+      "info": 8,
+      "total": 9,
+      "hiddenDuplicates": 0
+    },
+    "narrowed": [
+      {
+        "check": "fetch-calls-without-abortsignal",
+        "recipe": "required-or-recommended-option",
+        "reason": "unresolved-identity",
+        "occurrences": 5384,
+        "affectedFiles": 394
+      },
+      {
+        "check": "unawaited-async-map",
+        "recipe": "unhandled-value",
+        "reason": "unsupported-expression",
+        "occurrences": 933,
+        "affectedFiles": 239
+      },
+      {
+        "check": "fetch-calls-without-abortsignal",
+        "recipe": "required-or-recommended-option",
+        "reason": "unsupported-expression",
+        "occurrences": 51,
+        "affectedFiles": 32
+      }
+    ],
+    "execution": {
+      "semanticQueries": 45453,
+      "modelRequests": 671,
+      "modelCacheHits": 45462
+    }
+  },
+  "packedSift": {
+    "files": 671,
+    "counts": {
+      "error": 0,
+      "warning": 1,
+      "info": 8,
+      "total": 9,
+      "hiddenDuplicates": 0
+    },
+    "narrowed": [
+      {
+        "check": "fetch-calls-without-abortsignal",
+        "recipe": "required-or-recommended-option",
+        "reason": "unresolved-identity",
+        "occurrences": 5384,
+        "affectedFiles": 394
+      },
+      {
+        "check": "unawaited-async-map",
+        "recipe": "unhandled-value",
+        "reason": "unsupported-expression",
+        "occurrences": 933,
+        "affectedFiles": 239
+      },
+      {
+        "check": "fetch-calls-without-abortsignal",
+        "recipe": "required-or-recommended-option",
+        "reason": "unsupported-expression",
+        "occurrences": 51,
+        "affectedFiles": 32
+      }
+    ],
+    "execution": {
+      "semanticQueries": 45453,
+      "modelRequests": 671,
+      "modelCacheHits": 45462
+    }
+  },
+  "comparisons": {
+    "localPackedSiftFindingsEqual": true,
+    "localPackedSiftNarrowingEqual": true,
+    "localPackedUnknownEqual": true
+  }
+}

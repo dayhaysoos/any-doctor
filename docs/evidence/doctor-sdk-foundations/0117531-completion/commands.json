@@ -1,0 +1,166 @@
+[
+  {
+    "name": "npm-test",
+    "command": [
+      "npm",
+      "test"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 72319
+  },
+  {
+    "name": "local-verify-all",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "bin/cli.js",
+      "verify",
+      "--all"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 1220
+  },
+  {
+    "name": "local-original",
+    "command": [
+      "python3",
+      "/private/tmp/any-doctor-sdk-completion-final2/inputs/challenges.py",
+      "local",
+      "/Users/nickdejesus/Code/any-doctor"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 497
+  },
+  {
+    "name": "local-fresh",
+    "command": [
+      "python3",
+      "/private/tmp/any-doctor-sdk-completion-final2/inputs/fresh.py",
+      "local",
+      "/Users/nickdejesus/Code/any-doctor"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 441
+  },
+  {
+    "name": "local-unavailable",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "dev/async-analysis/check-unavailable.mjs",
+      "/Users/nickdejesus/Code/any-doctor",
+      "/private/tmp/any-doctor-sdk-completion-final2/local-unavailable"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 41
+  },
+  {
+    "name": "local-sift",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "bin/cli.js",
+      "run",
+      "doctors/async.mjs",
+      "/tmp/any-doctor-frozen-sift",
+      "--format",
+      "json"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 5465
+  },
+  {
+    "name": "pack",
+    "command": [
+      "npm",
+      "pack",
+      "--ignore-scripts",
+      "--pack-destination",
+      "/private/tmp/any-doctor-sdk-completion-final2/package",
+      "--json"
+    ],
+    "cwd": "<repo>",
+    "exit": 0,
+    "durationMs": 451
+  },
+  {
+    "name": "install",
+    "command": [
+      "npm",
+      "install",
+      "--ignore-scripts",
+      "--no-audit",
+      "--no-fund",
+      "/private/tmp/any-doctor-sdk-completion-final2/package/any-doctor-0.1.2.tgz"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 1410
+  },
+  {
+    "name": "packed-verify-all",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "/private/tmp/any-doctor-sdk-completion-final2/consumer/node_modules/any-doctor/bin/cli.js",
+      "verify",
+      "--all"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 1472
+  },
+  {
+    "name": "packed-original",
+    "command": [
+      "python3",
+      "/private/tmp/any-doctor-sdk-completion-final2/inputs/challenges.py",
+      "packed",
+      "/private/tmp/any-doctor-sdk-completion-final2/consumer/node_modules/any-doctor"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 480
+  },
+  {
+    "name": "packed-fresh",
+    "command": [
+      "python3",
+      "/private/tmp/any-doctor-sdk-completion-final2/inputs/fresh.py",
+      "packed",
+      "/private/tmp/any-doctor-sdk-completion-final2/consumer/node_modules/any-doctor"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 486
+  },
+  {
+    "name": "packed-unavailable",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "/Users/nickdejesus/Code/any-doctor/dev/async-analysis/check-unavailable.mjs",
+      "/private/tmp/any-doctor-sdk-completion-final2/consumer/node_modules/any-doctor",
+      "/private/tmp/any-doctor-sdk-completion-final2/packed-unavailable"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 44
+  },
+  {
+    "name": "packed-sift",
+    "command": [
+      "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+      "/private/tmp/any-doctor-sdk-completion-final2/consumer/node_modules/any-doctor/bin/cli.js",
+      "run",
+      "/private/tmp/any-doctor-sdk-completion-final2/consumer/node_modules/any-doctor/doctors/async.mjs",
+      "/tmp/any-doctor-frozen-sift",
+      "--format",
+      "json"
+    ],
+    "cwd": "<checkpoint-temp>",
+    "exit": 0,
+    "durationMs": 5313
+  }
+]

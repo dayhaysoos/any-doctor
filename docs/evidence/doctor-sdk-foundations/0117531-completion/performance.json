@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "01175319105915b93287622173330643165e8870",
+  "date": "2026-09-14",
+  "target": "/tmp/any-doctor-frozen-sift",
+  "node": "v26.5.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "cpu": "Apple M1 Pro",
+  "runs": {
+    "baseline": [
+      {
+        "wallMs": 4506.465542,
+        "durationMs": 4140,
+        "fileCount": 671,
+        "findings": 9,
+        "semanticExecution": null
+      },
+      {
+        "wallMs": 4132.826375000001,
+        "durationMs": 3841,
+        "fileCount": 671,
+        "findings": 9,
+        "semanticExecution": null
+      },
+      {
+        "wallMs": 4355.092500000001,
+        "durationMs": 4046,
+        "fileCount": 671,
+        "findings": 9,
+        "semanticExecution": null
+      }
+    ],
+    "candidate": [
+      {
+        "wallMs": 5526.044667,
+        "durationMs": 5191,
+        "fileCount": 671,
+        "findings": 9,
+        "semanticExecution": {
+          "semanticQueries": 45453,
+          "modelRequests": 671,
+          "modelCacheHits": 45462
+        }
+      },
+      {
+        "wallMs": 5289.687540999999,
+        "durationMs": 4983,
+        "fileCount": 671,
+        "findings": 9,
+        "semanticExecution": {
+          "semanticQueries": 45453,
+          "modelRequests": 671,
+          "modelCacheHits": 45462
+        }
+      },
+      {
+        "wallMs": 5226.485540999998,
+        "durationMs": 4930,
+        "fileCount": 671,
+        "findings": 9,
+        "semanticExecution": {
+          "semanticQueries": 45453,
+          "modelRequests": 671,
+          "modelCacheHits": 45462
+        }
+      }
+    ]
+  },
+  "summary": {
+    "baselineMedianWallMs": 4355.092500000001,
+    "candidateMedianWallMs": 5289.687540999999,
+    "ratio": 1.21459820681191
+  }
+}
