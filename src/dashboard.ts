@@ -79,10 +79,9 @@ function wordWrap(text: string, width: number): string[] {
   return lines;
 }
 
-// Fixed chrome around the body: 4 header lines, 2 blank spacers, 2 footer
-// lines (the notice line is always reserved), plus the bottom terminal row,
-// which is never written so no repaint can make the terminal scroll.
-const CHROME_ROWS = 9;
+// Regular frames separate the header, body and footer with three blank rows.
+// Compact frames omit these spacers; both leave the bottom terminal row unused.
+const SPACER_ROWS = 3;
 
 export interface DashboardLayout {
   mode: "split" | "stacked";
@@ -92,18 +91,28 @@ export interface DashboardLayout {
   detailHeight: number;
   bodyRows: number;
   quietRows: number;
+  noticeRows: number;
+  headerRows: number;
+  footerRows: number;
+  compact: boolean;
 }
 
 export function resolveDashboardLayout(cols: number, rows: number, itemCount: number, quietCount = 0, noticeRows = 0): DashboardLayout {
-  // Status rows share the terminal budget with the body. Reserve at least half
-  // the remaining space for the selected finding tree and its detail pane.
-  const availableRows = Math.max(0, rows - CHROME_ROWS - noticeRows);
-  const quietRows = Math.min(quietCount, Math.floor(availableRows / 2));
-  const bodyRows = availableRows - quietRows;
+  // Short terminals compress chrome before allocating the status list and
+  // finding body. Every rendered row, including notices, has one budget here.
+  const compact = rows < 12;
+  const frameRows = Math.max(0, rows - 1);
+  const headerRows = Math.min(frameRows, compact ? 1 : 3);
+  const footerRows = compact ? (frameRows >= 3 ? 1 : 0) : 2;
+  const availableRows = Math.max(0, frameRows - headerRows - footerRows - (compact ? 0 : SPACER_ROWS));
+  noticeRows = Math.min(noticeRows, Math.max(0, availableRows - (quietCount ? 1 : 0) - (itemCount ? 1 : 0)));
+  const quietRows = Math.min(quietCount, availableRows - noticeRows, Math.max(1, Math.floor((availableRows - noticeRows) / 2)));
+  const bodyRows = availableRows - noticeRows - quietRows;
+  const chrome = {quietRows, noticeRows, headerRows, footerRows, compact};
   if (cols >= SPLIT_MIN_COLS) {
     const listWidth = Math.min(56, Math.max(32, Math.floor(cols * 0.44)));
     const detailWidth = cols - listWidth - 2;
-    return { mode: "split", listWidth, detailWidth, listHeight: bodyRows, detailHeight: bodyRows, bodyRows, quietRows };
+    return { mode: "split", listWidth, detailWidth, listHeight: bodyRows, detailHeight: bodyRows, bodyRows, ...chrome };
   }
   const listHeight = Math.min(Math.max(2, Math.ceil(bodyRows * 0.4)), Math.max(1, itemCount));
   return {
@@ -113,7 +122,7 @@ export function resolveDashboardLayout(cols: number, rows: number, itemCount: nu
     listHeight,
     detailHeight: Math.max(1, bodyRows - listHeight - 2),
     bodyRows,
-    quietRows,
+    ...chrome,
   };
 }
 
@@ -406,17 +415,23 @@ export function dashboardFrame(state: DashboardFrameState): string {
     headerLines.push(c(scoreBar(narrowed ? 0 : 100, barWidth), narrowed ? YELLOW : GREEN));
     headerLines.push(c(summaryLine(0, null, state.durationMs), DIM));
   }
+  headerLines.splice(layout.headerRows);
   // The final reserved status row summarizes any cohort that cannot fit.
   const visibleQuiet = quietDoctors.length > layout.quietRows ? Math.max(0, layout.quietRows - 1) : layout.quietRows;
   for (const doctor of quietDoctors.slice(0, visibleQuiet)) {
     headerLines.push(c(`${doctor.narrowed ? "△" : "✔"} ${doctor.id} — ${doctor.narrowed ? "narrowed" : "clean"}`, doctor.narrowed ? YELLOW : GREEN));
   }
-  if (layout.quietRows > visibleQuiet) {
+  if (quietDoctors.length > visibleQuiet) {
     const omitted = quietDoctors.slice(visibleQuiet), narrowed = omitted.filter(doctor => doctor.narrowed).length;
-    headerLines.push(c(`${omitted.length} more quiet doctors — ${narrowed} narrowed, ${omitted.length - narrowed} clean`, narrowed ? YELLOW : GREEN));
+    const summary = c(`${omitted.length} more quiet doctors — ${narrowed} narrowed, ${omitted.length - narrowed} clean`, narrowed ? YELLOW : GREEN);
+    if (layout.quietRows > visibleQuiet) headerLines.push(summary);
+    else if (headerLines.length) headerLines[0] += ` · ${summary}`;
   }
-  for (const notice of notices) headerLines.push(c(notice, YELLOW));
-  headerLines.push("");
+  if (layout.noticeRows === 0 && notices.length && headerLines.length) headerLines[0] += ` · ${c(notices.join(' · '), YELLOW)}`;
+  else for (let i = 0; i < layout.noticeRows; i++) {
+    headerLines.push(c(i === layout.noticeRows - 1 ? notices.slice(i).join(' · ') : notices[i], YELLOW));
+  }
+  if (!layout.compact) headerLines.push("");
 
   const viewport = Math.max(1, Math.min(layout.listHeight, layout.bodyRows));
   let firstVisible = Math.max(0, Math.min(selectedRow - viewport + 1, Math.max(0, rowsData.length - viewport)));
@@ -516,6 +531,9 @@ export function dashboardFrame(state: DashboardFrameState): string {
     c("↑↓ move · →← expand · enter copy · c copy group · a accept · x n/a · u undo · v review · q quit", DIM),
   ];
 
+  if (layout.compact) {
+    return [...headerLines, ...body, ...(layout.footerRows ? [footer.filter(Boolean).join(' · ')] : [])].join("\n");
+  }
   return [...headerLines, "", ...body, "", ...footer].join("\n");
 }
 

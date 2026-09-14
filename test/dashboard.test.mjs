@@ -4,8 +4,9 @@ import { EventEmitter } from "node:events";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { fileURLToPath } from "node:url";
 
-const candidate=process.env.DOCTOR_CANDIDATE_ROOT ?? new URL("../", import.meta.url).pathname;
+const candidate=process.env.DOCTOR_CANDIDATE_ROOT ?? fileURLToPath(new URL("../", import.meta.url));
 
 // The clipboard is injected via deps in runDashboardOn tests, keeping them
 // deterministic and spawn-free.
@@ -847,7 +848,7 @@ for(const narrowed of [false,true])test(`runDashboard: mixed run discloses ${nar
 });
 
 
-for(const [count,narrowed,rows] of [[0,false,34],[1,false,34],[1,true,34],[5,true,34],[40,true,14]])
+for(const [count,narrowed,rows] of [[0,false,34],[1,false,34],[1,true,34],[5,true,34],[40,true,14],[40,true,10],[40,true,8]])
  for(const cols of [80,140])test(`quiet status budget: ${count} quiet doctors, narrowed=${narrowed}, ${cols}x${rows}`,async()=>{
   const quiet=Array.from({length:count},(_,i)=>({programName:`quiet-${i}.mjs`,meta:{id:`quiet-${i}`,description:'Quiet',severity:'warning',checks:[{id:'q',description:'Quiet',needs:['calls']}]},findings:[]}));
   const input=dashInput([...groups,...quiet]);input.outcome.analysisAvailable=!narrowed;
@@ -868,3 +869,17 @@ for(const [count,narrowed,rows] of [[0,false,34],[1,false,34],[1,true,34],[5,tru
    assert.notEqual(frames[0],frames[1],'selected tree still changes through navigation');
   } finally {stdin.send('q');await done;}
  });
+
+
+test('small dashboard budgets coverage notices and a mixed quiet cohort',()=>{
+ const tree=buildTree(gcOf(groups),2);
+ for(const rows of [3,4,5,8,10,14,34]){
+  const frame=dashboardFrame({tree,selectedRow:0,readKeys:new Set(),readSource:()=>null,filesTotal:2,durationMs:2,useColor:false,cols:140,rows,
+   zeroFindingDoctors:Array.from({length:40},(_,i)=>({id:`quiet-${i}`,narrowed:i%2===0})),
+   coverageNotice:'semantic coverage narrowed',skippedUnsafe:['unsafe.mjs']});
+  assert.equal(frame.split('\n').length,rows-1,`rows=${rows}`);
+  assert.match(frame,/\d+ more quiet doctors/);
+  assert.match(frame,/\d+ narrowed, \d+ clean/);
+  assert.match(frame,/semantic coverage narrowed/);
+ }
+});
