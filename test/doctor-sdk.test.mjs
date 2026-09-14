@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {analyzeCalls} from '../bin/analysis.js';
 import {identityResult,optionPresenceResult,resourceLifetimeResult,valueDispositionResult} from '../bin/doctor-sdk.js';
 
@@ -112,4 +115,18 @@ test('a confined reference doctor reuses all recipes with different APIs and cop
   const run=spawnSync(process.execPath,[`${repo}bin/cli.js`,'verify',`${repo}fixtures/doctor-sdk-reference.mjs`],{cwd:repo,encoding:'utf8',timeout:30000});
   assert.equal(run.status,0,run.stdout+run.stderr);
   assert.match(run.stdout,/three reusable recipes/);
+  assert.match(run.stdout,/challenge profile: unhandled-value/);
+});
+
+test('declared recipe profiles are named in JSON including unavailable paths',()=>{
+  const repo=fileURLToPath(new URL('../',import.meta.url));
+  const run=spawnSync(process.execPath,[`${repo}bin/cli.js`,'verify',`${repo}fixtures/doctor-sdk-reference.mjs`,'--format','json'],{cwd:repo,encoding:'utf8',timeout:30000});
+  assert.equal(run.status,0,run.stdout+run.stderr);const result=JSON.parse(run.stdout),profiles=result.results.filter(item=>item.name.startsWith('challenge profile:'));
+  assert.equal(profiles.length,19);assert.equal(profiles.filter(item=>!item.ok).length,0);assert.equal(profiles.filter(item=>item.skipped?.includes('analysis unavailable')).length,3);
+});
+
+test('recipe profiles reject identity, unknown-as-absence and suppression mutations',()=>{
+  const repo=fileURLToPath(new URL('../',import.meta.url)),parent=fs.mkdtempSync(path.join(os.tmpdir(),'doctor-sdk-mutations-')),output=path.join(parent,'results');
+  try{const run=spawnSync(process.execPath,[`${repo}dev/doctor-sdk/run-profile-mutations.mjs`,output],{cwd:repo,encoding:'utf8',timeout:30000});assert.equal(run.status,0,run.stdout+run.stderr);const result=JSON.parse(fs.readFileSync(path.join(output,'mutation-results.json'),'utf8'));assert.deepEqual(result.mutations.map(item=>item.mutation),['broken-identity','unknown-as-absent','suppressed-reporting']);assert.ok(result.mutations.every(item=>item.exit!==0&&item.failedProfiles.length));}
+  finally{fs.rmSync(parent,{recursive:true,force:true});}
 });

@@ -48,6 +48,9 @@ export interface CheckMeta {
    *  unchanged; without a revision, the whole-program digest governs (and
    *  any doctor edit resurfaces decisions — the churn revision prevents). */
   revision?: number;
+  /** Selects a maintained SDK challenge profile and records the confined,
+   * serializable recipe configuration certification must exercise. */
+  recipe?: RecipeProfileDeclaration;
 }
 
 export interface DoctorMeta {
@@ -367,6 +370,11 @@ export interface RequiredOptionRecipeQuery {
   option: OptionPresenceQuery;
   reportUnknown?: UnknownReason[];
 }
+export type RecipeName = "unhandled-value" | "resource-without-release" | "required-or-recommended-option";
+export type RecipeProfileDeclaration =
+  | { name: "unhandled-value"; query: UnhandledValueRecipeQuery }
+  | { name: "resource-without-release"; query: ResourceWithoutReleaseRecipeQuery }
+  | { name: "required-or-recommended-option"; query: RequiredOptionRecipeQuery };
 
 export interface DoctorCtx {
   root: string;

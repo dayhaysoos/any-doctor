@@ -394,11 +394,11 @@ test("gate: a dangling --base refuses — never silently full mode", async (t) =
   assert.equal(await cli.main(["run", DOCTOR, TARGET, "--base", "--all"]), 1, "a flag-shaped value is not a ref");
 });
 
-test("gate: verify refuses the run-only gate flags", async (t) => {
+test("gate: verify accepts JSON but refuses finding and diff gate flags", async (t) => {
   silentConsole(t);
   const err = t.mock.method(console, "error", () => {});
   assert.equal(await cli.main(["verify", DOCTOR, "--fail-on", "error"]), 1);
-  assert.equal(await cli.main(["verify", DOCTOR, "--format", "json"]), 1);
+  assert.equal(await cli.main(["verify", DOCTOR, "--format", "json"]), 0);
   assert.equal(await cli.main(["verify", DOCTOR, "--base", "main"]), 1);
   assert.match(err.mock.calls.map(c => c.arguments.join(" ")).join("\n"), /run-only flags/);
 });

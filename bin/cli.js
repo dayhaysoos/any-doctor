@@ -563,8 +563,12 @@ async function cmdVerify(args) {
         fail(parsed.flagError);
         return 1;
     }
-    if (parsed.failOn !== "none" || parsed.format !== "report" || parsed.base !== undefined) {
-        fail("--fail-on, --format, and --base are run-only flags — the fixture gate is the doctor's own verdict");
+    if (parsed.failOn !== "none" || parsed.base !== undefined) {
+        fail("--fail-on and --base are run-only flags — the fixture gate is the doctor's own verdict");
+        return 1;
+    }
+    if (parsed.format !== "report" && parsed.format !== "json") {
+        fail(`--format must be "report" or "json" — got "${parsed.format}"`);
         return 1;
     }
     if (parsed.all) {
@@ -578,22 +582,31 @@ async function cmdVerify(args) {
         const skippedUnsafe = cohort.skippedUnsafe;
         let totalFailures = 0;
         const crashed = [];
+        const machineResults = [];
         for (const d of discovered) {
-            console.log(BOLD + d.meta.id + RESET);
-            console.log(DIM + "  capabilities: " + capabilitySummary(scanDoctorFile(d.path)) + RESET);
+            if (parsed.format === 'report') {
+                console.log(BOLD + d.meta.id + RESET);
+                console.log(DIM + "  capabilities: " + capabilitySummary(scanDoctorFile(d.path)) + RESET);
+            }
             try {
                 const r = await runOrReport(verifyDoctor({ programPath: d.path }));
-                console.log(renderVerifyResult(r, useColor()));
+                machineResults.push(r);
+                if (parsed.format === 'report')
+                    console.log(renderVerifyResult(r, useColor()));
                 totalFailures += r.results.filter(x => !x.ok).length;
             }
             catch (e) {
                 if (!(e instanceof ExitCode))
                     throw e;
-                console.log(RED + "  crashed — skipped" + RESET);
+                if (parsed.format === 'report')
+                    console.log(RED + "  crashed — skipped" + RESET);
                 crashed.push(d.meta.id);
             }
-            console.log("");
+            if (parsed.format === 'report')
+                console.log("");
         }
+        if (parsed.format === 'json')
+            console.log(JSON.stringify({ protocolVersion: 1, kind: 'verify-cohort', results: machineResults, crashed, skippedUnsafe }, null, 2));
         if (totalFailures > 0 || crashed.length > 0 || skippedUnsafe.length > 0) {
             const parts = [];
             if (totalFailures > 0)
@@ -605,7 +618,8 @@ async function cmdVerify(args) {
             fail(parts.join("; "));
             return 1;
         }
-        ok("all doctors fixture-green");
+        if (parsed.format === 'report')
+            ok("all doctors fixture-green");
         return 0;
     }
     const sel = await selectDoctor(parsed.doctorPath, {
@@ -617,15 +631,21 @@ async function cmdVerify(args) {
     const outcome = selectionOutcome(sel);
     if ("exit" in outcome)
         return outcome.exit;
-    console.log(DIM + "capabilities: " + capabilitySummary(scanDoctorFile(outcome.doctorPath)) + RESET);
+    if (parsed.format === 'report')
+        console.log(DIM + "capabilities: " + capabilitySummary(scanDoctorFile(outcome.doctorPath)) + RESET);
     const result = await runOrReport(verifyDoctor({ programPath: outcome.doctorPath }));
-    console.log(renderVerifyResult(result, useColor()));
+    if (parsed.format === 'json')
+        console.log(JSON.stringify(result, null, 2));
+    else
+        console.log(renderVerifyResult(result, useColor()));
     const failures = result.results.filter(x => !x.ok).length;
-    console.log("");
+    if (parsed.format === 'report')
+        console.log("");
     const skipped = result.results.filter((x) => x.skipped !== undefined).length;
     const passed = result.results.filter((x) => x.ok && x.skipped === undefined).length;
-    console.log(dim(`${passed}/${result.results.length} fixtures passed for ${result.meta.id}`
-        + (skipped > 0 ? ` — ${skipped} not exercised (see reasons above)` : "")));
+    if (parsed.format === 'report')
+        console.log(dim(`${passed}/${result.results.length} fixtures passed for ${result.meta.id}`
+            + (skipped > 0 ? ` — ${skipped} not exercised (see reasons above)` : "")));
     return failures > 0 ? 1 : 0;
 }
 // The planted copy of the skill once went three decisions stale

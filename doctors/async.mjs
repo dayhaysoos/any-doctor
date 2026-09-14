@@ -11,6 +11,7 @@ export const meta = {
   ],
   checks: [
     {id:'fetch-calls-without-abortsignal',revision:2,reportingUnit:'occurrence',needs:['calls','identity','option-presence'],onUnknown:'skip',severity:'info',
+      recipe:{name:'required-or-recommended-option',query:{call:{globals:['fetch','window.fetch','globalThis.fetch','self.fetch']},option:{option:'signal',sources:['RequestInit','Request']}}},
       description:'Review a native fetch with no established caller cancellation signal.',
       claim:'A resolved native fetch whose input and ordered options establish no caller signal, including an explicit null override of an unknown input.',
       impact:'Cancellation or a deadline may help bound unnecessary or stalled work; omission alone does not establish a bug.',
@@ -18,6 +19,7 @@ export const meta = {
       fix:'Check the intended request lifetime and caller contract. If cancellation or a deadline is required, preserve forwarded options and provide an appropriate AbortSignal; abort only when the work should stop.',
       lookalikes:['Request or options carrying a signal','unknown forwarded inputs/options','unrelated local fetch functions']},
     {id:'unawaited-async-map',revision:2,reportingUnit:'occurrence',needs:['calls','value-disposition'],onUnknown:'skip',severity:'warning',
+      recipe:{name:'unhandled-value',query:{producer:{member:'map',asyncArgument:0,receiver:'array'},consumers:['Promise.all','Promise.allSettled','Promise.any','Promise.race','globalThis.Promise.all','globalThis.Promise.allSettled','globalThis.Promise.any','globalThis.Promise.race']}},
       description:'An array of async-map promises has no supported consumer or ownership transfer.',
       claim:'A known array map with an async callback whose result has no supported element consumer or ownership transfer in its lexical flow.',
       impact:'Dropped promise results can leave errors unobserved and dependent work running before callbacks finish.',
@@ -25,6 +27,7 @@ export const meta = {
       fix:'If the work must finish here, await Promise.all on the actual promise array and handle errors. For sequential processing, use a for...of loop with await inside; merely removing async does not make asynchronous work sequential. Preserve intentional ownership transfers.',
       lookalikes:['returned promise arrays','aliases passed to a native combiner','per-element awaits','unrelated map methods','unresolved transfers']},
     {id:'uncleared-settimeout-in-effect',revision:2,reportingUnit:'occurrence',needs:['calls','identity','resource-lifetime'],onUnknown:'skip',severity:'warning',
+      recipe:{name:'resource-without-release',query:{acquisition:{globals:['setTimeout','window.setTimeout','globalThis.setTimeout']},owner:{identity:{imports:[{source:'react',names:['useEffect','*.useEffect','default.useEffect']}]},argument:0},release:['clearTimeout','window.clearTimeout','globalThis.clearTimeout'],reportUnknown:['unsupported-expression']}},
       description:'Review an effect timer with no matching cancellation in its returned cleanup.',
       claim:'A native setTimeout reachable from a resolved React effect has no supported returned-cleanup cancellation of its actual handle.',
       impact:'The callback may outlive the effect that scheduled it; whether that is wrong depends on the intended lifetime.',

@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { buildCtx, setAnalysisDisabled, probeAnalysisAvailable } from "./sdk.js";
-import type { DoctorMeta, ExpectedFinding, Finding, Fixture, FixtureResult, RunResult } from "./contract.js";
+import type { CheckMeta, DoctorMeta, ExpectedFinding, Finding, Fixture, FixtureResult, RecipeProfileDeclaration, RunResult } from "./contract.js";
 import { withinDir } from "./contract.js";
 import * as contract from "./contract.js";
 
@@ -188,6 +188,22 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
       setAnalysisDisabled(false);
     }
   }
+  // Recipe declarations select maintained adversarial profiles. The generated
+  // sources vary only by serialized selectors; labels and expectations stay
+  // host-owned, deterministic, and separate from author fixtures.
+  for(const check of (mod.meta as DoctorMeta).checks??[]){
+    if(!check.recipe)continue;
+    for(const fixture of challengeProfileFixtures(check)){
+      const name=`challenge profile: ${check.recipe.name} / ${check.id} / ${fixture.name}`;
+      try{
+        setAnalysisDisabled(fixture.analysis==='off');
+        const result=await inSandbox(fixture.seed,tmp=>runOnce(tmp,mod,{includeTests:true}));
+        const diff=contract.compareFindings(fixture.expected,result.findings);
+        results.push({name,ok:!diff.missing.length&&!diff.unexpected.length,...diff,...(fixture.analysis==='off'?{skipped:'analysis unavailable path exercised; expected silence preserved'}:{})});
+      }catch(e){results.push(errorRow(name,e));}
+      finally{setAnalysisDisabled(false);}
+    }
+  }
   // The shared innocent corpus (D23): files that look guilty but aren't —
   // the audit counterexamples as commons. Every doctor runs against them
   // with expected: []; a finding here is a false positive by definition,
@@ -275,6 +291,58 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
     }
   }
   return results;
+}
+
+const occurrence=(source:string,rule:string,needle:string,nth=0):ExpectedFinding=>{const offset=[...source.matchAll(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'))][nth]?.index;if(offset===undefined)throw new Error(`profile occurrence missing: ${needle}`);const before=source.slice(0,offset),line=before.split('\n').length,column=offset-(before.lastIndexOf('\n')+1);return {rule,file:'profile.ts',line,column};};
+const profile=(name:string,source:string,expected:ExpectedFinding[],analysis?:'on'|'off'):Fixture=>({name,seed:{'profile.ts':source},expected,...(analysis?{analysis}:{})});
+
+/** Deterministic extension point for maintained recipe challenge cases. */
+export function challengeProfileFixtures(check:CheckMeta):Fixture[]{
+  const declaration=check.recipe;if(!declaration)return [];
+  return declaration.name==='unhandled-value'?unhandledProfile(check.id,declaration):declaration.name==='resource-without-release'?resourceProfile(check.id,declaration):optionProfile(check.id,declaration);
+}
+
+function unhandledProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'unhandled-value'}>):Fixture[]{
+  const member=declaration.query.producer.member,p=`[1].${member}(async value=>value)`;
+  const positive=`${p};`,lookalike=`const object={${member}:async callback=>callback(1)};object.${member}(async value=>value);`,transfer=`function own(){return ${p}}`,unknown=`const items=getItems();items.${member}(async value=>value);\n${positive}`,same=`${positive}${positive}`;
+  return [
+    profile('genuine positive',positive,[occurrence(positive,rule,p)]),
+    profile('valid lookalike and shadowed producer',lookalike,[]),
+    profile('ownership transfer',transfer,[]),
+    profile('unsupported receiver with positive neighbor',unknown,[occurrence(unknown,rule,p)]),
+    profile('two same-line occurrences',same,[occurrence(same,rule,p,0),occurrence(same,rule,p,1)]),
+    profile('analysis unavailable',positive,[],'off'),
+  ];
+}
+
+function optionProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'required-or-recommended-option'}>):Fixture[]{
+  const query=declaration.query,callee=query.call.globals?.[0];if(!callee)return [];
+  const option=query.option.option,positive=`${callee}("payload",{})`,value=option==='signal'?'new AbortController().signal':'true';
+  const present=`${callee}("payload",{${option}:${value}});`,root=callee.split('.')[0],shadow=callee.includes('.')?`function probe(${root}){${callee}("payload",{})}`:`function probe(${callee}){${callee}("payload",{})}`;
+  const alias=`const invoke=${callee};invoke("payload",{});`,unknown=`const options={};configure(options);${callee}("payload",options);\n${positive};`,same=`${positive};${positive};`;
+  return [
+    profile('genuine absence positive',`${positive};`,[occurrence(`${positive};`,rule,positive)]),
+    profile('present option lookalike',present,[]),
+    profile('shadowed call identity',shadow,[]),
+    profile('global call alias',alias,[occurrence(alias,rule,'invoke("payload",{})')]),
+    profile('unknown options with positive neighbor',unknown,[occurrence(unknown,rule,positive)]),
+    profile('two same-line occurrences',same,[occurrence(same,rule,positive,0),occurrence(same,rule,positive,1)]),
+    profile('analysis unavailable',`${positive};`,[],'off'),
+  ];
+}
+
+function resourceProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'resource-without-release'}>):Fixture[]{
+  const query=declaration.query,acquire=query.acquisition.globals?.[0],ownerSource=query.owner.identity.imports?.[0]?.source,ownerName=query.owner.identity.imports?.[0]?.names.find(name=>!name.includes('.')&&!name.includes('*')),release=query.release[0];if(!acquire||!ownerSource||!ownerName||!release)return [];
+  const head=`import {${ownerName} as owner} from ${JSON.stringify(ownerSource)};\n`,call=`${acquire}(()=>{},1)`,positive=`${head}owner(()=>{${call};},[]);`,lookalike=`${head}owner(()=>{function probe(${acquire}){${acquire}(()=>{},1)}\n${call};},[]);`,released=`${head}owner(()=>{const handle=${call};return()=>${release}(handle)},[]);`,conditional=`${head}owner(()=>{const handle=${call};return()=>{if(flag)${release}(handle)}},[]);\nowner(()=>{${call};},[]);`,same=`${head}owner(()=>{${call};${call};},[]);`;
+  const conditionalExpected=declaration.query.reportUnknown?.includes('unsupported-expression')?[occurrence(conditional,rule,call,0),occurrence(conditional,rule,call,1)]:[occurrence(conditional,rule,call,1)];
+  return [
+    profile('genuine unreleased positive',positive,[occurrence(positive,rule,call)]),
+    profile('shadowed acquisition with positive neighbor',lookalike,[occurrence(lookalike,rule,call,1)]),
+    profile('exact handle release',released,[]),
+    profile('unknown cleanup with positive neighbor',conditional,conditionalExpected),
+    profile('two same-line occurrences',same,[occurrence(same,rule,call,0),occurrence(same,rule,call,1)]),
+    profile('analysis unavailable',positive,[],'off'),
+  ];
 }
 
 // A shipped corpus directory, resolved next to the compiled module (bin/'s

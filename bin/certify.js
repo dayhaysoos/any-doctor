@@ -129,7 +129,7 @@ function distinctLocationsInFile(hits) {
 // The certification entry point: every policy, in gate order, as result
 // rows a verify frame can carry.
 export async function certify(mod, fixtures) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     validateClaimContract(mod);
     const results = [];
     // Only a doctor whose checks declare analysis needs can have
@@ -179,6 +179,28 @@ export async function certify(mod, fixtures) {
             setAnalysisDisabled(false);
         }
     }
+    // Recipe declarations select maintained adversarial profiles. The generated
+    // sources vary only by serialized selectors; labels and expectations stay
+    // host-owned, deterministic, and separate from author fixtures.
+    for (const check of (_a = mod.meta.checks) !== null && _a !== void 0 ? _a : []) {
+        if (!check.recipe)
+            continue;
+        for (const fixture of challengeProfileFixtures(check)) {
+            const name = `challenge profile: ${check.recipe.name} / ${check.id} / ${fixture.name}`;
+            try {
+                setAnalysisDisabled(fixture.analysis === 'off');
+                const result = await inSandbox(fixture.seed, tmp => runOnce(tmp, mod, { includeTests: true }));
+                const diff = contract.compareFindings(fixture.expected, result.findings);
+                results.push({ name, ok: !diff.missing.length && !diff.unexpected.length, ...diff, ...(fixture.analysis === 'off' ? { skipped: 'analysis unavailable path exercised; expected silence preserved' } : {}) });
+            }
+            catch (e) {
+                results.push(errorRow(name, e));
+            }
+            finally {
+                setAnalysisDisabled(false);
+            }
+        }
+    }
     // The shared innocent corpus (D23): files that look guilty but aren't —
     // the audit counterexamples as commons. Every doctor runs against them
     // with expected: []; a finding here is a false positive by definition,
@@ -202,13 +224,13 @@ export async function certify(mod, fixtures) {
     }
     // Explicit, context-preserving witnesses per check replace source rewriting.
     // One sibling's fixture cannot establish another check's location coverage.
-    for (const check of (_a = mod.meta.checks) !== null && _a !== void 0 ? _a : []) {
+    for (const check of (_b = mod.meta.checks) !== null && _b !== void 0 ? _b : []) {
         const name = `location coverage: ${check.id}`;
         if (!check.reportingUnit) {
             results.push({ ...okRow(name), skipped: "reporting unit undeclared — location coverage not exercised" });
             continue;
         }
-        if (((_b = check.needs) === null || _b === void 0 ? void 0 : _b.length) && await skipFor(true)) {
+        if (((_c = check.needs) === null || _c === void 0 ? void 0 : _c.length) && await skipFor(true)) {
             results.push(skipRow(name));
             continue;
         }
@@ -229,7 +251,7 @@ export async function certify(mod, fixtures) {
             const reason = check.reportingUnit === "occurrence"
                 ? "requires a passing fixture with two distinct locations of this check in one file"
                 : "requires a passing positive fixture for this check";
-            const severity = (_c = check.severity) !== null && _c !== void 0 ? _c : mod.meta.severity;
+            const severity = (_d = check.severity) !== null && _d !== void 0 ? _d : mod.meta.severity;
             results.push(severity === "info" ? { ...okRow(name), skipped: reason } : errorRow(name, reason));
         }
     }
@@ -256,7 +278,7 @@ export async function certify(mod, fixtures) {
                 results.push({ ...okRow(name), ok: false, error: "unreadable expect.json: " + (e instanceof Error ? e.message : String(e)) });
                 continue;
             }
-            const expected = (_d = manifest === null || manifest === void 0 ? void 0 : manifest.expect) === null || _d === void 0 ? void 0 : _d[String(mod.meta.id)];
+            const expected = (_e = manifest === null || manifest === void 0 ? void 0 : manifest.expect) === null || _e === void 0 ? void 0 : _e[String(mod.meta.id)];
             if (!Array.isArray(expected))
                 continue;
             try {
@@ -276,6 +298,62 @@ export async function certify(mod, fixtures) {
         }
     }
     return results;
+}
+const occurrence = (source, rule, needle, nth = 0) => { var _a; const offset = (_a = [...source.matchAll(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'))][nth]) === null || _a === void 0 ? void 0 : _a.index; if (offset === undefined)
+    throw new Error(`profile occurrence missing: ${needle}`); const before = source.slice(0, offset), line = before.split('\n').length, column = offset - (before.lastIndexOf('\n') + 1); return { rule, file: 'profile.ts', line, column }; };
+const profile = (name, source, expected, analysis) => ({ name, seed: { 'profile.ts': source }, expected, ...(analysis ? { analysis } : {}) });
+/** Deterministic extension point for maintained recipe challenge cases. */
+export function challengeProfileFixtures(check) {
+    const declaration = check.recipe;
+    if (!declaration)
+        return [];
+    return declaration.name === 'unhandled-value' ? unhandledProfile(check.id, declaration) : declaration.name === 'resource-without-release' ? resourceProfile(check.id, declaration) : optionProfile(check.id, declaration);
+}
+function unhandledProfile(rule, declaration) {
+    const member = declaration.query.producer.member, p = `[1].${member}(async value=>value)`;
+    const positive = `${p};`, lookalike = `const object={${member}:async callback=>callback(1)};object.${member}(async value=>value);`, transfer = `function own(){return ${p}}`, unknown = `const items=getItems();items.${member}(async value=>value);\n${positive}`, same = `${positive}${positive}`;
+    return [
+        profile('genuine positive', positive, [occurrence(positive, rule, p)]),
+        profile('valid lookalike and shadowed producer', lookalike, []),
+        profile('ownership transfer', transfer, []),
+        profile('unsupported receiver with positive neighbor', unknown, [occurrence(unknown, rule, p)]),
+        profile('two same-line occurrences', same, [occurrence(same, rule, p, 0), occurrence(same, rule, p, 1)]),
+        profile('analysis unavailable', positive, [], 'off'),
+    ];
+}
+function optionProfile(rule, declaration) {
+    var _a;
+    const query = declaration.query, callee = (_a = query.call.globals) === null || _a === void 0 ? void 0 : _a[0];
+    if (!callee)
+        return [];
+    const option = query.option.option, positive = `${callee}("payload",{})`, value = option === 'signal' ? 'new AbortController().signal' : 'true';
+    const present = `${callee}("payload",{${option}:${value}});`, root = callee.split('.')[0], shadow = callee.includes('.') ? `function probe(${root}){${callee}("payload",{})}` : `function probe(${callee}){${callee}("payload",{})}`;
+    const alias = `const invoke=${callee};invoke("payload",{});`, unknown = `const options={};configure(options);${callee}("payload",options);\n${positive};`, same = `${positive};${positive};`;
+    return [
+        profile('genuine absence positive', `${positive};`, [occurrence(`${positive};`, rule, positive)]),
+        profile('present option lookalike', present, []),
+        profile('shadowed call identity', shadow, []),
+        profile('global call alias', alias, [occurrence(alias, rule, 'invoke("payload",{})')]),
+        profile('unknown options with positive neighbor', unknown, [occurrence(unknown, rule, positive)]),
+        profile('two same-line occurrences', same, [occurrence(same, rule, positive, 0), occurrence(same, rule, positive, 1)]),
+        profile('analysis unavailable', `${positive};`, [], 'off'),
+    ];
+}
+function resourceProfile(rule, declaration) {
+    var _a, _b, _c, _d, _e, _f;
+    const query = declaration.query, acquire = (_a = query.acquisition.globals) === null || _a === void 0 ? void 0 : _a[0], ownerSource = (_c = (_b = query.owner.identity.imports) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.source, ownerName = (_e = (_d = query.owner.identity.imports) === null || _d === void 0 ? void 0 : _d[0]) === null || _e === void 0 ? void 0 : _e.names.find(name => !name.includes('.') && !name.includes('*')), release = query.release[0];
+    if (!acquire || !ownerSource || !ownerName || !release)
+        return [];
+    const head = `import {${ownerName} as owner} from ${JSON.stringify(ownerSource)};\n`, call = `${acquire}(()=>{},1)`, positive = `${head}owner(()=>{${call};},[]);`, lookalike = `${head}owner(()=>{function probe(${acquire}){${acquire}(()=>{},1)}\n${call};},[]);`, released = `${head}owner(()=>{const handle=${call};return()=>${release}(handle)},[]);`, conditional = `${head}owner(()=>{const handle=${call};return()=>{if(flag)${release}(handle)}},[]);\nowner(()=>{${call};},[]);`, same = `${head}owner(()=>{${call};${call};},[]);`;
+    const conditionalExpected = ((_f = declaration.query.reportUnknown) === null || _f === void 0 ? void 0 : _f.includes('unsupported-expression')) ? [occurrence(conditional, rule, call, 0), occurrence(conditional, rule, call, 1)] : [occurrence(conditional, rule, call, 1)];
+    return [
+        profile('genuine unreleased positive', positive, [occurrence(positive, rule, call)]),
+        profile('shadowed acquisition with positive neighbor', lookalike, [occurrence(lookalike, rule, call, 1)]),
+        profile('exact handle release', released, []),
+        profile('unknown cleanup with positive neighbor', conditional, conditionalExpected),
+        profile('two same-line occurrences', same, [occurrence(same, rule, call, 0), occurrence(same, rule, call, 1)]),
+        profile('analysis unavailable', positive, [], 'off'),
+    ];
 }
 // A shipped corpus directory, resolved next to the compiled module (bin/'s
 // sibling fixtures/), or null when absent — an unbundled checkout still
