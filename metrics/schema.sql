@@ -1,6 +1,0 @@
-CREATE TABLE IF NOT EXISTS counts (
-  day TEXT NOT NULL,
-  key TEXT NOT NULL,
-  n INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (day, key)
-);
