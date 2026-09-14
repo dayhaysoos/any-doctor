@@ -28,6 +28,7 @@ export function buildTree(groupChecks, filesTotal) {
     const doctors = groupChecks
         .filter((gc) => gc.checks.length > 0)
         .map((gc) => {
+        var _a;
         const entries = gc.checks.map((bucket) => {
             const items = bucket.findings
                 .map((f) => siteOf(gc.group.meta, f))
@@ -46,7 +47,7 @@ export function buildTree(groupChecks, filesTotal) {
             multiCheck: entries.length > 1,
             count: entries.reduce((n, g) => n + g.items.length, 0),
             worst: entries.reduce((w, g) => (severityRank(g.items[0].severity) < severityRank(w) ? g.items[0].severity : w), "info"),
-            score: scoreFromFileHealth(entries.flatMap(g => g.items.map(it => ({ file: it.site.file, severity: it.severity }))), filesTotal),
+            score: { ...scoreFromFileHealth(entries.flatMap(g => g.items.map(it => ({ file: it.site.file, severity: it.severity }))), filesTotal), ...(((_a = gc.group.semantic) === null || _a === void 0 ? void 0 : _a.incomplete) === true ? { narrowedScan: true } : {}) },
         };
     });
     // Triage order: worst severity first, then most findings, then name.

@@ -256,28 +256,91 @@ export function unhandledValueRecipeResult(file:string,source:string,facts:Analy
   const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
   const resolve=(id:number|undefined,seen=new Set<number>()):FlowValue|null=>{if(id===undefined)return null;const value=values.get(id);if(!value||seen.has(id))return null;seen=new Set(seen).add(id);if(value.kind==='reference'&&value.target?.binding!==null&&value.target?.binding!==undefined){if(!stable(value.target.binding))return null;const initializer=bindings.get(value.target.binding)?.initializer;if(initializer!==undefined)return resolve(initializer,seen)??value;}return value;};
   const array=(id:number|undefined,seen=new Set<number>()):boolean|'unknown'=>{if(id===undefined||seen.has(id))return 'unknown';seen=new Set(seen).add(id);const raw=values.get(id),binding=raw?.target?.binding;if(binding!==null&&binding!==undefined&&states.get(binding)?.escapes?.length)return 'unknown';if(binding!==null&&binding!==undefined&&bindings.get(binding)?.array&&stable(binding))return true;const value=resolve(id);if(!value)return 'unknown';if(value.kind==='array')return true;if(value.kind==='call'&&['filter','slice','concat','map','flat','flatMap','toSorted','toReversed','toSpliced'].includes(value.member??''))return array(value.receiver,seen);return 'unknown';};
+  const callback=resolve(subject.arguments?.[query.producer.asyncArgument]);
+  // Native scalar conversions are synchronous even without a local body.
+  if(callback?.kind==='reference'&&callback.target?.binding===null&&callback.target.members.length===0&&['String','Number','Boolean','BigInt','Symbol'].includes(callback.target.root??''))return recipeKnown('clear',[]);
+  if(callback?.kind!=='function')return unknown('unsupported-expression');if(!callback.async)return recipeKnown('clear',[]);
   const receiver=array(subject.receiver);if(receiver==='unknown')return unknown('unsupported-expression');
-  const callback=resolve(subject.arguments?.[query.producer.asyncArgument]);if(callback?.kind!=='function')return unknown('unsupported-expression');if(!callback.async)return recipeKnown('clear',[]);
   const disposition=valueDispositionResult(file,source,facts,semanticRef(subject),{consumers:query.consumers});if(disposition.status==='unknown')return recipeUnknown(disposition);
   return recipeKnown(disposition.value==='discarded'?'report':'clear',disposition.evidence);
+}
+
+/** Establish the recipe's candidate space before requesting semantic identity.
+ * A lexical alias may use any name. Follow stable initializers and static own
+ * properties; an opaque value stays uncertain, while an unrelated spelling or
+ * a proven local function/parameter is outside this recipe's identity claim. */
+function optionIdentityCandidate(
+  prepared: PreparedFacts,
+  value: FlowValue,
+  query: IdentityQuery,
+  seen = new Set<number>(),
+): FlowValue | 'clear' | 'unknown' {
+  if(seen.has(value.id))return 'unknown';
+  seen=new Set(seen).add(value.id);
+  const {values,bindings,states}=prepared;
+  const visit=(id:number|undefined):FlowValue|'clear'|'unknown'=>{
+    const child=id===undefined?undefined:values.get(id);
+    return child?optionIdentityCandidate(prepared,child,query,seen):'unknown';
+  };
+  const target=value.target;
+  // A factory's spelling says nothing about the identity of its return value.
+  if(value.kind==='call'||value.kind==='construct')return 'unknown';
+  if(target?.source){
+    const origin=originOf(target);
+    return origin&&matches(origin,query)?value:'clear';
+  }
+  if(value.kind==='reference'&&target?.binding!==null&&target?.binding!==undefined){
+    const state=states.get(target.binding),binding=bindings.get(target.binding);
+    if(state?.reassigned||state?.mutated)return 'unknown';
+    if(binding?.initializer!==undefined)return visit(binding.initializer);
+    return binding?.parameter?'clear':'unknown';
+  }
+  if(value.kind==='function'||value.kind==='literal'||value.kind==='object'||value.kind==='array'||value.kind==='super')return 'clear';
+  if(value.kind==='choice'||value.kind==='unknown'&&value.alternatives){
+    const branches=value.alternatives?.map(visit);
+    return branches?.length&&branches.every(branch=>branch==='clear')?'clear':'unknown';
+  }
+  if(value.kind==='member'){
+    if(value.member===null||value.member===undefined)return 'unknown';
+    // Resolve an own data property before spelling rejection: { request: fetch }
+    // is a justified alias, regardless of the property's local name.
+    let receiver=value.receiver===undefined?undefined:values.get(value.receiver);
+    const receiverSeen=new Set<number>();
+    while(receiver?.kind==='reference'&&receiver.target?.binding!==null&&receiver.target?.binding!==undefined){
+      const binding=receiver.target.binding,state=states.get(binding);
+      if(receiverSeen.has(binding)||state?.reassigned||state?.mutated||state?.escapes?.length)break;
+      receiverSeen.add(binding);
+      const initializer=bindings.get(binding)?.initializer;
+      if(initializer===undefined)break;
+      receiver=values.get(initializer);
+    }
+    if(receiver?.kind==='object'&&value.member!==null&&value.member!==undefined){
+      let property:NonNullable<FlowValue['properties']>[number]|undefined;
+      for(const item of receiver.properties??[]){
+        if(item.spread||item.name===null)property=undefined;
+        else if(item.name===value.member)property=item;
+      }
+      if(property&&!property.accessor)return visit(property.value);
+      if(property?.accessor)return 'unknown';
+    }
+    const members=[...(query.globals??[]),...(query.imports??[]).flatMap(item=>item.names)];
+    if(value.member!==null&&value.member!==undefined&&!members.some(name=>name.split('.').at(-1)===value.member))return 'clear';
+  }
+  if(target?.binding===null&&target.root){
+    return (query.globals??[]).includes([target.root,...target.members].join('.'))?value:'clear';
+  }
+  return 'unknown';
 }
 
 /** Recipe: combine configured call identity with structured option presence. */
 export function requiredOptionRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:RequiredOptionRecipeQuery):SemanticResult<RecipeDecision>{
   const prepared=preparedFacts(facts),values=prepared.values,subject=expressionValue(prepared,expression);
   if(!subject||subject.kind!=='call'||subject.callee===undefined)return unknown('unsupported-expression');
-  // Doctors commonly offer every call in a file to a recipe. An unbound call
-  // whose complete lexical spelling differs from every configured global is a
-  // known non-candidate, not uncertainty about the configured check. Bound
-  // references (which may be immutable aliases), imports, and incomplete
-  // targets continue through full identity analysis.
-  const rawTarget=subject.target;
-  if(rawTarget&&rawTarget.binding===null&&!rawTarget.source&&rawTarget.root){
-    const rawName=[rawTarget.root,...rawTarget.members].join('.');
-    if(!(query.call.globals??[]).includes(rawName))return recipeKnown('clear',[]);
-  }
   const callee=values.get(subject.callee);if(!callee)return unknown('unsupported-expression');
-  const identity=identityResult(file,source,facts,semanticRef(callee),query.call);if(identity.status==='unknown')return recipeUnknown(identity);if(!identity.value.matches)return recipeKnown('clear',identity.evidence);
+  const candidate=optionIdentityCandidate(prepared,callee,query.call);
+  if(candidate==='clear')return recipeKnown('clear',[]);
+  if(candidate==='unknown')return unknown('unresolved-identity');
+  const identity=identityResult(file,source,facts,semanticRef(candidate),query.call);if(identity.status==='unknown')return recipeUnknown(identity);if(!identity.value.matches)return recipeKnown('clear',identity.evidence);
   const option=optionPresenceResult(file,source,facts,semanticRef(subject),query.option);if(option.status==='unknown')return recipeUnknown(option);
   return recipeKnown(option.value==='absent'?'report':'clear',[...identity.evidence,...option.evidence]);
 }

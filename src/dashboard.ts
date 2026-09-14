@@ -340,6 +340,7 @@ export interface DashboardFrameState {
   useColor: boolean;
   notice?: string;
   coverageNotice?: string;
+  zeroFindingDoctors?: { id: string; narrowed: boolean }[];
   skippedUnsafe?: string[];
   cols: number;
   rows: number;
@@ -377,7 +378,7 @@ export function dashboardFrame(state: DashboardFrameState): string {
     headerLines.push(`${c(scoped.doctorId, BOLD)}  ${c(h.scoreLine, BOLD + tone)}`);
     // An empty scan draws an empty bar: nothing was measured, and a
     // filled bar would assert the vacuous 100 the n/a line just refused.
-    headerLines.push(c(scoreBar(h.emptyScan ? 0 : scoped.score.score, barWidth), tone));
+    headerLines.push(c(scoreBar(h.emptyScan || scoped.score.narrowedScan ? 0 : scoped.score.score, barWidth), tone));
     headerLines.push(c(summaryLine(scoped.count, h.cleanLine, state.durationMs), DIM));
   } else if (state.filesTotal === 0) {
     // Zero groups over zero files: the same n/a the report renders —
@@ -389,8 +390,12 @@ export function dashboardFrame(state: DashboardFrameState): string {
     headerLines.push(c(scoreBar(0, barWidth), tone));
     headerLines.push(c(summaryLine(0, h.cleanLine, state.durationMs), DIM));
   } else {
-    headerLines.push(c("No findings", BOLD + GREEN));
-    headerLines.push(c(scoreBar(100, barWidth), GREEN));
+    const narrowed = state.zeroFindingDoctors?.some(doctor => doctor.narrowed) === true;
+    headerLines.push(c(narrowed ? "No findings established — semantic coverage narrowed" : "No findings", BOLD + (narrowed ? YELLOW : GREEN)));
+    headerLines.push(c(scoreBar(narrowed ? 0 : 100, barWidth), narrowed ? YELLOW : GREEN));
+    for (const doctor of state.zeroFindingDoctors ?? []) {
+      headerLines.push(c(`${doctor.narrowed ? "△" : "✔"} ${doctor.id} — ${doctor.narrowed ? "narrowed" : "clean"}`, doctor.narrowed ? YELLOW : GREEN));
+    }
     headerLines.push(c(summaryLine(0, null, state.durationMs), DIM));
   }
   if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
@@ -700,6 +705,7 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
         useColor,
         notice,
         skippedUnsafe: input.outcome.skippedUnsafe,
+        zeroFindingDoctors: summary.groupChecks.filter(gc => gc.checks.length === 0).map(gc => ({ id: gc.group.meta.id, narrowed: gc.group.semantic?.incomplete === true || gc.narrowedIds.length > 0 })),
         coverageNotice: summary.coverageLines.length ? "Consumer analysis has bounded coverage; exclusions and limits: --format json" : undefined,
         cols: stdout.columns || 120,
         rows: stdout.rows || 34,

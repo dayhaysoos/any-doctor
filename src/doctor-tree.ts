@@ -105,10 +105,10 @@ export function buildTree(groupChecks: GroupChecks[], filesTotal: number): Docto
         worst: entries.reduce((w, g) => (
           severityRank(g.items[0].severity) < severityRank(w) ? g.items[0].severity : w
         ), "info" as Severity),
-        score: scoreFromFileHealth(
+        score: { ...scoreFromFileHealth(
           entries.flatMap(g => g.items.map(it => ({ file: it.site.file, severity: it.severity }))),
           filesTotal,
-        ),
+        ), ...(gc.group.semantic?.incomplete === true ? { narrowedScan: true } : {}) },
       };
     });
   // Triage order: worst severity first, then most findings, then name.

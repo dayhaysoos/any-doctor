@@ -136,7 +136,7 @@ test('valid import and global identity recipe declarations always receive profil
 });
 
 test('unknown recipe analysis narrows JSON and human reports without suppressing an unrelated positive',()=>{
-  const repo=fileURLToPath(new URL('../',import.meta.url)),tmp=fs.mkdtempSync(path.join(os.tmpdir(),'doctor-sdk-unknown-'));
+  const repo=(process.env.DOCTOR_CANDIDATE_ROOT??fileURLToPath(new URL('../',import.meta.url))).replace(/\/?$/, '/'),tmp=fs.mkdtempSync(path.join(os.tmpdir(),'doctor-sdk-unknown-'));
   try{
     fs.writeFileSync(path.join(tmp,'example.ts'),'const options = {}; configure(options); fetch("/api/data", options);');
     const exactRun=spawnSync(process.execPath,[`${repo}bin/cli.js`,'run',`${repo}doctors/async.mjs`,tmp,'--format','json'],{cwd:repo,encoding:'utf8',timeout:30000});

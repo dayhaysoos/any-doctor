@@ -6,7 +6,7 @@ import type { CallTarget, SourceRange } from './contract.js';
  * promise settlement, native APIs or framework policy. */
 export interface FlowValue extends SourceRange {
   id: number;
-  kind: 'unknown' | 'reference' | 'member' | 'literal' | 'array' | 'object' | 'call' | 'construct' | 'function' | 'await' | 'void' | 'choice';
+  kind: 'unknown' | 'reference' | 'member' | 'literal' | 'array' | 'object' | 'call' | 'construct' | 'function' | 'await' | 'void' | 'choice' | 'super';
   functionStart: number | null;
   dead: boolean;
   conditional?: boolean;
@@ -71,7 +71,8 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     const n = unwrap(input); const prior = ids.get(n); if (prior !== undefined) return prior;
     const id = values.length, v: FlowValue = { id, ...range(n), kind:'unknown', functionStart:functionStart(n), dead:dead(n), ...(conditional(n)?{conditional:true}:{}) };
     ids.set(n,id); values.push(v);
-    if (n.type === 'Identifier') { v.kind='reference';v.target=target(n); }
+    if (n.type === 'Super') {v.kind='super';}
+    else if (n.type === 'Identifier') { v.kind='reference';v.target=target(n); }
     else if (n.type === 'Literal' && (n.value === null || ['string','number','boolean'].includes(typeof n.value))) { v.kind='literal';v.literal=n.value as FlowValue['literal']; }
     else if (n.type === 'TemplateLiteral' && !(n.expressions as Node[]).length) { v.kind='literal';v.literal=String((((n.quasis as Node[])[0].value) as {cooked?:string}).cooked); }
     else if (n.type === 'TemplateLiteral') {v.primitive='string';}
@@ -86,6 +87,10 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     } else if (functions.has(n.type)) {v.kind='function';v.async=!!n.async;}
     else if (n.type==='AwaitExpression' || n.type==='UnaryExpression' && n.operator==='void') {v.kind=n.type==='AwaitExpression'?'await':'void';v.value=value(n.argument as Node);}
     else if (n.type==='BinaryExpression'&&n.operator==='+'){const a=values[value(n.left as Node)],b=values[value(n.right as Node)];if(a.primitive==='string'||b.primitive==='string'||typeof a.literal==='string'||typeof b.literal==='string')v.primitive='string';}
+    // Retain logical alternatives without claiming their runtime selection.
+    // Existing flow consumers still see unknown; candidate recipes can rule out
+    // identities only when neither alternative belongs to their target space.
+    else if (n.type==='LogicalExpression') {v.alternatives=[value(n.left as Node),value(n.right as Node)];}
     else if (n.type==='ConditionalExpression') {v.kind='choice';const test=unwrap(n.test as Node);v.alternatives=test.type==='Literal'&&typeof test.value==='boolean'?[value((test.value?n.consequent:n.alternate) as Node)]:[value(n.consequent as Node),value(n.alternate as Node)];}
     return id;
   };

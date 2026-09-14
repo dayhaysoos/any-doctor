@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
+const [artifactArg,outputArg]=process.argv.slice(2);
+const artifact=path.resolve(artifactArg),output=path.resolve(outputArg);
+assert.ok(!fs.existsSync(output),'use a fresh consumer directory');fs.mkdirSync(output,{recursive:true});
+fs.writeFileSync(path.join(output,'package.json'),'{"private":true}');
+const commands=[];
+function run(name,command,args){
+ const result=spawnSync(command,args,{cwd:output,encoding:'utf8',maxBuffer:30e6});
+ fs.writeFileSync(path.join(output,`${name}.stdout`),result.stdout??'');fs.writeFileSync(path.join(output,`${name}.stderr`),result.stderr??'');
+ commands.push({name,command:[command,...args],exit:result.status});fs.writeFileSync(path.join(output,'commands.json'),JSON.stringify(commands,null,2));
+ assert.equal(result.status,0,result.stderr+result.stdout);return result;
+}
+run('install','npm',['install','--ignore-scripts','--omit=optional','--no-audit','--no-fund',artifact]);
+assert.ok(!fs.existsSync(path.join(output,'node_modules/oxc-parser')),'provider really is absent');
+const cli='node_modules/any-doctor/bin/cli.js',doctor='node_modules/any-doctor/doctors/async.mjs';
+const result=JSON.parse(run('verify-json','node',[cli,'verify',doctor,'--format','json']).stdout);
+const profiles=result.results.filter(row=>row.name.startsWith('challenge profile:'));
+assert.equal(profiles.length,21);
+const off=profiles.filter(row=>row.name.endsWith(' / analysis unavailable'));
+const on=profiles.filter(row=>!off.includes(row));
+assert.equal(off.length,3);assert.equal(on.length,18);
+assert.ok(off.every(row=>row.ok&&!row.skipped),'explicit analysis-off cases must execute');
+assert.ok(on.every(row=>row.skipped),'analysis-on profiles must explicitly skip');
+assert.ok(result.results.every(row=>row.ok||row.skipped),'no unexplained failed rows');
+const human=run('verify-human','node',[cli,'verify',doctor]).stdout;
+for(const row of off)assert.ok(human.split('\n').some(line=>line.includes(row.name)&&line.includes('✔')),row.name);
+for(const row of on)assert.ok(human.split('\n').some(line=>line.includes(row.name)&&line.includes('–')),row.name);
+const counts=rows=>({passed:rows.filter(r=>r.ok&&!r.skipped).length,failed:rows.filter(r=>!r.ok&&!r.skipped).length,skipped:rows.filter(r=>r.skipped).length});
+const summary={exit:0,providerAbsent:true,counts:counts(result.results),profiles:counts(profiles),executedOff:off,skippedOn:on};
+fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(summary,null,2));console.log(JSON.stringify(summary,null,2));

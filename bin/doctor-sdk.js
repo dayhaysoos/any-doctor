@@ -437,7 +437,7 @@ const recipeKnown = (value, evidence) => ({ version: SEMANTIC_RESULT_VERSION, st
 /** Recipe: resolve a configured producer and report only when its exact value is
  * established as discarded. Array identity is owned here, not by consumers. */
 export function unhandledValueRecipeResult(file, source, facts, expression, query) {
-    var _a;
+    var _a, _b, _c;
     const prepared = preparedFacts(facts), flow = facts.structure.flow, { values, bindings, states } = prepared;
     const subject = expressionValue(prepared, expression);
     if (!subject || subject.kind !== 'call')
@@ -461,40 +461,111 @@ export function unhandledValueRecipeResult(file, source, facts, expression, quer
         return 'unknown'; if (value.kind === 'array')
         return true; if (value.kind === 'call' && ['filter', 'slice', 'concat', 'map', 'flat', 'flatMap', 'toSorted', 'toReversed', 'toSpliced'].includes((_e = value.member) !== null && _e !== void 0 ? _e : ''))
         return array(value.receiver, seen); return 'unknown'; };
-    const receiver = array(subject.receiver);
-    if (receiver === 'unknown')
-        return unknown('unsupported-expression');
     const callback = resolve((_a = subject.arguments) === null || _a === void 0 ? void 0 : _a[query.producer.asyncArgument]);
+    // Native scalar conversions are synchronous even without a local body.
+    if ((callback === null || callback === void 0 ? void 0 : callback.kind) === 'reference' && ((_b = callback.target) === null || _b === void 0 ? void 0 : _b.binding) === null && callback.target.members.length === 0 && ['String', 'Number', 'Boolean', 'BigInt', 'Symbol'].includes((_c = callback.target.root) !== null && _c !== void 0 ? _c : ''))
+        return recipeKnown('clear', []);
     if ((callback === null || callback === void 0 ? void 0 : callback.kind) !== 'function')
         return unknown('unsupported-expression');
     if (!callback.async)
         return recipeKnown('clear', []);
+    const receiver = array(subject.receiver);
+    if (receiver === 'unknown')
+        return unknown('unsupported-expression');
     const disposition = valueDispositionResult(file, source, facts, semanticRef(subject), { consumers: query.consumers });
     if (disposition.status === 'unknown')
         return recipeUnknown(disposition);
     return recipeKnown(disposition.value === 'discarded' ? 'report' : 'clear', disposition.evidence);
 }
+/** Establish the recipe's candidate space before requesting semantic identity.
+ * A lexical alias may use any name. Follow stable initializers and static own
+ * properties; an opaque value stays uncertain, while an unrelated spelling or
+ * a proven local function/parameter is outside this recipe's identity claim. */
+function optionIdentityCandidate(prepared, value, query, seen = new Set()) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    if (seen.has(value.id))
+        return 'unknown';
+    seen = new Set(seen).add(value.id);
+    const { values, bindings, states } = prepared;
+    const visit = (id) => {
+        const child = id === undefined ? undefined : values.get(id);
+        return child ? optionIdentityCandidate(prepared, child, query, seen) : 'unknown';
+    };
+    const target = value.target;
+    // A factory's spelling says nothing about the identity of its return value.
+    if (value.kind === 'call' || value.kind === 'construct')
+        return 'unknown';
+    if (target === null || target === void 0 ? void 0 : target.source) {
+        const origin = originOf(target);
+        return origin && matches(origin, query) ? value : 'clear';
+    }
+    if (value.kind === 'reference' && (target === null || target === void 0 ? void 0 : target.binding) !== null && (target === null || target === void 0 ? void 0 : target.binding) !== undefined) {
+        const state = states.get(target.binding), binding = bindings.get(target.binding);
+        if ((state === null || state === void 0 ? void 0 : state.reassigned) || (state === null || state === void 0 ? void 0 : state.mutated))
+            return 'unknown';
+        if ((binding === null || binding === void 0 ? void 0 : binding.initializer) !== undefined)
+            return visit(binding.initializer);
+        return (binding === null || binding === void 0 ? void 0 : binding.parameter) ? 'clear' : 'unknown';
+    }
+    if (value.kind === 'function' || value.kind === 'literal' || value.kind === 'object' || value.kind === 'array' || value.kind === 'super')
+        return 'clear';
+    if (value.kind === 'choice' || value.kind === 'unknown' && value.alternatives) {
+        const branches = (_a = value.alternatives) === null || _a === void 0 ? void 0 : _a.map(visit);
+        return (branches === null || branches === void 0 ? void 0 : branches.length) && branches.every(branch => branch === 'clear') ? 'clear' : 'unknown';
+    }
+    if (value.kind === 'member') {
+        if (value.member === null || value.member === undefined)
+            return 'unknown';
+        // Resolve an own data property before spelling rejection: { request: fetch }
+        // is a justified alias, regardless of the property's local name.
+        let receiver = value.receiver === undefined ? undefined : values.get(value.receiver);
+        const receiverSeen = new Set();
+        while ((receiver === null || receiver === void 0 ? void 0 : receiver.kind) === 'reference' && ((_b = receiver.target) === null || _b === void 0 ? void 0 : _b.binding) !== null && ((_c = receiver.target) === null || _c === void 0 ? void 0 : _c.binding) !== undefined) {
+            const binding = receiver.target.binding, state = states.get(binding);
+            if (receiverSeen.has(binding) || (state === null || state === void 0 ? void 0 : state.reassigned) || (state === null || state === void 0 ? void 0 : state.mutated) || ((_d = state === null || state === void 0 ? void 0 : state.escapes) === null || _d === void 0 ? void 0 : _d.length))
+                break;
+            receiverSeen.add(binding);
+            const initializer = (_e = bindings.get(binding)) === null || _e === void 0 ? void 0 : _e.initializer;
+            if (initializer === undefined)
+                break;
+            receiver = values.get(initializer);
+        }
+        if ((receiver === null || receiver === void 0 ? void 0 : receiver.kind) === 'object' && value.member !== null && value.member !== undefined) {
+            let property;
+            for (const item of (_f = receiver.properties) !== null && _f !== void 0 ? _f : []) {
+                if (item.spread || item.name === null)
+                    property = undefined;
+                else if (item.name === value.member)
+                    property = item;
+            }
+            if (property && !property.accessor)
+                return visit(property.value);
+            if (property === null || property === void 0 ? void 0 : property.accessor)
+                return 'unknown';
+        }
+        const members = [...((_g = query.globals) !== null && _g !== void 0 ? _g : []), ...((_h = query.imports) !== null && _h !== void 0 ? _h : []).flatMap(item => item.names)];
+        if (value.member !== null && value.member !== undefined && !members.some(name => name.split('.').at(-1) === value.member))
+            return 'clear';
+    }
+    if ((target === null || target === void 0 ? void 0 : target.binding) === null && target.root) {
+        return ((_j = query.globals) !== null && _j !== void 0 ? _j : []).includes([target.root, ...target.members].join('.')) ? value : 'clear';
+    }
+    return 'unknown';
+}
 /** Recipe: combine configured call identity with structured option presence. */
 export function requiredOptionRecipeResult(file, source, facts, expression, query) {
-    var _a;
     const prepared = preparedFacts(facts), values = prepared.values, subject = expressionValue(prepared, expression);
     if (!subject || subject.kind !== 'call' || subject.callee === undefined)
         return unknown('unsupported-expression');
-    // Doctors commonly offer every call in a file to a recipe. An unbound call
-    // whose complete lexical spelling differs from every configured global is a
-    // known non-candidate, not uncertainty about the configured check. Bound
-    // references (which may be immutable aliases), imports, and incomplete
-    // targets continue through full identity analysis.
-    const rawTarget = subject.target;
-    if (rawTarget && rawTarget.binding === null && !rawTarget.source && rawTarget.root) {
-        const rawName = [rawTarget.root, ...rawTarget.members].join('.');
-        if (!((_a = query.call.globals) !== null && _a !== void 0 ? _a : []).includes(rawName))
-            return recipeKnown('clear', []);
-    }
     const callee = values.get(subject.callee);
     if (!callee)
         return unknown('unsupported-expression');
-    const identity = identityResult(file, source, facts, semanticRef(callee), query.call);
+    const candidate = optionIdentityCandidate(prepared, callee, query.call);
+    if (candidate === 'clear')
+        return recipeKnown('clear', []);
+    if (candidate === 'unknown')
+        return unknown('unresolved-identity');
+    const identity = identityResult(file, source, facts, semanticRef(candidate), query.call);
     if (identity.status === 'unknown')
         return recipeUnknown(identity);
     if (!identity.value.matches)

@@ -48,7 +48,10 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         const id = values.length, v = { id, ...range(n), kind: 'unknown', functionStart: functionStart(n), dead: dead(n), ...(conditional(n) ? { conditional: true } : {}) };
         ids.set(n, id);
         values.push(v);
-        if (n.type === 'Identifier') {
+        if (n.type === 'Super') {
+            v.kind = 'super';
+        }
+        else if (n.type === 'Identifier') {
             v.kind = 'reference';
             v.target = target(n);
         }
@@ -101,6 +104,12 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
             const a = values[value(n.left)], b = values[value(n.right)];
             if (a.primitive === 'string' || b.primitive === 'string' || typeof a.literal === 'string' || typeof b.literal === 'string')
                 v.primitive = 'string';
+        }
+        // Retain logical alternatives without claiming their runtime selection.
+        // Existing flow consumers still see unknown; candidate recipes can rule out
+        // identities only when neither alternative belongs to their target space.
+        else if (n.type === 'LogicalExpression') {
+            v.alternatives = [value(n.left), value(n.right)];
         }
         else if (n.type === 'ConditionalExpression') {
             v.kind = 'choice';

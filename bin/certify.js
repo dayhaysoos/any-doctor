@@ -201,6 +201,10 @@ export async function certify(mod, fixtures) {
             const name = `challenge profile: ${check.recipe.name} / ${check.id} / ${fixture.name}`;
             try {
                 setAnalysisDisabled(fixture.analysis === 'off');
+                if (await skipFor(fixture.analysis !== 'off')) {
+                    results.push(skipRow(name));
+                    continue;
+                }
                 const result = await inSandbox(fixture.seed, tmp => runOnce(tmp, mod, { includeTests: true }));
                 const diff = contract.compareFindings(fixture.expected, result.findings);
                 results.push({ name, ok: !diff.missing.length && !diff.unexpected.length, ...diff });

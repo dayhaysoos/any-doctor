@@ -233,7 +233,7 @@ function itemRowText(it, isSelected, readKeys, c, showCheckId = true, reviewed, 
     return `${isSelected ? c("›", BOLD) : " "}${glyph} ${c(it.site.file + ":" + it.site.line, wrap)}${suffix}${mark}`;
 }
 export function dashboardFrame(state) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
     const { tree, selectedRow, readKeys, useColor, cols, rows } = state;
     const c = colorizer(useColor);
     const findings = tree.flatMap(d => d.checks.flatMap(g => g.items));
@@ -260,7 +260,7 @@ export function dashboardFrame(state) {
         headerLines.push(`${c(scoped.doctorId, BOLD)}  ${c(h.scoreLine, BOLD + tone)}`);
         // An empty scan draws an empty bar: nothing was measured, and a
         // filled bar would assert the vacuous 100 the n/a line just refused.
-        headerLines.push(c(scoreBar(h.emptyScan ? 0 : scoped.score.score, barWidth), tone));
+        headerLines.push(c(scoreBar(h.emptyScan || scoped.score.narrowedScan ? 0 : scoped.score.score, barWidth), tone));
         headerLines.push(c(summaryLine(scoped.count, h.cleanLine, state.durationMs), DIM));
     }
     else if (state.filesTotal === 0) {
@@ -274,8 +274,12 @@ export function dashboardFrame(state) {
         headerLines.push(c(summaryLine(0, h.cleanLine, state.durationMs), DIM));
     }
     else {
-        headerLines.push(c("No findings", BOLD + GREEN));
-        headerLines.push(c(scoreBar(100, barWidth), GREEN));
+        const narrowed = ((_h = state.zeroFindingDoctors) === null || _h === void 0 ? void 0 : _h.some(doctor => doctor.narrowed)) === true;
+        headerLines.push(c(narrowed ? "No findings established — semantic coverage narrowed" : "No findings", BOLD + (narrowed ? YELLOW : GREEN)));
+        headerLines.push(c(scoreBar(narrowed ? 0 : 100, barWidth), narrowed ? YELLOW : GREEN));
+        for (const doctor of (_j = state.zeroFindingDoctors) !== null && _j !== void 0 ? _j : []) {
+            headerLines.push(c(`${doctor.narrowed ? "△" : "✔"} ${doctor.id} — ${doctor.narrowed ? "narrowed" : "clean"}`, doctor.narrowed ? YELLOW : GREEN));
+        }
         headerLines.push(c(summaryLine(0, null, state.durationMs), DIM));
     }
     if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
@@ -299,12 +303,12 @@ export function dashboardFrame(state) {
     const selRow = rowsData[selectedRow];
     // A DECIDED row tells the decision's story first — the reason is what
     // a reviewer needs, and u to reverse is the action.
-    if ((selRow === null || selRow === void 0 ? void 0 : selRow.item) && selRow.reviewed !== undefined && ((_h = state.reasonByReadKey) === null || _h === void 0 ? void 0 : _h.has(selRow.item.readKey)) === true) {
+    if ((selRow === null || selRow === void 0 ? void 0 : selRow.item) && selRow.reviewed !== undefined && ((_k = state.reasonByReadKey) === null || _k === void 0 ? void 0 : _k.has(selRow.item.readKey)) === true) {
         const sel = selRow.item;
         detail.push(c(`${sel.site.file}:${sel.site.line}`, BOLD));
         detail.push(c(selRow.reviewed === "accepted" ? "✓ accepted" : "⊘ not applicable", DIM));
         detail.push("");
-        proseSection(detail, "Reason", (_j = state.reasonByReadKey.get(sel.readKey)) !== null && _j !== void 0 ? _j : "", layout.detailWidth - 2, c);
+        proseSection(detail, "Reason", (_l = state.reasonByReadKey.get(sel.readKey)) !== null && _l !== void 0 ? _l : "", layout.detailWidth - 2, c);
         detail.push("");
         proseSection(detail, "Undo", "u reverses this decision — the finding returns to the active list", layout.detailWidth - 2, c);
     }
@@ -313,11 +317,11 @@ export function dashboardFrame(state) {
         detail.push(c(`${sel.site.file}:${sel.site.line}`, BOLD));
         detail.push(c(`${cap(sel.category)} · ${sel.severity}`, DIM));
         detail.push("");
-        const impact = (_k = sel.impact) !== null && _k !== void 0 ? _k : sel.description;
+        const impact = (_m = sel.impact) !== null && _m !== void 0 ? _m : sel.description;
         for (const l of wordWrap(impact, layout.detailWidth - 2))
             detail.push(c(l, SEVERITY_COLOR[sel.severity]));
         detail.push("");
-        proseSection(detail, "Why", (_l = sel.why) !== null && _l !== void 0 ? _l : "Not documented for this check.", layout.detailWidth - 2, c);
+        proseSection(detail, "Why", (_o = sel.why) !== null && _o !== void 0 ? _o : "Not documented for this check.", layout.detailWidth - 2, c);
         detail.push("");
         detail.push(c("Code", DIM));
         for (const l of codeFrameLines(state.readSource(sel.site.file), sel.site.line, layout.detailWidth - 2, useColor))
@@ -366,7 +370,7 @@ export function dashboardFrame(state) {
     const body = [];
     if (layout.mode === "split") {
         for (let i = 0; i < layout.bodyRows; i++) {
-            body.push(padVisible(truncateVisible((_m = listLines[i]) !== null && _m !== void 0 ? _m : "", layout.listWidth), layout.listWidth) + "  " + ((_o = detail[i]) !== null && _o !== void 0 ? _o : ""));
+            body.push(padVisible(truncateVisible((_p = listLines[i]) !== null && _p !== void 0 ? _p : "", layout.listWidth), layout.listWidth) + "  " + ((_q = detail[i]) !== null && _q !== void 0 ? _q : ""));
         }
     }
     else {
@@ -377,7 +381,7 @@ export function dashboardFrame(state) {
             ...detail,
         ];
         for (let i = 0; i < layout.bodyRows; i++)
-            body.push((_p = stacked[i]) !== null && _p !== void 0 ? _p : "");
+            body.push((_r = stacked[i]) !== null && _r !== void 0 ? _r : "");
     }
     // Fixed-shape footer: the notice line is always present (blank when idle)
     // so showing or clearing a notice never changes the frame height.
@@ -577,6 +581,7 @@ export async function runDashboardOn(env, input, deps = {}) {
                 useColor,
                 notice,
                 skippedUnsafe: input.outcome.skippedUnsafe,
+                zeroFindingDoctors: summary.groupChecks.filter(gc => gc.checks.length === 0).map(gc => { var _a; return ({ id: gc.group.meta.id, narrowed: ((_a = gc.group.semantic) === null || _a === void 0 ? void 0 : _a.incomplete) === true || gc.narrowedIds.length > 0 }); }),
                 coverageNotice: summary.coverageLines.length ? "Consumer analysis has bounded coverage; exclusions and limits: --format json" : undefined,
                 cols: stdout.columns || 120,
                 rows: stdout.rows || 34,

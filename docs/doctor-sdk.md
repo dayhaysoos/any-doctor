@@ -11,6 +11,15 @@ Every semantic answer is either `known` with source-digested evidence or
 answer and report an occurrence only when their result and declared unknown
 policy permit it.
 
+Recipes establish candidate membership before recording uncertainty. Unknown means
+“this could be a candidate, but the provider could not decide”; it does not mean
+an arbitrary expression outside the check's candidate space. A visibly synchronous
+map callback is clear without proving the receiver is an array. Unrelated complete
+callee spellings, unrelated imports and proven local functions/parameters are
+clear. Stable bound aliases are resolved regardless of their local names;
+conditional identities, mutable aliases and opaque options on real candidates
+remain unknown. This is bounded syntax analysis, not execution or type inference.
+
 The host also records every unknown independently of the doctor's finding policy.
 Machine output exposes `semantic.incomplete`, aggregates affected occurrences by
 check or capability, recipe, reason and file, and withholds the numeric score and
@@ -131,7 +140,10 @@ node bin/cli.js verify path/to/doctor.mjs --format json
 ```
 
 The JSON `results` array names every exercised challenge and each unavailable
-path. Author fixtures remain required; profiles do not replace held-out cases or
+path. When the optional analysis provider is absent, analysis-on profiles are
+explicit skips, matching author fixtures and location checks. Each explicit
+`analysis: "off"` profile still executes to certify the unavailable path. With
+the provider installed, every profile runs. Author fixtures remain required; profiles do not replace held-out cases or
 real-source adjudication.
 
 Certification accepts global, named-import, default-import and namespace-member

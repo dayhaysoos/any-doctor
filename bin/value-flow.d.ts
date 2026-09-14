@@ -5,7 +5,7 @@ import type { CallTarget, SourceRange } from './contract.js';
  * promise settlement, native APIs or framework policy. */
 export interface FlowValue extends SourceRange {
     id: number;
-    kind: 'unknown' | 'reference' | 'member' | 'literal' | 'array' | 'object' | 'call' | 'construct' | 'function' | 'await' | 'void' | 'choice';
+    kind: 'unknown' | 'reference' | 'member' | 'literal' | 'array' | 'object' | 'call' | 'construct' | 'function' | 'await' | 'void' | 'choice' | 'super';
     functionStart: number | null;
     dead: boolean;
     conditional?: boolean;

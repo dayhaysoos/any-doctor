@@ -63,6 +63,10 @@ export interface DashboardFrameState {
     useColor: boolean;
     notice?: string;
     coverageNotice?: string;
+    zeroFindingDoctors?: {
+        id: string;
+        narrowed: boolean;
+    }[];
     skippedUnsafe?: string[];
     cols: number;
     rows: number;

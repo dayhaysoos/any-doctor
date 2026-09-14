@@ -45,7 +45,7 @@ export function reportDiffOf(diff) {
     };
 }
 export function renderReport(input, useColor, diff, review) {
-    var _a;
+    var _a, _b;
     const c = colorizer(useColor);
     const lines = [];
     const summary = deriveSummary(input);
@@ -104,8 +104,9 @@ export function renderReport(input, useColor, diff, review) {
         lines.push(summary.score.narrowedScan === true ? c("No findings established — semantic coverage narrowed", BOLD + YELLOW) : c("No findings", BOLD + GREEN));
         if (groups.length > 1) {
             lines.push("");
-            for (const g of groups) {
-                lines.push(`${c("✔", GREEN)} ${c(g.meta.id, DIM)} — clean`);
+            for (const gc of summary.groupChecks) {
+                const narrowed = ((_a = gc.group.semantic) === null || _a === void 0 ? void 0 : _a.incomplete) === true || gc.narrowedIds.length > 0;
+                lines.push(`${c(narrowed ? "△" : "✔", narrowed ? YELLOW : GREEN)} ${c(gc.group.meta.id, DIM)} — ${narrowed ? "narrowed" : "clean"}`);
             }
         }
         // A clean degraded run must never read as a full-power clean — the
@@ -151,7 +152,7 @@ export function renderReport(input, useColor, diff, review) {
         // with zero findings, where a narrowed clean must never read as a
         // full-power clean.
         if (gc.narrowedIds.length > 0) {
-            lines.push(`  ${c(narrowedLine(gc.narrowedIds, ((_a = g.semantic) === null || _a === void 0 ? void 0 : _a.incomplete) === true), YELLOW)}`);
+            lines.push(`  ${c(narrowedLine(gc.narrowedIds, ((_b = g.semantic) === null || _b === void 0 ? void 0 : _b.incomplete) === true), YELLOW)}`);
             lines.push("");
         }
         if (g.findings.length > 0 && g.meta.blindSpots && g.meta.blindSpots.length > 0) {

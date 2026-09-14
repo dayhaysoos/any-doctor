@@ -149,8 +149,9 @@ export function renderReport(input: RunOutcome, useColor: boolean, diff?: Report
     lines.push(summary.score.narrowedScan===true?c("No findings established — semantic coverage narrowed",BOLD+YELLOW):c("No findings", BOLD + GREEN));
     if (groups.length > 1) {
       lines.push("");
-      for (const g of groups) {
-        lines.push(`${c("✔", GREEN)} ${c(g.meta.id, DIM)} — clean`);
+      for (const gc of summary.groupChecks) {
+        const narrowed = gc.group.semantic?.incomplete === true || gc.narrowedIds.length > 0;
+        lines.push(`${c(narrowed ? "△" : "✔", narrowed ? YELLOW : GREEN)} ${c(gc.group.meta.id, DIM)} — ${narrowed ? "narrowed" : "clean"}`);
       }
     }
     // A clean degraded run must never read as a full-power clean — the
