@@ -302,7 +302,7 @@ export function dashboardFrame(state) {
     }
     if (quietDoctors.length > visibleQuiet) {
         const omitted = quietDoctors.slice(visibleQuiet), narrowed = omitted.filter(doctor => doctor.narrowed).length;
-        const summary = c(`${omitted.length} more quiet doctors — ${narrowed} narrowed, ${omitted.length - narrowed} clean`, narrowed ? YELLOW : GREEN);
+        const summary = c(`${narrowed ? "△" : "✔"} ${omitted.length} more quiet doctors — ${narrowed} narrowed, ${omitted.length - narrowed} clean`, narrowed ? YELLOW : GREEN);
         if (layout.quietRows > visibleQuiet)
             headerLines.push(summary);
         else if (headerLines.length)
@@ -421,10 +421,12 @@ export function dashboardFrame(state) {
             : state.notice ? c("✔ " + state.notice, GREEN) : "",
         c("↑↓ move · →← expand · enter copy · c copy group · a accept · x n/a · u undo · v review · q quit", DIM),
     ];
-    if (layout.compact) {
-        return [...headerLines, ...body, ...(layout.footerRows ? [footer.filter(Boolean).join(' · ')] : [])].join("\n");
-    }
-    return [...headerLines, "", ...body, "", ...footer].join("\n");
+    const frameLines = layout.compact
+        ? [...headerLines, ...body, ...(layout.footerRows ? [footer.filter(Boolean).join(' · ')] : [])]
+        : [...headerLines, "", ...body, "", ...footer];
+    // Every component crosses this boundary, including compact notices and the
+    // footer. Logical row budgets hold physically only when no line can wrap.
+    return frameLines.map(line => truncateVisible(line, cols)).join("\n");
 }
 function cap(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);

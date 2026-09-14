@@ -21,10 +21,11 @@ export function truncateVisible(s, width) {
     let out = "";
     let w = 0;
     for (const ch of s.replace(/\x1b\[[0-9;]*m/g, "")) {
-        if (w + 1 > width - 1)
+        const charWidth = visibleWidth(ch);
+        if (w + charWidth > width - 1)
             break;
         out += ch;
-        w++;
+        w += charWidth;
     }
     return out + "…";
 }

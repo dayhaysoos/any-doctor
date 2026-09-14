@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import * as fs from "fs";
@@ -16,6 +16,25 @@ const { reviewOf } = await import(`${candidate}/bin/review.js`);
 const { encodeDecisionKey } = await import(`${candidate}/bin/finding-state.js`);
 const { captureScan } = await import(`${candidate}/bin/scan-capture.js`);
 const deriveSummaryOf = (await import(`${candidate}/bin/summary.js`)).deriveSummary;
+const { visibleWidth } = await import(`${candidate}/bin/tty.js`);
+const widthMeasurements = [];
+// TTY paint controls move/clear the cursor; preserve SGR color for visibleWidth.
+const unpaint = frame => frame.replace(/\x1b\[(?:\?2026[hl]|H|K|J)/g, '');
+const physicalRows = (lines, cols) => lines.reduce((total, line) => total + Math.max(1, Math.ceil(visibleWidth(line) / cols)), 0);
+function assertFrameFits(frame, {cols, rows, label, useColor}) {
+  const lines = unpaint(frame).split('\n');
+  const widths = lines.map(visibleWidth);
+  const measurement = {label, cols, rows, useColor, logicalLines: lines.length,
+    maximumVisibleWidth: Math.max(...widths), physicalRows: physicalRows(lines, cols)};
+  widthMeasurements.push(measurement);
+  assert.equal(measurement.logicalLines, rows - 1, `${label}: logical frame height`);
+  assert.ok(widths.every(width => width <= cols), `${label}: visible width ${measurement.maximumVisibleWidth} exceeds ${cols}; physical rows ${measurement.physicalRows}, expected ${rows - 1}`);
+  assert.equal(measurement.physicalRows, rows - 1, `${label}: physical frame height`);
+  return measurement;
+}
+after(() => {
+  if (process.env.DASHBOARD_WIDTH_EVIDENCE) fs.writeFileSync(process.env.DASHBOARD_WIDTH_EVIDENCE, JSON.stringify(widthMeasurements, null, 2)+'\n');
+});
 const { doctorDigests } = await import(`${candidate}/bin/identity.js`);
 const provOf = (doctorId, programText) => ({ revisions: new Map(), programDigests: new Map([[doctorId, doctorDigests([{ id: doctorId, programPath: "/fixture" }], () => programText)[0].digest]]) });
 
@@ -186,9 +205,9 @@ test("dashboardFrame: unsafe skips appear as one header note line", () => {
 
 test("dashboardFrame: frame height is exactly rows - 1 in every state (notice never resizes it)", () => {
   const gc = gcOf(groups);
-  const height = (notice, cols, selected) =>
-    dashboardFrame({ tree: buildTree(gc, 10), selectedRow: selected, readKeys: new Set(), readSource: () => null, filesTotal: 2, durationMs: 10, useColor: false, notice, cols, rows: 34 })
-      .split("\n").length;
+  const height = (notice, cols, selected) => assertFrameFits(
+    dashboardFrame({ tree: buildTree(gc, 10), selectedRow: selected, readKeys: new Set(), readSource: () => null, filesTotal: 2, durationMs: 10, useColor: false, notice, cols, rows: 34 }),
+    {cols, rows:34, useColor:false, label:'notice frame'}).logicalLines;
   assert.equal(height(undefined, 120, 0), 33, "split, no notice");
   assert.equal(height("copied finding — paste into your agent", 120, 0), 33, "split, with notice");
   assert.equal(height(undefined, 120, 2), 33, "split, last item selected");
@@ -859,7 +878,7 @@ for(const [count,narrowed,rows] of [[0,false,34],[1,false,34],[1,true,34],[5,tru
    const frames=stdout.frames.filter(f=>f.includes('\x1b[H'));
    assert.ok(frames.length>=3,'navigation and notice repaint');
    for(const frame of frames){
-    assert.equal(frame.split('\n').length,rows-1,`quiet=${count}: every repaint stays rows - 1`);
+    assertFrameFits(frame,{cols,rows,useColor:false,label:`painted quiet=${count}`});
     assert.equal((frame.match(/\x1b\[K/g)||[]).length,rows-1,'each repainted row clears stale text');
     assert.match(frame,/\x1b\[J/,'clear below the frame');
     assert.match(frame,/stripe-doctor/);
@@ -877,9 +896,75 @@ test('small dashboard budgets coverage notices and a mixed quiet cohort',()=>{
   const frame=dashboardFrame({tree,selectedRow:0,readKeys:new Set(),readSource:()=>null,filesTotal:2,durationMs:2,useColor:false,cols:140,rows,
    zeroFindingDoctors:Array.from({length:40},(_,i)=>({id:`quiet-${i}`,narrowed:i%2===0})),
    coverageNotice:'semantic coverage narrowed',skippedUnsafe:['unsafe.mjs']});
-  assert.equal(frame.split('\n').length,rows-1,`rows=${rows}`);
+  assertFrameFits(frame,{cols:140,rows,useColor:false,label:'small mixed notices'});
   assert.match(frame,/\d+ more quiet doctors/);
   assert.match(frame,/\d+ narrowed, \d+ clean/);
   assert.match(frame,/semantic coverage narrowed/);
+ }
+});
+
+
+const widthCases = [
+  ...[[0,false],[1,false],[1,true],[5,true]].map(([count,narrowed])=>({count,narrowed,rows:34})),
+  ...[3,4,5,8,10,14,34].map(rows=>({count:40,narrowed:true,rows})),
+];
+for (const useColor of [false,true]) for (const cols of [80,140]) for (const {count,narrowed,rows} of widthCases) {
+  const label=`width boundary: ${cols}x${rows}, quiet=${count}, narrowed=${narrowed}, color=${useColor}`;
+  test(label,()=>{
+    const quiet=Array.from({length:count},(_,i)=>({id:`quiet-${i}`,narrowed:count===40?i%2===0:narrowed}));
+    const frame=dashboardFrame({tree:buildTree(gcOf(groups),2),selectedRow:0,readKeys:new Set(),readSource:()=>null,filesTotal:2,durationMs:2,useColor,cols,rows,
+      zeroFindingDoctors:quiet,coverageNotice:'semantic coverage narrowed',skippedUnsafe:['unsafe.mjs']});
+    assertFrameFits(frame,{cols,rows,useColor,label});
+    const plain=frame.replace(/\x1b\[[0-9;]*m/g,'');
+    if(count===40){
+      assert.match(plain,/\d+ more quiet doctors — \d+ narrowed, \d+ clean/,'omitted and coverage counts fit at these widths');
+      const shown=[...plain.matchAll(/[△✔] quiet-\d+ — (?:narrowed|clean)/g)].length;
+      const omitted=Number(plain.match(/(\d+) more quiet doctors/)[1]);
+      assert.equal(shown+omitted,count,'every quiet doctor is visible or counted');
+    } else for(const doctor of quiet) assert.ok(plain.includes(`${doctor.narrowed?'△':'✔'} ${doctor.id} — ${doctor.narrowed?'narrowed':'clean'}`));
+    if(rows>=8)assert.match(plain,/↑↓ move/,'footer retains the leading navigation hint');
+  });
+}
+
+for(const useColor of [false,true])for(const cols of [20,40,80,140])for(const rows of [5,34])test(`long text cannot escape ${cols}x${rows}, color=${useColor}`,()=>{
+ const long='very-long-name-'.repeat(30);
+ const custom=[{...groups[0],meta:{...groups[0].meta,id:`doctor-${long}`},findings:[{rule:'charges-create',file:`src/${long}.ts`,line:1}]}];
+ const frame=dashboardFrame({tree:buildTree(gcOf(custom),2),selectedRow:1,readKeys:new Set(),readSource:()=>[long],filesTotal:2,durationMs:2,useColor,cols,rows,
+   zeroFindingDoctors:Array.from({length:40},(_,i)=>({id:`quiet-${long}-${i}`,narrowed:i%2===0})),
+   coverageNotice:`semantic coverage narrowed ${long}`,skippedUnsafe:[`unsafe-${long}`],notice:`copied ${long}`});
+ assertFrameFits(frame,{cols,rows,useColor,label:'long controlled text'});
+ const plain=frame.replace(/\x1b\[[0-9;]*m/g,'');
+ assert.match(plain,/doctor-/);
+ assert.match(plain,/\d+ more quiet/,'bounded cohort disclosure survives long IDs');
+ assert.match(plain,/△/,'the narrowed status mark leads the long ID');
+ if(cols>=80)assert.match(plain,/\d+ narrowed, \d+ clean/);
+});
+
+for(const useColor of [false,true])test(`compact color=${useColor} repaints physical rows and keeps navigation`,async()=>{
+ const quiet=Array.from({length:40},(_,i)=>({programName:`q-${i}`,meta:{id:`quiet-${i}`,description:'Quiet',severity:'warning'},findings:[],
+   ...(i%2===0?{semantic:{protocolVersion:1,provider:{id:'syntax',version:'1',available:true},incomplete:true,narrowed:[{check:'q',reason:'unsupported-expression',occurrences:1,files:[]}]} }: {})}));
+ const input=dashInput([...groups,...quiet]);input.useColor=useColor;
+ const stdin=new FakeStdin(),stdout=new FakeStdout();stdout.columns=80;stdout.rows=8;
+ const done=runDashboardOn({stdin,stdout},input,copyAlways);
+ try{
+   stdin.send('j');stdin.send('j');stdin.send('c');stdin.send('k');
+   const frames=stdout.frames.filter(f=>f.includes('\x1b[H'));
+   assert.ok(frames.length>=4);
+   for(const frame of frames){
+     assertFrameFits(frame,{cols:80,rows:8,useColor,label:'compact painted navigation'});
+     assert.equal((frame.match(/\x1b\[K/g)||[]).length,7);
+     assert.match(frame,/\x1b\[J/);
+     assert.match(unpaint(frame),/more quiet doctors/);
+   }
+   assert.notEqual(frames[0],frames[1]);
+ }finally{stdin.send('q');await done;}
+});
+
+for(const useColor of [false,true])test(`non-BMP notice text obeys the same visible-width boundary, color=${useColor}`,()=>{
+ for(const cols of [20,80]){
+  const frame=dashboardFrame({tree:buildTree(gcOf(groups),2),selectedRow:0,readKeys:new Set(),readSource:()=>null,filesTotal:2,durationMs:2,useColor,cols,rows:8,
+    notice:`copied ${'🧪'.repeat(100)}`,zeroFindingDoctors:[{id:'quiet',narrowed:true}]});
+  assertFrameFits(frame,{cols,rows:8,useColor,label:'non-BMP notice'});
+  assert.match(frame,/△/);
  }
 });
