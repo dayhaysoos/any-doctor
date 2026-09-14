@@ -13,6 +13,9 @@ const {deriveSummary}=await import(path.join(root,'bin/summary.js'));
 const {dashboardFrame}=await import(path.join(root,'bin/dashboard.js'));
 const map='unawaited-async-map',fetchRule='fetch-calls-without-abortsignal';
 export const cases=[
+ ['local-async-map','const object = { map: async callback => callback(1) }; object.map(async value => value);',[]],
+ ['native-async-map','[1].map(async value=>value);',[],1],
+ ['unknown-map-receiver','getItems().map(async value=>value);',[[map,'unsupported-expression']]],
  ['sync-map','function names(items) { return items.map(item => item.name); }',[]],
  ['async-map','function work(items) { return items.map(async item => item.name); }',[[map,'unsupported-expression']]],
  ['unknown-callback','function work(items, callback) { return items.map(callback); }',[[map,'unsupported-expression']]],

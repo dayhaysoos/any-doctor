@@ -1,6 +1,7 @@
 # Doctor SDK candidate calibration and certification
 
-The bounded trust and certification goal is achieved for the existing three
+Historical verdict, superseded by the subsequent invariant repair: this pass
+reported the bounded trust and certification goal achieved for the existing three
 recipes and the evaluated corpus. This is not a population accuracy estimate,
 complete JavaScript analysis, or automatic-fix authorization. Genuine candidate
 uncertainty remains visible; the frozen scan correctly retains a null score and
@@ -125,7 +126,19 @@ fallback identities), while one plausible `(options.fetchImpl ?? fetch)(...)`
 remains unknown under the more precise `unresolved-identity` category. See
 `removed-option-narrowing.json`; this was not a suppression of 39 real fetches.
 
-`final-samples.json` records five source samples per remaining category, including
+The 39 fetch/unsupported-expression transitions above were exhaustively inspected
+and are retained per occurrence. The other aggregate reductions (unresolved fetch
+identity and async-map uncertainty) were validated through deterministic counts,
+executable boundary controls and source sampling, not exhaustive individual
+adjudication. Reduced narrowing is not automatically a precision measurement.
+
+Sampling used deterministic traversal: for each remaining category, take the
+first matching call from each of the first five affected files in scan order.
+This is a convenience sample, not random or representative; it validates those
+examples and cannot estimate correctness across all removed or retained cases.
+No claim is made that thousands of removed occurrences were individually reviewed.
+
+`final-samples.json` records those five source samples per remaining category, including
 callee initialization where supported. The adjudication is:
 
 - Fetch identity: `deps.fetchFn ?? fetch` is a plausible native alternative.

@@ -75,9 +75,9 @@ export function validateClaimContract(mod: DoctorModule): void {
     if (c.reportingUnit !== undefined && !["occurrence", "file", "project"].includes(String(c.reportingUnit))) {
       problems.push(`check "${String(c.id)}": reportingUnit must be occurrence, file, or project`);
     }
-    if (Array.isArray(c.needs) && (c.needs as unknown[]).length > 0
+    if (contract.checkAnalysisNeeds(c as unknown as CheckMeta).length > 0
       && (c.onUnknown !== "narrow" && c.onUnknown !== "skip")) {
-      problems.push(`check "${String(c.id)}": onUnknown is required when needs is declared — "narrow" or "skip"`);
+      problems.push(`check "${String(c.id)}": onUnknown is required when analysis needs are explicit or implied by a recipe — "narrow" or "skip"`);
     }
     if (c.recipe !== undefined) {
       try {
@@ -210,7 +210,11 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
         if(await skipFor(fixture.analysis!=='off')){results.push(skipRow(name));continue;}
         const result=await inSandbox(fixture.seed,tmp=>runOnce(tmp,mod,{includeTests:true}));
         const diff=contract.compareFindings(fixture.expected,result.findings);
-        results.push({name,ok:!diff.missing.length&&!diff.unexpected.length,...diff});
+        const actual = !result.semantic ? 'unobserved' : result.semantic.narrowed.some(item=>!item.check||item.check===check.id) ? 'narrowed' : 'complete';
+        const semantic = fixture.expectedSemantic ? {expected:fixture.expectedSemantic,actual} as const : undefined;
+        const semanticOk = !semantic || semantic.expected === semantic.actual;
+        results.push({name,ok:!diff.missing.length&&!diff.unexpected.length&&semanticOk,...diff,
+          ...(semantic?{semantic}:{}),...(!semanticOk?{error:`semantic coverage: expected ${semantic!.expected}, received ${actual}`}:{})});
       }catch(e){results.push(errorRow(name,e));}
       finally{setAnalysisDisabled(false);}
     }
@@ -305,24 +309,25 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
 }
 
 const occurrence=(source:string,rule:string,needle:string,nth=0):ExpectedFinding=>{const offset=[...source.matchAll(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'))][nth]?.index;if(offset===undefined)throw new Error(`profile occurrence missing: ${needle}`);const before=source.slice(0,offset),line=before.split('\n').length,column=offset-(before.lastIndexOf('\n')+1);return {rule,file:'profile.ts',line,column};};
-const profile=(name:string,source:string,expected:ExpectedFinding[],analysis?:'on'|'off'):Fixture=>({name,seed:{'profile.ts':source},expected,...(analysis?{analysis}:{})});
+type ChallengeFixture = Fixture & { expectedSemantic?: 'complete' | 'narrowed' };
+const profile=(name:string,source:string,expected:ExpectedFinding[],analysis?:'on'|'off',expectedSemantic?:'complete'|'narrowed'):ChallengeFixture=>({name,seed:{'profile.ts':source},expected,...(analysis?{analysis}:{}),...(expectedSemantic?{expectedSemantic}:{})});
 
 /** Deterministic extension point for maintained recipe challenge cases. */
-export function challengeProfileFixtures(check:CheckMeta):Fixture[]{
+export function challengeProfileFixtures(check:CheckMeta):ChallengeFixture[]{
   const declaration=check.recipe;if(!declaration)return [];
   const fixtures=declaration.name==='unhandled-value'?unhandledProfile(check.id,declaration):declaration.name==='resource-without-release'?resourceProfile(check.id,declaration):optionProfile(check.id,declaration);
   if(!fixtures.length)throw new Error(`recipe ${declaration.name} has no applicable challenge profile for this declaration`);
   return fixtures;
 }
 
-function unhandledProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'unhandled-value'}>):Fixture[]{
+function unhandledProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'unhandled-value'}>):ChallengeFixture[]{
   const member=declaration.query.producer.member,p=`[1].${member}(async value=>value)`;
   const positive=`${p};`,lookalike=`const object={${member}:async callback=>callback(1)};object.${member}(async value=>value);`,transfer=`function own(){return ${p}}`,unknown=`const items=getItems();items.${member}(async value=>value);\n${positive}`,same=`${positive}${positive}`;
   return [
     profile('genuine positive',positive,[occurrence(positive,rule,p)]),
-    profile('valid lookalike and shadowed producer',lookalike,[]),
+    profile('valid lookalike and shadowed producer',lookalike,[],undefined,'complete'),
     profile('ownership transfer',transfer,[]),
-    profile('unsupported receiver with positive neighbor',unknown,[occurrence(unknown,rule,p)]),
+    profile('unsupported receiver with positive neighbor',unknown,[occurrence(unknown,rule,p)],undefined,'narrowed'),
     profile('two same-line occurrences',same,[occurrence(same,rule,p,0),occurrence(same,rule,p,1)]),
     profile('analysis unavailable',positive,[],'off'),
   ];
@@ -342,15 +347,15 @@ function identityFixture(query:import("./contract.js").IdentityQuery,alias:strin
   throw new Error(`identity query cannot generate a challenge target; declare a global, named import, default import, or namespace member`);
 }
 
-function optionProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'required-or-recommended-option'}>):Fixture[]{
+function optionProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'required-or-recommended-option'}>):ChallengeFixture[]{
   const query=declaration.query,target=identityFixture(query.call,'profileCall'),callee=target.callee,head=target.head;
   const option=query.option.option,positive=`${callee}("payload",{})`,value=option==='signal'?'new AbortController().signal':'true';
   const present=`${head}${callee}("payload",{${option}:${value}});`,shadow=`${head}${target.shadow.replace('__ARGS__','"payload",{}')}`;
   const alias=`${head}const invoke=${callee};invoke("payload",{});`,unknown=`${head}const options={};configure(options);${callee}("payload",options);\n${positive};`,same=`${head}${positive};${positive};`,positiveSource=`${head}${positive};`;
   return [
     profile('genuine absence positive',positiveSource,[occurrence(positiveSource,rule,positive)]),
-    profile('present option lookalike',present,[]),
-    profile('shadowed call identity',shadow,[]),
+    profile('present option lookalike',present,[],undefined,'complete'),
+    profile('shadowed call identity',shadow,[],undefined,'complete'),
     profile('immutable call alias',alias,[occurrence(alias,rule,'invoke("payload",{})')]),
     profile('unknown options with positive neighbor',unknown,[occurrence(unknown,rule,positive)]),
     profile('two same-line occurrences',same,[occurrence(same,rule,positive,0),occurrence(same,rule,positive,1)]),
@@ -358,7 +363,7 @@ function optionProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,
   ];
 }
 
-function resourceProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'resource-without-release'}>):Fixture[]{
+function resourceProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'resource-without-release'}>):ChallengeFixture[]{
   const query=declaration.query,acquisition=identityFixture(query.acquisition,'profileAcquire'),ownerTarget=identityFixture(query.owner.identity,'profileOwner'),release=query.release[0];if(!release)throw new Error('resource recipe needs at least one release identity');
   const head=acquisition.head+ownerTarget.head,acquire=acquisition.callee,owner=ownerTarget.callee,call=`${acquire}(()=>{},1)`,positive=`${head}${owner}(()=>{${call};},[]);`,lookalike=`${head}${owner}(()=>{${acquisition.shadow.replace('__ARGS__','()=>{},1')}\n${call};},[]);`;
   const releasedAlias=`${head}${owner}(()=>{const handle=${call};const alias=handle;return()=>${release}(alias)},[]);`;
@@ -369,7 +374,7 @@ function resourceProfile(rule:string,declaration:Extract<RecipeProfileDeclaratio
   const same=`${head}${owner}(()=>{${call};${call};},[]);`;
   return [
     profile('genuine unreleased positive',positive,[occurrence(positive,rule,call)]),
-    profile('shadowed acquisition with positive neighbor',lookalike,[occurrence(lookalike,rule,call,1)]),
+    profile('shadowed acquisition with positive neighbor',lookalike,[occurrence(lookalike,rule,call,1)],undefined,'complete'),
     profile('immutable handle alias release',releasedAlias,[]),
     profile('different handle does not release acquisition',wrongHandle,[occurrence(wrongHandle,rule,call)]),
     profile('supported local cleanup transfer',helper,[]),

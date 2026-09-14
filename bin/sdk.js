@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { inventory } from "./file-scope.js";
 import * as fs from "fs";
 import * as path from "path";
-import { SEARCH_REQUEST, SEARCH_RESULT, SEMANTIC_RESULT_VERSION, withinDir } from "./contract.js";
+import { checkAnalysisNeeds, SEARCH_REQUEST, SEARCH_RESULT, SEMANTIC_RESULT_VERSION, withinDir } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 import { identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
 // The verify harness forces the degraded path per fixture (fixture
@@ -291,7 +291,7 @@ export function buildCtx(root, opts = {}) {
             return project === null || project === void 0 ? void 0 : project.coverage;
         }, getSemanticReport: (meta) => {
             var _a, _b;
-            const checks = (_a = meta.checks) !== null && _a !== void 0 ? _a : [], capabilityNames = [...new Set(checks.flatMap(check => { var _a; return (_a = check.needs) !== null && _a !== void 0 ? _a : []; }))], recipeDeclarations = checks.flatMap(check => check.recipe ? [{ check: check.id, name: check.recipe.name }] : []);
+            const checks = (_a = meta.checks) !== null && _a !== void 0 ? _a : [], capabilityNames = [...new Set(checks.flatMap(check => checkAnalysisNeeds(check)))], recipeDeclarations = checks.flatMap(check => check.recipe ? [{ check: check.id, name: check.recipe.name }] : []);
             if (!capabilityNames.length && !recipeDeclarations.length && !narrowings.size)
                 return undefined;
             for (const [file, source] of sourceCache) {

@@ -25,7 +25,8 @@ export interface CheckMeta {
   fix?: string;
   /** Analysis capabilities this check uses at full power; without them it
    * narrows and says so in the report (D20's honest degradation). v1
-   * vocabulary: ["bindings"], ["spans"]. */
+   * vocabulary: ["bindings"], ["spans"]. Recipes imply their required
+   * capabilities; needs adds any additional requirements. */
   needs?: string[];
   // The claim contract (D23): a check states the OBSERVABLE condition it
   // establishes, the innocent shapes that must stay silent, and - when it
@@ -575,6 +576,8 @@ export interface FixtureResult extends FixtureDiff {
   /** An honest skip (not a failure): this fixture pins the analysis-on
    * path and the engine is not installed here. */
   skipped?: string;
+  /** Maintained profile coverage is checked independently of findings. */
+  semantic?: { expected: "complete" | "narrowed"; actual: "complete" | "narrowed" | "unobserved" };
 }
 
 export interface VerifyRunResult {
@@ -699,8 +702,15 @@ export function compareFindings(expected: ExpectedFinding[], actual: Finding[]):
 // of this doctor declared analysis needs — the ids the report names when
 // it renders "narrowed", and the predicate verify uses to decide whether
 // analysis-on fixtures apply.
+/** Recipes imply their host capabilities; explicit needs may add requirements. */
+export function checkAnalysisNeeds(check: Pick<CheckMeta, "needs" | "recipe">): string[] {
+  const implied = check.recipe?.name === "unhandled-value" ? ["calls", "value-disposition"]
+    : check.recipe?.name === "required-or-recommended-option" ? ["calls", "identity", "option-presence"]
+    : check.recipe?.name === "resource-without-release" ? ["calls", "identity", "resource-lifetime"] : [];
+  return [...new Set([...(check.needs ?? []), ...implied])];
+}
 export function narrowedCheckIds(meta: DoctorMeta): string[] {
-  return (meta.checks ?? []).filter((c) => c.needs !== undefined && c.needs.length > 0).map((c) => c.id);
+  return (meta.checks ?? []).filter(c => checkAnalysisNeeds(c).length > 0).map(c => c.id);
 }
 
 // The within-run occurrence handle: checkKey plus coordinates, COLUMN

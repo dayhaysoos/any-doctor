@@ -5,7 +5,7 @@ import type { ProjectConsumers } from "./project-consumers.js";
 import type { FunctionStructure } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, DoctorMeta, ExpressionRef, Finding, IdentityQuery, IdentityValue, isTestPath, Match, NamedRuleQuery, OptionPresence, OptionPresenceQuery, RecipeDecision, RecipeFinding, RecipeName, RequiredOptionRecipeQuery, ResourceLifetime, ResourceLifetimeQuery, ResourceWithoutReleaseRecipeQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, SemanticNarrowing, SemanticProviderProvenance, SemanticResult, SemanticRunReport, SEMANTIC_RESULT_VERSION, UnhandledValueRecipeQuery, UnknownReason, ValueDisposition, ValueDispositionQuery, withinDir } from "./contract.js";
+import { checkAnalysisNeeds, AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, DoctorMeta, ExpressionRef, Finding, IdentityQuery, IdentityValue, isTestPath, Match, NamedRuleQuery, OptionPresence, OptionPresenceQuery, RecipeDecision, RecipeFinding, RecipeName, RequiredOptionRecipeQuery, ResourceLifetime, ResourceLifetimeQuery, ResourceWithoutReleaseRecipeQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, SemanticNarrowing, SemanticProviderProvenance, SemanticResult, SemanticRunReport, SEMANTIC_RESULT_VERSION, UnhandledValueRecipeQuery, UnknownReason, ValueDisposition, ValueDispositionQuery, withinDir } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 import { EngineQuery, RawSgCapture, RawSgMatch } from "./engine.js";
 import { identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
@@ -248,7 +248,7 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
     }
     return project?.coverage;
   }, getSemanticReport:(meta:DoctorMeta):SemanticRunReport|undefined=>{
-    const checks=meta.checks??[],capabilityNames=[...new Set(checks.flatMap(check=>check.needs??[]))],recipeDeclarations=checks.flatMap(check=>check.recipe?[{check:check.id,name:check.recipe.name}]:[]);
+    const checks=meta.checks??[],capabilityNames=[...new Set(checks.flatMap(check=>checkAnalysisNeeds(check)))],recipeDeclarations=checks.flatMap(check=>check.recipe?[{check:check.id,name:check.recipe.name}]:[]);
     if(!capabilityNames.length&&!recipeDeclarations.length&&!narrowings.size)return undefined;
     for(const [file,source] of sourceCache){
       try{if(digest(readFileWithin(root,file))!==digest(source))recordUnknown({version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'source-changed'},file,{capability:'source-integrity'});}

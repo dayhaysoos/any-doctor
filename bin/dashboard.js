@@ -277,11 +277,13 @@ export function dashboardFrame(state) {
         const narrowed = ((_h = state.zeroFindingDoctors) === null || _h === void 0 ? void 0 : _h.some(doctor => doctor.narrowed)) === true;
         headerLines.push(c(narrowed ? "No findings established — semantic coverage narrowed" : "No findings", BOLD + (narrowed ? YELLOW : GREEN)));
         headerLines.push(c(scoreBar(narrowed ? 0 : 100, barWidth), narrowed ? YELLOW : GREEN));
+        headerLines.push(c(summaryLine(0, null, state.durationMs), DIM));
+    }
+    // Zero-finding doctors remain visible beside the selected finding tree.
+    if (state.filesTotal > 0)
         for (const doctor of (_j = state.zeroFindingDoctors) !== null && _j !== void 0 ? _j : []) {
             headerLines.push(c(`${doctor.narrowed ? "△" : "✔"} ${doctor.id} — ${doctor.narrowed ? "narrowed" : "clean"}`, doctor.narrowed ? YELLOW : GREEN));
         }
-        headerLines.push(c(summaryLine(0, null, state.durationMs), DIM));
-    }
     if (state.skippedUnsafe !== undefined && state.skippedUnsafe.length > 0) {
         headerLines.push(c(`\u26a0 ${unsafeSkipLine(state.skippedUnsafe)}`, YELLOW));
     }

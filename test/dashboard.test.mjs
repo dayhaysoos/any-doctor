@@ -831,3 +831,15 @@ test("dashboard: recording on a shared identity refuses — matching what a resc
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+for(const narrowed of [false,true])test(`runDashboard: mixed run discloses ${narrowed?'narrowed':'clean'} zero-finding doctor through navigation`,async()=>{
+  const quiet={programName:'quiet.mjs',meta:{id:'quiet-doctor',description:'Quiet',severity:'warning',checks:[{id:'quiet',description:'Quiet',needs:['calls']}]},findings:[]};
+  const input=dashInput([groups[0],quiet]);input.outcome.analysisAvailable=!narrowed;
+  const stdin=new FakeStdin(),stdout=new FakeStdout();
+  const done=runDashboardOn({stdin,stdout},input,copyAlways);
+  const expected=new RegExp(`${narrowed?'△':'✔'} quiet-doctor — ${narrowed?'narrowed':'clean'}`);
+  assert.match(stdout.frames.at(-1),expected);
+  stdin.send('\x1b[B');
+  assert.match(stdout.frames.at(-1),expected);assert.match(stdout.frames.at(-1),/stripe-doctor/);
+  stdin.send('q');assert.equal(await settle(done),'resolved');
+});

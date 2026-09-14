@@ -29,6 +29,14 @@ but omitting it can never turn an uncertain run into a fully clean report.
 
 ## Using a recipe
 
+A recipe declaration implies its required analysis capabilities. `needs` may add
+requirements but does not have to repeat them. Unhandled value implies `calls`
+and `value-disposition`; the option recipe implies `calls`, `identity` and
+`option-presence`; the resource recipe implies `calls`, `identity` and
+`resource-lifetime`. Runtime capability provenance, narrowed check IDs and
+certification share this derivation. Declare `onUnknown` for these implied
+requirements just as for explicit `needs`.
+
 Doctors remain single-file confined programs: do not import SDK modules. Read
 call facts from `ctx.analysis.calls`, create an expression reference from a flow
 value, and invoke `ctx.recipes`. Declare the same recipe and serializable query on
@@ -138,6 +146,11 @@ Run human and machine certification with:
 node bin/cli.js verify path/to/doctor.mjs
 node bin/cli.js verify path/to/doctor.mjs --format json
 ```
+
+Maintained lookalikes assert complete semantic coverage for the challenged check,
+independently of findings. Unsupported-receiver profiles assert narrowed coverage
+and the exact unrelated positive. A zero-finding unknown answer cannot pass a
+known-clear expectation; JSON rows expose expected and actual semantic status.
 
 The JSON `results` array names every exercised challenge and each unavailable
 path. When the optional analysis provider is absent, analysis-on profiles are

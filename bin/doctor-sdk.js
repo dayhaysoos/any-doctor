@@ -454,13 +454,36 @@ export function unhandledValueRecipeResult(file, source, facts, expression, quer
         if (initializer !== undefined)
             return (_d = resolve(initializer, seen)) !== null && _d !== void 0 ? _d : value;
     } return value; };
-    const array = (id, seen = new Set()) => { var _a, _b, _c, _d, _e; if (id === undefined || seen.has(id))
-        return 'unknown'; seen = new Set(seen).add(id); const raw = values.get(id), binding = (_a = raw === null || raw === void 0 ? void 0 : raw.target) === null || _a === void 0 ? void 0 : _a.binding; if (binding !== null && binding !== undefined && ((_c = (_b = states.get(binding)) === null || _b === void 0 ? void 0 : _b.escapes) === null || _c === void 0 ? void 0 : _c.length))
-        return 'unknown'; if (binding !== null && binding !== undefined && ((_d = bindings.get(binding)) === null || _d === void 0 ? void 0 : _d.array) && stable(binding))
-        return true; const value = resolve(id); if (!value)
-        return 'unknown'; if (value.kind === 'array')
-        return true; if (value.kind === 'call' && ['filter', 'slice', 'concat', 'map', 'flat', 'flatMap', 'toSorted', 'toReversed', 'toSpliced'].includes((_e = value.member) !== null && _e !== void 0 ? _e : ''))
-        return array(value.receiver, seen); return 'unknown'; };
+    const array = (id, seen = new Set()) => {
+        var _a, _b, _c, _d, _e, _f, _g;
+        if (id === undefined || seen.has(id))
+            return 'unknown';
+        seen = new Set(seen).add(id);
+        const raw = values.get(id), binding = (_a = raw === null || raw === void 0 ? void 0 : raw.target) === null || _a === void 0 ? void 0 : _a.binding;
+        if (binding !== null && binding !== undefined && ((_c = (_b = states.get(binding)) === null || _b === void 0 ? void 0 : _b.escapes) === null || _c === void 0 ? void 0 : _c.length))
+            return 'unknown';
+        if (binding !== null && binding !== undefined && ((_d = bindings.get(binding)) === null || _d === void 0 ? void 0 : _d.array) && stable(binding))
+            return true;
+        const value = resolve(id);
+        if (!value)
+            return 'unknown';
+        if (value.kind === 'array')
+            return true;
+        if (value.kind === 'object') {
+            let method;
+            for (const property of (_e = value.properties) !== null && _e !== void 0 ? _e : []) {
+                if (property.spread || property.name === null)
+                    method = undefined;
+                else if (property.name === query.producer.member)
+                    method = property;
+            }
+            if (method && !method.accessor && ((_f = resolve(method.value)) === null || _f === void 0 ? void 0 : _f.kind) === 'function')
+                return false;
+        }
+        if (value.kind === 'call' && ['filter', 'slice', 'concat', 'map', 'flat', 'flatMap', 'toSorted', 'toReversed', 'toSpliced'].includes((_g = value.member) !== null && _g !== void 0 ? _g : ''))
+            return array(value.receiver, seen) === true ? true : 'unknown';
+        return 'unknown';
+    };
     const callback = resolve((_a = subject.arguments) === null || _a === void 0 ? void 0 : _a[query.producer.asyncArgument]);
     // Native scalar conversions are synchronous even without a local body.
     if ((callback === null || callback === void 0 ? void 0 : callback.kind) === 'reference' && ((_b = callback.target) === null || _b === void 0 ? void 0 : _b.binding) === null && callback.target.members.length === 0 && ['String', 'Number', 'Boolean', 'BigInt', 'Symbol'].includes((_c = callback.target.root) !== null && _c !== void 0 ? _c : ''))
@@ -470,6 +493,8 @@ export function unhandledValueRecipeResult(file, source, facts, expression, quer
     if (!callback.async)
         return recipeKnown('clear', []);
     const receiver = array(subject.receiver);
+    if (receiver === false)
+        return recipeKnown('clear', []);
     if (receiver === 'unknown')
         return unknown('unsupported-expression');
     const disposition = valueDispositionResult(file, source, facts, semanticRef(subject), { consumers: query.consumers });

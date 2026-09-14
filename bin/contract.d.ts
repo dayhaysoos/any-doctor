@@ -13,7 +13,8 @@ export interface CheckMeta {
     fix?: string;
     /** Analysis capabilities this check uses at full power; without them it
      * narrows and says so in the report (D20's honest degradation). v1
-     * vocabulary: ["bindings"], ["spans"]. */
+     * vocabulary: ["bindings"], ["spans"]. Recipes imply their required
+     * capabilities; needs adds any additional requirements. */
     needs?: string[];
     /** One sentence: the observable condition this check establishes. Not the
      *  consequence ("this is unsafe") - the thing actually detected. */
@@ -534,6 +535,11 @@ export interface FixtureResult extends FixtureDiff {
     /** An honest skip (not a failure): this fixture pins the analysis-on
      * path and the engine is not installed here. */
     skipped?: string;
+    /** Maintained profile coverage is checked independently of findings. */
+    semantic?: {
+        expected: "complete" | "narrowed";
+        actual: "complete" | "narrowed" | "unobserved";
+    };
 }
 export interface VerifyRunResult {
     protocolVersion: number;
@@ -557,6 +563,8 @@ export declare function searchBase(mode: Mode): string;
 export declare function includeTestsFor(mode: Mode): boolean;
 export declare function runCommandFor(doctorPath: string, root: string, invoker?: string): string;
 export declare function compareFindings(expected: ExpectedFinding[], actual: Finding[]): FixtureDiff;
+/** Recipes imply their host capabilities; explicit needs may add requirements. */
+export declare function checkAnalysisNeeds(check: Pick<CheckMeta, "needs" | "recipe">): string[];
 export declare function narrowedCheckIds(meta: DoctorMeta): string[];
 export declare function readKeyFor(checkKey: string, file: string, line: number, column?: number): string;
 export interface JoinedFinding {

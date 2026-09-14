@@ -255,12 +255,21 @@ export function unhandledValueRecipeResult(file:string,source:string,facts:Analy
   if(subject.member!==query.producer.member)return recipeKnown('clear',[]);
   const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
   const resolve=(id:number|undefined,seen=new Set<number>()):FlowValue|null=>{if(id===undefined)return null;const value=values.get(id);if(!value||seen.has(id))return null;seen=new Set(seen).add(id);if(value.kind==='reference'&&value.target?.binding!==null&&value.target?.binding!==undefined){if(!stable(value.target.binding))return null;const initializer=bindings.get(value.target.binding)?.initializer;if(initializer!==undefined)return resolve(initializer,seen)??value;}return value;};
-  const array=(id:number|undefined,seen=new Set<number>()):boolean|'unknown'=>{if(id===undefined||seen.has(id))return 'unknown';seen=new Set(seen).add(id);const raw=values.get(id),binding=raw?.target?.binding;if(binding!==null&&binding!==undefined&&states.get(binding)?.escapes?.length)return 'unknown';if(binding!==null&&binding!==undefined&&bindings.get(binding)?.array&&stable(binding))return true;const value=resolve(id);if(!value)return 'unknown';if(value.kind==='array')return true;if(value.kind==='call'&&['filter','slice','concat','map','flat','flatMap','toSorted','toReversed','toSpliced'].includes(value.member??''))return array(value.receiver,seen);return 'unknown';};
+  const array=(id:number|undefined,seen=new Set<number>()):boolean|'unknown'=>{if(id===undefined||seen.has(id))return 'unknown';seen=new Set(seen).add(id);const raw=values.get(id),binding=raw?.target?.binding;if(binding!==null&&binding!==undefined&&states.get(binding)?.escapes?.length)return 'unknown';if(binding!==null&&binding!==undefined&&bindings.get(binding)?.array&&stable(binding))return true;const value=resolve(id);if(!value)return 'unknown';if(value.kind==='array')return true;
+    if(value.kind==='object'){
+      let method:NonNullable<FlowValue['properties']>[number]|undefined;
+      for(const property of value.properties??[]){
+        if(property.spread||property.name===null)method=undefined;
+        else if(property.name===query.producer.member)method=property;
+      }
+      if(method&&!method.accessor&&resolve(method.value)?.kind==='function')return false;
+    }
+    if(value.kind==='call'&&['filter','slice','concat','map','flat','flatMap','toSorted','toReversed','toSpliced'].includes(value.member??''))return array(value.receiver,seen)===true?true:'unknown';return 'unknown';};
   const callback=resolve(subject.arguments?.[query.producer.asyncArgument]);
   // Native scalar conversions are synchronous even without a local body.
   if(callback?.kind==='reference'&&callback.target?.binding===null&&callback.target.members.length===0&&['String','Number','Boolean','BigInt','Symbol'].includes(callback.target.root??''))return recipeKnown('clear',[]);
   if(callback?.kind!=='function')return unknown('unsupported-expression');if(!callback.async)return recipeKnown('clear',[]);
-  const receiver=array(subject.receiver);if(receiver==='unknown')return unknown('unsupported-expression');
+  const receiver=array(subject.receiver);if(receiver===false)return recipeKnown('clear',[]);if(receiver==='unknown')return unknown('unsupported-expression');
   const disposition=valueDispositionResult(file,source,facts,semanticRef(subject),{consumers:query.consumers});if(disposition.status==='unknown')return recipeUnknown(disposition);
   return recipeKnown(disposition.value==='discarded'?'report':'clear',disposition.evidence);
 }

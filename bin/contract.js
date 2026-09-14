@@ -158,9 +158,17 @@ export function compareFindings(expected, actual) {
 // of this doctor declared analysis needs — the ids the report names when
 // it renders "narrowed", and the predicate verify uses to decide whether
 // analysis-on fixtures apply.
+/** Recipes imply their host capabilities; explicit needs may add requirements. */
+export function checkAnalysisNeeds(check) {
+    var _a, _b, _c, _d;
+    const implied = ((_a = check.recipe) === null || _a === void 0 ? void 0 : _a.name) === "unhandled-value" ? ["calls", "value-disposition"]
+        : ((_b = check.recipe) === null || _b === void 0 ? void 0 : _b.name) === "required-or-recommended-option" ? ["calls", "identity", "option-presence"]
+            : ((_c = check.recipe) === null || _c === void 0 ? void 0 : _c.name) === "resource-without-release" ? ["calls", "identity", "resource-lifetime"] : [];
+    return [...new Set([...((_d = check.needs) !== null && _d !== void 0 ? _d : []), ...implied])];
+}
 export function narrowedCheckIds(meta) {
     var _a;
-    return ((_a = meta.checks) !== null && _a !== void 0 ? _a : []).filter((c) => c.needs !== undefined && c.needs.length > 0).map((c) => c.id);
+    return ((_a = meta.checks) !== null && _a !== void 0 ? _a : []).filter(c => checkAnalysisNeeds(c).length > 0).map(c => c.id);
 }
 // The within-run occurrence handle: checkKey plus coordinates, COLUMN
 // INCLUDED — two findings on one line are two occurrences, and one
