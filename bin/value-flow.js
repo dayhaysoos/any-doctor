@@ -117,10 +117,10 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
             if (n.type === 'ArrowFunctionExpression' && n.body.type !== 'BlockStatement')
                 uses.push({ value: value(n.body), kind: 'return', functionStart: n.range[0], dead: dead(n.body) });
         }
-        if (['ReturnStatement', 'AwaitExpression', 'ExpressionStatement'].includes(n.type)) {
+        if (['ReturnStatement', 'YieldExpression', 'AwaitExpression', 'ExpressionStatement'].includes(n.type)) {
             const arg = (n.type === 'ExpressionStatement' ? n.expression : n.argument);
             if (arg)
-                uses.push({ value: value(arg), kind: n.type === 'ReturnStatement' ? 'return' : n.type === 'AwaitExpression' ? 'await' : 'discard', functionStart: functionStart(n), dead: dead(n) });
+                uses.push({ value: value(arg), kind: n.type === 'ReturnStatement' ? 'return' : n.type === 'YieldExpression' ? 'yield' : n.type === 'AwaitExpression' ? 'await' : 'discard', functionStart: functionStart(n), dead: dead(n) });
         }
         if (n.type === 'AssignmentExpression') {
             const b = n.left.type === 'Identifier' ? target(n.left).binding : null;

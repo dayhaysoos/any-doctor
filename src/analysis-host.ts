@@ -3,9 +3,9 @@ import { projectConsumers, ProjectConsumers } from "./project-consumers.js";
 import { functionStructures, FunctionStructure } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, ExpressionRef, IdentityQuery, IdentityValue, Mode, searchBase, SemanticResult, SEMANTIC_RESULT_VERSION, withinBase, withinDir } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, ExpressionRef, IdentityQuery, IdentityValue, Mode, searchBase, SemanticResult, SEMANTIC_RESULT_VERSION, ValueDisposition, ValueDispositionQuery, withinBase, withinDir } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls, AnalysisResult, AnalysisStatusResult, SpansResult } from "./analysis.js";
-import { identityResult } from "./doctor-sdk.js";
+import { identityResult, valueDispositionResult } from "./doctor-sdk.js";
 
 // The analysis host: the identity engine's side of the channel, a sibling
 // to the search host. The search host routes `op: "analysis"` requests
@@ -52,7 +52,7 @@ export type AnalysisResponse =
   | { file: AnalysisFile }
   | { file: AnalysisSpans }
   | { file: AnalysisCalls }
-  | { semantic: SemanticResult<IdentityValue> }
+  | { semantic: SemanticResult<IdentityValue | ValueDisposition> }
   | { error: string };
 
 export function handleAnalysisRequest(
@@ -72,7 +72,7 @@ export function handleAnalysisRequest(
     const s: AnalysisStatusResult = status();
     return s.available ? { available: true } : { available: false, reason: s.reason };
   }
-  if (req.kind === "identity" && !status().available) {
+  if ((req.kind === "identity" || req.kind === "value-disposition") && !status().available) {
     return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" } };
   }
   if (typeof req.file === "string" && req.sourceDigest !== undefined) {
@@ -93,7 +93,7 @@ export function handleAnalysisRequest(
       return { structures: functionStructures(req.file, fs.readFileSync(abs, "utf8")) };
     } catch (e) { return { error: String(e) }; }
   }
-  if (req.kind === "bindings" || req.kind === "spans" || req.kind === "calls" || req.kind === "identity") {
+  if (req.kind === "bindings" || req.kind === "spans" || req.kind === "calls" || req.kind === "identity" || req.kind === "value-disposition") {
     if (typeof req.file !== "string" || req.file === "") {
       return { error: `ctx.analysis.${req.kind} needs a "file" path` };
     }
@@ -101,14 +101,15 @@ export function handleAnalysisRequest(
     if (!withinDir(abs, root)) {
       return { error: `ctx.analysis failed: file is outside the search root: ${req.file}` };
     }
-    if (req.kind === "identity") {
+    if (req.kind === "identity" || req.kind === "value-disposition") {
       const expression = parseExpression(req.expression);
-      const query = parseIdentityQuery(req.query);
+      const query = req.kind === "identity" ? parseIdentityQuery(req.query) : parseDispositionQuery(req.query);
       if (!expression || !query) return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "unsupported-expression" } };
       const model = cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
       if ("error" in model) return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
       try {
-        return { semantic: identityResult(req.file, fs.readFileSync(abs, "utf8"), model.file, expression, query) };
+        const source=fs.readFileSync(abs,"utf8");
+        return { semantic: req.kind === "identity" ? identityResult(req.file,source,model.file,expression,query as IdentityQuery) : valueDispositionResult(req.file,source,model.file,expression,query as ValueDispositionQuery) };
       } catch {
         return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
       }
@@ -119,7 +120,13 @@ export function handleAnalysisRequest(
     if (req.kind === "calls") return cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
     return cachedModel(abs, root, spansCache, spansAnalyzer, req.file);
   }
-  return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans, calls, identity` };
+  return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans, calls, identity, value-disposition` };
+}
+
+function parseDispositionQuery(value: unknown): ValueDispositionQuery | null {
+  if (!value || typeof value !== "object") return null;
+  const consumers=(value as Record<string,unknown>).consumers;
+  return Array.isArray(consumers)&&consumers.every(item=>typeof item==="string") ? {consumers} : null;
 }
 
 function parseExpression(value: unknown): ExpressionRef | null {

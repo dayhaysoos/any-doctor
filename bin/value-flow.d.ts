@@ -39,7 +39,7 @@ export interface ValueFlow {
     }[];
     uses: {
         value: number;
-        kind: 'return' | 'await' | 'discard' | 'write';
+        kind: 'return' | 'yield' | 'await' | 'discard' | 'write';
         functionStart: number | null;
         binding?: number;
         dead: boolean;

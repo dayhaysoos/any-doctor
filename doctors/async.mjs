@@ -17,7 +17,7 @@ export const meta = {
       why:'Request lifetime requirements differ between server, extension and UI requests. This is a cancellation-policy review candidate.',
       fix:'Check the intended request lifetime and caller contract. If cancellation or a deadline is required, preserve forwarded options and provide an appropriate AbortSignal; abort only when the work should stop.',
       lookalikes:['Request or options carrying a signal','unknown forwarded inputs/options','unrelated local fetch functions']},
-    {id:'unawaited-async-map',revision:2,reportingUnit:'occurrence',needs:['calls'],onUnknown:'skip',severity:'warning',
+    {id:'unawaited-async-map',revision:2,reportingUnit:'occurrence',needs:['calls','value-disposition'],onUnknown:'skip',severity:'warning',
       description:'An array of async-map promises has no supported consumer or ownership transfer.',
       claim:'A known array map with an async callback whose result has no supported element consumer or ownership transfer in its lexical flow.',
       impact:'Dropped promise results can leave errors unobserved and dependent work running before callbacks finish.',
@@ -45,7 +45,8 @@ export async function doctor(ctx) {
       const fetchIdentity=ctx.analysis.identity(file,m.ref(c.callee),{globals:['fetch','window.fetch','globalThis.fetch','self.fetch']});
       if(fetchIdentity.status==='known'&&fetchIdentity.value.matches && m.fetchSignal(c)==='absent') report('fetch-calls-without-abortsignal',c);
       if(c.member==='map' && m.array(c.receiver) && m.resolve(c.arguments[0])?.async){
-        if(m.arrayUse(c)==='dropped') report('unawaited-async-map',c);
+        const disposition=ctx.analysis.valueDisposition(file,m.ref(c.id),{consumers:['Promise.all','Promise.allSettled','Promise.any','Promise.race','globalThis.Promise.all','globalThis.Promise.allSettled','globalThis.Promise.any','globalThis.Promise.race']});
+        if(disposition.status==='known'&&disposition.value==='discarded') report('unawaited-async-map',c);
       }
     }
     for(const effect of m.calls.filter(c=>m.reactEffect(c.callee))){

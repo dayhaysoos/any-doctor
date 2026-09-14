@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {analyzeCalls} from '../bin/analysis.js';
-import {identityResult} from '../bin/doctor-sdk.js';
+import {identityResult,valueDispositionResult} from '../bin/doctor-sdk.js';
 
 function identities(source){
   const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
@@ -28,4 +28,26 @@ test('Doctor SDK identity rejects stale or invented expression references',()=>{
   const source='fetch("/")',parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
   const result=identityResult('example.ts',source,parsed.file,{id:999,start:0,end:1},{globals:['fetch']});
   assert.deepEqual(result,{version:1,status:'unknown',reason:'unsupported-expression'});
+});
+
+function disposition(source){
+  const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
+  const subject=parsed.file.structure.flow.values.find(value=>value.kind==='call'&&value.member==='map');assert.ok(subject);
+  return valueDispositionResult('example.ts',source,parsed.file,{id:subject.id,start:subject.start,end:subject.end},{consumers:['Promise.all']});
+}
+
+test('Doctor SDK classifies expression transfers without mistaking projections or await-array for consumption',()=>{
+  const cases=[
+    ['async function f(){const tasks=[1].map(async x=>x);return await tasks;}','transferred'],
+    ['async function f(){return await [1].map(async x=>x);}','transferred'],
+    ['function f(flag){const tasks=[1].map(async x=>x);return flag?tasks:{tasks};}','transferred'],
+    ['function* f(){const tasks=[1].map(async x=>x);yield tasks;}','transferred'],
+    ['function f(){const tasks=[1].map(async x=>x);return void tasks;}','discarded'],
+    ['function f(){const tasks=[1].map(async x=>x);return tasks.length;}','discarded'],
+    ['async function f(){const tasks=[1].map(async x=>x);await tasks;}','discarded'],
+    ['function f(){return [1].map(async x=>x);}','transferred'],
+    ['[1].map(async x=>x);','discarded'],
+    ['const tasks=[1].map(async x=>x);Promise.all([tasks]);','discarded'],
+  ];
+  for(const [source,expected] of cases){const result=disposition(source);assert.equal(result.status,'known',source);assert.equal(result.value,expected,source);assert.ok(result.evidence.every(item=>item.sourceDigest));}
 });

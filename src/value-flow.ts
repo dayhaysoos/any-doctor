@@ -25,7 +25,7 @@ export interface FlowValue extends SourceRange {
 export interface ValueFlow {
   values: FlowValue[];
   bindings: { binding: number; initializer?: number; primitive?: "string"; array: boolean }[];
-  uses: { value: number; kind: 'return' | 'await' | 'discard' | 'write'; functionStart: number | null; binding?: number; dead: boolean }[];
+  uses: { value: number; kind: 'return' | 'yield' | 'await' | 'discard' | 'write'; functionStart: number | null; binding?: number; dead: boolean }[];
   loops: (SourceRange & { functionStart: number | null; iterable: number; binding: number | null; await: boolean })[];
 }
 
@@ -85,9 +85,9 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
       for(const p of n.params as Node[])if(p.type==='Identifier'){const b=target(p).binding;if(b!==null)bindings.push({binding:b,...((p.typeAnnotation as Node|undefined)?.typeAnnotation && ((p.typeAnnotation as Node).typeAnnotation as Node).type==='TSStringKeyword'?{primitive:'string' as const}:{}),array:arrayType((p.typeAnnotation as Node|undefined)?.typeAnnotation as Node|undefined)});}
       if(n.type==='ArrowFunctionExpression'&&(n.body as Node).type!=='BlockStatement')uses.push({value:value(n.body as Node),kind:'return',functionStart:n.range![0],dead:dead(n.body as Node)});
     }
-    if(['ReturnStatement','AwaitExpression','ExpressionStatement'].includes(n.type)){
+    if(['ReturnStatement','YieldExpression','AwaitExpression','ExpressionStatement'].includes(n.type)){
       const arg=(n.type==='ExpressionStatement'?n.expression:n.argument) as Node|undefined;
-      if(arg)uses.push({value:value(arg),kind:n.type==='ReturnStatement'?'return':n.type==='AwaitExpression'?'await':'discard',functionStart:functionStart(n),dead:dead(n)});
+      if(arg)uses.push({value:value(arg),kind:n.type==='ReturnStatement'?'return':n.type==='YieldExpression'?'yield':n.type==='AwaitExpression'?'await':'discard',functionStart:functionStart(n),dead:dead(n)});
     }
     if(n.type==='AssignmentExpression'){
       const b=(n.left as Node).type==='Identifier'?target(n.left as Node).binding:null;uses.push({value:value(n.right as Node),kind:'write',...(b!==null?{binding:b}:{}),functionStart:functionStart(n),dead:dead(n)});

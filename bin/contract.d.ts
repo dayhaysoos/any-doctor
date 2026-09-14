@@ -303,6 +303,10 @@ export interface IdentityValue {
     matches: boolean;
     origin: IdentityOrigin;
 }
+export interface ValueDispositionQuery {
+    consumers: string[];
+}
+export type ValueDisposition = "consumed" | "transferred" | "discarded";
 export interface DoctorCtx {
     root: string;
     files: {
@@ -337,6 +341,9 @@ export interface DoctorCtx {
         /** Resolve one captured expression through immutable aliases. Local and
          * shadowed lookalikes are known non-matches; unresolved targets are unknown. */
         identity(file: string, expression: ExpressionRef, query: IdentityQuery): SemanticResult<IdentityValue>;
+        /** Classify what supported local flow establishes for one exact value.
+         * Awaiting an ordinary array does not consume the promises it contains. */
+        valueDisposition(file: string, expression: ExpressionRef, query: ValueDispositionQuery): SemanticResult<ValueDisposition>;
         consumers(file: string): {
             exports: ExportConsumers[];
             coverage: ProjectConsumers["coverage"];

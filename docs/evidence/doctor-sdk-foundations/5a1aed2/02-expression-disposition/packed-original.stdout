@@ -1,0 +1,3 @@
+packed 55 0
+
+LOCATIONS [{"name": "map-location", "rule": "unawaited-async-map", "source": "const xs=[1,2];\nxs.map(async x=>x);", "expected": [{"line": 2, "column": 0}], "actual": [{"line": 2, "column": 0}], "passed": true}, {"name": "timers-same-line", "rule": "uncleared-settimeout-in-effect", "source": "import {useEffect} from \"react\";\nuseEffect(()=>{setTimeout(()=>{},100);setTimeout(()=>{},100);},[]);", "expected": [{"line": 2, "column": 15}, {"line": 2, "column": 38}], "actual": [{"line": 2, "column": 15}, {"line": 2, "column": 38}], "passed": true}]
