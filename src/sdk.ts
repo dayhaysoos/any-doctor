@@ -250,6 +250,10 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
   }, getSemanticReport:(meta:DoctorMeta):SemanticRunReport|undefined=>{
     const checks=meta.checks??[],capabilityNames=[...new Set(checks.flatMap(check=>check.needs??[]))],recipeDeclarations=checks.flatMap(check=>check.recipe?[{check:check.id,name:check.recipe.name}]:[]);
     if(!capabilityNames.length&&!recipeDeclarations.length&&!narrowings.size)return undefined;
+    for(const [file,source] of sourceCache){
+      try{if(digest(readFileWithin(root,file))!==digest(source))recordUnknown({version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'source-changed'},file,{capability:'source-integrity'});}
+      catch{recordUnknown({version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'source-changed'},file,{capability:'source-integrity'});}
+    }
     const available=ctx.analysis.available;
     const unavailableReason=providerCache?.reason??"analysis engine unavailable";
     const provider=providerCache??{id:"any-doctor/syntax-flow",version:"1",available, ...(!available?{reason:unavailableReason}:{}),dependencies:[]};
