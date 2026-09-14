@@ -1,6 +1,6 @@
 import { ProjectConsumers } from "./project-consumers.js";
 import { FunctionStructure } from "./function-structure.js";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, IdentityValue, Mode, ResourceLifetime, SemanticResult, ValueDisposition } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, IdentityValue, Mode, OptionPresence, ResourceLifetime, SemanticResult, ValueDisposition } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls } from "./analysis.js";
 type Analyzer = typeof analyzeBindings;
 type SpansAnalyzer = typeof analyzeSpans;
@@ -28,7 +28,7 @@ export type AnalysisResponse = {
 } | {
     file: AnalysisCalls;
 } | {
-    semantic: SemanticResult<IdentityValue | ValueDisposition | ResourceLifetime>;
+    semantic: SemanticResult<IdentityValue | ValueDisposition | ResourceLifetime | OptionPresence>;
 } | {
     error: string;
 };

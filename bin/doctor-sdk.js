@@ -315,6 +315,111 @@ export function resourceLifetimeResult(file, source, facts, acquisition, query) 
         return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'unsupported-expression', evidence };
     return { version: SEMANTIC_RESULT_VERSION, status: 'known', value: 'unreleased', evidence };
 }
+/** Host-owned structured option lookup. Ordered own properties and supported
+ * spreads override inherited values. `undefined` is an ignored WebIDL member,
+ * while `null` establishes absence for nullable request options such as signal. */
+export function optionPresenceResult(file, source, facts, expression, query) {
+    const digest = createHash("sha256").update(source).digest("hex"), flow = facts.structure.flow;
+    const values = new Map(flow.values.map(value => [value.id, value])), bindings = new Map(flow.bindings.map(binding => [binding.binding, binding])), states = new Map(facts.structure.bindings.map(binding => [binding.binding, binding]));
+    const byId = values.get(expression.id), subject = (byId === null || byId === void 0 ? void 0 : byId.start) === expression.start && byId.end === expression.end ? byId : flow.values.find(value => value.start === expression.start && value.end === expression.end);
+    if (!subject || subject.kind !== "call" && subject.kind !== "construct")
+        return unknown("unsupported-expression");
+    const evidence = [];
+    const add = (value, relationship) => { if (!evidence.some(item => item.range.start === value.start && item.range.end === value.end && item.relationship === relationship))
+        evidence.push({ kind: "expression", file, sourceDigest: digest, range: rangeOf(value), relationship }); };
+    add(subject, "option-call");
+    const stable = (binding) => { var _a, _b; return !((_a = states.get(binding)) === null || _a === void 0 ? void 0 : _a.reassigned) && !((_b = states.get(binding)) === null || _b === void 0 ? void 0 : _b.mutated); };
+    const resolve = (id, seen = new Set()) => { var _a, _b, _c, _d; if (id === undefined)
+        return null; const value = values.get(id); if (!value || seen.has(id))
+        return null; seen = new Set(seen).add(id); if (value.kind === "reference" && ((_a = value.target) === null || _a === void 0 ? void 0 : _a.binding) !== null && ((_b = value.target) === null || _b === void 0 ? void 0 : _b.binding) !== undefined) {
+        if (!stable(value.target.binding))
+            return null;
+        const initializer = (_c = bindings.get(value.target.binding)) === null || _c === void 0 ? void 0 : _c.initializer;
+        if (initializer !== undefined) {
+            add(value, "immutable-alias");
+            return (_d = resolve(initializer, seen)) !== null && _d !== void 0 ? _d : value;
+        }
+    } return value; };
+    const targetName = (id) => { const value = resolve(id); if (!(value === null || value === void 0 ? void 0 : value.target) || value.target.binding !== null || !value.target.root)
+        return null; return [value.target.root, ...value.target.members].join("."); };
+    const isUndefined = (id) => { var _a; const value = resolve(id); return (value === null || value === void 0 ? void 0 : value.kind) === "void" || (value === null || value === void 0 ? void 0 : value.kind) === "reference" && ((_a = value.target) === null || _a === void 0 ? void 0 : _a.binding) === null && value.target.root === "undefined"; };
+    const optionValue = (id) => {
+        var _a, _b, _c;
+        const value = resolve(id);
+        if (!value)
+            return "unknown";
+        add(value, "option-value");
+        if (isUndefined(id))
+            return "ignored";
+        if (value.kind === "literal" && value.literal === null)
+            return "absent";
+        if (query.option === "signal") {
+            if (value.kind === "member" && value.member === "signal" && ((_a = resolve(value.receiver)) === null || _a === void 0 ? void 0 : _a.kind) === "construct" && targetName((_b = resolve(value.receiver)) === null || _b === void 0 ? void 0 : _b.callee) === "AbortController")
+                return "present";
+            if (value.kind === "call" && ["timeout", "abort", "any"].includes((_c = value.member) !== null && _c !== void 0 ? _c : "") && targetName(value.receiver) === "AbortSignal")
+                return "present";
+        }
+        return value.kind === "literal" && value.literal !== null ? "present" : "unknown";
+    };
+    const sameTarget = (a, b) => !!b && a.binding === b.binding && a.root === b.root && a.members.join(".") === b.members.join(".");
+    const property = (id, name, seen = new Set()) => {
+        var _a, _b, _c, _d, _e;
+        if (id === undefined || isUndefined(id) || ((_a = resolve(id)) === null || _a === void 0 ? void 0 : _a.kind) === "literal" && ((_b = resolve(id)) === null || _b === void 0 ? void 0 : _b.literal) === null)
+            return "ignored";
+        const raw = values.get(id), binding = (_c = raw === null || raw === void 0 ? void 0 : raw.target) === null || _c === void 0 ? void 0 : _c.binding;
+        if (binding !== null && binding !== undefined) {
+            const state = states.get(binding);
+            if (!stable(binding) || ((_d = state === null || state === void 0 ? void 0 : state.escapes) === null || _d === void 0 ? void 0 : _d.some(target => !sameTarget(target, subject.target))))
+                return "unknown";
+        }
+        const value = resolve(id);
+        if (!value || seen.has(value.id) || value.kind !== "object")
+            return "unknown";
+        seen = new Set(seen).add(value.id);
+        add(value, "option-object");
+        let result = "missing";
+        for (const item of (_e = value.properties) !== null && _e !== void 0 ? _e : []) {
+            if (item.spread) {
+                const nested = property(item.value, name, seen);
+                if (nested !== "missing")
+                    result = nested;
+                continue;
+            }
+            if (item.name === null) {
+                result = "unknown";
+                continue;
+            }
+            if (item.name === "__proto__" && result === "missing") {
+                const inherited = property(item.value, name, seen);
+                if (inherited !== "missing")
+                    result = inherited;
+                continue;
+            }
+            if (item.name === name)
+                result = item.accessor ? "unknown" : optionValue(item.value);
+        }
+        return result;
+    };
+    const input = (call, seen = new Set()) => {
+        var _a, _b, _c, _d, _e;
+        if (seen.has(call.id))
+            return "unknown";
+        seen = new Set(seen).add(call.id);
+        const option = property((_a = call.arguments) === null || _a === void 0 ? void 0 : _a[1], query.option);
+        if (option === "present" || option === "unknown" || option === "absent")
+            return option;
+        const first = resolve((_b = call.arguments) === null || _b === void 0 ? void 0 : _b[0]);
+        if ((first === null || first === void 0 ? void 0 : first.kind) === "construct" && query.sources.includes("Request") && targetName(first.callee) === "Request") {
+            add(first, "option-source");
+            return input(first, seen);
+        }
+        if ((first === null || first === void 0 ? void 0 : first.kind) === "literal" || (first === null || first === void 0 ? void 0 : first.primitive) === "string" || (first === null || first === void 0 ? void 0 : first.kind) === "reference" && ((_e = bindings.get((_d = (_c = first.target) === null || _c === void 0 ? void 0 : _c.binding) !== null && _d !== void 0 ? _d : -1)) === null || _e === void 0 ? void 0 : _e.primitive) === "string")
+            return "absent";
+        return "unknown";
+    };
+    const result = input(subject);
+    return result === "unknown" || result === "ignored" || result === "missing" ? unknown("unsupported-expression", evidence) : { version: SEMANTIC_RESULT_VERSION, status: "known", value: result, evidence };
+}
 function originOf(target) {
     if (target.source && target.importedName)
         return { kind: "import", source: target.source, name: target.importedName };

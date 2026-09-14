@@ -3,6 +3,7 @@ import type {
   AnalysisCalls, CallTarget, ExpressionRef, IdentityOrigin, IdentityQuery,
   IdentityValue, SemanticEvidence, SemanticResult, SourceRange, ValueDisposition,
   ValueDispositionQuery, ResourceLifetime, ResourceLifetimeQuery,
+  OptionPresence, OptionPresenceQuery,
 } from "./contract.js";
 import { SEMANTIC_RESULT_VERSION } from "./contract.js";
 
@@ -173,6 +174,57 @@ export function resourceLifetimeResult(file:string,source:string,facts:AnalysisC
     const carries=(call.arguments??[]).some(argument=>isHandle(argument,context.handles));const fn=resolve(call.callee!);if(fn?.kind==='function'){const nested=inspect({start:fn.start,handles:bindArgs(call,fn,context.handles),conditional:context.conditional||!!call.conditional},seen);if(nested==='released')return nested;if(nested==='unknown')uncertain=true;}else if(carries)uncertain=true;
   }return uncertain?'unknown':'unreleased';};
   const outcomes=contexts.map(context=>({context,value:inspect(context)}));if(outcomes.every(item=>item.value==='released')||outcomes.some(item=>item.value==='released'&&!item.context.conditional)&&outcomes.every(item=>item.value==='released'||item.context.conditional))return {version:SEMANTIC_RESULT_VERSION,status:'known',value:'released',evidence};if(outcomes.some(item=>item.value==='unknown')||new Set(outcomes.map(item=>item.value)).size>1)return {version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'unsupported-expression',evidence};return {version:SEMANTIC_RESULT_VERSION,status:'known',value:'unreleased',evidence};
+}
+
+/** Host-owned structured option lookup. Ordered own properties and supported
+ * spreads override inherited values. `undefined` is an ignored WebIDL member,
+ * while `null` establishes absence for nullable request options such as signal. */
+export function optionPresenceResult(
+  file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:OptionPresenceQuery,
+):SemanticResult<OptionPresence>{
+  const digest=createHash("sha256").update(source).digest("hex"),flow=facts.structure.flow;
+  const values=new Map(flow.values.map(value=>[value.id,value])),bindings=new Map(flow.bindings.map(binding=>[binding.binding,binding])),states=new Map(facts.structure.bindings.map(binding=>[binding.binding,binding]));
+  const byId=values.get(expression.id),subject=byId?.start===expression.start&&byId.end===expression.end?byId:flow.values.find(value=>value.start===expression.start&&value.end===expression.end);
+  if(!subject||subject.kind!=="call"&&subject.kind!=="construct")return unknown("unsupported-expression");
+  const evidence:SemanticEvidence[]=[];
+  const add=(value:FlowValue,relationship:string)=>{if(!evidence.some(item=>item.range.start===value.start&&item.range.end===value.end&&item.relationship===relationship))evidence.push({kind:"expression",file,sourceDigest:digest,range:rangeOf(value),relationship});};
+  add(subject,"option-call");
+  const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
+  const resolve=(id:number|undefined,seen=new Set<number>()):FlowValue|null=>{if(id===undefined)return null;const value=values.get(id);if(!value||seen.has(id))return null;seen=new Set(seen).add(id);if(value.kind==="reference"&&value.target?.binding!==null&&value.target?.binding!==undefined){if(!stable(value.target.binding))return null;const initializer=bindings.get(value.target.binding)?.initializer;if(initializer!==undefined){add(value,"immutable-alias");return resolve(initializer,seen)??value;}}return value;};
+  const targetName=(id:number|undefined):string|null=>{const value=resolve(id);if(!value?.target||value.target.binding!==null||!value.target.root)return null;return [value.target.root,...value.target.members].join(".");};
+  const isUndefined=(id:number|undefined)=>{const value=resolve(id);return value?.kind==="void"||value?.kind==="reference"&&value.target?.binding===null&&value.target.root==="undefined";};
+  type State="present"|"absent"|"missing"|"ignored"|"unknown";
+  const optionValue=(id:number):State=>{const value=resolve(id);if(!value)return "unknown";add(value,"option-value");if(isUndefined(id))return "ignored";if(value.kind==="literal"&&value.literal===null)return "absent";if(query.option==="signal"){
+    if(value.kind==="member"&&value.member==="signal"&&resolve(value.receiver)?.kind==="construct"&&targetName(resolve(value.receiver)?.callee)==="AbortController")return "present";
+    if(value.kind==="call"&&["timeout","abort","any"].includes(value.member??"")&&targetName(value.receiver)==="AbortSignal")return "present";
+  }
+  return value.kind==="literal"&&value.literal!==null?"present":"unknown";};
+  const sameTarget=(a:CallTarget,b:CallTarget|undefined)=>!!b&&a.binding===b.binding&&a.root===b.root&&a.members.join(".")===b.members.join(".");
+  const property=(id:number|undefined,name:string,seen=new Set<number>()):State=>{
+    if(id===undefined||isUndefined(id)||resolve(id)?.kind==="literal"&&resolve(id)?.literal===null)return "ignored";
+    const raw=values.get(id),binding=raw?.target?.binding;
+    if(binding!==null&&binding!==undefined){const state=states.get(binding);if(!stable(binding)||state?.escapes?.some(target=>!sameTarget(target,subject.target)))return "unknown";}
+    const value=resolve(id);if(!value||seen.has(value.id)||value.kind!=="object")return "unknown";seen=new Set(seen).add(value.id);add(value,"option-object");
+    let result:State="missing";
+    for(const item of value.properties??[]){
+      if(item.spread){const nested=property(item.value,name,seen);if(nested!=="missing")result=nested;continue;}
+      if(item.name===null){result="unknown";continue;}
+      if(item.name==="__proto__"&&result==="missing"){const inherited=property(item.value,name,seen);if(inherited!=="missing")result=inherited;continue;}
+      if(item.name===name)result=item.accessor?"unknown":optionValue(item.value);
+    }
+    return result;
+  };
+  const input=(call:FlowValue,seen=new Set<number>()):State=>{
+    if(seen.has(call.id))return "unknown";seen=new Set(seen).add(call.id);
+    const option=property(call.arguments?.[1],query.option);
+    if(option==="present"||option==="unknown"||option==="absent")return option;
+    const first=resolve(call.arguments?.[0]);
+    if(first?.kind==="construct"&&query.sources.includes("Request")&&targetName(first.callee)==="Request"){add(first,"option-source");return input(first,seen);}
+    if(first?.kind==="literal"||first?.primitive==="string"||first?.kind==="reference"&&bindings.get(first.target?.binding??-1)?.primitive==="string")return "absent";
+    return "unknown";
+  };
+  const result=input(subject);
+  return result==="unknown"||result==="ignored"||result==="missing"?unknown("unsupported-expression",evidence):{version:SEMANTIC_RESULT_VERSION,status:"known",value:result,evidence};
 }
 
 function originOf(target: CallTarget): IdentityOrigin | null {

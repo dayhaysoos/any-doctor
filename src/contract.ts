@@ -347,6 +347,8 @@ export interface ValueDispositionQuery { consumers: string[] }
 export type ValueDisposition = "consumed" | "transferred" | "discarded";
 export interface ResourceLifetimeQuery { release: string[]; owner: ExpressionRef }
 export type ResourceLifetime = "released" | "unreleased";
+export interface OptionPresenceQuery { option: string; sources: string[] }
+export type OptionPresence = "present" | "absent";
 
 export interface DoctorCtx {
   root: string;
@@ -392,6 +394,9 @@ export interface DoctorCtx {
     /** Match an acquisition's exact handles to releases executed by the
      * owner's returned cleanup. Conditional or opaque cleanup stays unknown. */
     resourceLifetime(file: string, acquisition: ExpressionRef, query: ResourceLifetimeQuery): SemanticResult<ResourceLifetime>;
+    /** Establish an option on the actual call input through supported ordered
+     * objects, spreads and constructors. Unsupported object flow is unknown. */
+    optionPresence(file: string, call: ExpressionRef, query: OptionPresenceQuery): SemanticResult<OptionPresence>;
     consumers(file: string): { exports: ExportConsumers[]; coverage: ProjectConsumers["coverage"] };
     structures(file: string): FunctionStructure[];
   };

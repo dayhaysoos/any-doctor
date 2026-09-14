@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {analyzeCalls} from '../bin/analysis.js';
-import {identityResult,resourceLifetimeResult,valueDispositionResult} from '../bin/doctor-sdk.js';
+import {identityResult,optionPresenceResult,resourceLifetimeResult,valueDispositionResult} from '../bin/doctor-sdk.js';
 
 function identities(source){
   const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
@@ -76,4 +76,31 @@ test('Doctor SDK matches exact resource handles through cleanup helpers and fact
     'const h=setTimeout(()=>{},1);return()=>{if(flag)clearTimeout(h)}',
     'const h=setTimeout(()=>{},1);return()=>externalCancel(h)',
   ])assert.equal(lifetime(body).status,'unknown',body);
+});
+
+function option(source){
+  const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);const values=parsed.file.structure.flow.values;
+  const call=values.find(value=>value.kind==='call'&&value.target?.root==='fetch');assert.ok(call);
+  return optionPresenceResult('example.ts',source,parsed.file,ref(parsed.file,call.id),{option:'signal',sources:['RequestInit','Request']});
+}
+
+test('Doctor SDK establishes ordered, inherited and Request-carried option presence',()=>{
+  for(const source of [
+    'const c=new AbortController();fetch("/",{__proto__:{signal:c.signal}})',
+    'const c=new AbortController();const a={signal:c.signal};fetch("/",{...a})',
+    'const c=new AbortController();const r=new Request("/",{signal:c.signal});fetch(new Request(r))',
+    'const c=new AbortController();fetch(new Request("/",{signal:c.signal}),{signal:undefined})',
+  ])assert.equal(option(source).value,'present',source);
+  for(const source of [
+    'fetch("/",{__proto__:{signal:null}})',
+    'const c=new AbortController();fetch("/",{__proto__:{signal:c.signal},signal:null})',
+    'fetch(new Request("/"))',
+    'fetch("/")',
+  ])assert.equal(option(source).value,'absent',source);
+  for(const source of [
+    'const options={};options.signal=external;fetch("/",options)',
+    'const options={};configure(options);fetch("/",{...options})',
+    'fetch("/",{get signal(){return external}})',
+    'function f(key){fetch("/",{[key]:external})}',
+  ])assert.equal(option(source).status,'unknown',source);
 });

@@ -1,0 +1,260 @@
+{
+  "schema": 1,
+  "tool": "any-doctor",
+  "target": "<checkpoint-temp>/gate/inputs/seeds",
+  "fileCount": 57,
+  "durationMs": 218,
+  "score": {
+    "score": 79,
+    "grade": "Good",
+    "filesClean": 29,
+    "filesTotal": 57,
+    "emptyScan": false
+  },
+  "counts": {
+    "error": 0,
+    "warning": 23,
+    "info": 6,
+    "total": 29,
+    "hiddenDuplicates": 0
+  },
+  "analysisAvailable": true,
+  "emptyScan": false,
+  "groups": [
+    {
+      "doctor": "async",
+      "checks": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "heading": "Review a native fetch with no established caller cancellation signal.",
+          "severity": "info",
+          "impact": "Cancellation or a deadline may help bound unnecessary or stalled work; omission alone does not establish a bug.",
+          "why": "Request lifetime requirements differ between server, extension and UI requests. This is a cancellation-policy review candidate.",
+          "fix": "Check the intended request lifetime and caller contract. If cancellation or a deadline is required, preserve forwarded options and provide an appropriate AbortSignal; abort only when the work should stop.",
+          "findings": [
+            {
+              "file": "fetch-global-member.ts",
+              "line": 1,
+              "column": 0,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1nbG9iYWwtbWVtYmVyLnRzAGQ2MGU1YzlkYThiNGM5ZmE0NTgzNDk5YTJlNDIwZmZkYmQzZGE4N2VkZGYxMTBjMjc4MzY2ZjRiNzMyZGMyZTMAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "fetch-nested-signal.ts",
+              "line": 1,
+              "column": 0,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1uZXN0ZWQtc2lnbmFsLnRzAGY0ZGI3MTYyZDE4NTc4YTA0OGZiNDMwZjRiNmM5MDk2MDllMDIzNDdmZDA0MTQ1NmQzYjU5NDA5N2FmMTg0YjYAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "fetch-no-options.ts",
+              "line": 1,
+              "column": 0,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1uby1vcHRpb25zLnRzADg2YTBhM2VjYmM2YTRhNmVhOGY4OWM4ZTk5MjZjMGNhZjYyNjY3ZjNjYzVjOWI4NjM3MmVmNmZlZmFlYjg5MDkAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "fetch-overridden-signal.ts",
+              "line": 1,
+              "column": 31,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1vdmVycmlkZGVuLXNpZ25hbC50cwA3NTg3MjQxYmJhNjM2OTczYmYzMmU3MDFiMGU4NjljODQ5YzQxMzZjYWU5MGVmMTM0NzJlOWY5NWFjZDA2YTkyAABub25lADMxAHJhbmdl"
+            },
+            {
+              "file": "fetch-signal-null.ts",
+              "line": 1,
+              "column": 0,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1zaWduYWwtbnVsbC50cwA5MTdmMDhjMWZjYzA5MDc2NDJlMzRkZWMzNDU1Y2I2OTBkOGYyZWE3NTZjMmQ5ZDI5NWZmMzlhNjMwOGQ4NDgxAABub25lADAAcmFuZ2U"
+            },
+            {
+              "file": "fetch-signal-undefined.ts",
+              "line": 1,
+              "column": 0,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1zaWduYWwtdW5kZWZpbmVkLnRzAGU1ODNkMjI2NGU0NDg3N2RmMzM5MjljOTk4OWE1MjMyZTVkMjc1YTYxNmVjYTkyOTFkNmE1NmFhNWNkYzFmMGMAAG5vbmUAMAByYW5nZQ"
+            }
+          ]
+        },
+        {
+          "rule": "unawaited-async-map",
+          "heading": "An array of async-map promises has no supported consumer or ownership transfer.",
+          "severity": "warning",
+          "impact": "Dropped promise results can leave errors unobserved and dependent work running before callbacks finish.",
+          "why": "Awaiting an array, its container or its length does not await the array elements. A combiner consumes its actual iterable, not all values in its source span.",
+          "fix": "If the work must finish here, await Promise.all on the actual promise array and handle errors. For sequential processing, use a for...of loop with await inside; merely removing async does not make asynchronous work sequential. Preserve intentional ownership transfers.",
+          "findings": [
+            {
+              "file": "map-async-function-callback.ts",
+              "line": 1,
+              "column": 12,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtYXN5bmMtZnVuY3Rpb24tY2FsbGJhY2sudHMAZTgwYWRjZTJmN2NiZmVmMzQ4ZTRiN2E0NjYwNDE5NzI2OGVlNTIyNTU4MDA1ZTA3NDgxNmE2MmI4YzNjOTQ4NAAAbm9uZQAxMgByYW5nZQ"
+            },
+            {
+              "file": "map-await-array.ts",
+              "line": 1,
+              "column": 6,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtYXdhaXQtYXJyYXkudHMANzMyYWUwOWZhYTJhZjM3NTNlMTRmNTQ2MDNkNTVlNjZjYzM0ZmRhOGVkODcyMGI1NTFhNzMyMmY3M2YzODhmZgAAbm9uZQA2AHJhbmdl"
+            },
+            {
+              "file": "map-await-object-containing-element.ts",
+              "line": 1,
+              "column": 12,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtYXdhaXQtb2JqZWN0LWNvbnRhaW5pbmctZWxlbWVudC50cwA3MzJhZTA5ZmFhMmFmMzc1M2UxNGY1NDYwM2Q1NWU2NmNjMzRmZGE4ZWQ4NzIwYjU1MWE3MzIyZjczZjM4OGZmAABub25lADEyAHJhbmdl"
+            },
+            {
+              "file": "map-bare-discard.ts",
+              "line": 1,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtYmFyZS1kaXNjYXJkLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "map-combiner-unrelated-callback.ts",
+              "line": 1,
+              "column": 38,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtY29tYmluZXItdW5yZWxhdGVkLWNhbGxiYWNrLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAYXJyb3c6ADAAMzgAcmFuZ2U"
+            },
+            {
+              "file": "map-const-enclosing-function.ts",
+              "line": 1,
+              "column": 17,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtY29uc3QtZW5jbG9zaW5nLWZ1bmN0aW9uLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAYXJyb3c6ADAAMTcAcmFuZ2U"
+            },
+            {
+              "file": "map-dropped-binding.ts",
+              "line": 1,
+              "column": 12,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtZHJvcHBlZC1iaW5kaW5nLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAAG5vbmUAMTIAcmFuZ2U"
+            },
+            {
+              "file": "map-filtered-chain-discard.ts",
+              "line": 1,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtZmlsdGVyZWQtY2hhaW4tZGlzY2FyZC50cwBiMjBiMTk4MzQ0MzVkNWFjYjRlNDM1ZjBmY2JmOGMxYWY4YzdkZDk2ZWU1ZDA0ZDFjYjc4MWJjYjc5MDlhZDBiAABub25lADAAcmFuZ2U"
+            },
+            {
+              "file": "map-length-in-combiner.ts",
+              "line": 1,
+              "column": 12,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtbGVuZ3RoLWluLWNvbWJpbmVyLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAAG5vbmUAMTIAcmFuZ2U"
+            },
+            {
+              "file": "map-location.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtbG9jYXRpb24udHMAY2UwOTBiZmRlOWRiZWRlZDczZmJhZTE2NDM0MTRkZTFhMWZkNDgxZjUyYmMxNDI1OWEwNDJjOWFkMDE2YmI0MQAAbm9uZQAwAHJhbmdl"
+            },
+            {
+              "file": "map-nested-array-combiner.ts",
+              "line": 1,
+              "column": 12,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtbmVzdGVkLWFycmF5LWNvbWJpbmVyLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAAG5vbmUAMTIAcmFuZ2U"
+            },
+            {
+              "file": "map-shadowed-combiner.ts",
+              "line": 1,
+              "column": 47,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtc2hhZG93ZWQtY29tYmluZXIudHMANzMyYWUwOWZhYTJhZjM3NTNlMTRmNTQ2MDNkNTVlNjZjYzM0ZmRhOGVkODcyMGI1NTFhNzMyMmY3M2YzODhmZgAAbm9uZQA0NwByYW5nZQ"
+            },
+            {
+              "file": "map-unrelated-scope-combiner.ts",
+              "line": 1,
+              "column": 12,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtdW5yZWxhdGVkLXNjb3BlLWNvbWJpbmVyLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAAG5vbmUAMTIAcmFuZ2U"
+            }
+          ]
+        },
+        {
+          "rule": "uncleared-settimeout-in-effect",
+          "heading": "Review an effect timer with no matching cancellation in its returned cleanup.",
+          "severity": "warning",
+          "impact": "The callback may outlive the effect that scheduled it; whether that is wrong depends on the intended lifetime.",
+          "why": "A matching name or an uncalled helper does not cancel this timer. React runs the returned cleanup on replacement or unmount.",
+          "fix": "If this timer belongs to the effect lifetime, retain its handle and cancel that handle from returned cleanup. Preserve deliberate completion, rescheduling and cancellation guards; inspect unresolved helper or handle flow before editing.",
+          "findings": [
+            {
+              "file": "timer-alias-effect.ts",
+              "line": 2,
+              "column": 12,
+              "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWFsaWFzLWVmZmVjdC50cwAxYjljNmNjMjZlNjk1MjY3MjllOTUzZjM1YmFhZjE4ZjJhMmU5NDA4MWFkNzVjZmIzZDRhZjUwZjY0ZmM4MjFjAGFycm93OgAwADEyAHJhbmdl"
+            },
+            {
+              "file": "timer-concise-effect.ts",
+              "line": 2,
+              "column": 19,
+              "message": "Cleanup analysis is uncertain for this timer. No supported matching cancellation was established; inspect opaque, conditional or reassigned cleanup flow before editing.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWNvbmNpc2UtZWZmZWN0LnRzADFiOWM2Y2MyNmU2OTUyNjcyOWU5NTNmMzViYWFmMThmMmEyZTk0MDgxYWQ3NWNmYjNkNGFmNTBmNjRmYzgyMWMAYXJyb3c6ADAAMTkAcmFuZ2U"
+            },
+            {
+              "file": "timer-local-clear-lookalike.ts",
+              "line": 2,
+              "column": 54,
+              "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWxvY2FsLWNsZWFyLWxvb2thbGlrZS50cwAxYjljNmNjMjZlNjk1MjY3MjllOTUzZjM1YmFhZjE4ZjJhMmU5NDA4MWFkNzVjZmIzZDRhZjUwZjY0ZmM4MjFjAGFycm93OgAwADU0AHJhbmdl"
+            },
+            {
+              "file": "timer-namespace-effect.ts",
+              "line": 2,
+              "column": 21,
+              "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLW5hbWVzcGFjZS1lZmZlY3QudHMAMWI5YzZjYzI2ZTY5NTI2NzI5ZTk1M2YzNWJhYWYxOGYyYTJlOTQwODFhZDc1Y2ZiM2Q0YWY1MGY2NGZjODIxYwBhcnJvdzoAMAAyMQByYW5nZQ"
+            },
+            {
+              "file": "timer-positive.ts",
+              "line": 2,
+              "column": 27,
+              "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLXBvc2l0aXZlLnRzADFiOWM2Y2MyNmU2OTUyNjcyOWU5NTNmMzViYWFmMThmMmEyZTk0MDgxYWQ3NWNmYjNkNGFmNTBmNjRmYzgyMWMAYXJyb3c6ADAAMjcAcmFuZ2U"
+            },
+            {
+              "file": "timer-shadowed-handle.ts",
+              "line": 2,
+              "column": 27,
+              "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLXNoYWRvd2VkLWhhbmRsZS50cwAxYjljNmNjMjZlNjk1MjY3MjllOTUzZjM1YmFhZjE4ZjJhMmU5NDA4MWFkNzVjZmIzZDRhZjUwZjY0ZmM4MjFjAGFycm93OgAwADI3AHJhbmdl"
+            },
+            {
+              "file": "timer-unused-clear-helper.ts",
+              "line": 2,
+              "column": 27,
+              "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLXVudXNlZC1jbGVhci1oZWxwZXIudHMAMWI5YzZjYzI2ZTY5NTI2NzI5ZTk1M2YzNWJhYWYxOGYyYTJlOTQwODFhZDc1Y2ZiM2Q0YWY1MGY2NGZjODIxYwBhcnJvdzoAMAAyNwByYW5nZQ"
+            },
+            {
+              "file": "timer-wrong-handle.ts",
+              "line": 2,
+              "column": 63,
+              "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLXdyb25nLWhhbmRsZS50cwAxYjljNmNjMjZlNjk1MjY3MjllOTUzZjM1YmFhZjE4ZjJhMmU5NDA4MWFkNzVjZmIzZDRhZjUwZjY0ZmM4MjFjAGFycm93OgAwADYzAHJhbmdl"
+            },
+            {
+              "file": "timers-same-line.ts",
+              "line": 2,
+              "column": 15,
+              "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVycy1zYW1lLWxpbmUudHMAMWI5YzZjYzI2ZTY5NTI2NzI5ZTk1M2YzNWJhYWYxOGYyYTJlOTQwODFhZDc1Y2ZiM2Q0YWY1MGY2NGZjODIxYwBhcnJvdzoAMAAxNQByYW5nZQ"
+            },
+            {
+              "file": "timers-same-line.ts",
+              "line": 2,
+              "column": 38,
+              "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVycy1zYW1lLWxpbmUudHMAMWI5YzZjYzI2ZTY5NTI2NzI5ZTk1M2YzNWJhYWYxOGYyYTJlOTQwODFhZDc1Y2ZiM2Q0YWY1MGY2NGZjODIxYwBhcnJvdzoAMAAzOAByYW5nZQ"
+            }
+          ]
+        }
+      ],
+      "blindSpots": [
+        "All checks require calls analysis and abstain when it is unavailable; the report exposes narrowed coverage, never a clean bill of health.",
+        "Native globals and React imports are resolved lexically. Cross-file wrappers, monkey-patched globals and arbitrary runtime types are not interpreted.",
+        "Array identity uses literals, declared array parameters and supported array-producing chains. Unknown receivers/transfers abstain; return transfers ownership, not proof of settlement.",
+        "Timer cleanup follows returned functions and direct local helper calls. Conditional cancellation and multiple outstanding writes to one handle remain review cases, not proofs of a leak.",
+        "Fetch options use ordered local properties/spreads and Request constructors. Unknown inputs/options, mutation and escapes abstain; signal presence is not proof that anyone aborts.",
+        "Fixture-named files and default diagnostic extension exclusions remain outside the scan."
+      ]
+    }
+  ],
+  "crashed": [],
+  "broken": [],
+  "skippedUnsafe": [],
+  "gate": {
+    "failOn": "none",
+    "mode": "full",
+    "fails": false
+  }
+}

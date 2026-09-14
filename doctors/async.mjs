@@ -10,7 +10,7 @@ export const meta = {
     'Fixture-named files and default diagnostic extension exclusions remain outside the scan.',
   ],
   checks: [
-    {id:'fetch-calls-without-abortsignal',revision:2,reportingUnit:'occurrence',needs:['calls','identity'],onUnknown:'skip',severity:'info',
+    {id:'fetch-calls-without-abortsignal',revision:2,reportingUnit:'occurrence',needs:['calls','identity','option-presence'],onUnknown:'skip',severity:'info',
       description:'Review a native fetch with no established caller cancellation signal.',
       claim:'A resolved native fetch whose input and ordered options establish no caller signal, including an explicit null override of an unknown input.',
       impact:'Cancellation or a deadline may help bound unnecessary or stalled work; omission alone does not establish a bug.',
@@ -43,7 +43,7 @@ export async function doctor(ctx) {
       evidence:{endLine:c.endLine,endColumn:c.endColumn},...(message?{message}: {})});
     for(const c of m.calls){
       const fetchIdentity=ctx.analysis.identity(file,m.ref(c.callee),{globals:['fetch','window.fetch','globalThis.fetch','self.fetch']});
-      if(fetchIdentity.status==='known'&&fetchIdentity.value.matches && m.fetchSignal(c)==='absent') report('fetch-calls-without-abortsignal',c);
+      if(fetchIdentity.status==='known'&&fetchIdentity.value.matches){const option=ctx.analysis.optionPresence(file,m.ref(c.id),{option:'signal',sources:['RequestInit','Request']});if(option.status==='known'&&option.value==='absent')report('fetch-calls-without-abortsignal',c);}
       if(c.member==='map' && m.array(c.receiver) && m.resolve(c.arguments[0])?.async){
         const disposition=ctx.analysis.valueDisposition(file,m.ref(c.id),{consumers:['Promise.all','Promise.allSettled','Promise.any','Promise.race','globalThis.Promise.all','globalThis.Promise.allSettled','globalThis.Promise.any','globalThis.Promise.race']});
         if(disposition.status==='known'&&disposition.value==='discarded') report('unawaited-async-map',c);
@@ -113,39 +113,6 @@ function model(facts){
     if(v.kind==='member'&&v.member==='useEffect'){const root=resolve(v.receiver);return root?.target?.source==='react'&&['*','default'].includes(root.target.importedName);}
     return false;
   }
-  function isUndefined(id){const v=resolve(id);return v?.kind==='void'||v?.kind==='reference'&&v.target.binding===null&&v.target.root==='undefined';}
-  function signal(id){
-    const v=resolve(id);if(isUndefined(id)||v?.kind==='literal'&&v.literal===null)return 'absent';
-    if(v?.kind==='member'&&v.member==='signal'){const base=resolve(v.receiver);if(base?.kind==='construct'&&native(base.callee,'AbortController'))return 'present';}
-    if(v?.kind==='call'&&['timeout','abort','any'].includes(v.member)&&native(v.receiver,'AbortSignal'))return 'present';
-    return 'unknown';
-  }
-  function optionsSignal(id){
-    if(id===undefined||isUndefined(id)||resolve(id)?.literal===null)return absent;
-    // Unknown calls may mutate an options alias. Native fetch itself is a use.
-    const raw=values.get(id);if(raw?.target?.binding!==null&&raw?.target?.binding!==undefined){
-      const state=states.get(raw.target.binding);
-      if(state?.escapes?.some(t=>!(t.binding===null&&t.root==='fetch') && !(t.binding===null&&['window','globalThis','self'].includes(t.root)&&t.members.join('.')==='fetch')))return unknown;
-    }
-    const p=property(id,'signal');
-    if(p.state!=='present')return p;
-    return {state:signal(p.value)};
-  }
-  function fetchSignal(c,seen=new Set()){
-    if(seen.has(c.id))return 'unknown';seen=new Set(seen).add(c.id);
-    const opts=optionsSignal(c.arguments[1]);
-    // An explicit null signal overrides Request.signal; undefined is ignored by
-    // WebIDL optional dictionary conversion, so retain Request evidence below.
-    const p=property(c.arguments[1],'signal');
-    if(p.state==='present'&&resolve(p.value)?.kind==='literal'&&resolve(p.value).literal===null)return 'absent';
-    if(opts.state==='unknown'||opts.state==='present')return opts.state;
-    const input=resolve(c.arguments[0]);
-    if(input?.kind==='construct'&&native(input.callee,'Request'))return fetchSignal(input,seen);
-    if(input?.kind==='literal')return 'absent';
-    // Template strings (including interpolation) cannot carry Request signals.
-    if(input?.primitive==='string'||input?.kind==='reference'&&bindings.get(input.target.binding)?.primitive==='string')return 'absent';
-    return 'unknown';
-  }
   function array(id,seen=new Set()){
     if(seen.has(id))return false;seen=new Set(seen).add(id);
     const raw=values.get(id);if(states.get(raw?.target?.binding)?.escapes?.length)return false;
@@ -155,5 +122,5 @@ function model(facts){
     return false;
   }
   const ref=id=>{const v=values.get(id);return {id:v.id,start:v.start,end:v.end}};
-  return {flow,calls,resolve,native,reactEffect,array,fetchSignal,ref};
+  return {flow,calls,resolve,native,reactEffect,array,ref};
 }

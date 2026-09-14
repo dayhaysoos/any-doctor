@@ -180,6 +180,19 @@ export function buildCtx(root, opts = {}) {
                     return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
                 }
             },
+            optionPresence(file, call, query) {
+                if (analysisForcedOff || !ctx.analysis.available)
+                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'analysis-unavailable' };
+                try {
+                    const response = runAnalysis({ kind: 'option-presence', file, expression: call, query, sourceDigest: digest(readSource(file)) }, root);
+                    if (response.semantic)
+                        return response.semantic;
+                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+                }
+                catch {
+                    return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+                }
+            },
         },
         report: {
             finding(f) {
