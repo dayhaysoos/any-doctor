@@ -1,0 +1,18 @@
+{
+  "local": {
+    "findings": 67,
+    "coverageIssues": 20,
+    "exactFindingsMatch": true,
+    "exactCoverageExceptDurationMatch": true,
+    "crashed": 0,
+    "broken": 0
+  },
+  "packed": {
+    "findings": 67,
+    "coverageIssues": 20,
+    "exactFindingsMatch": true,
+    "exactCoverageExceptDurationMatch": true,
+    "crashed": 0,
+    "broken": 0
+  }
+}

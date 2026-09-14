@@ -1,0 +1,59 @@
+[
+  {
+    "suite": "original",
+    "cases": 30,
+    "seedsAndExpectationsEqual": true,
+    "files": [
+      {
+        "path": "/private/tmp/any-doctor-loader-independent-piyjfxj8/local-original/independent-seeds.json",
+        "sha256": "6098d144ab4c3c97d1e7b88123a809fcfbe01d50515df3656a4bd10b71fc7e7b"
+      },
+      {
+        "path": "/tmp/any-doctor-result-flow-repair/local-original/independent-seeds.json",
+        "sha256": "6098d144ab4c3c97d1e7b88123a809fcfbe01d50515df3656a4bd10b71fc7e7b"
+      },
+      {
+        "path": "/tmp/any-doctor-result-flow-repair/candidate-packed/independent-seeds.json",
+        "sha256": "6098d144ab4c3c97d1e7b88123a809fcfbe01d50515df3656a4bd10b71fc7e7b"
+      }
+    ]
+  },
+  {
+    "suite": "previous",
+    "cases": 33,
+    "seedsAndExpectationsEqual": true,
+    "files": [
+      {
+        "path": "/private/tmp/any-doctor-loader-independent-piyjfxj8/local-previous/new-seeds.json",
+        "sha256": "b17ada9cad58235efc9e6482e492c6f0b71ead56c39a03d64028e318b5264773"
+      },
+      {
+        "path": "/tmp/any-doctor-result-flow-repair/local-repair/new-seeds.json",
+        "sha256": "b17ada9cad58235efc9e6482e492c6f0b71ead56c39a03d64028e318b5264773"
+      },
+      {
+        "path": "/tmp/any-doctor-result-flow-repair/candidate-packed/new-seeds.json",
+        "sha256": "b17ada9cad58235efc9e6482e492c6f0b71ead56c39a03d64028e318b5264773"
+      }
+    ]
+  },
+  {
+    "suite": "combination",
+    "cases": 12,
+    "seedsAndExpectationsEqual": true,
+    "files": [
+      {
+        "path": "/private/tmp/any-doctor-loader-independent-piyjfxj8/local-extra-seeds.json",
+        "sha256": "af73e4ce7d14c32da252f278842951c2ce85e039227680ed57694e5628d9056d"
+      },
+      {
+        "path": "/tmp/any-doctor-result-flow-repair/local-combination/local-extra-seeds.json",
+        "sha256": "af73e4ce7d14c32da252f278842951c2ce85e039227680ed57694e5628d9056d"
+      },
+      {
+        "path": "/tmp/any-doctor-result-flow-repair/candidate-packed/packed-extra-seeds.json",
+        "sha256": "af73e4ce7d14c32da252f278842951c2ce85e039227680ed57694e5628d9056d"
+      }
+    ]
+  }
+]

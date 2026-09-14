@@ -1,0 +1,13 @@
+{
+  "findings": 67,
+  "exportFindings": 32,
+  "duplicateSites": 35,
+  "changedFindings": [],
+  "retainedLocalPackedFindingsEqual": true,
+  "coverageIssuesUnchanged": true,
+  "coverageIssueCount": 20,
+  "scans": {
+    "/tmp/any-doctor-consumer-repairs/local-sift.json": "913ae7d95c92aa946211d4480dd87bf8ee637412314fadd7daf8fd3395cbbb86",
+    "/tmp/any-doctor-consumer-repairs/packed-final/sift.stdout": "186c422392dbb31b0f872ab3cd0b9b360641bda29fda75a56be97677cb2f9ae7"
+  }
+}

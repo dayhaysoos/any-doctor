@@ -1,0 +1,20 @@
+{
+  "head": "b7615748884c738bf8ccc3aef06ef69daf223f02",
+  "branch": "website/docs",
+  "indexEmpty": true,
+  "changedExistingFiles": [
+    "bin/analysis.js",
+    "bin/contract.d.ts",
+    "docs-site/src/content/docs/doctors/convex.mdx",
+    "docs/doctor-reliability.md",
+    "doctors/convex.fixtures.mjs",
+    "doctors/convex.mjs",
+    "src/analysis.ts",
+    "src/contract.ts"
+  ],
+  "otherStartingFilesUnchanged": true,
+  "historicalInputsUnchanged": true,
+  "frozenSnapshotUnchanged": true,
+  "workingDigest": "3e8e046096b16b59156f74edc458e0f74807d30519a0508ef1768249b139d07c",
+  "manifestEntries": 195
+}

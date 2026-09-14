@@ -1,0 +1,26 @@
+{
+  "convex": {
+    "local": {
+      "error": 0,
+      "warning": 40,
+      "info": 84,
+      "total": 124,
+      "hiddenDuplicates": 0
+    },
+    "packed": {
+      "error": 0,
+      "warning": 40,
+      "info": 84,
+      "total": 124,
+      "hiddenDuplicates": 0
+    },
+    "findingsIdentical": true,
+    "diagnosticFiles": 671
+  },
+  "slop": {
+    "findings": 67,
+    "coverageIssues": 20,
+    "findingsAndCoverageUnchanged": true
+  },
+  "snapshotFiles": 1530
+}

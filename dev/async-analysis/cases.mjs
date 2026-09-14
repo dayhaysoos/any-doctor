@@ -1,0 +1,81 @@
+export const F='fetch-calls-without-abortsignal',M='unawaited-async-map',T='uncleared-settimeout-in-effect';
+export const cases=[];
+// Every case carries an unrelated genuine positive of its own rule. A blanket
+// suppression fails even when the main specimen intentionally abstains.
+const controls={
+ [F]:'fetch("/positive");',
+ [M]:'[1].map(async positive=>positive);',
+ [T]:'import {useEffect as positiveEffect} from "react"; positiveEffect(()=>{setTimeout(()=>{},1)},[]);',
+};
+function add(name,rule,expected,source,reason){cases.push({name,rule,expected:expected+1,source:source+'\n'+controls[rule],reason,severity:rule===F?'info':'warning',distinctColumns:true});}
+const R='import {useEffect as effect} from "react";';
+add('timer-renamed-native-aliases',T,0,R+'const start=window.setTimeout,stop=globalThis.clearTimeout;effect(()=>{const h=start(()=>{},1);const cancel=()=>stop(h);return cancel},[])','API and returned helper identity');
+add('timer-local-helper-called-in-cleanup',T,0,R+'effect(()=>{const h=setTimeout(()=>{},1);const cancel=()=>clearTimeout(h);return ()=>cancel()},[])','Direct cleanup helper runs');
+add('timer-local-helper-not-called-in-cleanup',T,1,R+'effect(()=>{const h=setTimeout(()=>{},1);return ()=>{const cancel=()=>clearTimeout(h)}},[])','Nested function declaration does not execute');
+add('timer-dead-clear',T,1,R+'effect(()=>{const h=setTimeout(()=>{},1);return ()=>{if(false)clearTimeout(h)}},[])','Literal dead clear is not cleanup');
+add('timer-dead-start',T,0,R+'effect(()=>{if(false)setTimeout(()=>{},1)},[])','Literal dead timer does not start');
+add('timer-unused-start-helper',T,0,R+'effect(()=>{const start=()=>setTimeout(()=>{},1)},[])','Uncalled helper does not establish a started timer');
+add('timer-aliased-handle',T,0,R+'effect(()=>{const h=setTimeout(()=>{},1);const alias=h;return ()=>clearTimeout(alias)},[])','Immutable handle alias');
+add('timer-shadowed-window',T,0,R+'effect(()=>{const window={setTimeout:()=>42};window.setTimeout()},[])','Local receiver is not a timer');
+add('timer-shadowed-react-namespace',T,0,'import * as React from "react";function f(React){React.useEffect(()=>setTimeout(()=>{},1))}','Shadowed namespace is ordinary');
+add('timer-qualified-computed',T,0,'import React from "react";React["useEffect"](()=>{const h=globalThis["setTimeout"](()=>{},1);return ()=>window["clearTimeout"](h)},[])','Computed static identity');
+add('timer-reassigned-cleanup',T,1,R+'effect(()=>{const h=setTimeout(()=>{},1);let stop=()=>clearTimeout(h);stop=()=>{};return stop},[])','Reassigned returned function cannot prove cleanup');
+add('timer-unknown-effect-factory',T,0,'const effect=getEffect();effect(()=>setTimeout(()=>{},1));','Unsupported effect identity abstains');
+add('timer-comments-strings',T,0,R+'effect(()=>{const text="setTimeout()";/* setTimeout(()=>{},1) */},[])','Only actual calls');
+add('timer-same-line-occurrences',T,2,R+'effect(()=>{setTimeout(()=>{},1);setTimeout(()=>{},1)},[])','Separate occurrence coordinates');
+add('timer-separate-functions',T,2,R+'function a(){effect(()=>{setTimeout(()=>{},1)},[])}function b(){effect(()=>{setTimeout(()=>{},1)},[])}','Same text is separate work');
+add('timer-unknown-cleanup-helper',T,1,R+'effect(()=>{const h=setTimeout(()=>{},1);return ()=>externalCancel(h)},[])','No supported cancellation; review wording retains uncertainty');
+add('map-return-alias',M,0,'function work(){const a=[1].map(async x=>x);const b=a;return b}','Ownership transferred');
+add('map-helper-alias',M,0,'async function settle(tasks){const a=tasks;return Promise.all(a)}const a=[1].map(async x=>x);settle(a);','Helper actually combines aliased parameter');
+add('map-helper-ignores',M,1,'function ignore(tasks){return 1}const a=[1].map(async x=>x);ignore(a);','Known helper ignores result');
+add('map-unknown-helper',M,0,'const a=[1].map(async x=>x);externalConsumer(a);','Unknown ownership transfer abstains');
+add('map-shadowed-array-type',M,0,'type Array<T>={map:(cb:any)=>void};function f(xs:Array<number>){xs.map(async x=>x)}','Local Array type is not builtin');
+add('map-unknown-receiver',M,0,'function f(xs){xs.map(async x=>x)}','Unresolved receiver abstains');
+add('map-local-method',M,0,'const obj={map:async cb=>cb(1)};obj.map(async x=>x);','Not known Array.map');
+add('map-shadowed-promise',M,1,'const Promise={all:async a=>a.length};const a=[1].map(async x=>x);await Promise.all(a);','Local all does not settle array');
+add('map-global-combiner-alias',M,0,'const p=globalThis.Promise;const a=[1].map(async x=>x);await p["all"](a);','Qualified native combiner');
+add('map-nested-array',M,1,'const a=[1].map(async x=>x);await Promise.all([a]);','No recursive settlement');
+add('map-object-container-await',M,1,'const a=[1].map(async x=>x);for(const task of a){await {task}}','Await object does not settle field');
+add('map-deferred-element-await',M,1,'const a=[1].map(async x=>x);for(const task of a){const later=async()=>await task}','Uncalled function in loop');
+add('map-unreachable-consumer',M,1,'const a=[1].map(async x=>x);if(false)Promise.all(a);','Dead combiner cannot consume');
+add('map-outer-function-is-not-result',M,1,'const fn=()=>{[1].map(async x=>x)};Promise.all([fn]);','Containment is not value flow');
+add('map-return-container-transfer',M,0,'function f(){const a=[1].map(async x=>x);return {a}}','Container transfer unknown, not categorical drop');
+add('map-opaque-container-transfer',M,0,'const a=[1].map(async x=>x);consume({a});','Unknown container transfer');
+add('map-nested-callback-discard',M,1,'Promise.all([1].map(async()=>{[1].map(async x=>x)}));','Outer combiner owns only outer results');
+add('map-comments-strings',M,0,'const text="[1].map(async x=>x)";/* [1].map(async x=>x) */','Not executable');
+add('map-type-wrapper',M,0,'const a=([1] as number[])!.map(async x=>x);const b=(a satisfies Promise<number>[]);Promise.all(b);','Transparent wrappers preserve result');
+add('map-typed-readonly',M,1,'function f(xs:ReadonlyArray<number>){xs.map(async x=>x)}','Declared native array contract');
+add('map-chain',M,1,'[1].filter(Boolean).slice().map(async x=>x);','Known array chain');
+add('map-reassigned-result',M,0,'let a=[1].map(async x=>x);a=[];Promise.all(a);','Reassignment remains unknown');
+add('map-mutated-receiver',M,0,'const xs=[1];xs.map=other;xs.map(async x=>x);','Mutation invalidates array method identity');
+add('map-same-line',M,2,'[1].map(async x=>x);[1].map(async x=>x);','Separate columns');
+add('fetch-signal-later-unknown-spread',F,0,'const c=new AbortController();function f(init){fetch("/",{signal:c.signal,...init})}','Unknown override');
+add('fetch-signal-after-unknown-spread',F,0,'const c=new AbortController();function f(init){fetch("/",{...init,signal:c.signal})}','Last explicit property establishes signal');
+add('fetch-null-after-signal',F,1,'const c=new AbortController();fetch("/",{signal:c.signal,signal:null});','Later null wins');
+add('fetch-signal-after-null',F,0,'const c=new AbortController();fetch("/",{signal:null,signal:c.signal});','Later valid signal wins');
+add('fetch-nested-spread',F,0,'const c=new AbortController();const a={signal:c.signal};const b={...a};fetch("/",{...b});','Nested known spreads');
+add('fetch-mutated-options',F,0,'const options={};options.signal=external;fetch("/",options);','Mutation means unknown');
+add('fetch-escaped-options',F,0,'const options={};configure(options);fetch("/",{...options});','Escaped source spread may carry cancellation');
+add('fetch-getter',F,0,'fetch("/",{get signal(){return external}});','Getter not executed');
+add('fetch-dynamic-property',F,0,'function f(key){fetch("/",{[key]:external})}','Unknown key may be signal');
+add('fetch-known-property-after-dynamic',F,1,'function f(key){fetch("/",{[key]:external,signal:null})}','Explicit override still establishes null');
+add('fetch-global-alias',F,1,'const request=globalThis.fetch;request("/");','Real global function alias');
+add('fetch-shadowed-global',F,0,'function f(globalThis){globalThis.fetch("/")}','Local globalThis is ordinary');
+add('fetch-request-no-signal',F,1,'fetch(new Request("/"));','Known Request with no caller cancellation');
+add('fetch-request-null-override',F,1,'const c=new AbortController();fetch(new Request("https://example.invalid",{signal:c.signal}),{signal:null});','Explicit null disconnects inherited signal');
+add('fetch-request-undefined-preserves',F,0,'const c=new AbortController();fetch(new Request("https://example.invalid",{signal:c.signal}),{signal:undefined});','Undefined optional dictionary member preserves inherited signal');
+add('fetch-forwarded-request',F,0,'function f(input:Request){fetch(input)}','Unknown Request may carry signal');
+add('fetch-options-reassigned',F,0,'let options={};options=external;fetch("/",options);','Reassignment unknown');
+add('fetch-template-url',F,1,'function f(id){fetch(`/api/${id}`)}','String template cannot carry Request signal');
+add('fetch-static-computed-and-comment',F,0,'const c=new AbortController();fetch("/",{/*before*/["signal"]:c.signal});','Syntax normalization');
+add('fetch-same-line',F,2,'fetch("/");fetch("/");','Separate occurrences');
+add('fetch-url-unknown',F,0,'function f(input){fetch(input)}','Input may be a Request; abstention is scoped');
+add('map-helper-only-returns-dropped',M,1,'function echo(a){return a}const a=[1].map(async x=>x);echo(a);','Returned array still dropped at caller');
+add('map-helper-return-consumed',M,0,'function echo(a){return a}const a=[1].map(async x=>x);const b=echo(a);Promise.all(b);','Follow returned helper result to actual consumer');
+add('map-receiver-escaped',M,0,'const xs=[1];configure(xs);xs.map(async x=>x);','Unknown mutation of receiver');
+add('timer-overwritten-handle',T,1,R+'effect(()=>{let h=setTimeout(()=>{},1);h=0;return ()=>clearTimeout(h)},[])','Overwritten handle cannot justify cancellation');
+add('map-helper-alias-of-native',M,0,'const settle=Promise.all.bind(Promise);const a=[1].map(async x=>x);settle(a);','Unknown bound wrapper transfer abstains');
+add('map-foreach-transfer-unknown',M,0,'const tasks=[1].map(async x=>x);tasks.forEach(async task=>{await task});','Unmodeled method transfer abstains, not a dropped-value proof');
+add('map-property-store-unknown',M,0,'holder.tasks=[1].map(async x=>x);','External property storage transfers ownership; unresolved');
+add('fetch-declared-string',F,1,'function f(url:string){fetch(url)}','Declared string contract cannot carry Request signal');
+add('fetch-string-concatenation',F,1,'function f(id){fetch("/api/"+id)}','String-producing expression');

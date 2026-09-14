@@ -24,7 +24,8 @@ function tmpDoctor(lines) {
 test("runDoctor: executes the doctor against the sample app", async () => {
   const r = await runDoctor({ programPath: DOCTOR, targetDir: TARGET });
   assert.equal(r.meta.id, "async");
-  assert.equal(r.findings.length, 4);
+  assert.equal(r.findings.length, 3);
+  assert.ok(r.findings.every(f => f.rule === "fetch-calls-without-abortsignal"), "sample fetches are cancellation-review candidates; returned unknown map receiver is not a dropped-array proof");
   assert.ok(r.durationMs >= 0);
 });
 

@@ -1,0 +1,14 @@
+{
+  "workingFilesVerified": 229,
+  "runtimeFilesVerified": 90,
+  "workingDigest": "fecf12c2761d6b970a5fa7fb9d7f6e1174ce5131fc4ba04a16f693e0aa7913df",
+  "doctorSha256": "91373d7dfaa63d24c370078c7d4f0e8eba639adb89c8439317be8147b806b7c6",
+  "artifactSha256": "1796f0818b032b88f5537aab6581a89424139b25d0219e036f9ef67f631bd7bc",
+  "rawArchiveSha256": "09887b764b724d399443a3207c9474ee536d46658eabe0cc9b0bdcc51af5de0e",
+  "rawFiles": 1437,
+  "archiveJsonAndLinksValid": true,
+  "finalHead": "2b8c937554cbe22f35a7695d38504c0ca253f244",
+  "indexEmpty": true,
+  "existingSharedFactsPreservedUnderAdditiveExtension": true,
+  "diffCheck": true
+}

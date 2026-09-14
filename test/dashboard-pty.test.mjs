@@ -110,7 +110,7 @@ test("bare run opens the aggregate tree directly; enter walks doctor-check-findi
 
   // The tree: the first enter expanded the top check (findings visible),
   // down moved onto an finding, and enter there copied its context.
-  assert.ok(text.includes("\u00d74"), "the async doctor row carries its total count");
+  assert.ok(text.includes("\u00d73"), "the async doctor row carries its total count");
   const counts = text.match(/\u00d7\d/g) ?? [];
   assert.ok(counts.length >= 2, "check rows carry finding counts");
   const beforeExpand = text.slice(0, text.indexOf(">STAGE pre-expand"));

@@ -1,0 +1,202 @@
+{
+  "artifact": "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package/any-doctor-0.1.2.tgz",
+  "artifactSha256": "19a52b7cb2c4b8a8beae2788bb3f0bbe3ed8a1e6c36c3ab68b5c42c462c647bd",
+  "workingDigest": "3e8e046096b16b59156f74edc458e0f74807d30519a0508ef1768249b139d07c",
+  "manifestEntries": 195,
+  "localChallenges": {
+    "passed": 62,
+    "failed": 0,
+    "skipped": 0
+  },
+  "packedChallenges": {
+    "passed": 62,
+    "failed": 0,
+    "skipped": 0
+  },
+  "localExtra": {
+    "passed": 83,
+    "failed": 0,
+    "skipped": 0
+  },
+  "packedExtra": {
+    "passed": 83,
+    "failed": 0,
+    "skipped": 0
+  },
+  "packVerification": "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package/verification.json",
+  "runs": [
+    {
+      "name": "final-tests",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "local-bundled",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "bin/cli.js",
+        "verify",
+        "--all"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "local-challenges",
+      "command": [
+        "python3",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/challenges.py",
+        "repaired-local",
+        "/Users/nickdejesus/Code/any-doctor"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "local-extra",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "dev/convex-analysis/run-cases.mjs",
+        "/Users/nickdejesus/Code/any-doctor",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/local-extra"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "local-convex-sift",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/tmp/any-doctor-frozen-sift",
+        "--format",
+        "json"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "local-consumer-labeled",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "dev/consumer-analysis/run-cases.mjs",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/local-consumer-labeled.json"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "local-consumer-scopes",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "dev/consumer-analysis/check-loader-scopes.mjs",
+        "/Users/nickdejesus/Code/any-doctor/bin/project-consumers.js",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/local-consumer-scopes.json"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "local-consumer-original",
+      "command": [
+        "python3",
+        "dev/consumer-analysis/independent-challenges.py",
+        "local",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/local-consumer-original"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "local-consumer-repair",
+      "command": [
+        "python3",
+        "dev/consumer-analysis/independent-repair-challenges.py",
+        "local",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/local-consumer-repair"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "local-consumer-combination",
+      "command": [
+        "python3",
+        "dev/consumer-analysis/independent-combination-challenges.py",
+        "local",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/local-consumer-combination"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "local-slop-sift",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/slop.mjs",
+        "/tmp/any-doctor-frozen-sift",
+        "--format",
+        "json"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "package-consumer-gates",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "dev/consumer-analysis/pack-working-candidate.mjs",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "status": 0
+    },
+    {
+      "name": "packed-challenges",
+      "command": [
+        "python3",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/challenges.py",
+        "packed",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package/consumer/node_modules/any-doctor"
+      ],
+      "cwd": "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package/consumer",
+      "status": 0
+    },
+    {
+      "name": "packed-extra",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "/Users/nickdejesus/Code/any-doctor/dev/convex-analysis/run-cases.mjs",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package/consumer/node_modules/any-doctor",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/packed-extra"
+      ],
+      "cwd": "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package/consumer",
+      "status": 0
+    },
+    {
+      "name": "packed-convex-sift",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package/consumer/node_modules/any-doctor/bin/cli.js",
+        "run",
+        "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package/consumer/node_modules/any-doctor/doctors/convex.mjs",
+        "/tmp/any-doctor-frozen-sift",
+        "--format",
+        "json"
+      ],
+      "cwd": "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package/consumer",
+      "status": 0
+    }
+  ]
+}

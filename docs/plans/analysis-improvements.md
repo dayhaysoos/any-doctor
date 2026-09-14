@@ -232,3 +232,11 @@ the maintainer will assign implementation separately.
 - [OXC type-aware analysis](https://oxc.rs/docs/guide/usage/linter/type-aware.html):
   a separate capability from the parser used by Any Doctor today. Recheck provider
   support when implementing; this plan does not select a dependency.
+
+## Consumer graph implementation update
+
+The resolved import/export graph extension now has a bounded implementation;
+see [supported scope and candidate semantics](../project-consumer-analysis.md).
+The host owns file roles, resolution, cross-file evidence and syntax fingerprints;
+Slop owns usefulness thresholds and review policy. Evidence and verification are
+recorded under `docs/evidence/consumer-analysis`, separately from independent review.

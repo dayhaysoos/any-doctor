@@ -332,10 +332,15 @@ test("gate: --format json puts one parseable schema-tagged object on stdout", as
   assert.equal(j.diff, undefined, "no diff without --base");
 });
 
-test("gate: --fail-on warning fails the sample app; error and none do not", async (t) => {
+test("gate: warning findings fail, informational fetch candidates do not", async (t) => {
   silentConsole(t);
   const err = t.mock.method(console, "error", () => {});
-  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--fail-on", "warning"]), 1, "4 warnings clear the warning bar");
+  assert.equal(await cli.main(["run", DOCTOR, TARGET, "--fail-on", "warning"]), 0, "sample cancellation candidates are informational");
+  const warningTarget = fs.mkdtempSync(path.join(os.tmpdir(), "async-warning-gate-"));
+  try {
+    fs.writeFileSync(path.join(warningTarget, "example.ts"), "[1].map(async x=>x);[1].map(async x=>x);");
+    assert.equal(await cli.main(["run", DOCTOR, warningTarget, "--fail-on", "warning"]), 1, "two actual discarded promise arrays clear the warning bar");
+  } finally { fs.rmSync(warningTarget, { recursive: true, force: true }); }
   const printed = err.mock.calls.map(c => c.arguments.join(" ")).join("\n");
   assert.match(printed, /gate: \d+ findings at or above warning/);
   assert.equal(await cli.main(["run", DOCTOR, TARGET, "--fail-on", "error"]), 0, "no errors in the sample app");

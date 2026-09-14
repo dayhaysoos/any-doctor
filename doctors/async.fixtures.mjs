@@ -53,17 +53,11 @@ export const fixtures = [
     ]
   },
   {
-    "name": "reports an options variable whose signal cannot be determined",
+    "name": "accepts known options carrying a signal property",
     "seed": {
       "src/request.ts": "const options = { signal: controller.signal };\nfetch('/api/users', options);\n"
     },
-    "expected": [
-      {
-        "rule": "fetch-calls-without-abortsignal",
-        "file": "src/request.ts",
-        "line": 2
-      }
-    ]
+    "expected": []
   },
   {
     "name": "commented-out map(async) lookalike is not flagged",
@@ -100,7 +94,7 @@ export const fixtures = [
     "expected": []
   },
   {
-    "name": "await on the promise array does not settle it — flagged",
+    "name": "await on the promise array does not settle it \u2014 flagged",
     "seed": {
       "src/c.ts": "export async function work(ids: string[]) {\n  const results = ids.map(async id => load(id))\n  await results\n}"
     },
@@ -113,25 +107,19 @@ export const fixtures = [
     ]
   },
   {
-    "name": "per-element for-of consumption is recognized — not flagged",
+    "name": "per-element for-of consumption is recognized \u2014 not flagged",
     "seed": {
       "src/for-of-on.ts": "export async function work(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  for (const p of jobs) {\n    await p\n  }\n}"
     },
     "expected": []
   },
   {
-    "name": "per-element for-of awaits are not recognized — flagged (degraded mode)",
+    "name": "unavailable analysis abstains: src/for-of.ts",
     "analysis": "off",
     "seed": {
       "src/for-of.ts": "export async function work(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  for (const job of jobs) {\n    await job\n  }\n}"
     },
-    "expected": [
-      {
-        "rule": "unawaited-async-map",
-        "file": "src/for-of.ts",
-        "line": 2
-      }
-    ]
+    "expected": []
   },
   {
     "name": "an inline for-of over the mapped array with awaited elements is not flagged",
@@ -154,7 +142,7 @@ export const fixtures = [
     ]
   },
   {
-    "name": "same-name consumption silences both bindings (degraded mode)",
+    "name": "unavailable analysis abstains: src/shadow-off.ts",
     "analysis": "off",
     "seed": {
       "src/shadow-off.ts": "export function main(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  return jobs.length\n}\n\nfunction other(otherIds: string[]) {\n  const jobs = otherIds.map(async x => save(x))\n  return Promise.all(jobs)\n}"
@@ -162,7 +150,7 @@ export const fixtures = [
     "expected": []
   },
   {
-    "name": "a never-reassigned let binding is checked like a const — flagged",
+    "name": "a never-reassigned let binding is checked like a const \u2014 flagged",
     "seed": {
       "src/let-never.ts": "export function work(ids: string[]) {\n  let jobs = ids.map(async id => load(id))\n  return jobs.length\n}"
     },
@@ -182,21 +170,15 @@ export const fixtures = [
     "expected": []
   },
   {
-    "name": "degraded mode still flags the plain dropped binding",
+    "name": "unavailable analysis abstains: src/off-a.ts",
     "analysis": "off",
     "seed": {
       "src/off-a.ts": "export function work(ids: string[]) {\n  const results = ids.map(async id => load(id))\n  return results.length\n}"
     },
-    "expected": [
-      {
-        "rule": "unawaited-async-map",
-        "file": "src/off-a.ts",
-        "line": 2
-      }
-    ]
+    "expected": []
   },
   {
-    "name": "degraded mode still sees next-line combiner consumption",
+    "name": "unavailable analysis abstains: src/off-b.ts",
     "analysis": "off",
     "seed": {
       "src/off-b.ts": "export async function work(ids: string[]) {\n  const results = ids.map(async id => load(id))\n  return Promise.all(results)\n}"
@@ -204,35 +186,23 @@ export const fixtures = [
     "expected": []
   },
   {
-    "name": "degraded mode still flags the bare discarded statement",
+    "name": "unavailable analysis abstains: src/off-bare.ts",
     "analysis": "off",
     "seed": {
       "src/off-bare.ts": "export function warm(ids: string[]) {\n  ids.map(async id => prime(id));\n  return ids.length;\n}\n"
     },
-    "expected": [
-      {
-        "rule": "unawaited-async-map",
-        "file": "src/off-bare.ts",
-        "line": 2
-      }
-    ]
+    "expected": []
   },
   {
-    "name": "degraded mode still flags await directly on the mapped array",
+    "name": "unavailable analysis abstains: src/off-await-array.ts",
     "analysis": "off",
     "seed": {
       "src/off-await-array.ts": "export async function warm(ids: string[]) {\n  await ids.map(async id => prime(id));\n  return ids.length;\n}\n"
     },
-    "expected": [
-      {
-        "rule": "unawaited-async-map",
-        "file": "src/off-await-array.ts",
-        "line": 2
-      }
-    ]
+    "expected": []
   },
   {
-    "name": "degraded mode still sees same-line consumption after the declaration",
+    "name": "unavailable analysis abstains: src/off-one-line.ts",
     "analysis": "off",
     "seed": {
       "src/off-one-line.ts": "export const saveAll = (items: string[]) => { const jobs = items.map(async item => save(item)); return Promise.all(jobs); };"
@@ -240,18 +210,12 @@ export const fixtures = [
     "expected": []
   },
   {
-    "name": "degraded mode still flags the optional-chained bound map",
+    "name": "unavailable analysis abstains: src/off-opt-bound.ts",
     "analysis": "off",
     "seed": {
       "src/off-opt-bound.ts": "export function work(ids?: string[]) {\n  const jobs = ids?.map(async id => load(id))\n  return jobs?.length ?? 0\n}"
     },
-    "expected": [
-      {
-        "rule": "unawaited-async-map",
-        "file": "src/off-opt-bound.ts",
-        "line": 2
-      }
-    ]
+    "expected": []
   },
   {
     "name": "allSettled-consumed result in a later batch loop is not flagged",
@@ -327,7 +291,7 @@ export const fixtures = [
     ]
   },
   {
-    "name": "await directly on the mapped array does not settle it — flagged",
+    "name": "await directly on the mapped array does not settle it \u2014 flagged",
     "seed": {
       "src/await-array.ts": "export async function warm(ids: string[]) {\n  await ids.map(async id => prime(id));\n  return ids.length;\n}\n"
     },
@@ -375,13 +339,13 @@ export const fixtures = [
   {
     "name": "reports an assigned timeout without cleanup",
     "seed": {
-      "src/example.tsx": "useEffect(() => {\n  const timer = setTimeout(() => save(), 1000);\n}, []);\n"
+      "src/example.tsx": "import {useEffect} from \"react\";\nuseEffect(() => {\n  const timer = setTimeout(() => save(), 1000);\n}, []);\n"
     },
     "expected": [
       {
         "rule": "uncleared-settimeout-in-effect",
         "file": "src/example.tsx",
-        "line": 2
+        "line": 3
       }
     ]
   },
@@ -395,26 +359,26 @@ export const fixtures = [
   {
     "name": "reports only the timer missing from multi-timer cleanup",
     "seed": {
-      "src/example.jsx": "useEffect(() => {\n  const fast = setTimeout(work, 50);\n  let slow = setTimeout(work, 500);\n  return () => clearTimeout(fast);\n}, []);\n"
+      "src/example.jsx": "import {useEffect} from \"react\";\nuseEffect(() => {\n  const fast = setTimeout(work, 50);\n  let slow = setTimeout(work, 500);\n  return () => clearTimeout(fast);\n}, []);\n"
     },
     "expected": [
       {
         "rule": "uncleared-settimeout-in-effect",
         "file": "src/example.jsx",
-        "line": 3
+        "line": 4
       }
     ]
   },
   {
     "name": "reports an unassigned timer despite unrelated cleanup",
     "seed": {
-      "src/example.js": "useEffect(() => {\n  setTimeout(notify, 100);\n  return () => clearTimeout(existingTimer);\n}, []);\n"
+      "src/example.js": "import {useEffect} from \"react\";\nuseEffect(() => {\n  setTimeout(notify, 100);\n  return () => clearTimeout(existingTimer);\n}, []);\n"
     },
     "expected": [
       {
         "rule": "uncleared-settimeout-in-effect",
         "file": "src/example.js",
-        "line": 2
+        "line": 3
       }
     ]
   },
@@ -424,5 +388,86 @@ export const fixtures = [
       "src/example.ts": "const message = 'setTimeout(callback, 10)';\n// useEffect(() => setTimeout(callback, 10))\nfunction later() {\n  setTimeout(callback, 10);\n}\n"
     },
     "expected": []
+  },
+  {
+    "name": "unresolved effect identity: reports an assigned timeout without cleanup",
+    "seed": {
+      "src/example.tsx": "useEffect(() => {\n  const timer = setTimeout(() => save(), 1000);\n}, []);\n"
+    },
+    "expected": []
+  },
+  {
+    "name": "unresolved effect identity: reports only the timer missing from multi-timer cleanup",
+    "seed": {
+      "src/example.jsx": "useEffect(() => {\n  const fast = setTimeout(work, 50);\n  let slow = setTimeout(work, 500);\n  return () => clearTimeout(fast);\n}, []);\n"
+    },
+    "expected": []
+  },
+  {
+    "name": "unresolved effect identity: reports an unassigned timer despite unrelated cleanup",
+    "seed": {
+      "src/example.js": "useEffect(() => {\n  setTimeout(notify, 100);\n  return () => clearTimeout(existingTimer);\n}, []);\n"
+    },
+    "expected": []
+  },
+  {
+    "name": "locations: fetch-calls-without-abortsignal",
+    "seed": {
+      "example.ts": "fetch(\"/\");fetch(\"/\");"
+    },
+    "expected": [
+      {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "example.ts",
+        "line": 1,
+        "column": 0
+      },
+      {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "example.ts",
+        "line": 1,
+        "column": 11
+      }
+    ]
+  },
+  {
+    "name": "locations: unawaited-async-map",
+    "seed": {
+      "example.ts": "[1].map(async x=>x);[1].map(async x=>x);"
+    },
+    "expected": [
+      {
+        "rule": "unawaited-async-map",
+        "file": "example.ts",
+        "line": 1,
+        "column": 0
+      },
+      {
+        "rule": "unawaited-async-map",
+        "file": "example.ts",
+        "line": 1,
+        "column": 20
+      }
+    ]
+  },
+  {
+    "name": "locations: uncleared-settimeout-in-effect",
+    "seed": {
+      "example.ts": "import {useEffect} from \"react\";\nuseEffect(()=>{setTimeout(()=>{},1);setTimeout(()=>{},1)},[]);"
+    },
+    "expected": [
+      {
+        "rule": "uncleared-settimeout-in-effect",
+        "file": "example.ts",
+        "line": 2,
+        "column": 15
+      },
+      {
+        "rule": "uncleared-settimeout-in-effect",
+        "file": "example.ts",
+        "line": 2,
+        "column": 36
+      }
+    ]
   }
 ];

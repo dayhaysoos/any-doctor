@@ -1,0 +1,1022 @@
+{
+  "passed": 80,
+  "failed": 0,
+  "skipped": 0,
+  "rows": [
+    {
+      "name": "test-consumer-default",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "test-consumer-included",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": true
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "renamed-barrel",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "reexport-without-final-caller",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "same-name-positive",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "same-basename-dynamic",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a/helper.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a/helper.ts:helper"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "generated-target",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "generated-consumer",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "type-only-consumer",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "type-only-named",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "default-alias",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "star-cycle",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "namespace-member",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:unused"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "namespace-escape",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "use.ts:1 namespace escapes or has computed member access"
+      ]
+    },
+    {
+      "name": "shadowed-namespace",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "tsconfig-alias",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "package-entry",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "declared-framework-entry",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "extension-index",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "genuine-positive",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "unknown-dynamic",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "use.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "unresolved-relative",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverageIssues": [
+        "use.ts: unresolved internal module ./missing"
+      ]
+    },
+    {
+      "name": "parse-failure",
+      "passed": true,
+      "expected": {
+        "failure": true,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "literal-whitespace",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "template-whitespace",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "regex-whitespace",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "substantial-duplicate",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "trivial-long-signature",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "workspace-package-entry",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "excluded-test-consumer",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "same-line-surrounding-code",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "format-and-comments",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "different-captured-bindings",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "unsupported-config",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        ".: File 'missing-package/tsconfig.json' not found.",
+        ":1 File 'missing-package/tsconfig.json' not found."
+      ]
+    },
+    {
+      "name": "dynamic-namespace-binding",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:unused"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "dynamic-destructuring",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:unused"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "default-reexport-chain",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "local-export-specifier-positive",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "dynamic-then-member",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:unused"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "vitest-config-entry",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "nitro-plugin-entry",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "plugin-name-lookalike",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:default"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:default"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "review-tagged-template-raw",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "review-destructured-export-shadow",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "review-array-export-shadow",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "review-stored-import-promise",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "use.ts:1 dynamic module namespace requires downstream value flow"
+      ]
+    },
+    {
+      "name": "review-nested-import-type",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": []
+    },
+    {
+      "name": "import-equals-uncertainty",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "use.cts:1 TypeScript import-equals value flow unsupported"
+      ]
+    },
+    {
+      "name": "dynamic-template-parent-segment",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "shadowed-require-literal",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "shadowed-require-nonliteral",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "dynamic-template-prefix-fragment",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "unrelated.ts:dead"
+        ],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [
+        "unrelated.ts:dead"
+      ],
+      "coverageIssues": [
+        "index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "missing-config-scope",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "apps/web/main.ts: unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web/main.ts:1 unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web: File '@org/tsconfig/base.json' not found."
+      ]
+    },
+    {
+      "name": "external-config-real-witness",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "apps/web/main.ts: unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web/main.ts:1 unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web: File '@org/tsconfig/base.json' not found."
+      ]
+    },
+    {
+      "name": "repair-template-unknown",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-parent",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-encoded-parent",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-encoded-separator",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-separator",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-shadowed-constant",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-mutable",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-bounded-literal",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "src/utility.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "src/utility.ts:helper"
+      ],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-bounded-const",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "src/utility.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "src/utility.ts:helper"
+      ],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-bounded-shadowed-outside",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "src/utility.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "src/utility.ts:helper"
+      ],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-static-escape-16",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-static-escape-17",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-require-global-literal",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "b.ts:unused"
+      ],
+      "coverageIssues": [
+        "index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "repair-require-global-variable",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "index.ts: nonliteral require",
+        "index.ts:1 nonliteral require"
+      ]
+    },
+    {
+      "name": "repair-require-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "b.ts:unused"
+      ],
+      "coverageIssues": [
+        "index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "repair-require-factory-alias",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "b.ts:unused"
+      ],
+      "coverageIssues": [
+        "index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "repair-require-factory-namespace",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "b.ts:unused"
+      ],
+      "coverageIssues": [
+        "index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "repair-require-factory-variable",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "index.ts: nonliteral require",
+        "index.ts:1 nonliteral require"
+      ]
+    },
+    {
+      "name": "repair-require-factory-other-base",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "index.ts: nonliteral require",
+        "index.ts:1 nonliteral require"
+      ]
+    },
+    {
+      "name": "repair-require-local-arrow",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper",
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper",
+        "b.ts:unused"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "repair-require-local-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper",
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper",
+        "b.ts:unused"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "repair-require-factory-shadow",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper",
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper",
+        "b.ts:unused"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "repair-config-supported-cross-root",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other.ts:unused"
+      ],
+      "coverageIssues": []
+    },
+    {
+      "name": "repair-config-relative-stays-bounded",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other.ts:unused"
+      ],
+      "coverageIssues": [
+        "apps/web: File '@org/tsconfig/base.json' not found."
+      ]
+    },
+    {
+      "name": "repair-config-no-bare-import-stays-bounded",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "shared/tool.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "shared/tool.ts:helper"
+      ],
+      "coverageIssues": [
+        "apps/web: File '@org/tsconfig/base.json' not found."
+      ]
+    },
+    {
+      "name": "repair-config-reexport-before-target",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverageIssues": [
+        "apps/web/main.ts: unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web/main.ts:1 unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web: File '@org/tsconfig/base.json' not found."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "branch": "website/docs",
+  "headUnchanged": false,
+  "startingHead": "b7615748884c738bf8ccc3aef06ef69daf223f02",
+  "finalHead": "2b8c937554cbe22f35a7695d38504c0ca253f244",
+  "headExplanation": "Concurrent telemetry commit and revert completed before final gates; net tracked tree diff empty. This repair created no commits.",
+  "indexEmpty": true,
+  "unexpectedDrift": [],
+  "frozenUnchanged": true,
+  "historicalAuditUnchanged": true,
+  "candidateStableAcrossAllGates": true,
+  "changesSinceStart": [
+    {
+      "file": "bin/call-structure.js",
+      "before": "2eb0277e372068bd841cb8be578fb287a868d03f096128dc9a43226d017c35bf",
+      "after": "43348089d39cb8a1b08a8230a2ad8ffb6a42e5f4e13bb4a3adff089388f34208",
+      "owner": "Async repair"
+    },
+    {
+      "file": "bin/telemetry.d.ts",
+      "before": "7375c73f00db9f9faf0732fbf692806e9bb9b7dd725902e8a8f83da25786d5bc",
+      "after": null,
+      "owner": "concurrent telemetry removal / generated rebuild"
+    },
+    {
+      "file": "bin/telemetry.js",
+      "before": "4754cda06f845796408cb34919662b52d6ffee6e4a0132e1d13ecb78d5be825c",
+      "after": null,
+      "owner": "concurrent telemetry removal / generated rebuild"
+    },
+    {
+      "file": "docs/call-structure.md",
+      "before": "4282cc8b7fcd19e9dab2fe45547013330eadfe9dac99f60cb655fb7fa262a5a4",
+      "after": "6b9344f96c27c0f0c4101311fa9e7cf2e55a2724e35a5c704c1642134e8ea8d3",
+      "owner": "Async repair"
+    },
+    {
+      "file": "metrics/README.md",
+      "before": "c402903f305a6cf9d299c2bb78646f79857204c7f927e0186c2b10725b53a71a",
+      "after": null,
+      "owner": "concurrent telemetry removal / generated rebuild"
+    },
+    {
+      "file": "metrics/schema.sql",
+      "before": "cc421202a24dae942d9fb7ed752f5aca4b4b704bbdbe0df05bc6d8145bb76ad8",
+      "after": null,
+      "owner": "concurrent telemetry removal / generated rebuild"
+    },
+    {
+      "file": "metrics/worker.js",
+      "before": "995244a826b914faa2be859509a2fbff6cef009fe661c88de38dfa47dcc38cc5",
+      "after": null,
+      "owner": "concurrent telemetry removal / generated rebuild"
+    },
+    {
+      "file": "metrics/wrangler.jsonc",
+      "before": "a72935bc4ecc8e3361d98469462178768c0869fc7cb54f26e369f0913a73bde5",
+      "after": null,
+      "owner": "concurrent telemetry removal / generated rebuild"
+    },
+    {
+      "file": "src/call-structure.ts",
+      "before": "ac7146bbdb295d60a9830013e073f24fc78742bd47372966ac6da73a6e2f29ac",
+      "after": "1e1fb09c5af712262771907fc9043903f603828b751377c533771e2f36397241",
+      "owner": "Async repair"
+    },
+    {
+      "file": "src/telemetry.ts",
+      "before": "c51faab6207f531ea53a2ff805ed34c93e7ecca610fc1aa53178b6cb9ada57ff",
+      "after": null,
+      "owner": "concurrent telemetry removal / generated rebuild"
+    },
+    {
+      "file": "test/telemetry.test.mjs",
+      "before": "1e5564355810b914031d76fe11efe2103c08340b20693f7207cf33ba3e45f056",
+      "after": null,
+      "owner": "concurrent telemetry removal / generated rebuild"
+    },
+    {
+      "file": "bin/cli.js",
+      "before": "578ec4807407c38dddaaebf554360aa4daf644888df0dc8a4fdd3f77be6bd6f3",
+      "after": "5499772207c6c36aa174f4013ab23b6b27bdc12f28accf7e6cd375e3610d1a2e",
+      "owner": "concurrent telemetry removal / generated rebuild"
+    },
+    {
+      "file": "bin/contract.d.ts",
+      "before": "6f7250a84e4eb9bea652aeb55ae36dacbc03be770bab0ea97372d3125923850b",
+      "after": "946b9f91ec8e7da10b20eed013c361b25719d7ce5b5302e7c93f28636cbf2f14",
+      "owner": "Async repair"
+    },
+    {
+      "file": "docs-site/src/content/docs/doctors/async.mdx",
+      "before": "91a1fd13bb10bd1836d594c417e93144e71b70fe3b792f54b4b1a93f5fcd02d8",
+      "after": "6c45c9cd5d50d6898ede5f8b5a14c9ca9420077fc0ebc6cdad331cf9134b4011",
+      "owner": "Async repair"
+    },
+    {
+      "file": "doctors/async.fixtures.mjs",
+      "before": "ed39bc6410d498f2bac86132fa92a948b9b1e5a86be63b685027f557606ccc80",
+      "after": "33b7a63e8b564ee4d3e9d8a46e8ef2842927383cf8493968b07a1c9c54d2d89a",
+      "owner": "Async repair"
+    },
+    {
+      "file": "doctors/async.mjs",
+      "before": "92607b8fbd8f5d83b430a1439cd04ed563b63884b3d5e1cbeedf87856b2fec72",
+      "after": "91373d7dfaa63d24c370078c7d4f0e8eba639adb89c8439317be8147b806b7c6",
+      "owner": "Async repair"
+    },
+    {
+      "file": "package.json",
+      "before": "0497251b56451c30fd658f18fad08d5481f10bb3ef3199b25736245c1a20d36f",
+      "after": "98c75d5367b3df4132363775262cb35709760abd00c76a2b4c2d3b50e607b436",
+      "owner": "concurrent telemetry removal / generated rebuild"
+    },
+    {
+      "file": "src/cli.ts",
+      "before": "8e4e2028163cd3818d285609dde12bf5d78a3755ef12d7e39b95127ac3e53b22",
+      "after": "b4f23c96edabb86ca8321c2bee17b0e7f78cbb006dbd9a6e2d3df0030bbdad4a",
+      "owner": "concurrent telemetry removal / generated rebuild"
+    },
+    {
+      "file": "src/contract.ts",
+      "before": "a32c1d41b7d9a25b97d17af93a59abf10565a9d77a07abd8c84e97cafb647d10",
+      "after": "ed3379c49205dc56e89f2522d9ee3e308e4b2edee1367e68fbea7a3da1ee8424",
+      "owner": "Async repair"
+    },
+    {
+      "file": "test/cli.test.mjs",
+      "before": "0392c7754275f70713add020cf46cbfb57de21f2013579db4afacebc102a44c5",
+      "after": "7813af9d373881a4a50b42f5ab67bcdd0cf94caf0238e4b2bdca4adc9b074c3b",
+      "owner": "Async repair"
+    },
+    {
+      "file": "test/dashboard-pty.test.mjs",
+      "before": "f7254ac842799523a022a03e9d87532610a29a880a9e74bab17b31f6b8d14b75",
+      "after": "26f429c2454b8a3166e7481aea80beabc6cd97662a7c78c1d945f26a65cf98f1",
+      "owner": "Async repair"
+    },
+    {
+      "file": "test/runner.test.mjs",
+      "before": "b342bc952132bd9887a189005ff9383afc59bf550a6b553b04f0eb04bf2b2fce",
+      "after": "410399879ea2f90d1229ea1073067c642ace8e813caf2c4f5cb03f6dc454d291",
+      "owner": "Async repair"
+    }
+  ]
+}

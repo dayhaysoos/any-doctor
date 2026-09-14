@@ -1,31 +1,63 @@
 ---
 title: async
-description: Fetch hygiene, promise handling, timer cleanup.
+description: Review promise-array ownership, effect timers, and request cancellation.
 audience: human
 sidebar:
   order: 6
 ---
 
-Async and concurrency discipline: fetch hygiene, promise handling, timer
-cleanup.
+The Async doctor uses shared expression and lexical-binding facts. Its findings
+are review inputs, not authorization to rewrite concurrency or request lifetimes.
+All three checks use semantic revision 2 and report individual occurrences with
+zero-based columns and full expression evidence ranges.
 
-| Severity | Check | Catches |
-| -------- | ----- | ------- |
-| warning | `fetch-calls-without-abortsignal` | A fetch call whose options contain no signal |
-| warning | `unawaited-async-map` | A `.map(async ...)` result no one consumes — the promises are dropped |
-| warning | `uncleared-settimeout-in-effect` | A `setTimeout` inside `useEffect` with no matching `clearTimeout` |
+| Severity | Check | Supported observation |
+| -------- | ----- | --------------------- |
+| info | `fetch-calls-without-abortsignal` | Native fetch with known input/options that establish no caller cancellation signal |
+| warning | `unawaited-async-map` | Known array map with an async callback and no supported consumer or ownership transfer |
+| warning | `uncleared-settimeout-in-effect` | Native timer reached from a React effect with no supported matching cancellation in returned cleanup |
 
-## Blind spots (the short version)
+## What the checks establish
 
-- Cannot determine whether a variable, spread, or helper supplies a
-  signal at runtime; aliased fetch functions are not recognized.
-- Reassigned bindings are inconclusive and skipped; consumption inside
-  template strings or dynamic property access is not tracked.
-- Mapped results that are returned, passed into a call, or chained after
-  another call are not judged — a bare `map(async)` is judged only in
-  statement or await position.
-- Timers: only directly named `useEffect`/`setTimeout`/`clearTimeout`
-  are recognized; the handle must be a simple local identifier cleared in
-  the same effect.
+Fetch analysis recognizes global calls and immutable aliases, Request constructors,
+known options, comments, static computed properties, and ordered object spreads.
+An unknown Request or forwarded options can carry a signal, so the check abstains.
+A later property can replace an earlier signal; null disconnects an inherited
+Request signal, while undefined follows the platform's optional dictionary behavior.
+Signal presence does not prove that the caller will abort. Cancellation and deadline
+requirements differ across servers, extensions and UIs; no universal unmount fix
+is prescribed.
 
-The full blind-spot list prints in every report this doctor appears in.
+Promise-array analysis distinguishes the actual result from its source container.
+`Promise.all(tasks)` and `Promise.all([...tasks])` consume elements;
+`Promise.all([tasks])`, `Promise.all([tasks.length])`, or awaiting `{task}` do not.
+Aliases, returned arrays, supported local helpers and per-element awaits preserve
+ownership. Returning an array transfers responsibility; it does not certify the
+caller. Unrelated map methods and unresolved receivers or transfers abstain.
+For sequential processing use an explicit loop with await inside; removing `async`
+from a callback does not make its asynchronous operations sequential.
+
+Timer analysis resolves React imports and native timer APIs, including aliases,
+namespace/default React imports and qualified calls. Cleanup must be returned and
+refer to the actual handle. Same-named bindings and uncalled helpers are insufficient.
+Directly invoked local scheduling and cleanup helpers are supported. A timer
+observation still needs a lifetime decision: some completion work is intentional.
+
+## Limits and unavailable analysis
+
+All checks need call analysis. Without it, they abstain and the report lists all
+three checks as narrowed. There is no name-based fallback. An unavailable scan is
+not a clean result, even when its numeric score is high.
+
+The analysis is bounded: arbitrary interprocedural execution, cross-file wrappers,
+custom thenables, monkey-patched globals, general property mutation and runtime type
+inference are not interpreted. Array identity uses literals, declared array types
+and supported array-producing chains. Unknown string-or-Request inputs may lose
+useful fetch candidates. Conditional execution, cancellation through opaque
+factories, and multiple outstanding timers in one mutable handle need manual review.
+A supported consumer relationship is not proof of settlement on every runtime path.
+
+Default diagnostic extension limits (`.mts`, `.cts`, `.cjs`), generated/test scope
+and fixture-file exclusion remain separate from these repairs. Use the doctor for
+supervised review; independent acceptance and broader precision evidence are still
+needed before treating it as a trusted source of automatic fixes.

@@ -1,0 +1,18 @@
+{
+  "head": "d81987b62429765b4f64fa4b8dbcbb96f10966d2",
+  "branch": "website/docs",
+  "indexEmpty": true,
+  "changedPreexistingFiles": [
+    "bin/project-consumers.js",
+    "dev/consumer-analysis/cases.mjs",
+    "dev/consumer-analysis/pack-working-candidate.mjs",
+    "dev/consumer-analysis/run-cases.mjs",
+    "docs/project-consumer-analysis.md",
+    "src/project-consumers.ts",
+    "test/consumer-integration.test.mjs"
+  ],
+  "independentSeedsAndExpectationsUnchanged": true,
+  "workingFilesVerified": 175,
+  "installedRuntimeFilesVerified": 86,
+  "unrelatedFilesUnchanged": true
+}

@@ -1,0 +1,149 @@
+✖ CLI consumer regression: dynamic-template-parent-segment (472.756125ms)
+✖ CLI consumer regression: shadowed-require-literal (451.525708ms)
+✖ CLI consumer regression: shadowed-require-nonliteral (448.498625ms)
+✔ CLI consumer regression: dynamic-template-prefix-fragment (433.865459ms)
+✖ CLI consumer regression: missing-config-scope (446.912125ms)
+✖ CLI consumer regression: external-config-real-witness (439.854375ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 1
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2885.913
+
+✖ failing tests:
+
+test at test/consumer-integration.test.mjs:24:3
+✖ CLI consumer regression: dynamic-template-parent-segment (472.756125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'src/utility.ts:helper'
+  + ]
+  - []
+  
+      at file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:63:14
+      at inSeed (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:18:12)
+      at TestContext.<anonymous> (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:25:5)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'src/utility.ts:helper' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/consumer-integration.test.mjs:24:3
+✖ CLI consumer regression: shadowed-require-literal (451.525708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'a.ts:helper'
+  - ]
+  
+      at file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:63:14
+      at inSeed (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:18:12)
+      at TestContext.<anonymous> (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:25:5)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ 'a.ts:helper' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/consumer-integration.test.mjs:24:3
+✖ CLI consumer regression: shadowed-require-nonliteral (448.498625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'a.ts:helper'
+  - ]
+  
+      at file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:63:14
+      at inSeed (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:18:12)
+      at TestContext.<anonymous> (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:25:5)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ 'a.ts:helper' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/consumer-integration.test.mjs:24:3
+✖ CLI consumer regression: missing-config-scope (446.912125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'shared/tool.ts:helper'
+  + ]
+  - []
+  
+      at file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:63:14
+      at inSeed (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:18:12)
+      at TestContext.<anonymous> (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:25:5)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'shared/tool.ts:helper' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/consumer-integration.test.mjs:24:3
+✖ CLI consumer regression: external-config-real-witness (439.854375ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'shared/tool.ts:helper'
+  + ]
+  - []
+  
+      at file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:63:14
+      at inSeed (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:18:12)
+      at TestContext.<anonymous> (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:25:5)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'shared/tool.ts:helper' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,231 @@
+--- before/src/project-consumers.ts
++++ after/src/project-consumers.ts
+@@ -76,6 +76,24 @@
+     ? ((n as Node).value as string)
+     : undefined;
+ 
++// These wrappers erase at runtime. Type syntax is never evidence of a loader.
++function runtimeExpression(node: Node): Node {
++  while (["ParenthesizedExpression", "TSAsExpression", "TSTypeAssertion",
++    "TSNonNullExpression", "TSSatisfiesExpression", "TSInstantiationExpression"].includes(node.type))
++    node = node.expression as Node;
++  return node;
++}
++function staticProperty(node: Node): string | undefined {
++  const property = runtimeExpression(node.property as Node);
++  return node.computed ? literal(property) : nodeName(property);
++}
++type LoaderValue =
++  | { kind: "module" | "factory" | "non-loader" | "unrelated" }
++  | { kind: "loader"; base: "importer" }
++  | { kind: "unsupported"; reason: string; base?: "importer" };
++const loaderRelated = (value: LoaderValue): boolean =>
++  !["non-loader", "unrelated"].includes(value.kind);
++
+ /** One graph per SDK scan. All reads are captured before graph construction. */
+ export function projectConsumers(root: string): ProjectConsumers {
+   const started = performance.now();
+@@ -616,33 +634,135 @@
+       // encodings, URL delimiters, or coercions that might change containment.
+       return value !== undefined && /^[A-Za-z0-9_-]+$/.test(value);
+     };
+-    const importedFactory = (n: Node): boolean => {
+-      const binding = n.type === "Identifier" ? variableOf(n) :
+-        n.type === "MemberExpression" && !n.computed && nodeName(n.property) === "createRequire"
+-          ? variableOf(n.object as Node) : undefined;
+-      const def = binding?.defs[0], spec = def?.node as unknown as Node | undefined;
+-      const decl = spec && parent.get(spec);
+-      return def?.type === "ImportBinding" &&
+-        ["node:module", "module"].includes(literal(decl?.source) ?? "") &&
+-        (n.type === "Identifier"
+-          ? spec?.type === "ImportSpecifier" && nodeName(spec.imported) === "createRequire"
+-          : spec?.type === "ImportNamespaceSpecifier");
++    // Unknown calls without loader provenance are unrelated, not proven ordinary
++    // functions and not incomplete loader analyses. Only related values abstain.
++    const unsupported = (reason: string): LoaderValue => ({ kind: "unsupported", reason });
++    const runtimeParent = (node: Node): Node | undefined => {
++      let p = parent.get(node);
++      while (p && runtimeExpression(p) === runtimeExpression(node)) {
++        node = p;
++        p = parent.get(node);
++      }
++      return p;
+     };
+-    const requireKind = (callee: Node): "local" | "unbounded" | undefined => {
+-      if (callee.type !== "Identifier") return undefined;
+-      const variable = variableOf(callee);
+-      if (!variable) return nodeName(callee) === "require" ? "local" : undefined;
+-      const def = variable.defs[0], decl = def?.node as unknown as Node | undefined;
+-      const init = decl?.init as Node | undefined;
+-      if (def?.type !== "Variable" || init?.type !== "CallExpression" ||
+-          !importedFactory(init.callee as Node)) return undefined;
+-      const base = (init.arguments as Node[])[0];
+-      const meta = base?.object as Node | undefined;
+-      return base?.type === "MemberExpression" && !base.computed &&
+-        nodeName(base.property) === "url" && meta?.type === "MetaProperty" &&
+-        nodeName(meta.meta) === "import" && nodeName(meta.property) === "meta" &&
+-        !variable.references.some((ref) => ref.isWrite() && !ref.init)
+-        ? "local" : "unbounded";
++    const modifiedObject = (variable: NonNullable<ReturnType<typeof variableOf>>, objectOnly: boolean): boolean =>
++      variable.references.some((ref) => {
++        const n = ref.identifier as unknown as Node;
++        const p = runtimeParent(n);
++        if (p?.type === "MemberExpression") {
++          const outer = runtimeParent(p);
++          return (outer?.type === "AssignmentExpression" && runtimeExpression(outer.left as Node) === p) ||
++            outer?.type === "UpdateExpression" ||
++            (outer?.type === "UnaryExpression" && outer.operator === "delete");
++        }
++        // Passing the object to unknown code can mutate its factory property.
++        // Alias initialization is also an escape: aliases may mutate the object.
++        return (p?.type === "CallExpression" && runtimeExpression(p.callee as Node) !== n) ||
++          (objectOnly && p?.type === "VariableDeclarator" && p.init !== undefined && runtimeExpression(p.init as Node) === n);
++      });
++    const isImporterBase = (node: Node): boolean => {
++      const base = runtimeExpression(node);
++      if (base.type !== "MemberExpression" || staticProperty(base) !== "url") return false;
++      const meta = runtimeExpression(base.object as Node);
++      return meta.type === "MetaProperty" && nodeName(meta.meta) === "import" &&
++        nodeName(meta.property) === "meta";
++    };
++    const loaderValueCache = new Map<Node, LoaderValue>();
++    let cycleCount = 0;
++    const classifyLoaderValue = (expression: Node, seen = new Set<Node>()): LoaderValue => {
++      const n = runtimeExpression(expression);
++      if (seen.has(n)) { cycleCount++; return { kind: "unrelated" }; }
++      const cached = loaderValueCache.get(n);
++      if (cached) return cached;
++      const before = cycleCount;
++      const value = classifyUncached(n, seen);
++      // A recursive fallback is contextual; never cache it as proof of absence.
++      if (cycleCount === before) loaderValueCache.set(n, value);
++      return value;
++    };
++    const classifyUncached = (n: Node, seen: Set<Node>): LoaderValue => {
++      const next = new Set(seen).add(n);
++      if (n.type === "Identifier") {
++        const variable = variableOf(n);
++        if (!variable)
++          return references.has(n) && nodeName(n) === "require"
++            ? { kind: "loader", base: "importer" } : { kind: "unrelated" };
++        const def = variable.defs[0], declaration = def?.node as unknown as Node | undefined;
++        let value: LoaderValue = { kind: "unrelated" };
++        if (def?.type === "ImportBinding" && declaration) {
++          const source = literal(parent.get(declaration)?.source);
++          if (source === "node:module" || source === "module") {
++            if (declaration.type === "ImportSpecifier" && nodeName(declaration.imported) === "createRequire")
++              value = { kind: "factory" };
++            else if (["ImportNamespaceSpecifier", "ImportDefaultSpecifier"].includes(declaration.type))
++              value = { kind: "module" };
++          }
++        } else if (def?.type === "FunctionName") value = { kind: "non-loader" };
++        else if (def?.type === "Variable" && declaration?.init) {
++          if (next.has(declaration)) { cycleCount++; return { kind: "unrelated" }; }
++          next.add(declaration);
++          value = classifyLoaderValue(declaration.init as Node, next);
++          if (declaration.id !== def.name && loaderRelated(value))
++            value = unsupported("loader-related destructuring is unsupported");
++        }
++        const writes = variable.references.filter((ref) => ref.isWrite() && !ref.init);
++        if (writes.length && (loaderRelated(value) || writes.some((ref) =>
++          ref.writeExpr && loaderRelated(classifyLoaderValue(ref.writeExpr as unknown as Node, next)))))
++          return unsupported("loader-related binding is reassigned; base and value flow are uncertain");
++        if (["module", "factory", "loader"].includes(value.kind) && modifiedObject(variable, value.kind === "module"))
++          return unsupported("loader-related object or function is mutated or escapes; factory/base identity is uncertain");
++        return value;
++      }
++      if (["FunctionExpression", "ArrowFunctionExpression", "Literal", "ObjectExpression", "ArrayExpression"].includes(n.type)) {
++        if (["FunctionExpression", "ArrowFunctionExpression", "Literal"].includes(n.type))
++          return { kind: "non-loader" };
++      }
++      if (n.type === "MemberExpression") {
++        const object = classifyLoaderValue(n.object as Node, next);
++        if (object.kind === "module") {
++          const property = staticProperty(n);
++          if (property === "createRequire") return { kind: "factory" };
++          if (property === undefined) return unsupported("computed builtin-module property may select createRequire");
++          return { kind: "unrelated" };
++        }
++        if (object.kind === "unsupported") return object;
++        // require.resolve computes a filename; it does not load module exports.
++        // Keep this separate from invoking require, including through aliases.
++        if (object.kind === "loader" && staticProperty(n) === "resolve")
++          return { kind: "non-loader" };
++        if (loaderRelated(object)) return unsupported("unsupported member access on a loader-related value");
++        return { kind: "unrelated" };
++      }
++      if (n.type === "ConditionalExpression" || n.type === "LogicalExpression") {
++        const alternatives = (n.type === "ConditionalExpression"
++          ? [n.consequent, n.alternate] : [n.left, n.right]) as Node[];
++        const values = alternatives.map((value) => classifyLoaderValue(value, next));
++        if (values.some(loaderRelated))
++          return {
++            kind: "unsupported", reason: "loader selection is conditional; value flow is unsupported",
++            base: values.every((value) => value.kind === "loader" || value.kind === "non-loader" ||
++              (value.kind === "unsupported" && value.base === "importer")) ? "importer" : undefined,
++          };
++        return { kind: "unrelated" };
++      }
++      if (n.type === "CallExpression") {
++        const callee = classifyLoaderValue(n.callee as Node, next);
++        if (callee.kind === "factory") {
++          const base = (n.arguments as Node[])[0];
++          return base && isImporterBase(base) ? { kind: "loader", base: "importer" } :
++            unsupported("createRequire base is unsupported; possible target scope is unbounded");
++        }
++        if (callee.kind === "unsupported") return callee;
++        // Loading a module does not make all its exports loaders. The inner
++        // loader call records target uncertainty independently during the walk.
++        if (callee.kind === "loader") return { kind: "unrelated" };
++      }
++      // Known loader provenance inside an unmodeled expression must survive.
++      // Do not infer that an arbitrary wrapper returns its loader argument.
++      if (children(n).filter((child) => !child.type.startsWith("TS") || runtimeExpression(child) !== child)
++        .some((child) => loaderRelated(classifyLoaderValue(child, next))))
++        return unsupported(`unsupported ${n.type} contains a loader-related value`);
++      return { kind: "unrelated" };
+     };
+     const evidence = (
+       n: Node,
+@@ -934,23 +1054,24 @@
+               evidence(n, true, "TypeScript import-type expression"),
+             );
+         }
+-      } else if (
+-        n.type === "CallExpression" &&
+-        requireKind(n.callee as Node) !== undefined
+-      ) {
+-        const spec = requireKind(n.callee as Node) === "local"
+-          ? literal((n.arguments as Node[])[0]) : undefined;
+-        const target = spec ? resolve(spec, m.file) : undefined;
+-        if (target)
+-          targetEvidence(target, "*", {
+-            kind: "uncertain",
+-            file: m.file,
+-            line: lineOf(m, n),
+-            detail: "CommonJS require value flow unsupported",
+-          });
+-        else if (!spec) {
+-          issues.add(`${m.file}: nonliteral require`);
+-          uncertainScope("", m.file, lineOf(m, n), "nonliteral require");
++      } else if (n.type === "CallExpression") {
++        const loader = classifyLoaderValue(n.callee as Node);
++        if (loader.kind === "loader" || loader.kind === "unsupported") {
++          const argument = (n.arguments as Node[])[0];
++          const spec = loader.base === "importer" && argument
++            ? literal(runtimeExpression(argument)) : undefined;
++          const target = spec !== undefined ? resolve(spec, m.file) : undefined;
++          const detail = loader.kind === "unsupported" ? loader.reason :
++            spec === undefined ? "nonliteral CommonJS require target is unbounded" :
++              "CommonJS require value flow unsupported";
++          if (target)
++            targetEvidence(target, "*", {
++              kind: "uncertain", file: m.file, line: lineOf(m, n), detail,
++            });
++          else if (spec === undefined) {
++            issues.add(`${m.file}:${lineOf(m, n)} ${detail}`);
++            uncertainScope("", m.file, lineOf(m, n), detail);
++          }
+         }
+       }
+       children(n).forEach(walk);

@@ -1,0 +1,16 @@
+{
+  "head": "d81987b62429765b4f64fa4b8dbcbb96f10966d2",
+  "branch": "website/docs",
+  "indexEmpty": true,
+  "changedPreexistingFiles": [
+    "bin/project-consumers.js",
+    "dev/consumer-analysis/cases.mjs",
+    "docs/project-consumer-analysis.md",
+    "src/project-consumers.ts",
+    "test/consumer-integration.test.mjs",
+    "docs-site/src/content/docs/getting-started/quickstart.mdx"
+  ],
+  "currentWorkingDigestsVerified": 172,
+  "installedExecutableFilesVerified": 86,
+  "concurrentUnrelatedChange": "docs-site/src/content/docs/getting-started/quickstart.mdx changed externally during repair; no task command edited docs-site"
+}

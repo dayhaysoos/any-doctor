@@ -1,46 +1,87 @@
 ---
 title: convex
-description: Indexed reads, bounded collects, query clocks, validated args, awaited writes.
+description: Binding-aware Convex checks with scoped observations and conditional recommendations.
 audience: human
 sidebar:
   order: 7
 ---
 
-Convex discipline: indexed reads, bounded collects, query clocks,
-discarded promises, validated args, awaited writes, honest runtime
-boundaries.
+The Convex doctor distinguishes established context/runtime mistakes from
+performance, validation and maintenance review candidates. All checks require
+shared analysis; unavailable analysis is reported as unexercised coverage.
 
-| Severity | Check | Catches |
-| -------- | ----- | ------- |
-| warning | `filter-table-scan` | A database filter without an index — may scan many documents |
-| warning | `index-without-range` | An index without a range feeding an unbounded consumer |
-| warning | `query-clock-reactivity` | `Date.now()` in a query — stale time-dependent results, less cache reuse |
-| warning | `transaction-clock-duration` | Two `Date.now()` readings in one transaction — zero elapsed time |
-| warning | `unbounded-collect` | `.collect()` with no `take`, no `paginate`, no index range |
-| warning | `index-filter-combo` | An indexed chain that also filters — multi-field index candidate |
-| warning | `presence-patch-on-shared-document` | A presence field (`lastSeen`-shaped) patched onto a document |
-| warning | `missing-args-validator` | A query/mutation/action without argument validators |
-| warning | `write-in-query` | A write, scheduler, or mutation/action call inside a query |
-| warning | `db-in-action` | `ctx.db` used inside an action |
-| warning | `unawaited-convex-call` | A known Promise-returning Convex context call discarded as a statement |
-| warning | `node-runtime-transaction` | A query or mutation defined in a `"use node"` file |
-| info | `public-api-in-server-call` | A server-side run call referencing the public api namespace — review candidate |
-| info | `sequential-run-in-loop` | A run call awaited inside a loop — batching review candidate |
-| info | `spread-into-patch` | `ctx.db.patch/replace` called with a spread — review candidate |
+| Severity | Check | Observation |
+| --- | --- | --- |
+| warning | `filter-table-scan` | A Convex filter without an index; review candidate reads |
+| warning/info | `index-without-range` | Indexed collect with no established returned range; unresolved flow is explicit |
+| warning | `unbounded-collect` | Collect without a supported bound; review growth and completeness |
+| info | `index-filter-combo` | Indexed query plus filter; potential optimization, not measured cost |
+| warning | `query-clock-reactivity` | Direct query clock read; review subscription and expiration behavior |
+| warning | `transaction-clock-duration` | Subtraction of two fixed transaction-clock readings |
+| info | `presence-patch-on-shared-document` | Presence field patch without a known dedicated-table target |
+| warning/info | `missing-args-validator` | Public function without validators; internal omission is an optional contract review |
+| warning | `write-in-query` | Resolved query context invokes a write, scheduler, mutation or action |
+| warning | `db-in-action` | Resolved action context invokes a database method |
+| warning | `unawaited-convex-call` | A known promise-returning context call discards its immediate result |
+| warning | `node-runtime-transaction` | Query or mutation registration in a true `"use node"` directive file |
+| info | `public-api-in-server-call` | Public or explicitly unresolved api-shaped server reference; audience review |
+| info | `sequential-run-in-loop` | Directly awaited run call in a loop; preserve retries and dependent work |
+| info | `spread-into-patch` | Top-level patch object spread; field ownership requires separate evidence |
 
-The `info` checks are review candidates, not proven defects: they flag
-shapes a human should look at once.
+All checks use semantic revision 2. Old review decisions need reassessment.
 
-## Blind spots (the short version)
+## What establishes identity
 
-- Receiver types and schema cardinality are not resolved;
-  `withSearchIndex` chains are skipped entirely.
-- Chains split across statements (`const q = ctx.db.query(t); ...`) are
-  not tracked — single-statement chains only.
-- `unbounded-collect` cannot tell a provably small table from a growing
-  one; `index-filter-combo` fires on every index+filter chain regardless
-  of result size.
-- Only the object-config validator form is inspected; `customQuery`
-  wrappers are not recognized.
+Named/namespace registration imports, renamed imports and parameters, immutable
+aliases, local handler/config variables and direct handlers are supported.
+Database/context aliases and destructuring retain their binding identity. Typed
+helpers can use imported Convex context contracts, local aliases and `Pick`;
+consistent observed local calls can also establish helper argument provenance.
+Unrelated objects named `ctx` or `db` and shadowed bindings remain ordinary objects.
 
-The full list prints in every report this doctor appears in.
+Validator order, shorthand and formatting do not change the result. Returned
+index ranges are distinct from incidental range calls; unreachable branches do
+not establish bounds. Unknown returned paths produce an explicitly uncertain
+candidate for that chain. Node directives are parsed structurally, including
+semicolon-free forms and leading comments.
+
+## Read recommendations as well as locations
+
+An index does not prove small cardinality. Use pagination or resumable batches
+when all billing or migration records must be processed; an arbitrary result cap
+can silently omit work. Measure workload before changing an indexed filter.
+
+Keep server-authoritative expiration checks. A client timestamp is not a safe
+substitute for authorization time. Public API calls may be required by frontend
+consumers; server use or absence of discovered client calls does not establish
+server-only intent. Do not make an endpoint internal without checking its callers.
+
+Object spread can be validated or server-selected. Nested object and array
+spreads do not imply arbitrary top-level field writes. Dedicated `heartbeats` and
+`presence` table targets are spared when explicit arguments or validators identify
+them. Other naming/segmentation schemes need human review.
+
+Awaited loops may implement retries, backoff or cursor-dependent incremental work.
+Keep that behavior; batching or concurrency is appropriate only when operations
+are independent and transaction limits and completeness permit it. Transaction
+semantics differ between actions and queries/mutations.
+
+## Coverage limits
+
+The doctor follows current Convex 1.x contracts, checked against official
+[validation guidance](https://docs.convex.dev/functions/validation),
+[runtime boundaries](https://docs.convex.dev/functions/runtimes), and
+[best practices](https://docs.convex.dev/understanding/best-practices/), with retained
+framework evidence from 1.32.0. Future major APIs need re-evaluation.
+
+Custom registration wrappers, arbitrary type/return flow, cross-file helper
+implementations, split query builders and search-index bounds are not inferred.
+A type annotation is a declared contract, not runtime proof. Stored or passed
+promises are outside direct-discard detection, not certified settled. Nested
+helper clocks and stored-then-awaited loop calls can remain undetected.
+
+Diagnostic suffixes remain `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, respecting normal
+authored/test/generated scope. `.mts`, `.cts`, `.cjs` and fixture-named target files
+are not diagnosed. No production cardinality, latency, authorization exploit or
+complete frontend consumer graph is measured. Passing fixtures is not independent
+acceptance; evaluate the exact package and source findings before applying fixes.

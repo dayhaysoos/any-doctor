@@ -1,0 +1,126 @@
+--- before/src/project-consumers.ts
++++ after/src/project-consumers.ts
+@@ -108,6 +108,7 @@
+   };
+   const optionsCache = new Map<string, ts.CompilerOptions>();
+   const configIssues = new Map<string, string[]>();
++  const unboundedConfigTargets = new Map<string, { from: string; detail: string }>();
+   function options(file: string): ts.CompilerOptions {
+     let dir = path.dirname(path.resolve(root, file));
+     while (dir !== root && !sources.has(path.join(dir, "tsconfig.json")))
+@@ -218,6 +219,18 @@
+             ? ts.ModuleKind.ESNext
+             : ts.ModuleKind.CommonJS;
+       }
++    }
++    // An unavailable inherited config can redirect bare specifiers anywhere in
++    // the capture. The importing config's directory is not a target boundary.
++    const configDir = [...optionsCache].find(([, value]) => value === opts)?.[0];
++    if (
++      configDir && configIssues.has(configDir) &&
++      !specifier.startsWith(".") && !specifier.startsWith("/") &&
++      !specifier.startsWith("node:")
++    ) {
++      const detail = `unsupported config leaves target scope of ${specifier} unbounded`;
++      issues.add(`${from}: ${detail}`);
++      unboundedConfigTargets.set(from + "\0" + specifier, { from, detail });
+     }
+     const result = ts.resolveModuleName(
+       specifier,
+@@ -580,6 +593,57 @@
+       }
+     };
+     visit(m.program);
++    // Scope-manager references bind these AST identifiers to their declarations.
++    const references = new Map(
++      m.scopes.scopes.flatMap((scope) => scope.references).map((ref) =>
++        [ref.identifier as unknown as Node, ref] as const),
++    );
++    const variableOf = (n: Node) => references.get(n)?.resolved;
++    const fixedSegment = (n: Node): boolean => {
++      let value = literal(n);
++      if (n.type === "Identifier") {
++        const variable = variableOf(n), def = variable?.defs[0];
++        const declaration = def?.node as unknown as Node | undefined;
++        if (
++          def?.type !== "Variable" ||
++          (def.parent as unknown as Node)?.kind !== "const" ||
++          declaration?.id !== def.name ||
++          variable?.references.some((ref) => ref.isWrite() && !ref.init)
++        ) return false;
++        value = literal(declaration.init);
++      }
++      // Conservative segment alphabet: no separators, dot segments, percent
++      // encodings, URL delimiters, or coercions that might change containment.
++      return value !== undefined && /^[A-Za-z0-9_-]+$/.test(value);
++    };
++    const importedFactory = (n: Node): boolean => {
++      const binding = n.type === "Identifier" ? variableOf(n) :
++        n.type === "MemberExpression" && !n.computed && nodeName(n.property) === "createRequire"
++          ? variableOf(n.object as Node) : undefined;
++      const def = binding?.defs[0], spec = def?.node as unknown as Node | undefined;
++      const decl = spec && parent.get(spec);
++      return def?.type === "ImportBinding" &&
++        ["node:module", "module"].includes(literal(decl?.source) ?? "") &&
++        (n.type === "Identifier"
++          ? spec?.type === "ImportSpecifier" && nodeName(spec.imported) === "createRequire"
++          : spec?.type === "ImportNamespaceSpecifier");
++    };
++    const requireKind = (callee: Node): "local" | "unbounded" | undefined => {
++      if (callee.type !== "Identifier") return undefined;
++      const variable = variableOf(callee);
++      if (!variable) return nodeName(callee) === "require" ? "local" : undefined;
++      const def = variable.defs[0], decl = def?.node as unknown as Node | undefined;
++      const init = decl?.init as Node | undefined;
++      if (def?.type !== "Variable" || init?.type !== "CallExpression" ||
++          !importedFactory(init.callee as Node)) return undefined;
++      const base = (init.arguments as Node[])[0];
++      const meta = base?.object as Node | undefined;
++      return base?.type === "MemberExpression" && !base.computed &&
++        nodeName(base.property) === "url" && meta?.type === "MetaProperty" &&
++        nodeName(meta.meta) === "import" && nodeName(meta.property) === "meta" &&
++        !variable.references.some((ref) => ref.isWrite() && !ref.init)
++        ? "local" : "unbounded";
++    };
+     const evidence = (
+       n: Node,
+       typeOnly: boolean,
+@@ -825,7 +889,14 @@
+             src.type === "TemplateLiteral"
+               ? (quasi?.value as { cooked?: string })?.cooked
+               : undefined;
+-          const scope = prefix?.startsWith(".")
++          const contained = src.type === "TemplateLiteral" &&
++            !/[%\\?#]/.test(prefix ?? "") &&
++            (src.expressions as Node[]).every(fixedSegment) &&
++            (src.quasis as Node[]).slice(1).every((quasi) =>
++              /^[A-Za-z0-9_.-]*$/.test(
++                (quasi.value as { cooked?: string }).cooked ?? "!",
++              ));
++          const scope = contained && prefix?.startsWith(".")
+             ? path.relative(
+                 root,
+                 path.resolve(
+@@ -865,9 +936,10 @@
+         }
+       } else if (
+         n.type === "CallExpression" &&
+-        nodeName(n.callee) === "require"
++        requireKind(n.callee as Node) !== undefined
+       ) {
+-        const spec = literal((n.arguments as Node[])[0]);
++        const spec = requireKind(n.callee as Node) === "local"
++          ? literal((n.arguments as Node[])[0]) : undefined;
+         const target = spec ? resolve(spec, m.file) : undefined;
+         if (target)
+           targetEvidence(target, "*", {
+@@ -990,6 +1062,9 @@
+         }
+       }
+     }
++  // Some resolutions happen before all export origins are collected.
++  for (const { from, detail } of unboundedConfigTargets.values())
++    uncertainScope("", from, 1, detail);
+   for (const [dir, reasons] of configIssues)
+     for (const reason of reasons) {
+       issues.add(`${path.relative(root, dir) || "."}: ${reason}`);

@@ -1,0 +1,69 @@
+{
+  "command": [
+    "node",
+    "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package/consumer/node_modules/any-doctor/bin/cli.js",
+    "run",
+    "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/review-candidate/candidate-package/consumer/node_modules/any-doctor/doctors/convex.mjs",
+    "/private/var/folders/gr/00djkpxs7ngdwdnbx719gjg80000gn/T/any-doctor-convex-modernization-vohyuuv0/limitation-seeds",
+    "--format",
+    "json"
+  ],
+  "exit": 0,
+  "knownMissedOrUnresolvedObservations": 3,
+  "rows": [
+    {
+      "name": "split-builder",
+      "rule": "unbounded-collect",
+      "detected": 1,
+      "missed": 1,
+      "source": "import {query,action} from \"./_generated/server\";export const split=query({args:{},handler:async(context)=>{const builder=context.db.query(\"rows\");return builder.collect();}});export const positive=query({args:{},handler:async(context)=>context.db.query(\"other\").collect()});",
+      "limit": "The split builder collect is not followed. The separate direct collect remains visible.",
+      "actual": [
+        {
+          "file": "split-builder.ts",
+          "line": 1,
+          "column": 263,
+          "decisionKey": "Y29udmV4L3VuYm91bmRlZC1jb2xsZWN0AHNwbGl0LWJ1aWxkZXIudHMANTliNmQyYjNkNGIyMTcyYThlOTQ4ZjFkZGY2YTAwZGU3ZTBlMDQ2MmQ0MDkwYTExMTk0MzA2NTdlMDA0YmUxOABhcnJvdzoAMQAyNjMAbGluZQ",
+          "rule": "unbounded-collect"
+        }
+      ],
+      "verifiedPositiveNeighbor": true
+    },
+    {
+      "name": "custom-registration",
+      "rule": "unbounded-collect",
+      "detected": 1,
+      "missed": 1,
+      "source": "import {query,action} from \"./_generated/server\";const customQuery=wrap(query);export const wrapped=customQuery({args:{},handler:async(context)=>context.db.query(\"rows\").collect()});export const positive=query({args:{},handler:async(context)=>context.db.query(\"other\").collect()});",
+      "limit": "Custom factory wrapper return identity is unresolved; if it delegates to query the collect is missed. The direct neighbor remains visible.",
+      "actual": [
+        {
+          "file": "custom-registration.ts",
+          "line": 1,
+          "column": 269,
+          "decisionKey": "Y29udmV4L3VuYm91bmRlZC1jb2xsZWN0AGN1c3RvbS1yZWdpc3RyYXRpb24udHMAZGIwZmNjYTE0OTBhYzFiYTQ5NzlkZTBhYThhNDc4NmZhNzhhNDZjNTRmY2VkZTIzZDcxYWM5NDQ5YzVmYTI4NgBhcnJvdzoAMQAyNjkAbGluZQ",
+          "rule": "unbounded-collect"
+        }
+      ],
+      "verifiedPositiveNeighbor": true
+    },
+    {
+      "name": "stored-then-awaited-loop",
+      "rule": "sequential-run-in-loop",
+      "detected": 1,
+      "missed": 1,
+      "source": "import {query,action} from \"./_generated/server\";export const f=action({args:{},handler:async(context)=>{for(const id of ids){const pending=context.runQuery(internal.rows.get,{id});await pending;}for(const id of ids){await context.runQuery(internal.rows.get,{id});}}});",
+      "limit": "Only direct awaited calls are followed; the stored-then-awaited loop is a known missed sequential observation.",
+      "actual": [
+        {
+          "file": "stored-then-awaited-loop.ts",
+          "line": 1,
+          "column": 223,
+          "decisionKey": "Y29udmV4L3NlcXVlbnRpYWwtcnVuLWluLWxvb3AAc3RvcmVkLXRoZW4tYXdhaXRlZC1sb29wLnRzADIzYmU0MWE1ZWU4NjNjODlmYWEyOWMwZTQ0YmJmYmUxNmI1MDAyNzAwOTQzOGRjMjc0ZmJkN2I4YTY4YjkwMWIAYXJyb3c6ADAAMjIzAGxpbmU",
+          "rule": "sequential-run-in-loop"
+        }
+      ],
+      "verifiedPositiveNeighbor": true
+    }
+  ]
+}

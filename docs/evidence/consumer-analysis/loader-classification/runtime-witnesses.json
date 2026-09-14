@@ -1,0 +1,32 @@
+[
+  {
+    "case": "real-factory-default-import",
+    "command": [
+      "node",
+      "/private/tmp/any-doctor-repair-retest-1orlrp89/new-local-final/real-factory-default-import/src/index.mjs"
+    ],
+    "status": 0,
+    "stdout": "42\n",
+    "stderr": ""
+  },
+  {
+    "case": "real-factory-computed-namespace",
+    "command": [
+      "node",
+      "/private/tmp/any-doctor-repair-retest-1orlrp89/new-local-final/real-factory-computed-namespace/src/index.mjs"
+    ],
+    "status": 0,
+    "stdout": "42\n",
+    "stderr": ""
+  },
+  {
+    "case": "real-factory-parenthesized-ts",
+    "command": [
+      "node",
+      "/private/tmp/any-doctor-repair-retest-1orlrp89/new-local-final/real-factory-parenthesized-ts/src/index.ts"
+    ],
+    "status": 0,
+    "stdout": "42\n",
+    "stderr": ""
+  }
+]

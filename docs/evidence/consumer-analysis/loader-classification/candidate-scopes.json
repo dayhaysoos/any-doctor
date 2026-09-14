@@ -1,0 +1,2941 @@
+{
+  "graphFile": "/Users/nickdejesus/Code/any-doctor/bin/project-consumers.js",
+  "passed": 65,
+  "failed": 0,
+  "skipped": 0,
+  "rows": [
+    {
+      "name": "real-factory-default-import",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.mjs:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.mjs": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.mjs",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "real-factory-computed-namespace",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.mjs:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.mjs": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.mjs",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "real-factory-parenthesized-ts",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-parentheses-factory",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-parentheses-initializer",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-parentheses-callee",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-parentheses-argument",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-parentheses-base",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-as-factory",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-as-initializer",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-as-callee",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-as-argument",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-as-base",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-assertion-factory",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-assertion-initializer",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-assertion-callee",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-assertion-argument",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-assertion-base",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-nonnull-factory",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-nonnull-initializer",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-nonnull-callee",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-nonnull-argument",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-nonnull-base",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-satisfies-factory",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-satisfies-initializer",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-satisfies-callee",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-satisfies-argument",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-satisfies-base",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-nested-factory",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-nested-initializer",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-nested-callee",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-nested-argument",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-nested-base",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-default-computed",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-namespace-wrapped",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-factory-alias",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-local-loader-alias",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-immediate",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-shadowed-other-scope",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-ordinary-function",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-ordinary-arrow",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-ordinary-factory",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-shadowed-module",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-shadowed-named",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-unrelated-unknown",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-ordinary-object",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-conditional-known-base",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-conditional-unknown",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-unsupported-wrapper",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "unsupported CallExpression",
+      "issues": [
+        "src/index.ts:1 unsupported CallExpression contains a loader-related value"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "unsupported CallExpression contains a loader-related value"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "unsupported CallExpression contains a loader-related value"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-unknown-property",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "computed builtin-module",
+      "issues": [
+        "src/index.ts:1 computed builtin-module property may select createRequire"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "computed builtin-module property may select createRequire"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "computed builtin-module property may select createRequire"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-mutated-factory",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "mutated",
+      "issues": [
+        "src/index.ts:1 loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-mutated-computed",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "mutated",
+      "issues": [
+        "src/index.ts:1 loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-escaped-module",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "escapes",
+      "issues": [
+        "src/index.ts:1 loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-reassigned",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "reassigned",
+      "issues": [
+        "src/index.ts:1 loader-related binding is reassigned; base and value flow are uncertain"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related binding is reassigned; base and value flow are uncertain"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related binding is reassigned; base and value flow are uncertain"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-assigned-later",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "reassigned",
+      "issues": [
+        "src/index.ts:1 loader-related binding is reassigned; base and value flow are uncertain"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related binding is reassigned; base and value flow are uncertain"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related binding is reassigned; base and value flow are uncertain"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-unsupported-base",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "base is unsupported",
+      "issues": [
+        "src/index.ts:1 createRequire base is unsupported; possible target scope is unbounded"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "createRequire base is unsupported; possible target scope is unbounded"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "createRequire base is unsupported; possible target scope is unbounded"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-mutated-wrapped-member",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "mutated",
+      "issues": [
+        "src/index.ts:1 loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-instantiated-factory",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-shared-initializer-graph",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-cyclic-loader-flow",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "reassigned",
+      "issues": [
+        "src/index.ts:1 loader-related binding is reassigned; base and value flow are uncertain"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related binding is reassigned; base and value flow are uncertain"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader-related binding is reassigned; base and value flow are uncertain"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-resolve-is-not-load",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-aliased-resolve-is-not-load",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-ordinary-require-object-key",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-ordinary-require-destructured-key",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader-type-arguments-are-not-loader-provenance",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    }
+  ]
+}

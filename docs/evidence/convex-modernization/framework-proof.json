@@ -1,0 +1,60 @@
+{
+  "convexVersion": "1.32.0",
+  "validators": {
+    "before": {
+      "type": "object",
+      "value": {
+        "title": {
+          "fieldType": {
+            "type": "string"
+          },
+          "optional": false
+        }
+      }
+    },
+    "after": {
+      "type": "object",
+      "value": {
+        "title": {
+          "fieldType": {
+            "type": "string"
+          },
+          "optional": false
+        }
+      }
+    },
+    "shorthand": {
+      "type": "object",
+      "value": {
+        "title": {
+          "fieldType": {
+            "type": "string"
+          },
+          "optional": false
+        }
+      }
+    }
+  },
+  "missing": {
+    "type": "any"
+  },
+  "parsedCount": 62,
+  "nodeDirectives": [
+    {
+      "file": "node-runtime-action.ts",
+      "nodeDirective": true
+    },
+    {
+      "file": "node-runtime-block-comment.ts",
+      "nodeDirective": true
+    },
+    {
+      "file": "node-runtime-no-semicolon.ts",
+      "nodeDirective": true
+    },
+    {
+      "file": "node-runtime-positive.ts",
+      "nodeDirective": true
+    }
+  ]
+}

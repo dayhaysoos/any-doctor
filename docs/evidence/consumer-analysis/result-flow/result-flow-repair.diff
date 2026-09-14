@@ -1,0 +1,94 @@
+--- before/src/project-consumers.ts
++++ after/src/project-consumers.ts
+@@ -87,12 +87,13 @@
+   const property = runtimeExpression(node.property as Node);
+   return node.computed ? literal(property) : nodeName(property);
+ }
++type LoaderRole = "factory" | "loader" | "unknown";
+ type LoaderValue =
+-  | { kind: "module" | "factory" | "non-loader" | "unrelated" }
++  | { kind: "module" | "factory" | "loaded-value" | "non-loader" | "unrelated" }
+   | { kind: "loader"; base: "importer" }
+-  | { kind: "unsupported"; reason: string; base?: "importer" };
++  | { kind: "unsupported"; role: LoaderRole; reason: string; base?: "importer" };
+ const loaderRelated = (value: LoaderValue): boolean =>
+-  !["non-loader", "unrelated"].includes(value.kind);
++  !["loaded-value", "non-loader", "unrelated"].includes(value.kind);
+ 
+ /** One graph per SDK scan. All reads are captured before graph construction. */
+ export function projectConsumers(root: string): ProjectConsumers {
+@@ -636,7 +637,8 @@
+     };
+     // Unknown calls without loader provenance are unrelated, not proven ordinary
+     // functions and not incomplete loader analyses. Only related values abstain.
+-    const unsupported = (reason: string): LoaderValue => ({ kind: "unsupported", reason });
++    const unsupported = (reason: string, role: LoaderRole = "unknown", base?: "importer"): LoaderValue =>
++      ({ kind: "unsupported", role, reason, base });
+     const runtimeParent = (node: Node): Node | undefined => {
+       let p = parent.get(node);
+       while (p && runtimeExpression(p) === runtimeExpression(node)) {
+@@ -725,7 +727,8 @@
+           if (property === undefined) return unsupported("computed builtin-module property may select createRequire");
+           return { kind: "unrelated" };
+         }
+-        if (object.kind === "unsupported") return object;
++        // An arbitrary member need not have the same callable role as its object.
++        if (object.kind === "unsupported") return unsupported(object.reason);
+         // require.resolve computes a filename; it does not load module exports.
+         // Keep this separate from invoking require, including through aliases.
+         if (object.kind === "loader" && staticProperty(n) === "resolve")
+@@ -737,25 +740,33 @@
+         const alternatives = (n.type === "ConditionalExpression"
+           ? [n.consequent, n.alternate] : [n.left, n.right]) as Node[];
+         const values = alternatives.map((value) => classifyLoaderValue(value, next));
+-        if (values.some(loaderRelated))
+-          return {
+-            kind: "unsupported", reason: "loader selection is conditional; value flow is unsupported",
+-            base: values.every((value) => value.kind === "loader" || value.kind === "non-loader" ||
+-              (value.kind === "unsupported" && value.base === "importer")) ? "importer" : undefined,
+-          };
++        if (values.some(loaderRelated)) {
++          const role: LoaderRole = values.every((value) => value.kind === "factory" ||
++            (value.kind === "unsupported" && value.role === "factory")) ? "factory" :
++            values.every((value) => value.kind === "loader" || value.kind === "non-loader" ||
++              (value.kind === "unsupported" && value.role === "loader")) ? "loader" : "unknown";
++          const base = role === "loader" && values.every((value) => value.kind === "loader" ||
++            value.kind === "non-loader" || (value.kind === "unsupported" && value.base === "importer"))
++            ? "importer" : undefined;
++          return unsupported("loader selection is conditional; value flow is unsupported", role, base);
++        }
+         return { kind: "unrelated" };
+       }
+       if (n.type === "CallExpression") {
+         const callee = classifyLoaderValue(n.callee as Node, next);
+-        if (callee.kind === "factory") {
++        if (callee.kind === "factory" || (callee.kind === "unsupported" && callee.role === "factory")) {
+           const base = (n.arguments as Node[])[0];
+-          return base && isImporterBase(base) ? { kind: "loader", base: "importer" } :
+-            unsupported("createRequire base is unsupported; possible target scope is unbounded");
++          if (!base || !isImporterBase(base))
++            return unsupported("createRequire base is unsupported; possible target scope is unbounded", "loader");
++          if (callee.kind === "unsupported") return unsupported(callee.reason, "loader", "importer");
++          return { kind: "loader", base: "importer" };
+         }
++        // Call-result semantics depend on role, not on recognition certainty.
++        // The original load records its own target uncertainty in the AST walk;
++        // its returned value and arbitrary methods do not inherit loader identity.
++        if (callee.kind === "loader" || (callee.kind === "unsupported" && callee.role === "loader"))
++          return { kind: "loaded-value" };
+         if (callee.kind === "unsupported") return callee;
+-        // Loading a module does not make all its exports loaders. The inner
+-        // loader call records target uncertainty independently during the walk.
+-        if (callee.kind === "loader") return { kind: "unrelated" };
+       }
+       // Known loader provenance inside an unmodeled expression must survive.
+       // Do not infer that an arbitrary wrapper returns its loader argument.
+@@ -1056,7 +1067,7 @@
+         }
+       } else if (n.type === "CallExpression") {
+         const loader = classifyLoaderValue(n.callee as Node);
+-        if (loader.kind === "loader" || loader.kind === "unsupported") {
++        if (loader.kind === "loader" || (loader.kind === "unsupported" && loader.role !== "factory")) {
+           const argument = (n.arguments as Node[])[0];
+           const spec = loader.base === "importer" && argument
+             ? literal(runtimeExpression(argument)) : undefined;

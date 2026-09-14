@@ -1,0 +1,95 @@
+{
+  "local": {
+    "labeled": {
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0
+    },
+    "scopes": {
+      "passed": 84,
+      "failed": 0,
+      "skipped": 0
+    },
+    "original": {
+      "passed": 29,
+      "failed": 1,
+      "skipped": 0,
+      "failedNames": [
+        "mts-authored-positive"
+      ]
+    },
+    "repair": {
+      "passed": 32,
+      "failed": 1,
+      "skipped": 0,
+      "failedNames": [
+        "inherited-cts"
+      ]
+    },
+    "combination": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "runtimeWitnessesPassed": 10
+    },
+    "automated": {
+      "passed": 551,
+      "failed": 0,
+      "skipped": 0
+    },
+    "isolation": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "bundled": {
+      "passed": 228,
+      "failed": 0,
+      "skipped": 18
+    }
+  },
+  "packed": {
+    "labeled": {
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0
+    },
+    "scopes": {
+      "passed": 84,
+      "failed": 0,
+      "skipped": 0
+    },
+    "original": {
+      "passed": 29,
+      "failed": 1,
+      "skipped": 0,
+      "failedNames": [
+        "mts-authored-positive"
+      ]
+    },
+    "repair": {
+      "passed": 32,
+      "failed": 1,
+      "skipped": 0,
+      "failedNames": [
+        "inherited-cts"
+      ]
+    },
+    "combination": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "runtimeWitnessesPassed": 10
+    },
+    "isolation": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "bundled": {
+      "passed": 228,
+      "failed": 0,
+      "skipped": 18
+    }
+  }
+}

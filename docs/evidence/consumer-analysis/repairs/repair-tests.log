@@ -1,0 +1,39 @@
+✔ CLI consumer regression: dynamic-template-parent-segment (585.452792ms)
+✔ CLI consumer regression: shadowed-require-literal (639.062583ms)
+✔ CLI consumer regression: shadowed-require-nonliteral (472.741417ms)
+✔ CLI consumer regression: dynamic-template-prefix-fragment (477.633ms)
+✔ CLI consumer regression: missing-config-scope (488.1235ms)
+✔ CLI consumer regression: external-config-real-witness (481.280959ms)
+✔ CLI consumer regression: repair-template-unknown (467.293125ms)
+✔ CLI consumer regression: repair-template-parent (471.551791ms)
+✔ CLI consumer regression: repair-template-encoded-parent (463.673458ms)
+✔ CLI consumer regression: repair-template-encoded-separator (464.569917ms)
+✔ CLI consumer regression: repair-template-separator (459.814083ms)
+✔ CLI consumer regression: repair-template-shadowed-constant (459.646042ms)
+✔ CLI consumer regression: repair-template-mutable (458.402459ms)
+✔ CLI consumer regression: repair-template-bounded-literal (468.645833ms)
+✔ CLI consumer regression: repair-template-bounded-const (456.042459ms)
+✔ CLI consumer regression: repair-template-bounded-shadowed-outside (454.098666ms)
+✔ CLI consumer regression: repair-template-static-escape-16 (462.619167ms)
+✔ CLI consumer regression: repair-template-static-escape-17 (462.538667ms)
+✔ CLI consumer regression: repair-require-global-literal (476.722708ms)
+✔ CLI consumer regression: repair-require-global-variable (463.523833ms)
+✔ CLI consumer regression: repair-require-factory (469.366083ms)
+✔ CLI consumer regression: repair-require-factory-alias (453.180209ms)
+✔ CLI consumer regression: repair-require-factory-namespace (468.202084ms)
+✔ CLI consumer regression: repair-require-factory-variable (458.928208ms)
+✔ CLI consumer regression: repair-require-factory-other-base (463.105458ms)
+✔ CLI consumer regression: repair-require-local-arrow (458.327708ms)
+✔ CLI consumer regression: repair-require-local-factory (458.48425ms)
+✔ CLI consumer regression: repair-require-factory-shadow (460.687083ms)
+✔ CLI consumer regression: repair-config-supported-cross-root (463.946542ms)
+✔ CLI consumer regression: repair-config-relative-stays-bounded (469.428292ms)
+✔ CLI consumer regression: repair-config-no-bare-import-stays-bounded (456.243625ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14949.008792

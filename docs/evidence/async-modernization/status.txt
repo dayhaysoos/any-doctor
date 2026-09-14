@@ -1,0 +1,35 @@
+ M CONTEXT.md
+ M bin/analysis.js
+ M bin/contract.d.ts
+ M docs-site/src/content/docs/doctors/async.mdx
+ M docs-site/src/content/docs/doctors/convex.mdx
+ M docs/doctor-reliability.md
+ M docs/plans/analysis-improvements.md
+ M doctors/async.fixtures.mjs
+ M doctors/async.mjs
+ M doctors/convex.fixtures.mjs
+ M doctors/convex.mjs
+ M src/analysis.ts
+ M src/contract.ts
+ M test/cli.test.mjs
+ M test/dashboard-pty.test.mjs
+ M test/runner.test.mjs
+?? bin/call-structure.d.ts
+?? bin/call-structure.js
+?? bin/value-flow.d.ts
+?? bin/value-flow.js
+?? dev/async-analysis/
+?? dev/convex-analysis/
+?? docs/call-structure.md
+?? docs/evidence/async-modernization/
+?? docs/evidence/consumer-analysis/loader-classification/
+?? docs/evidence/consumer-analysis/repairs/
+?? docs/evidence/consumer-analysis/result-flow/
+?? docs/evidence/convex-modernization/
+?? docs/project-consumer-analysis.md
+?? src/call-structure.ts
+?? src/value-flow.ts
+?? test/async-modernization.test.mjs
+?? test/call-structure.test.mjs
+?? test/convex-modernization.test.mjs
+?? test/value-flow.test.mjs

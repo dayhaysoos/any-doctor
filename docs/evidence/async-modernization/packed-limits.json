@@ -1,0 +1,84 @@
+{
+  "label": "packed",
+  "command": [
+    "node",
+    "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor/bin/cli.js",
+    "run",
+    "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor/doctors/async.mjs",
+    "/private/tmp/any-doctor-async-repair-ux7aiin9/remaining-limits",
+    "--format",
+    "json"
+  ],
+  "exit": 0,
+  "knownGapCount": 3,
+  "positiveNeighborsPreserved": 3,
+  "rows": [
+    {
+      "name": "map-local-array-type-alias",
+      "rule": "unawaited-async-map",
+      "expectedActual": 1,
+      "source": "type Numbers=number[];function f(xs:Numbers){xs.map(async x=>x)}",
+      "reason": "Missed positive: local array type aliases are not projected as native-array contracts.",
+      "positiveControl": "[1].map(async positive=>positive);",
+      "knownGap": true,
+      "actual": [
+        {
+          "file": "map-local-array-type-alias.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtbG9jYWwtYXJyYXktdHlwZS1hbGlhcy50cwBiMmQ0NGRjNGJjNGVlM2FjYWRjZDI5YjAzNmRjMGU4ZDk3MWQ3Mjg2MzNmYTBmMGVjMGNlZTE1Y2JiZWYwNTZlAABub25lADAAcmFuZ2U",
+          "rule": "unawaited-async-map",
+          "severity": "warning"
+        }
+      ]
+    },
+    {
+      "name": "fetch-runtime-string-guard",
+      "rule": "fetch-calls-without-abortsignal",
+      "expectedActual": 1,
+      "source": "function f(url:unknown){if(typeof url!==\"string\")return;fetch(url)}",
+      "reason": "Missed candidate: control-flow type narrowing is not evaluated.",
+      "positiveControl": "fetch(\"/positive\");",
+      "knownGap": true,
+      "actual": [
+        {
+          "file": "fetch-runtime-string-guard.ts",
+          "line": 2,
+          "column": 0,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1ydW50aW1lLXN0cmluZy1ndWFyZC50cwA4ZDk3Njg0NzRlNDI1NzNkM2FkMWMxYjI5MjNkZjM5NDgxYzAwNmMyM2MxMzE4M2VkMGUzZDJmM2NkNGMyM2ViAABub25lADAAcmFuZ2U",
+          "rule": "fetch-calls-without-abortsignal",
+          "severity": "info"
+        }
+      ]
+    },
+    {
+      "name": "timer-cleanup-factory",
+      "rule": "uncleared-settimeout-in-effect",
+      "expectedActual": 2,
+      "source": "import {useEffect} from \"react\";function cleanup(h){return ()=>clearTimeout(h)}useEffect(()=>{const h=setTimeout(()=>{},1);return cleanup(h)},[]);",
+      "reason": "Unnecessary review candidate: returned cleanup-factory value remains unresolved; native cleanup exists. Message explicitly says no supported cancellation was established, not a proven leak.",
+      "positiveControl": "import {useEffect as positiveEffect} from \"react\";positiveEffect(()=>setTimeout(()=>{},1),[]);",
+      "knownGap": true,
+      "actual": [
+        {
+          "file": "timer-cleanup-factory.ts",
+          "line": 1,
+          "column": 102,
+          "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWNsZWFudXAtZmFjdG9yeS50cwAzYjZjMDU3NmI0MzI5YzVhOWFhNjJkMjJiMzEyMzZlOTYxMTIyMTVjZWMxNTRlZTNkZmRmNDYzZTc1ZTg1M2Y4AGFycm93OgAxADEwMgByYW5nZQ",
+          "rule": "uncleared-settimeout-in-effect",
+          "severity": "warning"
+        },
+        {
+          "file": "timer-cleanup-factory.ts",
+          "line": 2,
+          "column": 69,
+          "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWNsZWFudXAtZmFjdG9yeS50cwAzYjZjMDU3NmI0MzI5YzVhOWFhNjJkMjJiMzEyMzZlOTYxMTIyMTVjZWMxNTRlZTNkZmRmNDYzZTc1ZTg1M2Y4AGFycm93OgAzADY5AHJhbmdl",
+          "rule": "uncleared-settimeout-in-effect",
+          "severity": "warning"
+        }
+      ]
+    }
+  ]
+}

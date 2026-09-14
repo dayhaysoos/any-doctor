@@ -1,0 +1,12 @@
+[
+  {
+    "source": "import {query} from \"./_generated/server\";\n\"use node\";",
+    "directives": []
+  },
+  {
+    "source": "/*license*/\n\"use node\"\nimport {query} from \"./_generated/server\";",
+    "directives": [
+      "use node"
+    ]
+  }
+]

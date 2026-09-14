@@ -174,16 +174,28 @@ writes, no subprocesses, no network.
 (test-named code files — `*.test.*`/`*.spec.*` with a code extension —
 and `test/`, `tests/`, `__tests__/` directories): tests mimic production
 shapes without being production reads. The one law (`isTestPath`) and
-the one derivation (`includeTestsFor`) live in contract.ts; every read
-capability applies them. A Doctor run opts back in with
+the one derivation (`includeTestsFor`) live in contract.ts; diagnostic
+inventory and search apply them. Reference evidence includes tests. A Doctor run opts back in with
 `--include-tests`; `ctx.files.read()` is never filtered — an explicit
 path is a deliberate choice. `ctx.files.readMasked()` is the one
 masking implementation (comments and strings blanked, offsets and
 length preserved — a masked position addresses the same char in the
 source); doctors carry no private copies — the bundled pack's remaining
-copies migrate on the recorded triggers. Verify always sees everything
-its fixtures seed: the sandbox is the doctor's own world, and a seed
-named `*.test.ts` is deliberate test data.
+copies migrate on the recorded triggers. Verify defaults to the deliberately seeded
+test scope; fixtures can also exercise ordinary diagnostic defaults.
+See [project consumer facts](docs/project-consumer-analysis.md) for the interfaces.
+
+## Diagnostic scope
+
+The authorized files eligible for findings in a run. Tests are opt-in and generated
+modules are omitted; this scope is distinct from the evidence used to analyze them.
+
+## Consumer evidence
+
+An observed reference, declaration dependency, public exposure, or uncertainty
+associated with an exported binding by module identity. Test and generated modules
+may supply this evidence without becoming diagnostic targets; absence within
+supported coverage is a review candidate, never deletion authorization.
 
 ## Rule query
 

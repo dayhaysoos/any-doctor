@@ -1,0 +1,661 @@
+[
+  {
+    "name": "template-parent",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "src/index.mjs:1 nonliteral dynamic import: possible consumers are unresolved"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "template-separators",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "src/index.mjs:1 nonliteral dynamic import: possible consumers are unresolved"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "template-encoded-parent",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "src/index.mjs:1 nonliteral dynamic import: possible consumers are unresolved"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "template-fixed-suffix",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "src/index.mjs:1 nonliteral dynamic import: possible consumers are unresolved"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "template-encoded-prefix",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "src/index.mjs:1 nonliteral dynamic import: possible consumers are unresolved"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "template-shadow-parameter",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "src/index.mjs:1 nonliteral dynamic import: possible consumers are unresolved"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "template-mutable",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "src/index.mjs:1 nonliteral dynamic import: possible consumers are unresolved"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "template-bounded-literal",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localIssues": [
+      "src/index.mjs:1 nonliteral dynamic import: possible consumers are unresolved"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ]
+  },
+  {
+    "name": "template-bounded-const",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localIssues": [
+      "src/index.mjs:1 nonliteral dynamic import: possible consumers are unresolved"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ]
+  },
+  {
+    "name": "template-bounded-safe-shadow",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localIssues": [
+      "src/index.mjs:1 nonliteral dynamic import: possible consumers are unresolved"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ]
+  },
+  {
+    "name": "template-bounded-prefix-fragment",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localIssues": [
+      "src/index.mjs:1 nonliteral dynamic import: possible consumers are unresolved"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ]
+  },
+  {
+    "name": "template-no-interpolation",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead",
+      "src/plugins/present.ts:present"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/plugins/present.ts:present"
+    ],
+    "localExports": [
+      "other/dead.ts:dead",
+      "src/plugins/present.ts:present"
+    ],
+    "localIssues": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead",
+      "src/plugins/present.ts:present"
+    ]
+  },
+  {
+    "name": "config-relative-preserves-outer-positive",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "outer/dead.ts:dead"
+    ],
+    "beforeExports": [
+      "outer/dead.ts:dead"
+    ],
+    "localExports": [
+      "outer/dead.ts:dead"
+    ],
+    "localIssues": [
+      "apps/web: File '@org/tsconfig/base.json' not found."
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "outer/dead.ts:dead"
+    ]
+  },
+  {
+    "name": "config-node-builtin-preserves-outer-positives",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "outer/dead.ts:dead",
+      "shared/tool.ts:helper"
+    ],
+    "beforeExports": [
+      "outer/dead.ts:dead",
+      "shared/tool.ts:helper"
+    ],
+    "localExports": [
+      "outer/dead.ts:dead",
+      "shared/tool.ts:helper"
+    ],
+    "localIssues": [
+      "apps/web: File '@org/tsconfig/base.json' not found."
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "outer/dead.ts:dead",
+      "shared/tool.ts:helper"
+    ]
+  },
+  {
+    "name": "config-alias-target-after-reexport",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "apps/web/index.ts: unsupported config leaves target scope of @shared/tool unbounded",
+      "apps/web/index.ts:1 unsupported config leaves target scope of @shared/tool unbounded",
+      "apps/web: File '@org/tsconfig/base.json' not found."
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "config-unsupported-mode-external-target",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "apps/web/index.ts: unsupported config leaves target scope of @shared/tool unbounded",
+      "apps/web/index.ts:1 unsupported config leaves target scope of @shared/tool unbounded",
+      "apps/web: unsupported moduleResolution; supported: node10, node16, nodenext, bundler"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "config-valid-local-alias-keeps-unrelated",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "outer/dead.ts:dead"
+    ],
+    "beforeExports": [
+      "outer/dead.ts:dead"
+    ],
+    "localExports": [
+      "outer/dead.ts:dead"
+    ],
+    "localIssues": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "outer/dead.ts:dead"
+    ]
+  },
+  {
+    "name": "config-real-external-base",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "apps/web/index.ts: unsupported config leaves target scope of @shared/tool unbounded",
+      "apps/web/index.ts:1 unsupported config leaves target scope of @shared/tool unbounded",
+      "apps/web: File '@org/tsconfig/base.json' not found."
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "nonloader-arrow",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localIssues": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ]
+  },
+  {
+    "name": "nonloader-parameter",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localIssues": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ]
+  },
+  {
+    "name": "nonloader-destructured",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localIssues": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ]
+  },
+  {
+    "name": "nonloader-method",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localIssues": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ]
+  },
+  {
+    "name": "real-unbound-require",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead"
+    ],
+    "localExports": [
+      "other/dead.ts:dead"
+    ],
+    "localIssues": [
+      "src/index.cjs:1 CommonJS require value flow unsupported"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead"
+    ]
+  },
+  {
+    "name": "real-factory-named",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead"
+    ],
+    "localExports": [
+      "other/dead.ts:dead"
+    ],
+    "localIssues": [
+      "src/index.mjs:1 CommonJS require value flow unsupported"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead"
+    ]
+  },
+  {
+    "name": "real-factory-alias",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead"
+    ],
+    "localExports": [
+      "other/dead.ts:dead"
+    ],
+    "localIssues": [
+      "src/index.mjs:1 CommonJS require value flow unsupported"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead"
+    ]
+  },
+  {
+    "name": "real-factory-namespace",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead"
+    ],
+    "localExports": [
+      "other/dead.ts:dead"
+    ],
+    "localIssues": [
+      "src/index.mjs:1 CommonJS require value flow unsupported"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead"
+    ]
+  },
+  {
+    "name": "real-factory-nested-shadow",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead"
+    ],
+    "localExports": [
+      "other/dead.ts:dead"
+    ],
+    "localIssues": [
+      "src/index.mjs:1 CommonJS require value flow unsupported"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead"
+    ]
+  },
+  {
+    "name": "real-factory-other-base",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "src/index.mjs:1 createRequire base is unsupported; possible target scope is unbounded"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "real-factory-reassigned",
+    "beforePassed": true,
+    "localPassed": true,
+    "expectedExports": [],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [
+      "src/index.mjs:1 loader-related binding is reassigned; base and value flow are uncertain"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "real-factory-default-import",
+    "beforePassed": false,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localExports": [
+      "other/dead.ts:dead"
+    ],
+    "localIssues": [
+      "src/index.mjs:1 CommonJS require value flow unsupported"
+    ],
+    "classification": "repaired loader regression",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead"
+    ]
+  },
+  {
+    "name": "real-factory-computed-namespace",
+    "beforePassed": false,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localExports": [
+      "other/dead.ts:dead"
+    ],
+    "localIssues": [
+      "src/index.mjs:1 CommonJS require value flow unsupported"
+    ],
+    "classification": "repaired loader regression",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead"
+    ]
+  },
+  {
+    "name": "real-factory-parenthesized-ts",
+    "beforePassed": false,
+    "localPassed": true,
+    "expectedExports": [
+      "other/dead.ts:dead"
+    ],
+    "beforeExports": [
+      "other/dead.ts:dead",
+      "src/target.ts:helper"
+    ],
+    "localExports": [
+      "other/dead.ts:dead"
+    ],
+    "localIssues": [
+      "src/index.ts:1 CommonJS require value flow unsupported"
+    ],
+    "classification": "repaired loader regression",
+    "packedPassed": true,
+    "packedExports": [
+      "other/dead.ts:dead"
+    ]
+  },
+  {
+    "name": "inherited-cts",
+    "beforePassed": false,
+    "localPassed": false,
+    "expectedExports": [
+      "src/target.cts:helper"
+    ],
+    "beforeExports": [],
+    "localExports": [],
+    "localIssues": [],
+    "classification": "inherited cts diagnostic scope",
+    "packedPassed": false,
+    "packedExports": []
+  }
+]

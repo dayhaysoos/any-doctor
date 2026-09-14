@@ -1,0 +1,184 @@
+[
+  {
+    "original": {
+      "name": "reports an options variable whose signal cannot be determined",
+      "seed": {
+        "src/request.ts": "const options = { signal: controller.signal };\nfetch('/api/users', options);\n"
+      },
+      "expected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/request.ts",
+          "line": 2
+        }
+      ]
+    },
+    "reason": "Known options preserve the signal property. Unknown value is not evidence of absence."
+  },
+  {
+    "original": {
+      "name": "per-element for-of awaits are not recognized \u2014 flagged (degraded mode)",
+      "analysis": "off",
+      "seed": {
+        "src/for-of.ts": "export async function work(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  for (const job of jobs) {\n    await job\n  }\n}"
+      },
+      "expected": [
+        {
+          "rule": "unawaited-async-map",
+          "file": "src/for-of.ts",
+          "line": 2
+        }
+      ]
+    },
+    "reason": "Analysis-off now explicitly abstains for all three checks. No name matching fallback. Original results retained; separate reporting-contract assertions verify narrowed coverage."
+  },
+  {
+    "original": {
+      "name": "same-name consumption silences both bindings (degraded mode)",
+      "analysis": "off",
+      "seed": {
+        "src/shadow-off.ts": "export function main(ids: string[]) {\n  const jobs = ids.map(async id => load(id))\n  return jobs.length\n}\n\nfunction other(otherIds: string[]) {\n  const jobs = otherIds.map(async x => save(x))\n  return Promise.all(jobs)\n}"
+      },
+      "expected": []
+    },
+    "reason": "Analysis-off now explicitly abstains for all three checks. No name matching fallback. Original results retained; separate reporting-contract assertions verify narrowed coverage."
+  },
+  {
+    "original": {
+      "name": "degraded mode still flags the plain dropped binding",
+      "analysis": "off",
+      "seed": {
+        "src/off-a.ts": "export function work(ids: string[]) {\n  const results = ids.map(async id => load(id))\n  return results.length\n}"
+      },
+      "expected": [
+        {
+          "rule": "unawaited-async-map",
+          "file": "src/off-a.ts",
+          "line": 2
+        }
+      ]
+    },
+    "reason": "Analysis-off now explicitly abstains for all three checks. No name matching fallback. Original results retained; separate reporting-contract assertions verify narrowed coverage."
+  },
+  {
+    "original": {
+      "name": "degraded mode still sees next-line combiner consumption",
+      "analysis": "off",
+      "seed": {
+        "src/off-b.ts": "export async function work(ids: string[]) {\n  const results = ids.map(async id => load(id))\n  return Promise.all(results)\n}"
+      },
+      "expected": []
+    },
+    "reason": "Analysis-off now explicitly abstains for all three checks. No name matching fallback. Original results retained; separate reporting-contract assertions verify narrowed coverage."
+  },
+  {
+    "original": {
+      "name": "degraded mode still flags the bare discarded statement",
+      "analysis": "off",
+      "seed": {
+        "src/off-bare.ts": "export function warm(ids: string[]) {\n  ids.map(async id => prime(id));\n  return ids.length;\n}\n"
+      },
+      "expected": [
+        {
+          "rule": "unawaited-async-map",
+          "file": "src/off-bare.ts",
+          "line": 2
+        }
+      ]
+    },
+    "reason": "Analysis-off now explicitly abstains for all three checks. No name matching fallback. Original results retained; separate reporting-contract assertions verify narrowed coverage."
+  },
+  {
+    "original": {
+      "name": "degraded mode still flags await directly on the mapped array",
+      "analysis": "off",
+      "seed": {
+        "src/off-await-array.ts": "export async function warm(ids: string[]) {\n  await ids.map(async id => prime(id));\n  return ids.length;\n}\n"
+      },
+      "expected": [
+        {
+          "rule": "unawaited-async-map",
+          "file": "src/off-await-array.ts",
+          "line": 2
+        }
+      ]
+    },
+    "reason": "Analysis-off now explicitly abstains for all three checks. No name matching fallback. Original results retained; separate reporting-contract assertions verify narrowed coverage."
+  },
+  {
+    "original": {
+      "name": "degraded mode still sees same-line consumption after the declaration",
+      "analysis": "off",
+      "seed": {
+        "src/off-one-line.ts": "export const saveAll = (items: string[]) => { const jobs = items.map(async item => save(item)); return Promise.all(jobs); };"
+      },
+      "expected": []
+    },
+    "reason": "Analysis-off now explicitly abstains for all three checks. No name matching fallback. Original results retained; separate reporting-contract assertions verify narrowed coverage."
+  },
+  {
+    "original": {
+      "name": "degraded mode still flags the optional-chained bound map",
+      "analysis": "off",
+      "seed": {
+        "src/off-opt-bound.ts": "export function work(ids?: string[]) {\n  const jobs = ids?.map(async id => load(id))\n  return jobs?.length ?? 0\n}"
+      },
+      "expected": [
+        {
+          "rule": "unawaited-async-map",
+          "file": "src/off-opt-bound.ts",
+          "line": 2
+        }
+      ]
+    },
+    "reason": "Analysis-off now explicitly abstains for all three checks. No name matching fallback. Original results retained; separate reporting-contract assertions verify narrowed coverage."
+  },
+  {
+    "original": {
+      "name": "reports an assigned timeout without cleanup",
+      "seed": {
+        "src/example.tsx": "useEffect(() => {\n  const timer = setTimeout(() => save(), 1000);\n}, []);\n"
+      },
+      "expected": [
+        {
+          "rule": "uncleared-settimeout-in-effect",
+          "file": "src/example.tsx",
+          "line": 2
+        }
+      ]
+    },
+    "reason": "Unbound useEffect does not establish React identity; preserve original as an unknown negative and add a real imported React positive."
+  },
+  {
+    "original": {
+      "name": "reports only the timer missing from multi-timer cleanup",
+      "seed": {
+        "src/example.jsx": "useEffect(() => {\n  const fast = setTimeout(work, 50);\n  let slow = setTimeout(work, 500);\n  return () => clearTimeout(fast);\n}, []);\n"
+      },
+      "expected": [
+        {
+          "rule": "uncleared-settimeout-in-effect",
+          "file": "src/example.jsx",
+          "line": 3
+        }
+      ]
+    },
+    "reason": "Unbound useEffect does not establish React identity; preserve original as an unknown negative and add a real imported React positive."
+  },
+  {
+    "original": {
+      "name": "reports an unassigned timer despite unrelated cleanup",
+      "seed": {
+        "src/example.js": "useEffect(() => {\n  setTimeout(notify, 100);\n  return () => clearTimeout(existingTimer);\n}, []);\n"
+      },
+      "expected": [
+        {
+          "rule": "uncleared-settimeout-in-effect",
+          "file": "src/example.js",
+          "line": 2
+        }
+      ]
+    },
+    "reason": "Unbound useEffect does not establish React identity; preserve original as an unknown negative and add a real imported React positive."
+  }
+]

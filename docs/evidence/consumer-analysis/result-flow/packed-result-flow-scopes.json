@@ -1,0 +1,888 @@
+{
+  "graphFile": "/private/tmp/any-doctor-result-flow-repair/candidate-packed/consumer/node_modules/any-doctor/bin/project-consumers.js",
+  "passed": 19,
+  "failed": 0,
+  "skipped": 0,
+  "rows": [
+    {
+      "name": "result-flow-conditional-direct",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-conditional-member",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-conditional-stored-member",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-known-loader-member",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "CommonJS",
+      "issues": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "CommonJS require value flow unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-stored-alias-wrapper",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-direct-computed-other-method",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-stored-destructured-method",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-logical-loader-result",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-nested-selection-result",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-conditional-factory-creates-loader",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-conditional-factory-alias-wrapper",
+      "passed": true,
+      "expectedScope": [
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-conditional-factory-not-invoked-as-loader",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-conditional-loader-unknown-base",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-conditional-factory-unknown-base",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "base is unsupported",
+      "issues": [
+        "src/index.ts:1 createRequire base is unsupported; possible target scope is unbounded"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "createRequire base is unsupported; possible target scope is unbounded"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "createRequire base is unsupported; possible target scope is unbounded"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-unknown-factory-alternative",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-unknown-loader-alternative-result",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "conditional",
+      "issues": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "loader selection is conditional; value flow is unsupported"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-unknown-loader-wrapper-result",
+      "passed": true,
+      "expectedScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "actualScope": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "expectedExplanation": "unsupported CallExpression",
+      "issues": [
+        "src/index.ts:1 unsupported CallExpression contains a loader-related value"
+      ],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "unsupported CallExpression contains a loader-related value"
+              }
+            ]
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": [
+              {
+                "kind": "uncertain",
+                "file": "src/index.ts",
+                "line": 1,
+                "detail": "unsupported CallExpression contains a loader-related value"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-ordinary-local-method-result",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "result-flow-ordinary-unknown-method-result",
+      "passed": true,
+      "expectedScope": [],
+      "actualScope": [],
+      "expectedExplanation": "",
+      "issues": [],
+      "exports": {
+        "other/dead.ts": [
+          {
+            "name": "dead",
+            "exportedNames": [
+              "dead"
+            ],
+            "line": 1,
+            "column": 13,
+            "evidence": []
+          }
+        ],
+        "src/index.ts": [],
+        "src/target.ts": [
+          {
+            "name": "helper",
+            "exportedNames": [
+              "helper"
+            ],
+            "line": 1,
+            "column": 7,
+            "evidence": []
+          }
+        ]
+      }
+    }
+  ]
+}

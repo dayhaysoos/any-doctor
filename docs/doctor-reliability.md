@@ -65,18 +65,58 @@ authorize telemetry, uploading source, or automatic global rule changes.
 
 ## Current Convex boundaries
 
-Direct-discard detection covers recognized methods on the actual first parameter
-of a resolved inline handler. Returned, stored, passed, chained, and custom-wrapper
-cases are outside this check's claim; they are not certified safe.
+Convex revision-2 checks use shared call structure and lexical identity. Supported
+registration imports, immutable aliases, local handler/config variables and direct
+handlers establish contexts. Database aliases, destructuring, imported context
+types (including local aliases and `Pick`), and consistent observed local helper
+arguments preserve useful helper findings. Unresolved wrappers, type contracts
+and cross-file helper implementations remain unknown. Type annotations describe
+intended contracts; they do not establish runtime types.
 
-Clock checks distinguish direct query clock reads (reactivity review candidates)
-from subtraction of transaction clock reads. Mutation expiration, historical
-cutoffs, and Math.random are not generic nondeterminism violations.
-See [Convex query caching](https://docs.convex.dev/functions/query-functions#caching--reactivity)
-and [Convex runtime behavior](https://docs.convex.dev/functions/runtimes).
+Validators use actual config properties independent of order and shorthand.
+Public validation is recommended; missing internal validators are informational
+contract candidates, not client exposure. Node directives come from the program's
+directive prologue, not strings appearing after imports or other statements.
 
-Query checks follow a single syntactic chain. They do not infer schema cardinality,
-follow builders across statements, or prove arbitrary helper behavior. Collect
-findings call for reviewing bounds; they do not prove an existing latency incident.
-Generic useQuery calls cannot establish whole-table subscriptions and are no
-longer warned against.
+Query chains use returned-range relationships. Literal unreachable branches do
+not establish bounds. Supported conditional updates that only extend a constrained
+range remain bounded. Unresolved returned ranges receive an explicitly uncertain
+candidate for that chain, without suppressing unrelated positive findings. Index
+ranges do not establish small cardinality, and result limits can omit required
+billing/migration work; recommendations preserve complete processing.
+
+Direct discarded promises remain independent of unrelated nearby awaits. Stored,
+passed and returned results are outside the direct-discard claim, not certified
+settled. Query clocks are subscription/expiry review candidates; transaction clock
+subtraction is distinct. Preserve server-authoritative expiry rather than replacing
+it with an untrusted client timestamp.
+
+Public server calls are audience/authorization review candidates, never proof
+that clients should lose access. Spread checks concern top-level patch fields,
+not nested objects or arrays; validators, deliberate state copies and selected
+server fields can make them correct. Awaited run loops are identified by same-
+function loop ancestry; retries, backoff and cursor-dependent batches may require
+sequential execution. All recommendations retain these distinctions.
+
+The framework contracts were checked against current official Convex guidance
+and the retained 1.32.0 runtime proof. See [validation](https://docs.convex.dev/functions/validation),
+[runtimes](https://docs.convex.dev/functions/runtimes), and
+[best practices](https://docs.convex.dev/understanding/best-practices/).
+No deployed application, production latency, cardinality or authorization exploit
+was tested. Analysis-unavailable runs abstain explicitly. Diagnostic extension
+limits for `.mts`, `.cts` and `.cjs` remain separate from this repair.
+
+## Consumer and duplicate reliability gate
+
+Project-wide facts and their exact limits are documented in
+[project consumer analysis](project-consumer-analysis.md). Regression labels live
+in `dev/consumer-analysis/cases.mjs` and execute through the real CLI in
+`test/consumer-integration.test.mjs`. Fixtures can pin default scope with
+`includeTests: false`; test consumers must count in that mode. Slop revision 2
+uses literal-preserving structural comparison and dependency-aware consumer
+facts. Its removed two-statement duplicate expectation is intentional narrowing;
+its removed degraded duplicate expectation replaces an inaccurate text fallback.
+The original seeds remain, alongside substantive positive/location witnesses.
+
+Source review and comparison artifacts live under `docs/evidence/consumer-analysis`.
+They are implementation-authored evidence for follow-up independent evaluation.

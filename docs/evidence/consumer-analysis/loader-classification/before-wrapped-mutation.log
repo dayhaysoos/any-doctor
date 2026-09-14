@@ -1,0 +1,36 @@
+✖ CLI consumer regression: loader-mutated-wrapped-member (552.731333ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 751.939542
+
+✖ failing tests:
+
+test at test/consumer-integration.test.mjs:24:3
+✖ CLI consumer regression: loader-mutated-wrapped-member (552.731333ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'other/dead.ts:dead'
+  + ]
+  - []
+  
+      at file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:63:14
+      at inSeed (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:18:12)
+      at TestContext.<anonymous> (file:///Users/nickdejesus/Code/any-doctor/test/consumer-integration.test.mjs:25:5)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'other/dead.ts:dead' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

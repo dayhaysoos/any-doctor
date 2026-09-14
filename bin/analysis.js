@@ -1,3 +1,4 @@
+import { callStructure } from "./call-structure.js";
 import { createRequire } from "module";
 let loaded = null;
 const require_ = createRequire(import.meta.url);
@@ -401,8 +402,8 @@ export function analyzeCalls(file, source) {
             var _a;
             let n = unwrap(expr);
             const members = [];
-            while (n.type === "MemberExpression" && !n.computed && isNode(n.object) && isNode(n.property)) {
-                const name = idName(n.property);
+            while (n.type === "MemberExpression" && (!n.computed || unwrap(n.property).type === "Literal") && isNode(n.object) && isNode(n.property)) {
+                const name = n.computed ? propertyName(unwrap(n.property)) : idName(n.property);
                 if (!name)
                     break;
                 members.unshift(name);
@@ -478,7 +479,7 @@ export function analyzeCalls(file, source) {
                     ...range(n), functionStart: functionStart(n), left: operand(n.left), right: operand(n.right),
                 });
         }
-        return { ok: true, file: { file, calls, functions, differences } };
+        return { ok: true, file: { file, calls, functions, differences, structure: callStructure(nodes, parents, target, range, unwrap, functionStart) } };
     }
     catch (e) {
         return { ok: false, error: `analysis failed for ${file}: ${e instanceof Error ? e.message : String(e)}` };

@@ -1,0 +1,19 @@
+{
+  "head": "d81987b62429765b4f64fa4b8dbcbb96f10966d2",
+  "branch": "website/docs",
+  "indexEmpty": true,
+  "startingManifestEntries": 175,
+  "startingManifestDrift": [],
+  "changedExistingFiles": [
+    "bin/project-consumers.js",
+    "dev/consumer-analysis/loader-cases.mjs",
+    "dev/consumer-analysis/pack-working-candidate.mjs",
+    "docs/project-consumer-analysis.md",
+    "src/project-consumers.ts"
+  ],
+  "allOtherStartingFileHashesUnchanged": true,
+  "oldTarballUnchanged": true,
+  "frozenFiles": 1530,
+  "workingManifestEntries": 178,
+  "workingDigest": "8bdcd681b199846ac82956399ce94df9adfe2a61ad8896e774eddd23765592f9"
+}

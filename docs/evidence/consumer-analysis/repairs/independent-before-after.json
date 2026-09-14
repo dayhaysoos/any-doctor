@@ -1,0 +1,520 @@
+[
+  {
+    "name": "original-test-consumer",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "original-aliased-reexport",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "original-unrelated-same-name",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [
+        "src/a.ts:helper"
+      ],
+      "duplicates": 0
+    },
+    "beforeExports": [
+      "src/a.ts:helper"
+    ],
+    "afterExports": [
+      "src/a.ts:helper"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "src/a.ts:helper"
+    ]
+  },
+  {
+    "name": "original-unrelated-dynamic-basename",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [
+        "src/a/helper.ts:orphanA"
+      ],
+      "duplicates": 0
+    },
+    "beforeExports": [
+      "src/a/helper.ts:orphanA"
+    ],
+    "afterExports": [
+      "src/a/helper.ts:orphanA"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "src/a/helper.ts:orphanA"
+    ]
+  },
+  {
+    "name": "original-generated-dist",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "original-literal-whitespace",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "substantial-string-whitespace",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "substantial-template-raw",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "substantial-regex-whitespace",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "substantial-duplicates-format-name",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 2
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "duplicate-captured-contracts",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 2,
+      "captureExpected": true
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "barrel-cycle-alias",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "namespace-jsx-shadow",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [
+        "src/ui.tsx:Unused"
+      ],
+      "duplicates": 0
+    },
+    "beforeExports": [
+      "src/ui.tsx:Unused"
+    ],
+    "afterExports": [
+      "src/ui.tsx:Unused"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "src/ui.tsx:Unused"
+    ]
+  },
+  {
+    "name": "generated-reference-with-dead-export",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "type-query-bounded",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [
+        "a.ts:unused"
+      ],
+      "duplicates": 0
+    },
+    "beforeExports": [
+      "a.ts:unused"
+    ],
+    "afterExports": [
+      "a.ts:unused"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "a.ts:unused"
+    ]
+  },
+  {
+    "name": "tsconfig-inherited-alias",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "static-import-dependency-unused-local",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "dynamic-destructure-alias",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [
+        "a.ts:unused"
+      ],
+      "duplicates": 0
+    },
+    "beforeExports": [
+      "a.ts:unused"
+    ],
+    "afterExports": [
+      "a.ts:unused"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "a.ts:unused"
+    ]
+  },
+  {
+    "name": "dynamic-namespace-reassigned",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0,
+      "uncertainty": true
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "entry-pattern-nested",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [
+        "src/util.ts:dead"
+      ],
+      "duplicates": 0
+    },
+    "beforeExports": [
+      "src/util.ts:dead"
+    ],
+    "afterExports": [
+      "src/util.ts:dead"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "src/util.ts:dead"
+    ]
+  },
+  {
+    "name": "namespace-escape-bounded",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [
+        "b.ts:dead"
+      ],
+      "duplicates": 0,
+      "uncertainty": true
+    },
+    "beforeExports": [
+      "b.ts:dead"
+    ],
+    "afterExports": [
+      "b.ts:dead"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "b.ts:dead"
+    ]
+  },
+  {
+    "name": "missing-relative-bounded",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [
+        "src/a.ts:helper"
+      ],
+      "duplicates": 0,
+      "uncertainty": true
+    },
+    "beforeExports": [
+      "src/a.ts:helper"
+    ],
+    "afterExports": [
+      "src/a.ts:helper"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "src/a.ts:helper"
+    ]
+  },
+  {
+    "name": "dynamic-template-parent-segment",
+    "beforePassed": false,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0,
+      "uncertainty": true
+    },
+    "beforeExports": [
+      "src/utility.ts:helper"
+    ],
+    "afterExports": [],
+    "classification": "repaired defect",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "shadowed-require-literal",
+    "beforePassed": false,
+    "afterPassed": true,
+    "expected": {
+      "exports": [
+        "a.ts:helper"
+      ],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [
+      "a.ts:helper"
+    ],
+    "classification": "repaired defect",
+    "packedPassed": true,
+    "packedExports": [
+      "a.ts:helper"
+    ]
+  },
+  {
+    "name": "shadowed-require-nonliteral",
+    "beforePassed": false,
+    "afterPassed": true,
+    "expected": {
+      "exports": [
+        "a.ts:helper"
+      ],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [
+      "a.ts:helper"
+    ],
+    "classification": "repaired defect",
+    "packedPassed": true,
+    "packedExports": [
+      "a.ts:helper"
+    ]
+  },
+  {
+    "name": "dynamic-template-prefix-fragment",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [
+        "unrelated.ts:dead"
+      ],
+      "duplicates": 0,
+      "uncertainty": true
+    },
+    "beforeExports": [
+      "unrelated.ts:dead"
+    ],
+    "afterExports": [
+      "unrelated.ts:dead"
+    ],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": [
+      "unrelated.ts:dead"
+    ]
+  },
+  {
+    "name": "mts-authored-positive",
+    "beforePassed": false,
+    "afterPassed": false,
+    "expected": {
+      "exports": [
+        "src/helper.mts:helper"
+      ],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "inherited diagnostic-extension limitation",
+    "packedPassed": false,
+    "packedExports": []
+  },
+  {
+    "name": "default-namespace-reexport",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "missing-config-scope",
+    "beforePassed": false,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0,
+      "uncertainty": true
+    },
+    "beforeExports": [
+      "shared/tool.ts:helper"
+    ],
+    "afterExports": [],
+    "classification": "repaired defect",
+    "packedPassed": true,
+    "packedExports": []
+  },
+  {
+    "name": "parse-error-loud",
+    "beforePassed": true,
+    "afterPassed": true,
+    "expected": {
+      "exports": [],
+      "duplicates": 0,
+      "failure": true
+    },
+    "beforeExports": [],
+    "afterExports": [],
+    "classification": "preserved control",
+    "packedPassed": true,
+    "packedExports": []
+  }
+]

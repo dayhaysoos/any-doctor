@@ -1,0 +1,49 @@
+ M CONTEXT.md
+ M bin/analysis-host.d.ts
+ M bin/analysis-host.js
+ M bin/analysis.d.ts
+ M bin/analysis.js
+ M bin/certify.js
+ M bin/cohort.js
+ M bin/contract.d.ts
+ M bin/dashboard.d.ts
+ M bin/dashboard.js
+ M bin/report.js
+ M bin/sdk.d.ts
+ M bin/sdk.js
+ M bin/search-host.js
+ M bin/summary.d.ts
+ M bin/summary.js
+ M docs-site/src/content/docs/getting-started/quickstart.mdx
+ M docs-site/src/content/docs/welcome.mdx
+ M docs/doctor-reliability.md
+ M docs/plans/analysis-improvements.md
+ M doctors/slop.fixtures.mjs
+ M doctors/slop.mjs
+ M package-lock.json
+ M package.json
+ M src/analysis-host.ts
+ M src/analysis.ts
+ M src/certify.ts
+ M src/cohort.ts
+ M src/contract.ts
+ M src/dashboard.ts
+ M src/report.ts
+ M src/sdk.ts
+ M src/search-host.ts
+ M src/summary.ts
+ M test/analysis-host.test.mjs
+ M test/certify.test.mjs
+?? bin/file-scope.d.ts
+?? bin/file-scope.js
+?? bin/function-structure.d.ts
+?? bin/function-structure.js
+?? bin/project-consumers.d.ts
+?? bin/project-consumers.js
+?? dev/consumer-analysis/
+?? docs/evidence/consumer-analysis/repairs/
+?? docs/project-consumer-analysis.md
+?? src/file-scope.ts
+?? src/function-structure.ts
+?? src/project-consumers.ts
+?? test/consumer-integration.test.mjs

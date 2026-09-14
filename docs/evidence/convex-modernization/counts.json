@@ -1,0 +1,124 @@
+{
+  "local": {
+    "consumerLabeled": {
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0
+    },
+    "consumerScopes": {
+      "passed": 84,
+      "failed": 0,
+      "skipped": 0
+    },
+    "consumerOriginal": {
+      "passed": 29,
+      "failed": 1,
+      "skipped": 0,
+      "failedNames": [
+        "mts-authored-positive"
+      ]
+    },
+    "consumerRepair": {
+      "passed": 32,
+      "failed": 1,
+      "skipped": 0,
+      "failedNames": [
+        "inherited-cts"
+      ]
+    },
+    "consumerCombination": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    "convexIndependent": {
+      "passed": 62,
+      "failed": 0,
+      "skipped": 0
+    },
+    "convexExtra": {
+      "passed": 83,
+      "failed": 0,
+      "skipped": 0
+    },
+    "consumerIsolation": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "automated": {
+      "tests": 557,
+      "pass": 557,
+      "fail": 0,
+      "skipped": 0
+    },
+    "bundled": {
+      "passed": 235,
+      "failed": 0,
+      "skipped": 18
+    },
+    "convexBundled": {
+      "passed": 104,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "packed": {
+    "consumerLabeled": {
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0
+    },
+    "consumerScopes": {
+      "passed": 84,
+      "failed": 0,
+      "skipped": 0
+    },
+    "consumerOriginal": {
+      "passed": 29,
+      "failed": 1,
+      "skipped": 0,
+      "failedNames": [
+        "mts-authored-positive"
+      ]
+    },
+    "consumerRepair": {
+      "passed": 32,
+      "failed": 1,
+      "skipped": 0,
+      "failedNames": [
+        "inherited-cts"
+      ]
+    },
+    "consumerCombination": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    "convexIndependent": {
+      "passed": 62,
+      "failed": 0,
+      "skipped": 0
+    },
+    "convexExtra": {
+      "passed": 83,
+      "failed": 0,
+      "skipped": 0
+    },
+    "consumerIsolation": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "bundled": {
+      "passed": 235,
+      "failed": 0,
+      "skipped": 18
+    },
+    "convexBundled": {
+      "passed": 104,
+      "failed": 0,
+      "skipped": 0
+    }
+  }
+}

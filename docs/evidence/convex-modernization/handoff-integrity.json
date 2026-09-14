@@ -1,0 +1,12 @@
+{
+  "manifestEntries": 195,
+  "workingDigest": "3e8e046096b16b59156f74edc458e0f74807d30519a0508ef1768249b139d07c",
+  "tarballSha256": "19a52b7cb2c4b8a8beae2788bb3f0bbe3ed8a1e6c36c3ab68b5c42c462c647bd",
+  "evidenceSha256": "500b50a2f5d728695f05830b122afb31c9d13e38ab983698d936782fad033cec",
+  "archiveFiles": 3281,
+  "onlyNodeModulesEntriesAreSixMinimalTsconfigSeeds": true,
+  "workingBytesMatch": true,
+  "jsonParseAndReportLinks": true,
+  "headUnchangedIndexEmpty": true,
+  "diffCheckPassed": true
+}

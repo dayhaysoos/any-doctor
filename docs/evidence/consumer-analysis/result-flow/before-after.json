@@ -1,0 +1,513 @@
+{
+  "before": [
+    {
+      "label": "local",
+      "name": "conditional-direct",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "[Module: null prototype] { helper: [Function: helper] }\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/before-isolation/isolation/local/conditional-direct"
+    },
+    {
+      "label": "local",
+      "name": "conditional-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [],
+      "passed": false,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": [
+            {
+              "kind": "uncertain",
+              "file": "src/index.ts",
+              "line": 1,
+              "detail": "loader selection is conditional; value flow is unsupported"
+            }
+          ]
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/before-isolation/isolation/local/conditional-member"
+    },
+    {
+      "label": "local",
+      "name": "conditional-stored-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [],
+      "passed": false,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": [
+            {
+              "kind": "uncertain",
+              "file": "src/index.ts",
+              "line": 1,
+              "detail": "loader selection is conditional; value flow is unsupported"
+            }
+          ]
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/before-isolation/isolation/local/conditional-stored-member"
+    },
+    {
+      "label": "local",
+      "name": "known-loader-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/before-isolation/isolation/local/known-loader-member"
+    },
+    {
+      "label": "packed",
+      "name": "conditional-direct",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "[Module: null prototype] { helper: [Function: helper] }\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/before-isolation/isolation/packed/conditional-direct"
+    },
+    {
+      "label": "packed",
+      "name": "conditional-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [],
+      "passed": false,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": [
+            {
+              "kind": "uncertain",
+              "file": "src/index.ts",
+              "line": 1,
+              "detail": "loader selection is conditional; value flow is unsupported"
+            }
+          ]
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/before-isolation/isolation/packed/conditional-member"
+    },
+    {
+      "label": "packed",
+      "name": "conditional-stored-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [],
+      "passed": false,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "other/dead.ts",
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": [
+            {
+              "kind": "uncertain",
+              "file": "src/index.ts",
+              "line": 1,
+              "detail": "loader selection is conditional; value flow is unsupported"
+            }
+          ]
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/before-isolation/isolation/packed/conditional-stored-member"
+    },
+    {
+      "label": "packed",
+      "name": "known-loader-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/before-isolation/isolation/packed/known-loader-member"
+    }
+  ],
+  "after": [
+    {
+      "label": "local",
+      "name": "conditional-direct",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "[Module: null prototype] { helper: [Function: helper] }\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/candidate-packed/isolation-review/isolation/local/conditional-direct"
+    },
+    {
+      "label": "local",
+      "name": "conditional-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/candidate-packed/isolation-review/isolation/local/conditional-member"
+    },
+    {
+      "label": "local",
+      "name": "conditional-stored-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/candidate-packed/isolation-review/isolation/local/conditional-stored-member"
+    },
+    {
+      "label": "local",
+      "name": "known-loader-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/candidate-packed/isolation-review/isolation/local/known-loader-member"
+    },
+    {
+      "label": "packed",
+      "name": "conditional-direct",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "[Module: null prototype] { helper: [Function: helper] }\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/candidate-packed/isolation-review/isolation/packed/conditional-direct"
+    },
+    {
+      "label": "packed",
+      "name": "conditional-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/candidate-packed/isolation-review/isolation/packed/conditional-member"
+    },
+    {
+      "label": "packed",
+      "name": "conditional-stored-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/candidate-packed/isolation-review/isolation/packed/conditional-stored-member"
+    },
+    {
+      "label": "packed",
+      "name": "known-loader-member",
+      "expected": [
+        "other/dead.ts:dead"
+      ],
+      "actual": [
+        "other/dead.ts:dead"
+      ],
+      "passed": true,
+      "exitCode": 0,
+      "runtimeExit": 0,
+      "runtimeStdout": "42\n",
+      "uncertainFiles": [
+        "src/target.ts"
+      ],
+      "deadEvidence": [
+        {
+          "name": "dead",
+          "exportedNames": [
+            "dead"
+          ],
+          "line": 1,
+          "column": 13,
+          "evidence": []
+        }
+      ],
+      "seedDirectory": "/private/tmp/any-doctor-result-flow-repair/candidate-packed/isolation-review/isolation/packed/known-loader-member"
+    }
+  ],
+  "combinationBefore": {
+    "passed": 11,
+    "failed": 1,
+    "skipped": 0
+  },
+  "combinationAfter": {
+    "local": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "runtimeWitnessesPassed": 10
+    },
+    "packed": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "runtimeWitnessesPassed": 10
+    }
+  }
+}

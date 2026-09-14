@@ -1,0 +1,2015 @@
+{
+  "passed": 145,
+  "failed": 0,
+  "skipped": 0,
+  "rows": [
+    {
+      "name": "test-consumer-default",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "test-consumer-included",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": true
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "renamed-barrel",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "reexport-without-final-caller",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "same-name-positive",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "same-basename-dynamic",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a/helper.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a/helper.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "generated-target",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "generated-consumer",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "type-only-consumer",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "type-only-named",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "default-alias",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "star-cycle",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "namespace-member",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:unused"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "namespace-escape",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "use.ts:1 namespace escapes or has computed member access"
+      ]
+    },
+    {
+      "name": "shadowed-namespace",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "tsconfig-alias",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "package-entry",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "declared-framework-entry",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "extension-index",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "genuine-positive",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "unknown-dynamic",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "use.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "unresolved-relative",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverage": [
+        "use.ts: unresolved internal module ./missing"
+      ]
+    },
+    {
+      "name": "parse-failure",
+      "passed": true,
+      "expected": {
+        "failure": true,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "literal-whitespace",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "template-whitespace",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "regex-whitespace",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "substantial-duplicate",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "trivial-long-signature",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "workspace-package-entry",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "excluded-test-consumer",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "same-line-surrounding-code",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "format-and-comments",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "different-captured-bindings",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 2,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "unsupported-config",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        ".: File 'missing-package/tsconfig.json' not found.",
+        ":1 File 'missing-package/tsconfig.json' not found."
+      ]
+    },
+    {
+      "name": "dynamic-namespace-binding",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:unused"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "dynamic-destructuring",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:unused"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "default-reexport-chain",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "local-export-specifier-positive",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "dynamic-then-member",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:unused"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "vitest-config-entry",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "nitro-plugin-entry",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "plugin-name-lookalike",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:default"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:default"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "review-tagged-template-raw",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "review-destructured-export-shadow",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "review-array-export-shadow",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "review-stored-import-promise",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "use.ts:1 dynamic module namespace requires downstream value flow"
+      ]
+    },
+    {
+      "name": "review-nested-import-type",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": []
+    },
+    {
+      "name": "import-equals-uncertainty",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "use.cts:1 TypeScript import-equals value flow unsupported"
+      ]
+    },
+    {
+      "name": "dynamic-template-parent-segment",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "shadowed-require-literal",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "shadowed-require-nonliteral",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper"
+        ],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "dynamic-template-prefix-fragment",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "unrelated.ts:dead"
+        ],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [
+        "unrelated.ts:dead"
+      ],
+      "coverage": [
+        "index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "missing-config-scope",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "apps/web/main.ts: unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web/main.ts:1 unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web: File '@org/tsconfig/base.json' not found."
+      ]
+    },
+    {
+      "name": "external-config-real-witness",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "duplicates": 0,
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "apps/web/main.ts: unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web/main.ts:1 unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web: File '@org/tsconfig/base.json' not found."
+      ]
+    },
+    {
+      "name": "repair-template-unknown",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-parent",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-encoded-parent",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-encoded-separator",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-separator",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-shadowed-constant",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-mutable",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-bounded-literal",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "src/utility.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "src/utility.ts:helper"
+      ],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-bounded-const",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "src/utility.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "src/utility.ts:helper"
+      ],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-bounded-shadowed-outside",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "src/utility.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "src/utility.ts:helper"
+      ],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-static-escape-16",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-template-static-escape-17",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 nonliteral dynamic import: possible consumers are unresolved"
+      ]
+    },
+    {
+      "name": "repair-require-global-literal",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "b.ts:unused"
+      ],
+      "coverage": [
+        "index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "repair-require-global-variable",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "index.ts:1 nonliteral CommonJS require target is unbounded"
+      ]
+    },
+    {
+      "name": "repair-require-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "b.ts:unused"
+      ],
+      "coverage": [
+        "index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "repair-require-factory-alias",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "b.ts:unused"
+      ],
+      "coverage": [
+        "index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "repair-require-factory-namespace",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "b.ts:unused"
+      ],
+      "coverage": [
+        "index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "repair-require-factory-variable",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "index.ts:1 nonliteral CommonJS require target is unbounded"
+      ]
+    },
+    {
+      "name": "repair-require-factory-other-base",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "index.ts:1 createRequire base is unsupported; possible target scope is unbounded"
+      ]
+    },
+    {
+      "name": "repair-require-local-arrow",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper",
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper",
+        "b.ts:unused"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "repair-require-local-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper",
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper",
+        "b.ts:unused"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "repair-require-factory-shadow",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "a.ts:helper",
+          "b.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "a.ts:helper",
+        "b.ts:unused"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "repair-config-supported-cross-root",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other.ts:unused"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "repair-config-relative-stays-bounded",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other.ts:unused"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other.ts:unused"
+      ],
+      "coverage": [
+        "apps/web: File '@org/tsconfig/base.json' not found."
+      ]
+    },
+    {
+      "name": "repair-config-no-bare-import-stays-bounded",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "shared/tool.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "shared/tool.ts:helper"
+      ],
+      "coverage": [
+        "apps/web: File '@org/tsconfig/base.json' not found."
+      ]
+    },
+    {
+      "name": "repair-config-reexport-before-target",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "apps/web/main.ts: unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web/main.ts:1 unsupported config leaves target scope of @shared/tool unbounded",
+        "apps/web: File '@org/tsconfig/base.json' not found."
+      ]
+    },
+    {
+      "name": "real-factory-default-import",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.mjs:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "real-factory-computed-namespace",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.mjs:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "real-factory-parenthesized-ts",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-parentheses-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-parentheses-initializer",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-parentheses-callee",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-parentheses-argument",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-parentheses-base",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-as-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-as-initializer",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-as-callee",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-as-argument",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-as-base",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-assertion-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-assertion-initializer",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-assertion-callee",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-assertion-argument",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-assertion-base",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-nonnull-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-nonnull-initializer",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-nonnull-callee",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-nonnull-argument",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-nonnull-base",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-satisfies-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-satisfies-initializer",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-satisfies-callee",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-satisfies-argument",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-satisfies-base",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-nested-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-nested-initializer",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-nested-callee",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-nested-argument",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-nested-base",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-default-computed",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-namespace-wrapped",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-factory-alias",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-local-loader-alias",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-immediate",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-shadowed-other-scope",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-ordinary-function",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "loader-ordinary-arrow",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "loader-ordinary-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "loader-shadowed-module",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "loader-shadowed-named",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "loader-unrelated-unknown",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "loader-ordinary-object",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "loader-conditional-known-base",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ]
+    },
+    {
+      "name": "loader-conditional-unknown",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ]
+    },
+    {
+      "name": "loader-unsupported-wrapper",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 unsupported CallExpression contains a loader-related value"
+      ]
+    },
+    {
+      "name": "loader-unknown-property",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 computed builtin-module property may select createRequire"
+      ]
+    },
+    {
+      "name": "loader-mutated-factory",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+      ]
+    },
+    {
+      "name": "loader-mutated-computed",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+      ]
+    },
+    {
+      "name": "loader-escaped-module",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+      ]
+    },
+    {
+      "name": "loader-reassigned",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 loader-related binding is reassigned; base and value flow are uncertain"
+      ]
+    },
+    {
+      "name": "loader-assigned-later",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 loader-related binding is reassigned; base and value flow are uncertain"
+      ]
+    },
+    {
+      "name": "loader-unsupported-base",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 createRequire base is unsupported; possible target scope is unbounded"
+      ]
+    },
+    {
+      "name": "loader-mutated-wrapped-member",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 loader-related object or function is mutated or escapes; factory/base identity is uncertain"
+      ]
+    },
+    {
+      "name": "loader-instantiated-factory",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 CommonJS require value flow unsupported"
+      ]
+    },
+    {
+      "name": "loader-shared-initializer-graph",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead"
+      ],
+      "coverage": [
+        "src/index.ts:1 loader selection is conditional; value flow is unsupported"
+      ]
+    },
+    {
+      "name": "loader-cyclic-loader-flow",
+      "passed": true,
+      "expected": {
+        "exports": [],
+        "includeTests": false
+      },
+      "exports": [],
+      "coverage": [
+        "src/index.ts:1 loader-related binding is reassigned; base and value flow are uncertain"
+      ]
+    },
+    {
+      "name": "loader-resolve-is-not-load",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "loader-aliased-resolve-is-not-load",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "loader-ordinary-require-object-key",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "loader-ordinary-require-destructured-key",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    },
+    {
+      "name": "loader-type-arguments-are-not-loader-provenance",
+      "passed": true,
+      "expected": {
+        "exports": [
+          "other/dead.ts:dead",
+          "src/target.ts:helper"
+        ],
+        "includeTests": false
+      },
+      "exports": [
+        "other/dead.ts:dead",
+        "src/target.ts:helper"
+      ],
+      "coverage": []
+    }
+  ]
+}

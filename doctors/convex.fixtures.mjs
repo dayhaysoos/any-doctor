@@ -1,3 +1,4 @@
+// Original unsupported seeds retained as negative controls; see Convex modernization evidence.
 export const fixtures = [
   {
     "name": "flags .filter() with no .withIndex()",
@@ -330,9 +331,9 @@ export const fixtures = [
     "expected": []
   },
   {
-    "name": "node-runtime-transaction: flags a query defined in a use-node file",
+    "name": "node-runtime-transaction: flags a true directive before imports",
     "seed": {
-      "convex/reindex.ts": "import { query, mutation, action, internalQuery, internalMutation, internalAction } from \"../_generated/server\";\n\"use node\";\nimport fs from \"node:fs\";\nexport const reindex = query({\n  args: {},\n  handler: async (ctx) => {\n    return fs.readFileSync(\"idx.bin\").length;\n  },\n});"
+      "convex/reindex.ts": "\"use node\";\nimport { query, mutation, action, internalQuery, internalMutation, internalAction } from \"../_generated/server\";\nimport fs from \"node:fs\";\nexport const reindex = query({\n  args: {},\n  handler: async (ctx) => {\n    return fs.readFileSync(\"idx.bin\").length;\n  },\n});"
     },
     "expected": [
       {
@@ -652,92 +653,92 @@ export const fixtures = [
   {
     "name": "locations: filter-table-scan identical chains in separate functions",
     "seed": {
-      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").filter(q => q.eq(q.field(\"active\"), true)).collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").filter(q => q.eq(q.field(\"active\"), true)).collect();\n}"
+      "convex/locations.ts": "import type { QueryCtx } from \"./_generated/server\";\nexport async function first(ctx: QueryCtx) {\n  return ctx.db.query(\"notes\").filter(q => q.eq(q.field(\"active\"), true)).collect();\n}\nexport async function second(ctx: QueryCtx) {\n  return ctx.db.query(\"notes\").filter(q => q.eq(q.field(\"active\"), true)).collect();\n}"
     },
     "expected": [
       {
         "rule": "filter-table-scan",
         "file": "convex/locations.ts",
-        "line": 2
+        "line": 3
       },
       {
         "rule": "filter-table-scan",
         "file": "convex/locations.ts",
-        "line": 5
+        "line": 6
       }
     ]
   },
   {
     "name": "locations: index-without-range identical chains in separate functions",
     "seed": {
-      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\").collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\").collect();\n}"
+      "convex/locations.ts": "import type { QueryCtx } from \"./_generated/server\";\nexport async function first(ctx: QueryCtx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\").collect();\n}\nexport async function second(ctx: QueryCtx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\").collect();\n}"
     },
     "expected": [
       {
         "rule": "index-without-range",
         "file": "convex/locations.ts",
-        "line": 2
+        "line": 3
       },
       {
         "rule": "index-without-range",
         "file": "convex/locations.ts",
-        "line": 5
+        "line": 6
       }
     ]
   },
   {
     "name": "locations: unbounded-collect identical chains in separate functions",
     "seed": {
-      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").collect();\n}"
+      "convex/locations.ts": "import type { QueryCtx } from \"./_generated/server\";\nexport async function first(ctx: QueryCtx) {\n  return ctx.db.query(\"notes\").collect();\n}\nexport async function second(ctx: QueryCtx) {\n  return ctx.db.query(\"notes\").collect();\n}"
     },
     "expected": [
       {
         "rule": "unbounded-collect",
         "file": "convex/locations.ts",
-        "line": 2
+        "line": 3
       },
       {
         "rule": "unbounded-collect",
         "file": "convex/locations.ts",
-        "line": 5
+        "line": 6
       }
     ]
   },
   {
     "name": "locations: index-filter-combo identical chains in separate functions",
     "seed": {
-      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\", q => q.eq(\"active\", true)).filter(q => q.eq(q.field(\"name\"), \"a\")).collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\", q => q.eq(\"active\", true)).filter(q => q.eq(q.field(\"name\"), \"a\")).collect();\n}"
+      "convex/locations.ts": "import type { QueryCtx } from \"./_generated/server\";\nexport async function first(ctx: QueryCtx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\", q => q.eq(\"active\", true)).filter(q => q.eq(q.field(\"name\"), \"a\")).collect();\n}\nexport async function second(ctx: QueryCtx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\", q => q.eq(\"active\", true)).filter(q => q.eq(q.field(\"name\"), \"a\")).collect();\n}"
     },
     "expected": [
       {
         "rule": "index-filter-combo",
         "file": "convex/locations.ts",
-        "line": 2
+        "line": 3
       },
       {
         "rule": "index-filter-combo",
         "file": "convex/locations.ts",
-        "line": 5
+        "line": 6
       }
     ]
   },
   {
     "name": "two whole-table reads on one line remain separate findings",
     "seed": {
-      "convex/locations.ts": "export async function first(ctx) { await ctx.db.query(\"a\").collect(); await ctx.db.query(\"a\").collect(); }"
+      "convex/locations.ts": "import type { QueryCtx } from \"./_generated/server\";\nexport async function first(ctx: QueryCtx) { await ctx.db.query(\"a\").collect(); await ctx.db.query(\"a\").collect(); }"
     },
     "expected": [
       {
         "rule": "unbounded-collect",
         "file": "convex/locations.ts",
-        "line": 1,
-        "column": 59
+        "line": 2,
+        "column": 69
       },
       {
         "rule": "unbounded-collect",
         "file": "convex/locations.ts",
-        "line": 1,
-        "column": 94
+        "line": 2,
+        "column": 104
       }
     ]
   },
@@ -899,5 +900,52 @@ export const fixtures = [
         "line": 4
       }
     ]
+  },
+  {
+    "name": "original unsupported control: node-runtime-transaction: flags a query defined in a use-node file",
+    "seed": {
+      "convex/reindex.ts": "import { query, mutation, action, internalQuery, internalMutation, internalAction } from \"../_generated/server\";\n\"use node\";\nimport fs from \"node:fs\";\nexport const reindex = query({\n  args: {},\n  handler: async (ctx) => {\n    return fs.readFileSync(\"idx.bin\").length;\n  },\n});"
+    },
+    "expected": []
+  },
+  {
+    "name": "original unsupported control: locations: filter-table-scan identical chains in separate functions",
+    "seed": {
+      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").filter(q => q.eq(q.field(\"active\"), true)).collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").filter(q => q.eq(q.field(\"active\"), true)).collect();\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "original unsupported control: locations: index-without-range identical chains in separate functions",
+    "seed": {
+      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\").collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\").collect();\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "original unsupported control: locations: unbounded-collect identical chains in separate functions",
+    "seed": {
+      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").collect();\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "original unsupported control: locations: index-filter-combo identical chains in separate functions",
+    "seed": {
+      "convex/locations.ts": "export async function first(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\", q => q.eq(\"active\", true)).filter(q => q.eq(q.field(\"name\"), \"a\")).collect();\n}\nexport async function second(ctx) {\n  return ctx.db.query(\"notes\").withIndex(\"by_active\", q => q.eq(\"active\", true)).filter(q => q.eq(q.field(\"name\"), \"a\")).collect();\n}"
+    },
+    "expected": []
+  },
+  {
+    "name": "original unsupported control: two whole-table reads on one line remain separate findings",
+    "seed": {
+      "convex/locations.ts": "export async function first(ctx) { await ctx.db.query(\"a\").collect(); await ctx.db.query(\"a\").collect(); }"
+    },
+    "expected": []
   }
 ];
+
+fixtures.push({
+  name:'all checks abstain without analysis, including former text-only checks',analysis:'off',
+  seed:{'convex/example.ts':'"use node"; import {query} from "./_generated/server"; query({handler:async(ctx)=>{ctx.db.patch("x",{lastSeen:Date.now(),...unknown});return ctx.db.query("x").collect();}});'},expected:[],
+});

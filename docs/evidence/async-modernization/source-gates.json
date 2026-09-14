@@ -1,0 +1,212 @@
+{
+  "asyncCounts": {
+    "repaired-local": {
+      "independent": {
+        "passed": 55,
+        "failed": 0,
+        "skipped": 0
+      },
+      "locations": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "extra": {
+        "passed": 70,
+        "failed": 0,
+        "skipped": 0
+      },
+      "degraded": {
+        "literal": {
+          "passed": 3,
+          "failed": 3,
+          "skipped": 0,
+          "verifyExit": 1,
+          "failedNames": [
+            "map-dropped-binding",
+            "map-nested-array-combiner",
+            "map-unrelated-scope-combiner"
+          ]
+        },
+        "named": {
+          "passed": 3,
+          "failed": 3,
+          "skipped": 0,
+          "verifyExit": 1,
+          "failedNames": [
+            "map-dropped-binding",
+            "map-nested-array-combiner",
+            "map-unrelated-scope-combiner"
+          ]
+        }
+      },
+      "unavailable": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      "bundledAll": {
+        "passed": 244,
+        "failed": 0,
+        "skipped": 15
+      },
+      "asyncBundled": {
+        "passed": 50,
+        "failed": 0,
+        "skipped": 0
+      },
+      "independentPerRule": {
+        "fetch-calls-without-abortsignal": {
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0
+        },
+        "unawaited-async-map": {
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0
+        },
+        "uncleared-settimeout-in-effect": {
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0
+        }
+      }
+    },
+    "packed": {
+      "independent": {
+        "passed": 55,
+        "failed": 0,
+        "skipped": 0
+      },
+      "locations": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "extra": {
+        "passed": 70,
+        "failed": 0,
+        "skipped": 0
+      },
+      "degraded": {
+        "literal": {
+          "passed": 3,
+          "failed": 3,
+          "skipped": 0,
+          "verifyExit": 1,
+          "failedNames": [
+            "map-dropped-binding",
+            "map-nested-array-combiner",
+            "map-unrelated-scope-combiner"
+          ]
+        },
+        "named": {
+          "passed": 3,
+          "failed": 3,
+          "skipped": 0,
+          "verifyExit": 1,
+          "failedNames": [
+            "map-dropped-binding",
+            "map-nested-array-combiner",
+            "map-unrelated-scope-combiner"
+          ]
+        }
+      },
+      "unavailable": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      "bundledAll": {
+        "passed": 244,
+        "failed": 0,
+        "skipped": 15
+      },
+      "asyncBundled": {
+        "passed": 50,
+        "failed": 0,
+        "skipped": 0
+      },
+      "independentPerRule": {
+        "fetch-calls-without-abortsignal": {
+          "passed": 18,
+          "failed": 0,
+          "skipped": 0
+        },
+        "unawaited-async-map": {
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0
+        },
+        "uncleared-settimeout-in-effect": {
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0
+        }
+      }
+    },
+    "automated": {
+      "passed": 565,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "convexIndependent": {
+    "passed": 62,
+    "failed": 0,
+    "skipped": 0
+  },
+  "convexExtra": {
+    "passed": 83,
+    "failed": 0,
+    "skipped": 0
+  },
+  "convexFrozenUnchanged": 124,
+  "slopFrozenUnchanged": 67,
+  "consumerLabeled": {
+    "passed": 164,
+    "failed": 0,
+    "skipped": 0
+  },
+  "consumerScopes": {
+    "passed": 84,
+    "failed": 0,
+    "skipped": 0
+  },
+  "consumerOriginal": {
+    "passed": 29,
+    "failed": 1,
+    "skipped": 0,
+    "failedNames": [
+      "mts-authored-positive"
+    ]
+  },
+  "consumerRepair": {
+    "passed": 32,
+    "failed": 1,
+    "skipped": 0,
+    "failedNames": [
+      "inherited-cts"
+    ]
+  },
+  "consumerCombination": {
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0
+  },
+  "consumerIsolation": {
+    "local": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "packed": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "installedRuntimeFiles": 90,
+  "manifestFiles": 229
+}

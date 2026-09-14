@@ -1,0 +1,574 @@
+{
+  "before": {
+    "error": 0,
+    "warning": 18,
+    "info": 0,
+    "total": 18,
+    "hiddenDuplicates": 0
+  },
+  "after": {
+    "error": 0,
+    "warning": 1,
+    "info": 8,
+    "total": 9,
+    "hiddenDuplicates": 0
+  },
+  "delta": {
+    "removed": 11,
+    "retained": 7,
+    "added": 2
+  },
+  "localPackedIdentical": true,
+  "rows": [
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "convex/analysis/extractText.ts",
+      "line": 118,
+      "status": "removed",
+      "classification": "missed_review_candidate",
+      "reason": "Lost contextual review candidate: input provenance is unresolved by this bounded projection (URL constructor, runtime string guard, framework-produced URL, or typed object field). Source still supports reviewing cancellation. Count reduction is coverage loss, not evidence of a fix.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "convex/analysis/extractText.ts",
+        "line": 118,
+        "column": 27,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "convex/analysis/extractText.ts",
+        "line": 118,
+        "column": 27,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABjb252ZXgvYW5hbHlzaXMvZXh0cmFjdFRleHQudHMAYzlkYzM0ZjA5MDA0MzdjMTA2MTEwY2VlZDVmYjc4ZGUwMzE4YzM0Y2U4YjY3MjE4NWE1ZDVhNWM5YjE1YjA4OABmdW5jdGlvbjpleHRyYWN0VGV4dEZyb21SZXN1bWVIYW5kbGVyIzAAMjMAbGluZQ",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": null,
+      "sourceExcerpt": "113:     const fileUrl = await ctx.storage.getUrl(app.resumeStorageId);\n114:     if (!fileUrl) {\n115:       throw new Error(\"Could not get URL for resume file\");\n116:     }\n117: \n118:     const response = await fetch(fileUrl);\n119:     if (!response.ok) {\n120:       throw new Error(`Failed to fetch resume: ${response.statusText}`);\n121:     }\n122: \n123:     const arrayBuffer = await response.arrayBuffer();\n124: \n125:     // 3. Server-side file validation\n126:     // Extension and manual_upload bulk: 10MB; candidate self-upload: 512KB\n127:     const maxSize = resumeAnalysisMaxSizeForSource(app.source);"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "convex/devApplicationFileUploadQa.ts",
+      "line": 326,
+      "status": "removed",
+      "classification": "missed_review_candidate",
+      "reason": "Lost contextual review candidate: input provenance is unresolved by this bounded projection (URL constructor, runtime string guard, framework-produced URL, or typed object field). Source still supports reviewing cancellation. Count reduction is coverage loss, not evidence of a fix.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "convex/devApplicationFileUploadQa.ts",
+        "line": 326,
+        "column": 33,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "convex/devApplicationFileUploadQa.ts",
+        "line": 326,
+        "column": 33,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABjb252ZXgvZGV2QXBwbGljYXRpb25GaWxlVXBsb2FkUWEudHMAZWZkZWIwYjRmMmZkNGU5MWFkNDRlZTkwOGQ5YmYwZTU4MGMxN2I1NmNkYzY1YjRkMTcyNjU5NDAzNzI4YThmOABhcnJvdzoAMTMAMjkAbGluZQ",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": null,
+      "sourceExcerpt": "321:       uploadUrl: string;\n322:       uploadToken: string;\n323:     };\n324: \n325:     const fileName = `qa-resume-${suffix}.pdf`;\n326:     const uploadResponse = await fetch(issued.uploadUrl, {\n327:       method: \"POST\",\n328:       headers: { \"Content-Type\": \"application/pdf\" },\n329:       body: new Blob(\n330:         [\n331:           `%PDF-1.4\n332: 1 0 obj\n333: << /Type /Catalog >>\n334: endobj\n335: trailer"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "convex/devApplicationFileUploadQa.ts",
+      "line": 493,
+      "status": "removed",
+      "classification": "missed_review_candidate",
+      "reason": "Lost contextual review candidate: input provenance is unresolved by this bounded projection (URL constructor, runtime string guard, framework-produced URL, or typed object field). Source still supports reviewing cancellation. Count reduction is coverage loss, not evidence of a fix.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "convex/devApplicationFileUploadQa.ts",
+        "line": 493,
+        "column": 33,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "convex/devApplicationFileUploadQa.ts",
+        "line": 493,
+        "column": 33,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABjb252ZXgvZGV2QXBwbGljYXRpb25GaWxlVXBsb2FkUWEudHMAOTYzNjI5M2VmNDFlMGU2OTdmZWZlZTY4YjczMTAxMDVkMjJiOWMwMGQ0NzlhNWNhYWFlYTBlMTQ1YjExN2Q5YwBhcnJvdzoAMTQAMjkAbGluZQ",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": null,
+      "sourceExcerpt": "488:       uploadUrl: string;\n489:       uploadToken: string;\n490:     };\n491: \n492:     const fileName = `qa-duplicate-attempt-${suffix}.pdf`;\n493:     const uploadResponse = await fetch(issued.uploadUrl, {\n494:       method: \"POST\",\n495:       headers: { \"Content-Type\": \"application/pdf\" },\n496:       body: new Blob([`%PDF-1.4\\nQA duplicate cleanup ${suffix}\\n%%EOF\\n`], {\n497:         type: \"application/pdf\",\n498:       }),\n499:     });\n500:     if (!uploadResponse.ok) {\n501:       throw new Error(\n502:         `Convex storage upload failed (${uploadResponse.status} ${uploadResponse.statusText})`,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "convex/lib/emailClient.ts",
+      "line": 30,
+      "status": "retained",
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "convex/lib/emailClient.ts",
+        "line": 30,
+        "column": 27,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "convex/lib/emailClient.ts",
+        "line": 30,
+        "column": 27,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABjb252ZXgvbGliL2VtYWlsQ2xpZW50LnRzAGNkZWMwMmNmOGJkNThlZTg4YTgxYTY5ZGE0N2VhNTk2MjFkODJlZTdjNjI4OTU1ZDE1NTRjZTk2MGIzYWQ3MjUAZnVuY3Rpb246c2VuZEVtYWlsIzAAMjMAbGluZQ",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": {
+        "file": "convex/lib/emailClient.ts",
+        "line": 30,
+        "column": 27,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABjb252ZXgvbGliL2VtYWlsQ2xpZW50LnRzAGRlMmVlY2ZhOGNmZTYwMzU1NDhkYjZlM2RmMDdkOTk1ZGMxZWZkYzZjZTZmNjM2NWQwYmRkYmQwOTQxMjRmZTkAZnVuY3Rpb246c2VuZEVtYWlsIzAAMjMAcmFuZ2U",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "info"
+      },
+      "sourceExcerpt": "25: export async function sendEmail(\n26:   apiKey: string,\n27:   options: SendEmailOptions,\n28: ): Promise<SendEmailResult> {\n29:   try {\n30:     const response = await fetch(\"https://api.resend.com/emails\", {\n31:       method: \"POST\",\n32:       headers: {\n33:         Authorization: `Bearer ${apiKey}`,\n34:         \"Content-Type\": \"application/json\",\n35:       },\n36:       body: JSON.stringify({\n37:         from: options.from,\n38:         to: options.to,\n39:         subject: options.subject,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "convex/lib/langfuse.ts",
+      "line": 254,
+      "status": "retained",
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "convex/lib/langfuse.ts",
+        "line": 254,
+        "column": 25,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "convex/lib/langfuse.ts",
+        "line": 254,
+        "column": 25,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABjb252ZXgvbGliL2xhbmdmdXNlLnRzAGY1NDFjYjdkMmU0NDNmZGNjMWE3NzJmZGE4NDc5MzY3ZTJjMWI4MGZiZTEwODBkNDE5MTQ5NmJiNGE4Y2NiYWMAZnVuY3Rpb246ZmV0Y2hPcGVuUm91dGVyR2VuZXJhdGlvblJlc3QjMAAyMwBsaW5l",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": {
+        "file": "convex/lib/langfuse.ts",
+        "line": 254,
+        "column": 25,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABjb252ZXgvbGliL2xhbmdmdXNlLnRzADMwZTMzOTIyYWQwNTIzMmMwYzhjOWExZjExMWY0M2Q4MzBiYTc4MGJmYTU1ZTIzNGY1NDhmNGZjMzY1ODhiYTIAZnVuY3Rpb246ZmV0Y2hPcGVuUm91dGVyR2VuZXJhdGlvblJlc3QjMAAyMwByYW5nZQ",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "info"
+      },
+      "sourceExcerpt": "249:  */\n250: export async function fetchOpenRouterGenerationRest(params: {\n251:   id: string;\n252:   apiKey: string;\n253: }): Promise<OpenRouterGenerationRestPayload[\"data\"] | undefined> {\n254:   const response = await fetch(\n255:     `https://openrouter.ai/api/v1/generation?id=${encodeURIComponent(params.id)}`,\n256:     {\n257:       headers: {\n258:         Authorization: `Bearer ${params.apiKey}`,\n259:         \"Content-Type\": \"application/json\",\n260:       },\n261:     }\n262:   );\n263:   if (!response.ok) return undefined;"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "extensions/sift-chrome/background.ts",
+      "line": 89,
+      "status": "retained",
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "extensions/sift-chrome/background.ts",
+        "line": 89,
+        "column": 25,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "extensions/sift-chrome/background.ts",
+        "line": 89,
+        "column": 25,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL2JhY2tncm91bmQudHMAMmEzMTYzMWUyMjFkMTk4NTU1ZWUyY2ZjMTg2ZTRkYzYyZjg0ZmYwMTExNDA1MWMyMjAzZGYyMjY0NjdkYjJiMgBmdW5jdGlvbjpleGNoYW5nZVBhaXJpbmdDb2RlIzAAMjMAbGluZQ",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": {
+        "file": "extensions/sift-chrome/background.ts",
+        "line": 89,
+        "column": 25,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL2JhY2tncm91bmQudHMAN2U3YWQxMTViNGVlMmNhYzc5OTk1ODk5YzY5Yjk1NWNlZGYwNjYyODcwMmZhNTQ3ODQ4Y2E3ZTFlNGE5M2YyNABmdW5jdGlvbjpleGNoYW5nZVBhaXJpbmdDb2RlIzAAMjMAcmFuZ2U",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "info"
+      },
+      "sourceExcerpt": "84: }: {\n85:   convexUrl: string;\n86:   pairingCode: string;\n87:   extensionName: string;\n88: }): Promise<PairingExchangeResult> {\n89:   const response = await fetch(`${normalizeUrl(convexUrl)}/api/mutation`, {\n90:     method: \"POST\",\n91:     headers: {\n92:       \"Content-Type\": \"application/json\",\n93:     },\n94:     body: JSON.stringify({\n95:       path: \"extensionAuth:exchangePairingCode\",\n96:       args: {\n97:         pairingCode,\n98:         extensionName,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "extensions/sift-chrome/popup.ts",
+      "line": 305,
+      "status": "removed",
+      "classification": "missed_review_candidate",
+      "reason": "Lost contextual review candidate: input provenance is unresolved by this bounded projection (URL constructor, runtime string guard, framework-produced URL, or typed object field). Source still supports reviewing cancellation. Count reduction is coverage loss, not evidence of a fix.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "extensions/sift-chrome/popup.ts",
+        "line": 305,
+        "column": 27,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "extensions/sift-chrome/popup.ts",
+        "line": 305,
+        "column": 27,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL3BvcHVwLnRzAGE5NWM0NTI0YWRjMzQ4MzFjMWQ2MzdmNWU0ZTEwMTk1OTNmZjk5YWMyNDljZDUxNzA4Y2UzNmU0MWIwNDE5YTIAZnVuY3Rpb246bG9hZEJ1aWxkSW5mbyMwADIzAGxpbmU",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": null,
+      "sourceExcerpt": "300:   const runtime = getChromeApi().runtime;\n301:   const buildInfoUrl = runtime?.getURL?.(\"build-info.json\");\n302:   if (!buildInfoUrl) return null;\n303: \n304:   try {\n305:     const response = await fetch(buildInfoUrl, { cache: \"no-store\" });\n306:     if (!response.ok) return null;\n307:     const payload = (await response.json()) as unknown;\n308:     if (!isRecord(payload)) return null;\n309:     return {\n310:       version: typeof payload.version === \"string\" ? payload.version : undefined,\n311:       fingerprint: typeof payload.fingerprint === \"string\" ? payload.fingerprint : undefined,\n312:       gitCommit: typeof payload.gitCommit === \"string\" ? payload.gitCommit : undefined,\n313:       gitDirty: typeof payload.gitDirty === \"boolean\" ? payload.gitDirty : undefined,\n314:       generatedAt: typeof payload.generatedAt === \"string\" ? payload.generatedAt : undefined,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "extensions/sift-chrome/popup.ts",
+      "line": 1405,
+      "status": "removed",
+      "classification": "missed_review_candidate",
+      "reason": "Lost contextual review candidate: input provenance is unresolved by this bounded projection (URL constructor, runtime string guard, framework-produced URL, or typed object field). Source still supports reviewing cancellation. Count reduction is coverage loss, not evidence of a fix.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "extensions/sift-chrome/popup.ts",
+        "line": 1405,
+        "column": 31,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "extensions/sift-chrome/popup.ts",
+        "line": 1405,
+        "column": 31,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL3BvcHVwLnRzADY2YWJmNDEwNDlhNGI2M2M0MjJlM2Q0NzgyMjhkYzgzOTUxYjJjNGJhZDM4MzljYzRlYWY5NGJiNzY1ZDU3Y2UAYXJyb3c6ADI4ADIzAGxpbmU",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": null,
+      "sourceExcerpt": "1400:     func: async (targetUrl: unknown) => {\n1401:       if (typeof targetUrl !== \"string\" || !targetUrl) {\n1402:         return { ok: false, error: \"Invalid target URL.\" };\n1403:       }\n1404:       try {\n1405:         const response = await fetch(targetUrl, {\n1406:           method: \"GET\",\n1407:           credentials: \"include\",\n1408:         });\n1409:         if (!response.ok) {\n1410:           return {\n1411:             ok: false,\n1412:             status: response.status,\n1413:             error: `Failed to fetch attachment (${response.status})`,\n1414:           };"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "extensions/sift-chrome/popup.ts",
+      "line": 1484,
+      "status": "removed",
+      "classification": "unknown",
+      "reason": "Forwarded Request/input and init remain unknown; absence of cancellation is not established. Scoped abstention.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "extensions/sift-chrome/popup.ts",
+        "line": 1484,
+        "column": 13,
+        "classification": "unknown",
+        "reason": "Wrapper forwards input and caller-supplied RequestInit unchanged. The call may receive a Request signal or init.signal; absence of cancellation is not established."
+      },
+      "before": {
+        "file": "extensions/sift-chrome/popup.ts",
+        "line": 1484,
+        "column": 13,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL3BvcHVwLnRzAGVlMzMzODk0MzUyNzViYjg1ZmFlYWI2ZmY4MjAzNTAwNzRiM2MwNTY4Njc0MDkyMDBlYTFlMjJmOTRlYTk3MjYAYXJyb3c6ADMxADcAbGluZQ",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": null,
+      "sourceExcerpt": "1479:     const requestUrl = resolveRequestUrl(input);\n1480:     const isDetectedDownloadRequest =\n1481:       method === \"GET\" && selectedDetectedUrls.has(requestUrl);\n1482: \n1483:     if (!isDetectedDownloadRequest) {\n1484:       return fetch(input, init);\n1485:     }\n1486: \n1487:     onDetectedDownloadRequest?.(requestUrl);\n1488: \n1489:     const tryPageContextFallback = async (): Promise<Response> => {\n1490:       if (!activeTabId) {\n1491:         throw new Error(\"Missing active tab context for fallback fetch.\");\n1492:       }\n1493:       onFallbackFetch?.(requestUrl);"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "extensions/sift-chrome/popup.ts",
+      "line": 1504,
+      "status": "removed",
+      "classification": "unknown",
+      "reason": "Forwarded Request/input and init remain unknown; absence of cancellation is not established. Scoped abstention.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "extensions/sift-chrome/popup.ts",
+        "line": 1504,
+        "column": 35,
+        "classification": "unknown",
+        "reason": "Wrapper forwards input and caller-supplied RequestInit unchanged. The call may receive a Request signal or init.signal; absence of cancellation is not established."
+      },
+      "before": {
+        "file": "extensions/sift-chrome/popup.ts",
+        "line": 1504,
+        "column": 35,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL3BvcHVwLnRzADU0ZTQ5Mzk2NTRhOGY3NjFiMjE0ZWZmYTQ0MDhhNTk3ZjJlODM2MDQ2ZGYzN2FjY2U3ODVkM2NiYjgwNDhjOWMAYXJyb3c6ADMxADI5AGxpbmU",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": null,
+      "sourceExcerpt": "1499:       appendDebugLog(`Page-context fetch succeeded for ${requestUrl}.`);\n1500:       return fallbackResponse;\n1501:     };\n1502: \n1503:     try {\n1504:       const directResponse = await fetch(input, init);\n1505:       if (directResponse.ok) {\n1506:         return directResponse;\n1507:       }\n1508: \n1509:       appendDebugLog(\n1510:         `Direct fetch returned HTTP ${directResponse.status}: ${requestUrl}`\n1511:       );\n1512:       if (!activeTabId) {\n1513:         return directResponse;"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "extensions/sift-chrome/src/api/client.ts",
+      "line": 69,
+      "status": "retained",
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "extensions/sift-chrome/src/api/client.ts",
+        "line": 69,
+        "column": 25,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "extensions/sift-chrome/src/api/client.ts",
+        "line": 69,
+        "column": 25,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL3NyYy9hcGkvY2xpZW50LnRzAGE5MjFiZDkwMGQwNTAzNjY5ZjQ5NzUzODdlMzA2MGZhMzY3ZmVlZjdjM2E1ZDI2YzYyYTVjZjllNTc0YzJjMTAAZnVuY3Rpb246Y2FsbENvbnZleCMwADIzAGxpbmU",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": {
+        "file": "extensions/sift-chrome/src/api/client.ts",
+        "line": 69,
+        "column": 25,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL3NyYy9hcGkvY2xpZW50LnRzAGFkMGNkZjQwYjRiOGMzOTBiODQ0YzRkNGYyOGNjMTg5MTg4ZDQ3NDBmNDAxMWEwNDlmNzRhMzM1ODJmODk5MTYAZnVuY3Rpb246Y2FsbENvbnZleCMwADIzAHJhbmdl",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "info"
+      },
+      "sourceExcerpt": "64:   kind: ConvexKind,\n65:   path: string,\n66:   args: Record<string, unknown>\n67: ): Promise<T> {\n68:   const endpoint = `${normalizeConvexUrl(convexUrl)}/api/${kind}`;\n69:   const response = await fetch(endpoint, {\n70:     method: \"POST\",\n71:     headers: {\n72:       \"Content-Type\": \"application/json\",\n73:     },\n74:     body: JSON.stringify({ path, args }),\n75:   });\n76: \n77:   let payload: ConvexEnvelope<T> | null = null;\n78:   try {"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "src/components/EmailSignupForm.tsx",
+      "line": 56,
+      "status": "added",
+      "classification": "review_candidate",
+      "reason": "Newly detected multiline signup request. No cancellation signal is present, but submission completion may be deliberate. Informational policy review, not a measured lifecycle bug.",
+      "historical": null,
+      "before": null,
+      "after": {
+        "file": "src/components/EmailSignupForm.tsx",
+        "line": 56,
+        "column": 29,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvY29tcG9uZW50cy9FbWFpbFNpZ251cEZvcm0udHN4AGQ5ZjIzNGI0OTE5MTNkODQyOWQ0NGM2NTcyYmM3ZDEzYzAwODk1MWIwZTE1YzkzYmQ4YjkzYTE0OTVlNTU0YzgAYXJyb3c6ADAAMjMAcmFuZ2U",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "info"
+      },
+      "sourceExcerpt": "51:     setIsSubmitting(true);\n52:     setSubmitStatus(\"idle\");\n53:     setErrorMessage(\"\");\n54: \n55:     try {\n56:       const response = await fetch(\"/api/kit/subscribe\", {\n57:         method: \"POST\",\n58:         headers: {\n59:           \"Content-Type\": \"application/json\",\n60:         },\n61:         body: JSON.stringify({\n62:           email_address: data.email,\n63:           first_name: data.firstName,\n64:           role: data.role,\n65:           website: data.website,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "src/routes/api/kit/subscribe.ts",
+      "line": 146,
+      "status": "retained",
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "src/routes/api/kit/subscribe.ts",
+        "line": 146,
+        "column": 39,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "src/routes/api/kit/subscribe.ts",
+        "line": 146,
+        "column": 39,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzAGIxN2YyY2MxZDgwYTFmYzUxMDhmYmJkODEwZDc2ZWMyOTgyNWQ4NWUwZGFmYjM1NjU0MThkZGUxZTQxZGY5ZTMAYXJyb3c6ADAAMjkAbGluZQ",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": {
+        "file": "src/routes/api/kit/subscribe.ts",
+        "line": 146,
+        "column": 39,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzADJhZDg2NzFhOGVjNTQ3NTM4NWRlZjg1ZDZiYTBhZjM4M2JlMGE4NzljYTUxZTQ2ODExYmFhZDIzODYyOTVhZDgAYXJyb3c6ADAAMjkAcmFuZ2U",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "info"
+      },
+      "sourceExcerpt": "141:           if (!kitApiKey) {\n142:             return jsonResponse({ error: \"Kit integration not configured\" }, 500);\n143:           }\n144: \n145:           // Step 1: Create the subscriber\n146:           const createResponse = await fetch(\n147:             \"https://api.kit.com/v4/subscribers\",\n148:             {\n149:               method: \"POST\",\n150:               headers: {\n151:                 \"Content-Type\": \"application/json\",\n152:                 \"X-Kit-Api-Key\": kitApiKey,\n153:               },\n154:               body: JSON.stringify({\n155:                 email_address,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "src/routes/api/kit/subscribe.ts",
+      "line": 176,
+      "status": "retained",
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "src/routes/api/kit/subscribe.ts",
+        "line": 176,
+        "column": 38,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "src/routes/api/kit/subscribe.ts",
+        "line": 176,
+        "column": 38,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzAGM3YThiYWJlNWNkNGJlNzIwZWNlZTZkNzU0ODdlODQ4ODNlMGQ3NDg3YzI3ZTkyMDg4YTdjY2M4MDZmMzRhZmUAYXJyb3c6ADAAMjYAbGluZQ",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": {
+        "file": "src/routes/api/kit/subscribe.ts",
+        "line": 176,
+        "column": 38,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzADhjOGViYjY3MTJkZTUwYWU2OWFjN2ZiZDkxMjhjYzU3YmE4MWU0ZjhkNmUyOWRhYjcwOTA1N2JkMjc3N2MxMTQAYXJyb3c6ADAAMjYAcmFuZ2U",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "info"
+      },
+      "sourceExcerpt": "171:           const subscriberId = createData?.subscriber?.id;\n172: \n173:           // Step 2: Add tag based on role\n174:           const tagId = ROLE_TAG_IDS[role];\n175:           if (tagId && subscriberId) {\n176:             const tagResponse = await fetch(\n177:               `https://api.kit.com/v4/tags/${tagId}/subscribers`,\n178:               {\n179:               method: \"POST\",\n180:               headers: {\n181:                 \"Content-Type\": \"application/json\",\n182:                 \"X-Kit-Api-Key\": kitApiKey,\n183:               },\n184:               body: JSON.stringify({\n185:                 email_address,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "src/routes/api/kit/subscribe.ts",
+      "line": 199,
+      "status": "retained",
+      "classification": "review_candidate",
+      "reason": "The missing-signal observation remains; severity is informational and guidance asks for the intended cancellation/deadline contract, preserving server and extension semantics.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "src/routes/api/kit/subscribe.ts",
+        "line": 199,
+        "column": 37,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "src/routes/api/kit/subscribe.ts",
+        "line": 199,
+        "column": 37,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzAGU2YWY1YTUwOGVkYWZjY2Y2ZTNhMTQwZjhkOTE3NTMwNThiN2U2MDY0Y2E1NDgyOTg5N2VkZGRkNGRmZDBiYjEAYXJyb3c6ADAAMjcAbGluZQ",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": {
+        "file": "src/routes/api/kit/subscribe.ts",
+        "line": 199,
+        "column": 37,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzADZjZDEwMTQ5MGZmZDMwOGRiNmM0YjhkYzc0ZjI2ZDFhZWJiY2ExZDYzZmZhOWY5YjEzNTFjMTU1MDYyYjYyZGUAYXJyb3c6ADAAMjcAcmFuZ2U",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "info"
+      },
+      "sourceExcerpt": "194:               });\n195:             }\n196:           }\n197: \n198:           // Step 3: Add subscriber to double opt-in form (triggers incentive email)\n199:           const formResponse = await fetch(\n200:             `https://api.kit.com/v4/forms/${KIT_FORM_ID}/subscribers`,\n201:             {\n202:               method: \"POST\",\n203:               headers: {\n204:                 \"Content-Type\": \"application/json\",\n205:                 \"X-Kit-Api-Key\": kitApiKey,\n206:               },\n207:               body: JSON.stringify({\n208:                 email_address,"
+    },
+    {
+      "rule": "fetch-calls-without-abortsignal",
+      "file": "src/routes/api/resumes/$applicationId.ts",
+      "line": 74,
+      "status": "removed",
+      "classification": "missed_review_candidate",
+      "reason": "Lost contextual review candidate: input provenance is unresolved by this bounded projection (URL constructor, runtime string guard, framework-produced URL, or typed object field). Source still supports reviewing cancellation. Count reduction is coverage loss, not evidence of a fix.",
+      "historical": {
+        "rule": "fetch-calls-without-abortsignal",
+        "file": "src/routes/api/resumes/$applicationId.ts",
+        "line": 74,
+        "column": 25,
+        "classification": "review_candidate",
+        "reason": "Source has no explicit signal at this call. Cancellation/timeout policy can be useful but no user-facing lifecycle failure or timeout was measured; server, extension, QA and packaged-asset requests have different requirements."
+      },
+      "before": {
+        "file": "src/routes/api/resumes/$applicationId.ts",
+        "line": 74,
+        "column": 25,
+        "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9yZXN1bWVzLyRhcHBsaWNhdGlvbklkLnRzAGYxOTFkMDhiMjlkYWQxMTFjZjliZjNlNjlmNWQ2YzQyNmNhZDQzZmNkZDgxYjc2MGY3ZTA1MTA5YWU0YzEzNzIAZnVuY3Rpb246cHJveHlSZXN1bWVSZXF1ZXN0IzAAMjMAbGluZQ",
+        "rule": "fetch-calls-without-abortsignal",
+        "severity": "warning"
+      },
+      "after": null,
+      "sourceExcerpt": "69:   const rangeHeader = isHeadRequest ? null : request.headers.get(\"Range\");\n70:   if (rangeHeader) {\n71:     requestHeaders.set(\"Range\", rangeHeader);\n72:   }\n73: \n74:   const response = await fetch(targetUrl, {\n75:     headers: requestHeaders,\n76:     method: \"GET\",\n77:     redirect: \"manual\",\n78:   });\n79: \n80:   if (isHeadRequest) {\n81:     return new Response(null, {\n82:       status: response.status,\n83:       headers: buildProxyHeaders(response.headers),"
+    },
+    {
+      "rule": "uncleared-settimeout-in-effect",
+      "file": "src/components/ChatWidget.tsx",
+      "line": 1045,
+      "status": "removed",
+      "classification": "corrected_false_positive",
+      "reason": "Corrected timer false positive: returned native cleanup cancels the actual handle, including qualified calls and directly invoked local scheduler helpers.",
+      "historical": {
+        "rule": "uncleared-settimeout-in-effect",
+        "file": "src/components/ChatWidget.tsx",
+        "line": 1045,
+        "classification": "false_positive",
+        "reason": "Source returns cleanup calling window.clearTimeout on the actual handle. Member-qualified setTimeout breaks the detector assignment lookup. Typewriter also sets cancelled=true."
+      },
+      "before": {
+        "file": "src/components/ChatWidget.tsx",
+        "line": 1045,
+        "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHNyYy9jb21wb25lbnRzL0NoYXRXaWRnZXQudHN4ADI3MjhlOTExNDY5ZGY0YTY2Y2U2ZmZmMWNmM2FlZGEzMjRlZjZjMDA1NmVhYTkxYmM5Yzk5NDIxZTQ2N2QyYjAAYXJyb3c6ADQ4AC0AbGluZQ",
+        "rule": "uncleared-settimeout-in-effect",
+        "severity": "warning"
+      },
+      "after": null,
+      "sourceExcerpt": "1040:     const pending = pendingResponseCheckRef.current;\n1041:     if (!pending || !messages?.length || isLoading) return;\n1042: \n1043:     const now = Date.now();\n1044:     if (now < pending.checkAfter) {\n1045:       const timeout = window.setTimeout(() => {\n1046:         setResponseCheckTick((tick) => tick + 1);\n1047:       }, pending.checkAfter - now);\n1048:       return () => window.clearTimeout(timeout);\n1049:     }\n1050: \n1051:     if (\n1052:       !lastUserMessageId ||\n1053:       pending.userMessageIdBeforeSend === lastUserMessageId\n1054:     ) {"
+    },
+    {
+      "rule": "uncleared-settimeout-in-effect",
+      "file": "src/lib/theme.tsx",
+      "line": 49,
+      "status": "added",
+      "classification": "review_candidate",
+      "reason": "Timer in applyTheme is reached by the React effect and has no returned cleanup cancellation. Removing a transition class after 200ms is deliberate completion work; cancellation could leave the class behind. Review candidate, not authorization to add cleanup blindly.",
+      "historical": null,
+      "before": null,
+      "after": {
+        "file": "src/lib/theme.tsx",
+        "line": 49,
+        "column": 2,
+        "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+        "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHNyYy9saWIvdGhlbWUudHN4AGEwOGRlOTI3YmQwMzBhZmQ3MzY1ODY4ODY3MWFlOGU0N2E3MGJmMTc2OTU0NzM5NzRjMjk5ZjJmZmNmYzIwNGEAZnVuY3Rpb246YXBwbHlUaGVtZSMwADAAcmFuZ2U",
+        "rule": "uncleared-settimeout-in-effect",
+        "severity": "warning"
+      },
+      "sourceExcerpt": "44:   } else {\n45:     root.classList.remove(\"dark\");\n46:   }\n47: \n48:   // Remove transition class after animation completes\n49:   setTimeout(() => {\n50:     root.classList.remove(\"theme-transition\");\n51:   }, 200);\n52: }\n53: \n54: export function ThemeProvider({ children }: { children: ReactNode }) {\n55:   const [theme, setThemeState] = useState<Theme>(() => getInitialTheme());\n56: \n57:   // Apply theme on mount\n58:   useEffect(() => {"
+    },
+    {
+      "rule": "uncleared-settimeout-in-effect",
+      "file": "src/lib/useTypewriterCycle.ts",
+      "line": 80,
+      "status": "removed",
+      "classification": "corrected_false_positive",
+      "reason": "Corrected timer false positive: returned native cleanup cancels the actual handle, including qualified calls and directly invoked local scheduler helpers.",
+      "historical": {
+        "rule": "uncleared-settimeout-in-effect",
+        "file": "src/lib/useTypewriterCycle.ts",
+        "line": 80,
+        "classification": "false_positive",
+        "reason": "Source returns cleanup calling window.clearTimeout on the actual handle. Member-qualified setTimeout breaks the detector assignment lookup. Typewriter also sets cancelled=true."
+      },
+      "before": {
+        "file": "src/lib/useTypewriterCycle.ts",
+        "line": 80,
+        "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHNyYy9saWIvdXNlVHlwZXdyaXRlckN5Y2xlLnRzADY1YTI2ZGI4ZTk2ZDRiNmYwZTViZGFkYTg2NjAyMjkwMjAzMTc1NGM0MzdlZWMyYjZlYTczMGVmMTU3ZDhhMDUAYXJyb3c6ADUALQBsaW5l",
+        "rule": "uncleared-settimeout-in-effect",
+        "severity": "warning"
+      },
+      "after": null,
+      "sourceExcerpt": "75:     let charIndex = 0;\n76:     let phraseIndex = 0;\n77:     let deleting = false;\n78: \n79:     const schedule = (fn: () => void, ms: number) => {\n80:       timerId = window.setTimeout(() => {\n81:         if (!cancelled) fn();\n82:       }, ms);\n83:     };\n84: \n85:     const tick = () => {\n86:       const phrase = phrases[phraseIndex] ?? \"\";\n87: \n88:       if (!deleting) {\n89:         if (charIndex < phrase.length) {"
+    },
+    {
+      "rule": "uncleared-settimeout-in-effect",
+      "file": "src/routes/dashboard.tsx",
+      "line": 81,
+      "status": "removed",
+      "classification": "corrected_false_positive",
+      "reason": "Corrected timer false positive: returned native cleanup cancels the actual handle, including qualified calls and directly invoked local scheduler helpers.",
+      "historical": {
+        "rule": "uncleared-settimeout-in-effect",
+        "file": "src/routes/dashboard.tsx",
+        "line": 81,
+        "classification": "false_positive",
+        "reason": "Source returns cleanup calling window.clearTimeout on the actual handle. Member-qualified setTimeout breaks the detector assignment lookup. Typewriter also sets cancelled=true."
+      },
+      "before": {
+        "file": "src/routes/dashboard.tsx",
+        "line": 81,
+        "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHNyYy9yb3V0ZXMvZGFzaGJvYXJkLnRzeABkYTkxZDZhYjliODg1N2NmYWM2Yzc2MWM0NTU0MjIyY2Y3NWI1MmM3ZTBiOTJkNDNhZTU3MDNlMjM0YTc5ODE4AGFycm93OgAxAC0AbGluZQ",
+        "rule": "uncleared-settimeout-in-effect",
+        "severity": "warning"
+      },
+      "after": null,
+      "sourceExcerpt": "76:   useEffect(() => {\n77:     if (!isAppLoading) {\n78:       setShowBootSpinner(false);\n79:       return;\n80:     }\n81:     const timeout = window.setTimeout(() => {\n82:       setShowBootSpinner(true);\n83:     }, 180);\n84:     return () => window.clearTimeout(timeout);\n85:   }, [isAppLoading]);\n86: \n87:   useEffect(() => {\n88:     if (!isAuthenticated || !user?.id || isLoading) return;\n89:     const email = (user as { email?: string })?.email;\n90:     if (profile === null) {"
+    }
+  ]
+}

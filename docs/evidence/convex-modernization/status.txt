@@ -1,0 +1,22 @@
+ M CONTEXT.md
+ M bin/analysis.js
+ M bin/contract.d.ts
+ M docs-site/src/content/docs/doctors/convex.mdx
+ M docs/doctor-reliability.md
+ M docs/plans/analysis-improvements.md
+ M doctors/convex.fixtures.mjs
+ M doctors/convex.mjs
+ M src/analysis.ts
+ M src/contract.ts
+?? bin/call-structure.d.ts
+?? bin/call-structure.js
+?? dev/convex-analysis/
+?? docs/call-structure.md
+?? docs/evidence/consumer-analysis/loader-classification/
+?? docs/evidence/consumer-analysis/repairs/
+?? docs/evidence/consumer-analysis/result-flow/
+?? docs/evidence/convex-modernization/
+?? docs/project-consumer-analysis.md
+?? src/call-structure.ts
+?? test/call-structure.test.mjs
+?? test/convex-modernization.test.mjs

@@ -1,0 +1,256 @@
+{
+  "branch": "website/docs",
+  "headContextOnly": "2b8c937554cbe22f35a7695d38504c0ca253f244",
+  "node": "v26.5.0",
+  "npm": "11.17.0",
+  "doctorSha256": "91373d7dfaa63d24c370078c7d4f0e8eba639adb89c8439317be8147b806b7c6",
+  "artifact": "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/any-doctor-0.1.2.tgz",
+  "artifactSha256": "1796f0818b032b88f5537aab6581a89424139b25d0219e036f9ef67f631bd7bc",
+  "workingDigest": "fecf12c2761d6b970a5fa7fb9d7f6e1174ce5131fc4ba04a16f693e0aa7913df",
+  "counts": {
+    "repaired-local": {
+      "independent": {
+        "passed": 55,
+        "failed": 0,
+        "skipped": 0
+      },
+      "locations": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "extra": {
+        "passed": 70,
+        "failed": 0,
+        "skipped": 0
+      },
+      "degraded": {
+        "literal": {
+          "passed": 3,
+          "failed": 3,
+          "skipped": 0,
+          "verifyExit": 1,
+          "failedNames": [
+            "map-dropped-binding",
+            "map-nested-array-combiner",
+            "map-unrelated-scope-combiner"
+          ]
+        },
+        "named": {
+          "passed": 3,
+          "failed": 3,
+          "skipped": 0,
+          "verifyExit": 1,
+          "failedNames": [
+            "map-dropped-binding",
+            "map-nested-array-combiner",
+            "map-unrelated-scope-combiner"
+          ]
+        }
+      },
+      "unavailable": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "packed": {
+      "independent": {
+        "passed": 55,
+        "failed": 0,
+        "skipped": 0
+      },
+      "locations": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "extra": {
+        "passed": 70,
+        "failed": 0,
+        "skipped": 0
+      },
+      "degraded": {
+        "literal": {
+          "passed": 3,
+          "failed": 3,
+          "skipped": 0,
+          "verifyExit": 1,
+          "failedNames": [
+            "map-dropped-binding",
+            "map-nested-array-combiner",
+            "map-unrelated-scope-combiner"
+          ]
+        },
+        "named": {
+          "passed": 3,
+          "failed": 3,
+          "skipped": 0,
+          "verifyExit": 1,
+          "failedNames": [
+            "map-dropped-binding",
+            "map-nested-array-combiner",
+            "map-unrelated-scope-combiner"
+          ]
+        }
+      },
+      "unavailable": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "platformVerification": "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/verification.json",
+  "packageVerification": "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/verification.json",
+  "runs": [
+    {
+      "name": "platform-gates",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "dev/convex-analysis/verify-candidate.mjs",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "repaired-local-independent",
+      "command": [
+        "python3",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/challenges.py",
+        "repaired-local",
+        "/Users/nickdejesus/Code/any-doctor"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "repaired-local-extra",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "/Users/nickdejesus/Code/any-doctor/dev/async-analysis/run-cases.mjs",
+        "/Users/nickdejesus/Code/any-doctor",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/repaired-local-extra"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "repaired-local-literal",
+      "command": [
+        "python3",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/degraded.py",
+        "repaired-local-literal",
+        "/Users/nickdejesus/Code/any-doctor"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "repaired-local-named",
+      "command": [
+        "python3",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/degraded-identifiers.py",
+        "repaired-local-named",
+        "/Users/nickdejesus/Code/any-doctor"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "repaired-local-unavailable",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "/Users/nickdejesus/Code/any-doctor/dev/async-analysis/check-unavailable.mjs",
+        "/Users/nickdejesus/Code/any-doctor",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/repaired-local-unavailable"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "repaired-local-sift",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/async.mjs",
+        "/tmp/any-doctor-frozen-sift",
+        "--format",
+        "json"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "packed-independent",
+      "command": [
+        "python3",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/challenges.py",
+        "packed",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor"
+      ],
+      "cwd": "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "packed-extra",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "/Users/nickdejesus/Code/any-doctor/dev/async-analysis/run-cases.mjs",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/packed-extra"
+      ],
+      "cwd": "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "packed-literal",
+      "command": [
+        "python3",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/degraded.py",
+        "packed-literal",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor"
+      ],
+      "cwd": "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "packed-named",
+      "command": [
+        "python3",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/degraded-identifiers.py",
+        "packed-named",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor"
+      ],
+      "cwd": "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "packed-unavailable",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "/Users/nickdejesus/Code/any-doctor/dev/async-analysis/check-unavailable.mjs",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/packed-unavailable"
+      ],
+      "cwd": "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor",
+      "exit": 0
+    },
+    {
+      "name": "packed-sift",
+      "command": [
+        "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor/bin/cli.js",
+        "run",
+        "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor/doctors/async.mjs",
+        "/tmp/any-doctor-frozen-sift",
+        "--format",
+        "json"
+      ],
+      "cwd": "/private/tmp/any-doctor-async-repair-ux7aiin9/review-candidate/platform/candidate-package/consumer/node_modules/any-doctor",
+      "exit": 0
+    }
+  ]
+}

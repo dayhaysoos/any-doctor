@@ -276,7 +276,37 @@ export interface FunctionInfo extends SourceRange {
   registration?: { target: CallTarget; property: string | null; argument: number };
 }
 export interface OperandInfo { call?: number; binding?: number }
+/** Structural value facts: offsets link facts; unknown shapes never imply absence. */
+export interface ValueFact {
+  start: number;
+  kind: "unknown" | "alias" | "literal" | "reference" | "object" | "array" | "call" | "function" | "choice";
+  literal?: string | number | boolean;
+  target?: CallTarget;
+  value?: number;
+  alternatives?: number[];
+  properties?: { name: string | null; spread: boolean; accessor: boolean; value: number }[];
+}
+export interface ValueBinding {
+  mutated?: boolean;
+  escapes?: CallTarget[];
+  writes?: { value?: number; functionStart: number | null }[];
+  binding: number;
+  initializer?: number;
+  path?: string[];
+  reassigned?: boolean;
+  types?: { target: CallTarget; members?: string[] }[];
+  parameter?: { functionStart: number; index: number };
+}
+export interface CallStructure {
+  flow: import("./value-flow.js").ValueFlow;
+  values: ValueFact[];
+  bindings: ValueBinding[];
+  functions: { start: number; returns: number[]; unknownReturn: boolean }[];
+  loops: (SourceRange & { functionStart: number | null })[];
+  directives: string[];
+}
 export interface AnalysisCalls {
+  structure: CallStructure;
   file: string;
   calls: CallInfo[];
   functions: FunctionInfo[];
