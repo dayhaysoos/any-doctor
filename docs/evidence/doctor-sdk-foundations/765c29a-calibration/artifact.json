@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "765c29a488a860d6e201e5339e8a39c94a3080ef",
+  "sha256": "2e241acc6053be054ac3d2988e67eaa5c02cc159efa5782cb33e65d4c610644b",
+  "bytes": 273731,
+  "files": 142,
+  "repackIdentical": true,
+  "fileManifestIdentical": true,
+  "publicSdkDocIncluded": true,
+  "evidencePlansTestsDevExcluded": true
+}

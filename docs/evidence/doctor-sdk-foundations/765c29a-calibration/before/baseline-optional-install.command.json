@@ -1,0 +1,14 @@
+{
+  "command": [
+    "npm",
+    "install",
+    "--ignore-scripts",
+    "--omit=optional",
+    "--no-audit",
+    "--no-fund",
+    "<temp>/any-doctor-0.1.2.tgz"
+  ],
+  "cwd": "<temp>/baseline-optional",
+  "exit": 0,
+  "wallMs": 2206
+}

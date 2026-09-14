@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/usr/bin/time",
+    "-l",
+    "node",
+    "<repo>/bin/cli.js",
+    "run",
+    "<repo>/doctors/async.mjs",
+    "/private<frozen-target>",
+    "--format",
+    "json"
+  ],
+  "cwd": "<repo>",
+  "exit": 0,
+  "wallMs": 5577
+}

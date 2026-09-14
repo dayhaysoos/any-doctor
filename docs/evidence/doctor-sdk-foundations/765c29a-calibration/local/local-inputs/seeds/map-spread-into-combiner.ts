@@ -1,0 +1,1 @@
+const tasks=[1,2].map(async x=>x); await Promise.all([...tasks]);

@@ -1,0 +1,11 @@
+{
+  "command": [
+    "node",
+    "<repo>/dev/async-analysis/check-unavailable.mjs",
+    "<repo>",
+    "<temp>/final-gates/local-unavailable"
+  ],
+  "cwd": "<repo>",
+  "exit": 0,
+  "wallMs": 46
+}

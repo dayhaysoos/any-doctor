@@ -1,0 +1,324 @@
+{
+  "schema": 1,
+  "tool": "any-doctor",
+  "target": "<temp>/packed-final/packed-inputs/fresh-seeds",
+  "fileCount": 20,
+  "durationMs": 169,
+  "score": {
+    "score": null,
+    "grade": null,
+    "filesClean": 0,
+    "filesTotal": 20,
+    "emptyScan": false,
+    "narrowedScan": true
+  },
+  "counts": {
+    "error": 0,
+    "warning": 21,
+    "info": 6,
+    "total": 27,
+    "hiddenDuplicates": 0
+  },
+  "analysisAvailable": true,
+  "emptyScan": false,
+  "groups": [
+    {
+      "doctor": "async",
+      "checks": [
+        {
+          "rule": "unawaited-async-map",
+          "heading": "An array of async-map promises has no supported consumer or ownership transfer.",
+          "severity": "warning",
+          "impact": "Dropped promise results can leave errors unobserved and dependent work running before callbacks finish.",
+          "why": "Awaiting an array, its container or its length does not await the array elements. A combiner consumes its actual iterable, not all values in its source span.",
+          "fix": "If the work must finish here, await Promise.all on the actual promise array and handle errors. For sequential processing, use a for...of loop with await inside; merely removing async does not make asynchronous work sequential. Preserve intentional ownership transfers.",
+          "findings": [
+            {
+              "file": "await-array-only.ts",
+              "line": 1,
+              "column": 31,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABhd2FpdC1hcnJheS1vbmx5LnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAZnVuY3Rpb246ZiMwADMxAHJhbmdl"
+            },
+            {
+              "file": "await-array-only.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABhd2FpdC1hcnJheS1vbmx5LnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "combiner-spread-arguments.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABjb21iaW5lci1zcHJlYWQtYXJndW1lbnRzLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "helper-void-array.ts",
+              "line": 1,
+              "column": 55,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABoZWxwZXItdm9pZC1hcnJheS50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAABub25lADU1AHJhbmdl"
+            },
+            {
+              "file": "helper-void-array.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABoZWxwZXItdm9pZC1hcnJheS50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAABub25lADAAcmFuZ2U"
+            },
+            {
+              "file": "push-spread-consumption.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABwdXNoLXNwcmVhZC1jb25zdW1wdGlvbi50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAABub25lADAAcmFuZ2U"
+            },
+            {
+              "file": "return-await-array.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tYXdhaXQtYXJyYXkudHMAYWEzZWQ0NGM1NjY0ODI5YTUxNjI5ZDQ1NDczZjA1OWQ2Yzc1MDRmMWI2MGRkMjliMmRiYWRkY2EyYzk3MTY0ZAAAbm9uZQAwAHJhbmdl"
+            },
+            {
+              "file": "return-await-inline.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tYXdhaXQtaW5saW5lLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "return-choice-array.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tY2hvaWNlLWFycmF5LnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "return-length-array.ts",
+              "line": 1,
+              "column": 25,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tbGVuZ3RoLWFycmF5LnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAZnVuY3Rpb246ZiMwADI1AHJhbmdl"
+            },
+            {
+              "file": "return-length-array.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tbGVuZ3RoLWFycmF5LnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "return-void-array.ts",
+              "line": 1,
+              "column": 25,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tdm9pZC1hcnJheS50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAGZ1bmN0aW9uOmYjMAAyNQByYW5nZQ"
+            },
+            {
+              "file": "return-void-array.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAByZXR1cm4tdm9pZC1hcnJheS50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAABub25lADAAcmFuZ2U"
+            },
+            {
+              "file": "spread-helper-consumption.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABzcHJlYWQtaGVscGVyLWNvbnN1bXB0aW9uLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "spread-opaque-consumption.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABzcHJlYWQtb3BhcXVlLWNvbnN1bXB0aW9uLnRzAGFhM2VkNDRjNTY2NDgyOWE1MTYyOWQ0NTQ3M2YwNTlkNmM3NTA0ZjFiNjBkZDI5YjJkYmFkZGNhMmM5NzE2NGQAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "yield-array.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcAB5aWVsZC1hcnJheS50cwBhYTNlZDQ0YzU2NjQ4MjlhNTE2MjlkNDU0NzNmMDU5ZDZjNzUwNGYxYjYwZGQyOWIyZGJhZGRjYTJjOTcxNjRkAABub25lADAAcmFuZ2U"
+            }
+          ]
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "heading": "Review a native fetch with no established caller cancellation signal.",
+          "severity": "info",
+          "impact": "Cancellation or a deadline may help bound unnecessary or stalled work; omission alone does not establish a bug.",
+          "why": "Request lifetime requirements differ between server, extension and UI requests. This is a cancellation-policy review candidate.",
+          "fix": "Check the intended request lifetime and caller contract. If cancellation or a deadline is required, preserve forwarded options and provide an appropriate AbortSignal; abort only when the work should stop.",
+          "findings": [
+            {
+              "file": "fetch-prototype-null.ts",
+              "line": 1,
+              "column": 0,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1wcm90b3R5cGUtbnVsbC50cwBlOGQ5NTcxZjc3YjM1MmYzMjM4NjU3MjU0MzIwMThiMTU1ZWI2MWI4MmY3MTYwYjg2Y2RmOWIxOWYzNDRlYmRjAABub25lADAAcmFuZ2U"
+            },
+            {
+              "file": "fetch-prototype-null.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1wcm90b3R5cGUtbnVsbC50cwA4ZDk3Njg0NzRlNDI1NzNkM2FkMWMxYjI5MjNkZjM5NDgxYzAwNmMyM2MxMzE4M2VkMGUzZDJmM2NkNGMyM2ViAABub25lADAAcmFuZ2U"
+            },
+            {
+              "file": "fetch-prototype-own-null.ts",
+              "line": 1,
+              "column": 30,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1wcm90b3R5cGUtb3duLW51bGwudHMANWRjMzczOTMxMTVhNGFiYTU2MzczM2E0MWIwN2Q4MTFmYWVhNTRlMTBhODJjZmZhMzkwMTA0Y2UyZWNkOGFiYQAAbm9uZQAzMAByYW5nZQ"
+            },
+            {
+              "file": "fetch-prototype-own-null.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1wcm90b3R5cGUtb3duLW51bGwudHMAOGQ5NzY4NDc0ZTQyNTczZDNhZDFjMWIyOTIzZGYzOTQ4MWMwMDZjMjNjMTMxODNlZDBlM2QyZjNjZDRjMjNlYgAAbm9uZQAwAHJhbmdl"
+            },
+            {
+              "file": "fetch-prototype-signal.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1wcm90b3R5cGUtc2lnbmFsLnRzADhkOTc2ODQ3NGU0MjU3M2QzYWQxYzFiMjkyM2RmMzk0ODFjMDA2YzIzYzEzMTgzZWQwZTNkMmYzY2Q0YzIzZWIAAG5vbmUAMAByYW5nZQ"
+            },
+            {
+              "file": "fetch-request-copy.ts",
+              "line": 2,
+              "column": 0,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1yZXF1ZXN0LWNvcHkudHMAOGQ5NzY4NDc0ZTQyNTczZDNhZDFjMWIyOTIzZGYzOTQ4MWMwMDZjMjNjMTMxODNlZDBlM2QyZjNjZDRjMjNlYgAAbm9uZQAwAHJhbmdl"
+            }
+          ]
+        },
+        {
+          "rule": "uncleared-settimeout-in-effect",
+          "heading": "Review an effect timer with no matching cancellation in its returned cleanup.",
+          "severity": "warning",
+          "impact": "The callback may outlive the effect that scheduled it; whether that is wrong depends on the intended lifetime.",
+          "why": "A matching name or an uncalled helper does not cancel this timer. React runs the returned cleanup on replacement or unmount.",
+          "fix": "If this timer belongs to the effect lifetime, retain its handle and cancel that handle from returned cleanup. Preserve deliberate completion, rescheduling and cancellation guards; inspect unresolved helper or handle flow before editing.",
+          "findings": [
+            {
+              "file": "timer-cleanup-call-parameter.ts",
+              "line": 2,
+              "column": 47,
+              "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWNsZWFudXAtY2FsbC1wYXJhbWV0ZXIudHMAM2I2YzA1NzZiNDMyOWM1YTlhYTYyZDIyYjMxMjM2ZTk2MTEyMjE1Y2VjMTU0ZWUzZGZkZjQ2M2U3NWU4NTNmOABhcnJvdzoAMwA0NwByYW5nZQ"
+            },
+            {
+              "file": "timer-cleanup-factory.ts",
+              "line": 2,
+              "column": 47,
+              "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWNsZWFudXAtZmFjdG9yeS50cwAzYjZjMDU3NmI0MzI5YzVhOWFhNjJkMjJiMzEyMzZlOTYxMTIyMTVjZWMxNTRlZTNkZmRmNDYzZTc1ZTg1M2Y4AGFycm93OgAzADQ3AHJhbmdl"
+            },
+            {
+              "file": "timer-guarded-callback.ts",
+              "line": 1,
+              "column": 62,
+              "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWd1YXJkZWQtY2FsbGJhY2sudHMANmFlYTk5YWI5NTc4ZDgwOTU5NGVkMDc0MWU4MmU5M2NhZmM5MDYyY2E4NzM2YzQwMDE1YzVjMzZmMjhkMGJlMwBhcnJvdzoAMAA2MgByYW5nZQ"
+            },
+            {
+              "file": "timer-guarded-callback.ts",
+              "line": 2,
+              "column": 47,
+              "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWd1YXJkZWQtY2FsbGJhY2sudHMAM2I2YzA1NzZiNDMyOWM1YTlhYTYyZDIyYjMxMjM2ZTk2MTEyMjE1Y2VjMTU0ZWUzZGZkZjQ2M2U3NWU4NTNmOABhcnJvdzoAMwA0NwByYW5nZQ"
+            },
+            {
+              "file": "timer-return-await-cleanup.ts",
+              "line": 2,
+              "column": 47,
+              "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLXJldHVybi1hd2FpdC1jbGVhbnVwLnRzADNiNmMwNTc2YjQzMjljNWE5YWE2MmQyMmIzMTIzNmU5NjExMjIxNWNlYzE1NGVlM2RmZGY0NjNlNzVlODUzZjgAYXJyb3c6ADMANDcAcmFuZ2U"
+            }
+          ]
+        }
+      ],
+      "semantic": {
+        "protocolVersion": 1,
+        "provider": {
+          "id": "any-doctor/syntax-flow",
+          "version": "1",
+          "available": true,
+          "dependencies": [
+            {
+              "id": "oxc-parser",
+              "version": "0.149.0"
+            },
+            {
+              "id": "@typescript-eslint/scope-manager",
+              "version": "8.70.0"
+            }
+          ]
+        },
+        "capabilities": [
+          {
+            "name": "calls",
+            "available": true
+          },
+          {
+            "name": "identity",
+            "available": true
+          },
+          {
+            "name": "option-presence",
+            "available": true
+          },
+          {
+            "name": "value-disposition",
+            "available": true
+          },
+          {
+            "name": "resource-lifetime",
+            "available": true
+          }
+        ],
+        "recipes": [
+          {
+            "check": "fetch-calls-without-abortsignal",
+            "name": "required-or-recommended-option",
+            "available": true
+          },
+          {
+            "check": "unawaited-async-map",
+            "name": "unhandled-value",
+            "available": true
+          },
+          {
+            "check": "uncleared-settimeout-in-effect",
+            "name": "resource-without-release",
+            "available": true
+          }
+        ],
+        "narrowed": [
+          {
+            "check": "unawaited-async-map",
+            "recipe": "unhandled-value",
+            "reason": "unsupported-expression",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "spread-opaque-consumption.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "incomplete": true,
+        "execution": {
+          "semanticQueries": 93,
+          "modelRequests": 20,
+          "modelCacheHits": 120
+        }
+      },
+      "narrowed": [
+        "unawaited-async-map"
+      ],
+      "blindSpots": [
+        "All checks require calls analysis and abstain when it is unavailable; the report exposes narrowed coverage, never a clean bill of health.",
+        "Native globals and React imports are resolved lexically. Cross-file wrappers, monkey-patched globals and arbitrary runtime types are not interpreted.",
+        "Array identity uses literals, declared array parameters and supported array-producing chains. Unknown receivers/transfers abstain; return transfers ownership, not proof of settlement.",
+        "Timer cleanup follows returned functions and direct local helper calls. Conditional cancellation and multiple outstanding writes to one handle remain review cases, not proofs of a leak.",
+        "Fetch options use ordered local properties/spreads and Request constructors. Unknown inputs/options, mutation and escapes abstain; signal presence is not proof that anyone aborts.",
+        "Fixture-named files and default diagnostic extension exclusions remain outside the scan."
+      ]
+    }
+  ],
+  "crashed": [],
+  "broken": [],
+  "skippedUnsafe": [],
+  "gate": {
+    "failOn": "none",
+    "mode": "full",
+    "fails": false
+  }
+}

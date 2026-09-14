@@ -1,0 +1,1 @@
+export function f(fetch: (x:number)=>number){return fetch(1)}

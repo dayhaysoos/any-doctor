@@ -1,0 +1,1 @@
+const tasks=[1,2].map(async x=>x); const pending=tasks; await Promise.all(pending);

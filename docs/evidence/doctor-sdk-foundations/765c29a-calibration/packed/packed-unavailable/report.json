@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "tool": "any-doctor",
+  "target": "<temp>/packed-final/packed-unavailable/seed",
+  "fileCount": 1,
+  "durationMs": 0,
+  "score": {
+    "score": 100,
+    "grade": "Excellent",
+    "filesClean": 1,
+    "filesTotal": 1,
+    "emptyScan": false
+  },
+  "counts": {
+    "error": 0,
+    "warning": 0,
+    "info": 0,
+    "total": 0,
+    "hiddenDuplicates": 0
+  },
+  "analysisAvailable": false,
+  "emptyScan": false,
+  "groups": [
+    {
+      "doctor": "async",
+      "checks": [],
+      "narrowed": [
+        "fetch-calls-without-abortsignal",
+        "unawaited-async-map",
+        "uncleared-settimeout-in-effect"
+      ],
+      "blindSpots": [
+        "All checks require calls analysis and abstain when it is unavailable; the report exposes narrowed coverage, never a clean bill of health.",
+        "Native globals and React imports are resolved lexically. Cross-file wrappers, monkey-patched globals and arbitrary runtime types are not interpreted.",
+        "Array identity uses literals, declared array parameters and supported array-producing chains. Unknown receivers/transfers abstain; return transfers ownership, not proof of settlement.",
+        "Timer cleanup follows returned functions and direct local helper calls. Conditional cancellation and multiple outstanding writes to one handle remain review cases, not proofs of a leak.",
+        "Fetch options use ordered local properties/spreads and Request constructors. Unknown inputs/options, mutation and escapes abstain; signal presence is not proof that anyone aborts.",
+        "Fixture-named files and default diagnostic extension exclusions remain outside the scan."
+      ]
+    }
+  ],
+  "crashed": [],
+  "broken": [],
+  "skippedUnsafe": [],
+  "gate": {
+    "failOn": "none",
+    "mode": "full",
+    "fails": false
+  }
+}

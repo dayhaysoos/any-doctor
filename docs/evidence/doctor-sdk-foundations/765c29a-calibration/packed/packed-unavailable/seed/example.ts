@@ -1,0 +1,1 @@
+import {useEffect} from "react";fetch("/");[1].map(async x=>x);useEffect(()=>setTimeout(()=>{},1),[]);

@@ -1,0 +1,1423 @@
+{
+  "protocolVersion": 1,
+  "kind": "verify",
+  "meta": {
+    "id": "async",
+    "category": "Async",
+    "severity": "warning",
+    "description": "Review promise-array ownership, effect timer cleanup and request cancellation.",
+    "blindSpots": [
+      "All checks require calls analysis and abstain when it is unavailable; the report exposes narrowed coverage, never a clean bill of health.",
+      "Native globals and React imports are resolved lexically. Cross-file wrappers, monkey-patched globals and arbitrary runtime types are not interpreted.",
+      "Array identity uses literals, declared array parameters and supported array-producing chains. Unknown receivers/transfers abstain; return transfers ownership, not proof of settlement.",
+      "Timer cleanup follows returned functions and direct local helper calls. Conditional cancellation and multiple outstanding writes to one handle remain review cases, not proofs of a leak.",
+      "Fetch options use ordered local properties/spreads and Request constructors. Unknown inputs/options, mutation and escapes abstain; signal presence is not proof that anyone aborts.",
+      "Fixture-named files and default diagnostic extension exclusions remain outside the scan."
+    ],
+    "checks": [
+      {
+        "id": "fetch-calls-without-abortsignal",
+        "revision": 2,
+        "reportingUnit": "occurrence",
+        "needs": [
+          "calls",
+          "identity",
+          "option-presence"
+        ],
+        "onUnknown": "skip",
+        "severity": "info",
+        "recipe": {
+          "name": "required-or-recommended-option",
+          "query": {
+            "call": {
+              "globals": [
+                "fetch",
+                "window.fetch",
+                "globalThis.fetch",
+                "self.fetch"
+              ]
+            },
+            "option": {
+              "option": "signal",
+              "sources": [
+                "RequestInit",
+                "Request"
+              ]
+            }
+          }
+        },
+        "description": "Review a native fetch with no established caller cancellation signal.",
+        "claim": "A resolved native fetch whose input and ordered options establish no caller signal, including an explicit null override of an unknown input.",
+        "impact": "Cancellation or a deadline may help bound unnecessary or stalled work; omission alone does not establish a bug.",
+        "why": "Request lifetime requirements differ between server, extension and UI requests. This is a cancellation-policy review candidate.",
+        "fix": "Check the intended request lifetime and caller contract. If cancellation or a deadline is required, preserve forwarded options and provide an appropriate AbortSignal; abort only when the work should stop.",
+        "lookalikes": [
+          "Request or options carrying a signal",
+          "unknown forwarded inputs/options",
+          "unrelated local fetch functions"
+        ]
+      },
+      {
+        "id": "unawaited-async-map",
+        "revision": 2,
+        "reportingUnit": "occurrence",
+        "needs": [
+          "calls",
+          "value-disposition"
+        ],
+        "onUnknown": "skip",
+        "severity": "warning",
+        "recipe": {
+          "name": "unhandled-value",
+          "query": {
+            "producer": {
+              "member": "map",
+              "asyncArgument": 0,
+              "receiver": "array"
+            },
+            "consumers": [
+              "Promise.all",
+              "Promise.allSettled",
+              "Promise.any",
+              "Promise.race",
+              "globalThis.Promise.all",
+              "globalThis.Promise.allSettled",
+              "globalThis.Promise.any",
+              "globalThis.Promise.race"
+            ]
+          }
+        },
+        "description": "An array of async-map promises has no supported consumer or ownership transfer.",
+        "claim": "A known array map with an async callback whose result has no supported element consumer or ownership transfer in its lexical flow.",
+        "impact": "Dropped promise results can leave errors unobserved and dependent work running before callbacks finish.",
+        "why": "Awaiting an array, its container or its length does not await the array elements. A combiner consumes its actual iterable, not all values in its source span.",
+        "fix": "If the work must finish here, await Promise.all on the actual promise array and handle errors. For sequential processing, use a for...of loop with await inside; merely removing async does not make asynchronous work sequential. Preserve intentional ownership transfers.",
+        "lookalikes": [
+          "returned promise arrays",
+          "aliases passed to a native combiner",
+          "per-element awaits",
+          "unrelated map methods",
+          "unresolved transfers"
+        ]
+      },
+      {
+        "id": "uncleared-settimeout-in-effect",
+        "revision": 2,
+        "reportingUnit": "occurrence",
+        "needs": [
+          "calls",
+          "identity",
+          "resource-lifetime"
+        ],
+        "onUnknown": "skip",
+        "severity": "warning",
+        "recipe": {
+          "name": "resource-without-release",
+          "query": {
+            "acquisition": {
+              "globals": [
+                "setTimeout",
+                "window.setTimeout",
+                "globalThis.setTimeout"
+              ]
+            },
+            "owner": {
+              "identity": {
+                "imports": [
+                  {
+                    "source": "react",
+                    "names": [
+                      "useEffect",
+                      "*.useEffect",
+                      "default.useEffect"
+                    ]
+                  }
+                ]
+              },
+              "argument": 0
+            },
+            "release": [
+              "clearTimeout",
+              "window.clearTimeout",
+              "globalThis.clearTimeout"
+            ],
+            "reportUnknown": [
+              "unsupported-expression"
+            ]
+          }
+        },
+        "description": "Review an effect timer with no matching cancellation in its returned cleanup.",
+        "claim": "A native setTimeout reachable from a resolved React effect has no supported returned-cleanup cancellation of its actual handle.",
+        "impact": "The callback may outlive the effect that scheduled it; whether that is wrong depends on the intended lifetime.",
+        "why": "A matching name or an uncalled helper does not cancel this timer. React runs the returned cleanup on replacement or unmount.",
+        "fix": "If this timer belongs to the effect lifetime, retain its handle and cancel that handle from returned cleanup. Preserve deliberate completion, rescheduling and cancellation guards; inspect unresolved helper or handle flow before editing.",
+        "lookalikes": [
+          "qualified native cleanup of the same handle",
+          "returned cleanup helpers",
+          "local API lookalikes",
+          "shadowed handles"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "name": "reports a fetch call without options",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "reports options that omit signal",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "accepts an explicit signal property among other options",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "accepts a shorthand signal property",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "reports a nested signal that is not a RequestInit signal",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "accepts known options carrying a signal property",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "commented-out map(async) lookalike is not flagged",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "string-literal map(async) lookalike is not flagged",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "unawaited map(async) is flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/a.ts",
+          "line": 2,
+          "column": 18
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/a.ts",
+          "line": 2,
+          "column": 38
+        }
+      ]
+    },
+    {
+      "name": "Promise.all-consumed result is not flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/b.ts",
+          "line": 2,
+          "column": 18
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/b.ts",
+          "line": 2,
+          "column": 38
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/b.ts",
+          "line": 3,
+          "column": 9
+        }
+      ]
+    },
+    {
+      "name": "await on the promise array does not settle it — flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/c.ts",
+          "line": 2,
+          "column": 18
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/c.ts",
+          "line": 2,
+          "column": 38
+        }
+      ]
+    },
+    {
+      "name": "per-element for-of consumption is recognized — not flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/for-of-on.ts",
+          "line": 2,
+          "column": 15
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/for-of-on.ts",
+          "line": 2,
+          "column": 35
+        }
+      ]
+    },
+    {
+      "name": "unavailable analysis abstains: src/for-of.ts",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "an inline for-of over the mapped array with awaited elements is not flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/for-of-inline.ts",
+          "line": 2,
+          "column": 18
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/for-of-inline.ts",
+          "line": 2,
+          "column": 38
+        }
+      ]
+    },
+    {
+      "name": "a same-named binding in another scope cannot silence this one",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/shadow.ts",
+          "line": 2,
+          "column": 15
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/shadow.ts",
+          "line": 2,
+          "column": 35
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/shadow.ts",
+          "line": 7,
+          "column": 15
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/shadow.ts",
+          "line": 7,
+          "column": 39
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/shadow.ts",
+          "line": 8,
+          "column": 9
+        }
+      ]
+    },
+    {
+      "name": "unavailable analysis abstains: src/shadow-off.ts",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "a never-reassigned let binding is checked like a const — flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/let-never.ts",
+          "line": 2,
+          "column": 13
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/let-never.ts",
+          "line": 2,
+          "column": 33
+        }
+      ]
+    },
+    {
+      "name": "a reassigned binding is inconclusive and skipped",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/let-reassigned.ts",
+          "line": 2,
+          "column": 13
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/let-reassigned.ts",
+          "line": 2,
+          "column": 33
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/let-reassigned.ts",
+          "line": 3,
+          "column": 9
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/let-reassigned.ts",
+          "line": 3,
+          "column": 30
+        }
+      ]
+    },
+    {
+      "name": "unavailable analysis abstains: src/off-a.ts",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "unavailable analysis abstains: src/off-b.ts",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "unavailable analysis abstains: src/off-bare.ts",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "unavailable analysis abstains: src/off-await-array.ts",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "unavailable analysis abstains: src/off-one-line.ts",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "unavailable analysis abstains: src/off-opt-bound.ts",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "allSettled-consumed result in a later batch loop is not flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/d.ts",
+          "line": 2,
+          "column": 22
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/d.ts",
+          "line": 2,
+          "column": 46
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/d.ts",
+          "line": 3,
+          "column": 27
+        }
+      ]
+    },
+    {
+      "name": "consumption on the declaration's own line is seen",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/one-line.ts",
+          "line": 1,
+          "column": 59
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/one-line.ts",
+          "line": 1,
+          "column": 83
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/one-line.ts",
+          "line": 1,
+          "column": 103
+        }
+      ]
+    },
+    {
+      "name": "a map(async) wrapped in Promise.all at the declaration is not flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/wrapped.ts",
+          "line": 1,
+          "column": 42
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/wrapped.ts",
+          "line": 1,
+          "column": 54
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/wrapped.ts",
+          "line": 1,
+          "column": 74
+        }
+      ]
+    },
+    {
+      "name": "a bare discarded map(async) with no binding is flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/bare.ts",
+          "line": 2,
+          "column": 2
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/bare.ts",
+          "line": 2,
+          "column": 22
+        }
+      ]
+    },
+    {
+      "name": "a bare map(async) in an else branch is flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/else-branch.ts",
+          "line": 3,
+          "column": 7
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/else-branch.ts",
+          "line": 3,
+          "column": 27
+        }
+      ]
+    },
+    {
+      "name": "an optional-chained bare map(async) is flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/opt-bare.ts",
+          "line": 2,
+          "column": 2
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/opt-bare.ts",
+          "line": 2,
+          "column": 23
+        }
+      ]
+    },
+    {
+      "name": "an optional-chained bound map(async) with no consumer is flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/opt-bound.ts",
+          "line": 2,
+          "column": 15
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/opt-bound.ts",
+          "line": 2,
+          "column": 36
+        }
+      ]
+    },
+    {
+      "name": "await directly on the mapped array does not settle it — flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/await-array.ts",
+          "line": 2,
+          "column": 8
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/await-array.ts",
+          "line": 2,
+          "column": 28
+        }
+      ]
+    },
+    {
+      "name": "an async-function callback in a dropped binding is flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/fn-bound.ts",
+          "line": 2,
+          "column": 15
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/fn-bound.ts",
+          "line": 2,
+          "column": 52
+        }
+      ]
+    },
+    {
+      "name": "a bare async-function map statement is flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/fn-bare.ts",
+          "line": 2,
+          "column": 2
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/fn-bare.ts",
+          "line": 2,
+          "column": 37
+        }
+      ]
+    },
+    {
+      "name": "an async-function map consumed by a combiner is not flagged",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/fn-consumed.ts",
+          "line": 2,
+          "column": 15
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/fn-consumed.ts",
+          "line": 2,
+          "column": 57
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/fn-consumed.ts",
+          "line": 3,
+          "column": 9
+        }
+      ]
+    },
+    {
+      "name": "reports an assigned timeout without cleanup",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.tsx",
+          "line": 2,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.tsx",
+          "line": 3,
+          "column": 16
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.tsx",
+          "line": 3,
+          "column": 33
+        }
+      ]
+    },
+    {
+      "name": "allows cleanup of the assigned timeout",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.tsx",
+          "line": 1,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.tsx",
+          "line": 2,
+          "column": 16
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.tsx",
+          "line": 2,
+          "column": 33
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.tsx",
+          "line": 3,
+          "column": 15
+        }
+      ]
+    },
+    {
+      "name": "reports only the timer missing from multi-timer cleanup",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.jsx",
+          "line": 2,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.jsx",
+          "line": 3,
+          "column": 15
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.jsx",
+          "line": 4,
+          "column": 13
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.jsx",
+          "line": 5,
+          "column": 15
+        }
+      ]
+    },
+    {
+      "name": "reports an unassigned timer despite unrelated cleanup",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.js",
+          "line": 2,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.js",
+          "line": 3,
+          "column": 2
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.js",
+          "line": 4,
+          "column": 15
+        }
+      ]
+    },
+    {
+      "name": "ignores timeout lookalikes outside effects and in comments",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.ts",
+          "line": 4,
+          "column": 2
+        }
+      ]
+    },
+    {
+      "name": "unresolved effect identity: reports an assigned timeout without cleanup",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.tsx",
+          "line": 1,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.tsx",
+          "line": 2,
+          "column": 16
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.tsx",
+          "line": 2,
+          "column": 33
+        }
+      ]
+    },
+    {
+      "name": "unresolved effect identity: reports only the timer missing from multi-timer cleanup",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.jsx",
+          "line": 1,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.jsx",
+          "line": 2,
+          "column": 15
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.jsx",
+          "line": 3,
+          "column": 13
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.jsx",
+          "line": 4,
+          "column": 15
+        }
+      ]
+    },
+    {
+      "name": "unresolved effect identity: reports an unassigned timer despite unrelated cleanup",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.js",
+          "line": 1,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.js",
+          "line": 2,
+          "column": 2
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "src/example.js",
+          "line": 3,
+          "column": 15
+        }
+      ]
+    },
+    {
+      "name": "locations: fetch-calls-without-abortsignal",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "locations: unawaited-async-map",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "example.ts",
+          "line": 1,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "example.ts",
+          "line": 1,
+          "column": 20
+        }
+      ]
+    },
+    {
+      "name": "locations: uncleared-settimeout-in-effect",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "example.ts",
+          "line": 2,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "example.ts",
+          "line": 2,
+          "column": 15
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "example.ts",
+          "line": 2,
+          "column": 36
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / genuine absence positive",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / present option lookalike",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / shadowed call identity",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 1,
+          "column": 22
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / immutable call alias",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 1,
+          "column": 17
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / two same-line occurrences",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / analysis unavailable",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / genuine positive",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 1,
+          "column": 0
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / valid lookalike and shadowed producer",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 1,
+          "column": 34
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 1,
+          "column": 47
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / ownership transfer",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 1,
+          "column": 22
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / unsupported receiver with positive neighbor",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 1,
+          "column": 12
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 1,
+          "column": 23
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 0
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / two same-line occurrences",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 1,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 1,
+          "column": 28
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / analysis unavailable",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / genuine unreleased positive",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 18
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / shadowed acquisition with positive neighbor",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 45
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 3,
+          "column": 0
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / immutable handle alias release",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 31
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 81
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / different handle does not release acquisition",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 31
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 77
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / supported local cleanup transfer",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 26
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 3,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 3,
+          "column": 31
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 3,
+          "column": 62
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / unsupported cleanup transfer with positive neighbor",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 31
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 62
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 3,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 3,
+          "column": 18
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / two same-line occurrences",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 0
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 18
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "profile.ts",
+          "line": 2,
+          "column": 39
+        }
+      ]
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / analysis unavailable",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "shared innocent corpus (12 files)",
+      "ok": false,
+      "missing": [],
+      "unexpected": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "dynamic-import.ts",
+          "line": 5,
+          "column": 9
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "dynamic-import.ts",
+          "line": 5,
+          "column": 27
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "namespaced-api.ts",
+          "line": 6,
+          "column": 2
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "namespaced-api.ts",
+          "line": 7,
+          "column": 4
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "normalize-dash.ts",
+          "line": 2,
+          "column": 18
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "normalize-dash.ts",
+          "line": 2,
+          "column": 18
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "normalize-dash.ts",
+          "line": 3,
+          "column": 9
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "normalize-underscore.ts",
+          "line": 2,
+          "column": 18
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "normalize-underscore.ts",
+          "line": 2,
+          "column": 18
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "normalize-underscore.ts",
+          "line": 3,
+          "column": 9
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "promise-batching.ts",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "promise-batching.ts",
+          "line": 6,
+          "column": 4
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "promise-batching.ts",
+          "line": 7,
+          "column": 4
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "promise-batching.ts",
+          "line": 12,
+          "column": 20
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "promise-batching.ts",
+          "line": 13,
+          "column": 4
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "promise-batching.ts",
+          "line": 13,
+          "column": 17
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "promise-batching.ts",
+          "line": 15,
+          "column": 8
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "promise-batching.ts",
+          "line": 18,
+          "column": 27
+        },
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "file": "qa-guard.ts",
+          "line": 3,
+          "column": 7
+        }
+      ]
+    },
+    {
+      "name": "location coverage: fetch-calls-without-abortsignal",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "location coverage: unawaited-async-map",
+      "ok": false,
+      "missing": [],
+      "unexpected": [],
+      "error": "requires a passing fixture with two distinct locations of this check in one file"
+    },
+    {
+      "name": "location coverage: uncleared-settimeout-in-effect",
+      "ok": false,
+      "missing": [],
+      "unexpected": [],
+      "error": "requires a passing fixture with two distinct locations of this check in one file"
+    }
+  ]
+}

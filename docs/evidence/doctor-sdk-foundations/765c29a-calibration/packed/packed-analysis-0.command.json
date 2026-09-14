@@ -1,0 +1,11 @@
+{
+  "command": [
+    "node",
+    "<repo>/dev/doctor-sdk/measure-analysis.mjs",
+    "<consumer>/node_modules/any-doctor",
+    "/private<frozen-target>"
+  ],
+  "cwd": "<consumer>/node_modules/any-doctor",
+  "exit": 0,
+  "wallMs": 2805
+}

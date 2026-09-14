@@ -1,0 +1,1 @@
+export function f(){ const tasks=[1,2].map(async x=>x); return tasks; }

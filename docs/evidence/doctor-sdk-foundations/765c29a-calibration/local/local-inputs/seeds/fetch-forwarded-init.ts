@@ -1,0 +1,1 @@
+export function forward(url, init: RequestInit){ return fetch(url,init); }

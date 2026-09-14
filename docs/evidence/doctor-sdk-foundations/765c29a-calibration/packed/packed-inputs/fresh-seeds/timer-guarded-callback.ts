@@ -1,0 +1,2 @@
+import {useEffect} from "react";useEffect(()=>{let alive=true;setTimeout(()=>{if(!alive)return;work()},1);return()=>{alive=false}},[]);
+import {useEffect} from "react";useEffect(()=>{setTimeout(()=>{},1)},[]);

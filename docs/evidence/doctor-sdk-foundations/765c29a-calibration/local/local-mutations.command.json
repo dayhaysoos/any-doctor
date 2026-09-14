@@ -1,0 +1,10 @@
+{
+  "command": [
+    "node",
+    "<repo>/dev/doctor-sdk/run-profile-mutations.mjs",
+    "<temp>/final-gates/local-mutations"
+  ],
+  "cwd": "<repo>",
+  "exit": 0,
+  "wallMs": 1965
+}

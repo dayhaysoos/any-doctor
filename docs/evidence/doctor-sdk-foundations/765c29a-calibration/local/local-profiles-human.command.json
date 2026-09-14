@@ -1,0 +1,11 @@
+{
+  "command": [
+    "node",
+    "<repo>/bin/cli.js",
+    "verify",
+    "<repo>/doctors/async.mjs"
+  ],
+  "cwd": "<repo>",
+  "exit": 0,
+  "wallMs": 625
+}

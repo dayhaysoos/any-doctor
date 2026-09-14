@@ -1,0 +1,37 @@
+[
+  {
+    "name": "install",
+    "command": [
+      "npm",
+      "install",
+      "--ignore-scripts",
+      "--omit=optional",
+      "--no-audit",
+      "--no-fund",
+      "<temp>/package/any-doctor-0.1.2.tgz"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "verify-json",
+    "command": [
+      "node",
+      "node_modules/any-doctor/bin/cli.js",
+      "verify",
+      "node_modules/any-doctor/doctors/async.mjs",
+      "--format",
+      "json"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "verify-human",
+    "command": [
+      "node",
+      "node_modules/any-doctor/bin/cli.js",
+      "verify",
+      "node_modules/any-doctor/doctors/async.mjs"
+    ],
+    "exit": 0
+  }
+]

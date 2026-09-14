@@ -1,0 +1,1 @@
+export function f(){return [1,2].map(async x=>x)}

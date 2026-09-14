@@ -1,0 +1,10 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "<repo>/test/sdk-candidate-boundaries.test.mjs"
+  ],
+  "cwd": "<repo>",
+  "exit": 0,
+  "wallMs": 19982
+}

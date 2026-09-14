@@ -1,0 +1,11 @@
+{
+  "command": [
+    "node",
+    "<repo>/dev/async-analysis/check-unavailable.mjs",
+    "<consumer>/node_modules/any-doctor",
+    "<temp>/packed-final/packed-unavailable"
+  ],
+  "cwd": "<consumer>/node_modules/any-doctor",
+  "exit": 0,
+  "wallMs": 51
+}

@@ -1,0 +1,896 @@
+✖ candidate boundary: sync-map (512.970209ms)
+✖ candidate boundary: sync-map with positive neighbor (432.969166ms)
+✔ candidate boundary: async-map (421.822083ms)
+✖ candidate boundary: async-map with positive neighbor (428.111709ms)
+✔ candidate boundary: unknown-callback (434.157542ms)
+✖ candidate boundary: unknown-callback with positive neighbor (425.408042ms)
+✖ candidate boundary: chain (428.440834ms)
+✖ candidate boundary: chain with positive neighbor (431.843708ms)
+✔ candidate boundary: local-object (424.234583ms)
+✖ candidate boundary: local-object with positive neighbor (435.104583ms)
+✔ candidate boundary: alias (427.253792ms)
+✖ candidate boundary: alias with positive neighbor (427.552833ms)
+✖ candidate boundary: conditional-alias (433.662792ms)
+✔ candidate boundary: conditional-alias with positive neighbor (451.152625ms)
+✔ candidate boundary: escaped-options (432.376916ms)
+✖ candidate boundary: escaped-options with positive neighbor (440.307708ms)
+✔ candidate boundary: unrelated-import (443.145083ms)
+✖ candidate boundary: unrelated-import with positive neighbor (434.701875ms)
+✔ candidate boundary: local-function (424.753167ms)
+✖ candidate boundary: local-function with positive neighbor (427.030958ms)
+✔ candidate boundary: parameter (428.306833ms)
+✖ candidate boundary: parameter with positive neighbor (421.670625ms)
+✖ candidate boundary: sync-callback-alias (428.049209ms)
+✖ candidate boundary: sync-callback-alias with positive neighbor (424.821375ms)
+✖ candidate boundary: member-alias (424.444875ms)
+✖ candidate boundary: member-alias with positive neighbor (426.40425ms)
+✖ candidate boundary: super-constructor (424.615541ms)
+✖ candidate boundary: super-constructor with positive neighbor (429.912125ms)
+✖ candidate boundary: scalar-callback (420.787875ms)
+✖ candidate boundary: scalar-callback with positive neighbor (421.811458ms)
+✔ candidate boundary: shadowed-scalar-callback (444.201333ms)
+✖ candidate boundary: shadowed-scalar-callback with positive neighbor (435.014625ms)
+✔ candidate boundary: dynamic-global-member (433.373417ms)
+✖ candidate boundary: dynamic-global-member with positive neighbor (435.284125ms)
+✔ candidate boundary: unrelated-choice (426.944583ms)
+✖ candidate boundary: unrelated-choice with positive neighbor (423.825041ms)
+✔ candidate boundary: unrelated-fallback (427.387167ms)
+✖ candidate boundary: unrelated-fallback with positive neighbor (428.06025ms)
+✖ candidate boundary: fetch-fallback (421.55325ms)
+✔ candidate boundary: fetch-fallback with positive neighbor (429.038834ms)
+✔ candidate boundary: opaque-factory (434.293416ms)
+✖ candidate boundary: opaque-factory with positive neighbor (430.899125ms)
+✖ candidate boundary: opaque-import-factory (421.898584ms)
+✔ candidate boundary: opaque-import-factory with positive neighbor (431.018125ms)
+✖ candidate boundary: reassigned-alias (428.087959ms)
+✔ candidate boundary: reassigned-alias with positive neighbor (429.833167ms)
+✖ zero-finding multi-doctor report identifies the narrowed group and the complete group (1.043791ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 17
+ℹ fail 30
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19927.974792
+
+✖ failing tests:
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: sync-map (512.970209ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'unawaited-async-map',
+  +     'unsupported-expression'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: sync-map with positive neighbor (432.969166ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ],
+  +   [
+  +     'unawaited-async-map',
+  +     'unsupported-expression'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ], [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: async-map with positive neighbor (428.111709ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ],
+  +   [
+        'unawaited-async-map',
+        'unsupported-expression'
+      ]
+    ]
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ], [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    expected: [ [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: unknown-callback with positive neighbor (425.408042ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ],
+  +   [
+        'unawaited-async-map',
+        'unsupported-expression'
+      ]
+    ]
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ], [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    expected: [ [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: chain (428.440834ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: chain with positive neighbor (431.843708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: local-object with positive neighbor (435.104583ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: alias with positive neighbor (427.552833ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: conditional-alias (433.662792ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   [
+  -     'fetch-calls-without-abortsignal',
+  -     'unresolved-identity'
+  -   ]
+  - ]
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: escaped-options with positive neighbor (440.307708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      [
+        'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ],
+  +   [
+  +     'fetch-calls-without-abortsignal',
+        'unsupported-expression'
+      ]
+    ]
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ], [ 'fetch-calls-without-abortsignal', 'unsupported-expression' ] ],
+    expected: [ [ 'fetch-calls-without-abortsignal', 'unsupported-expression' ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: unrelated-import with positive neighbor (434.701875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: local-function with positive neighbor (427.030958ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: parameter with positive neighbor (421.670625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: sync-callback-alias (428.049209ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'unawaited-async-map',
+  +     'unsupported-expression'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: sync-callback-alias with positive neighbor (424.821375ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ],
+  +   [
+  +     'unawaited-async-map',
+  +     'unsupported-expression'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ], [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: member-alias (424.444875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:46:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: member-alias with positive neighbor (426.40425ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 3
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:46:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: super-constructor (424.615541ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unsupported-expression'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unsupported-expression' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: super-constructor with positive neighbor (429.912125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ],
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unsupported-expression'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ], [ 'fetch-calls-without-abortsignal', 'unsupported-expression' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: scalar-callback (420.787875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'unawaited-async-map',
+  +     'unsupported-expression'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: scalar-callback with positive neighbor (421.811458ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ],
+  +   [
+  +     'unawaited-async-map',
+  +     'unsupported-expression'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ], [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: shadowed-scalar-callback with positive neighbor (435.014625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ],
+  +   [
+        'unawaited-async-map',
+        'unsupported-expression'
+      ]
+    ]
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ], [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    expected: [ [ 'unawaited-async-map', 'unsupported-expression' ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: dynamic-global-member with positive neighbor (435.284125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:48:47)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: unrelated-choice with positive neighbor (423.825041ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: unrelated-fallback with positive neighbor (428.06025ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   [
+  +     'fetch-calls-without-abortsignal',
+  +     'unresolved-identity'
+  +   ]
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: fetch-fallback (421.55325ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   [
+  -     'fetch-calls-without-abortsignal',
+  -     'unresolved-identity'
+  -   ]
+  - ]
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: opaque-factory with positive neighbor (430.899125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:48:47)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: opaque-import-factory (421.898584ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   [
+  -     'fetch-calls-without-abortsignal',
+  -     'unresolved-identity'
+  -   ]
+  - ]
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:40:93
+✖ candidate boundary: reassigned-alias (428.087959ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   [
+  -     'fetch-calls-without-abortsignal',
+  -     'unresolved-identity'
+  -   ]
+  - ]
+  
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ [ 'fetch-calls-without-abortsignal', 'unresolved-identity' ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/sdk-candidate-boundaries.test.mjs:55:1
+✖ zero-finding multi-doctor report identifies the narrowed group and the complete group (1.043791ms)
+  AssertionError [ERR_ASSERTION]: ✔ Scanned 1 files in 1ms
+  
+  Any Doctor — 2 doctors
+  Score: n/a — narrowed semantic scan (some checks abstained; results are incomplete)
+  Semantic provider: any-doctor/syntax-flow@1 (available); protocol v1.
+  Semantic narrowing: async/unawaited-async-map — unsupported-expression (1 occurrence in 1 file).
+  No findings established — semantic coverage narrowed
+  
+  ✔ async — clean
+  ✔ other-doctor — clean
+  
+  narrowed: semantic analysis incomplete — unawaited-async-map abstained or ran in degraded mode
+      at TestContext.<anonymous> (file://<repo>/test/sdk-candidate-boundaries.test.mjs:60:9)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

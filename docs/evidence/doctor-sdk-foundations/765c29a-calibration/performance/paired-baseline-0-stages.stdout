@@ -1,0 +1,13 @@
+{
+  "files": 671,
+  "queries": 45453,
+  "parseAnalysisMs": 2326.597091000004,
+  "recipeMs": 502.36487499999777,
+  "totalAnalysisMs": 2828.961966000002,
+  "peakRssKiB": 286496,
+  "unknowns": {
+    "required-or-recommended-option/unresolved-identity": 5384,
+    "unhandled-value/unsupported-expression": 933,
+    "required-or-recommended-option/unsupported-expression": 51
+  }
+}

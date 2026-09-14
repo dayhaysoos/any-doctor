@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "mutations": [
+    {
+      "mutation": "broken-identity",
+      "exit": 1,
+      "intendedProfile": "shadowed call identity",
+      "failedProfiles": [
+        "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / shadowed call identity",
+        "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor",
+        "challenge profile: unhandled-value / unawaited-async-map / genuine positive",
+        "challenge profile: unhandled-value / unawaited-async-map / valid lookalike and shadowed producer",
+        "challenge profile: unhandled-value / unawaited-async-map / ownership transfer",
+        "challenge profile: unhandled-value / unawaited-async-map / unsupported receiver with positive neighbor",
+        "challenge profile: unhandled-value / unawaited-async-map / two same-line occurrences",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / genuine unreleased positive",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / shadowed acquisition with positive neighbor",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / immutable handle alias release",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / different handle does not release acquisition",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / supported local cleanup transfer",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / unsupported cleanup transfer with positive neighbor",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / two same-line occurrences"
+      ]
+    },
+    {
+      "mutation": "unknown-as-absent",
+      "exit": 1,
+      "intendedProfile": "unknown options with positive neighbor",
+      "failedProfiles": [
+        "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor"
+      ]
+    },
+    {
+      "mutation": "suppressed-reporting",
+      "exit": 1,
+      "intendedProfile": "genuine absence positive",
+      "failedProfiles": [
+        "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / genuine absence positive",
+        "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / immutable call alias",
+        "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor",
+        "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / two same-line occurrences",
+        "challenge profile: unhandled-value / unawaited-async-map / genuine positive",
+        "challenge profile: unhandled-value / unawaited-async-map / unsupported receiver with positive neighbor",
+        "challenge profile: unhandled-value / unawaited-async-map / two same-line occurrences",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / genuine unreleased positive",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / shadowed acquisition with positive neighbor",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / different handle does not release acquisition",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / unsupported cleanup transfer with positive neighbor",
+        "challenge profile: resource-without-release / uncleared-settimeout-in-effect / two same-line occurrences"
+      ]
+    }
+  ]
+}

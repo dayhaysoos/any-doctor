@@ -1,0 +1,13 @@
+{
+  "command": [
+    "node",
+    "<consumer>/node_modules/any-doctor/bin/cli.js",
+    "verify",
+    "<consumer>/node_modules/any-doctor/doctors/async.mjs",
+    "--format",
+    "json"
+  ],
+  "cwd": "<consumer>/node_modules/any-doctor",
+  "exit": 0,
+  "wallMs": 566
+}

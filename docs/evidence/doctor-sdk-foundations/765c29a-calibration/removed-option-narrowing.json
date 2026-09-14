@@ -1,0 +1,625 @@
+[
+  {
+    "file": "convex/analysis/transferable.ts",
+    "line": 168,
+    "expression": "(() => {\n          const skillObj = transferableSkillsRaw as Record<string, unknown>;\n          const looksLikeSingleSkill =\n            \"addresses_gap\" in skillObj ||\n            \"addressesGap\" in skillObj ||\n            \"gap\" in skillObj ||\n            \"skill_area\" in skillObj ||\n            \"skil",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/chat.ts",
+    "line": 399,
+    "expression": "super(\"Response aborted\")",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/chat.ts",
+    "line": 556,
+    "expression": "(async () => ({\n      countApplications: String(\n        await createFunctionHandle(internal.chatTools.countApplications),\n      ),\n      searchApplications: String(\n        await createFunctionHandle(\n          internal.recruiterCandidateRetrievalOutcomes.execute,\n        ),\n      ),\n      countRec",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/chatTools.ts",
+    "line": 549,
+    "expression": "(() => {\n        const evidenceSnippets = collectCardEvidenceSnippets(row);\n        return evidenceSnippets.length > 0 ? { evidenceSnippets } : {};\n      })()",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/evals/runner.ts",
+    "line": 2076,
+    "expression": "(() => {\n              throw productionResult.reason;\n            })()",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/evals/runner.ts",
+    "line": 2082,
+    "expression": "(() => {\n              throw overrideResult.reason;\n            })()",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/authHelpers.ts",
+    "line": 50,
+    "expression": "super(message)",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/fileValidation.ts",
+    "line": 51,
+    "expression": "super(message)",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/firecrawlClient.ts",
+    "line": 95,
+    "expression": "super(args.message)",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/locationPolicy.ts",
+    "line": 88,
+    "expression": "(() => {\n  const pairs: [string, string][] = [\n    [\"Alberta\", \"AB\"],\n    [\"British Columbia\", \"BC\"],\n    [\"Manitoba\", \"MB\"],\n    [\"New Brunswick\", \"NB\"],\n    [\"Newfoundland and Labrador\", \"NL\"],\n    [\"Northwest Territories\", \"NT\"],\n    [\"Nova Scotia\", \"NS\"],\n    [\"Nunavut\", \"NU\"],\n    [\"Ontario\", \"",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/locationPolicy.ts",
+    "line": 223,
+    "expression": "(() => {\n  const pairs: [string, string][] = [\n    [\"Alabama\", \"AL\"],\n    [\"Alaska\", \"AK\"],\n    [\"Arizona\", \"AZ\"],\n    [\"Arkansas\", \"AR\"],\n    [\"California\", \"CA\"],\n    [\"Colorado\", \"CO\"],\n    [\"Connecticut\", \"CT\"],\n    [\"Delaware\", \"DE\"],\n    [\"Florida\", \"FL\"],\n    [\"Georgia\", \"GA\"],\n    [\"Hawaii\",",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+    "line": 245,
+    "expression": "super(message)",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+    "line": 254,
+    "expression": "super(message)",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+    "line": 262,
+    "expression": "super(message)",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/recruiterChatCandidateSearchPolicy.ts",
+    "line": 35,
+    "expression": "super(`Candidate evidence criteria violate policy: ${violation}`)",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/recruiterSearchContext.ts",
+    "line": 170,
+    "expression": "super(\n      `Cannot ${mode} a candidate search because this conversation has no active candidate-pool search`,\n    )",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/recruiterSearchContext.ts",
+    "line": 179,
+    "expression": "super(\n      \"Cannot turn a follow-up to an active job roster into a candidate-pool search\",\n    )",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/lib/validation.ts",
+    "line": 76,
+    "expression": "super(message)",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/publicApplicationIngress.ts",
+    "line": 462,
+    "expression": "(options.submitApplication ?? submitApplicationHandler)(\n      ctx,\n      applicationArgs,\n      {\n        allowDirectStorageReferences: false,\n        expectedUploadSource: \"candidate\",\n        now: options.now,\n        preflight,\n      },\n    )",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "convex/semanticSearch.ts",
+    "line": 291,
+    "expression": "(() => {\n            const jobId = args.jobId;\n            return {\n              vector: embedding,\n              limit: resolvedVectorFetchLimit,\n              filter: (q) => q.eq(\"jobId\", jobId),\n            };\n          })()",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "extensions/sift-chrome/popup.ts",
+    "line": 1161,
+    "expression": "(async () => {\n    state.requestMetrics.backendJobListCalls += 1;\n    appendDebugLog(`Loading jobs (${reason}).`);\n    const client = createClient();\n    const jobs = await client.listJobs();\n\n    if (requestVersion !== jobsLoadVersion) {\n      appendDebugLog(\"Discarded stale job list response after",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "extensions/sift-chrome/src/background/submitPipeline.ts",
+    "line": 36,
+    "expression": "super(message)",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "shared/chatSearchDisplayLabel.ts",
+    "line": 23,
+    "expression": "(isGenericLabel ?? (() => false))(normalized)",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/components/application-detail/ApplicationDetail.tsx",
+    "line": 317,
+    "expression": "(() => {\n                  try {\n                    const arr = JSON.parse(response.answer) as unknown;\n                    return Array.isArray(arr)\n                      ? (arr as string[]).join(\", \") || \"No response provided.\"\n                      : response.answer || \"No response provided.\";\n ",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/components/application-detail/ApplicationDetail.tsx",
+    "line": 1086,
+    "expression": "(() => {\n                  const locationMismatch =\n                    application.locationMismatchDisplay === true;\n                  const scoreTier = evidenceScoreApTierWithLocation(\n                    scoreTotal,\n                    locationMismatch,\n                  );\n                  cons",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/components/application-detail/ApplicationDetail.tsx",
+    "line": 1192,
+    "expression": "(() => {\n                      const tableRows = evidence?.requirementEvidence;\n                      return tableRows &&\n                        tableRows.length > 0 &&\n                        evidence?.requirementEvidence ? (\n                        <>\n                          <AnalysisSummaryRol",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/components/application-detail/ApplicationDetail.tsx",
+    "line": 1241,
+    "expression": "(() => {\n                          const raw =\n                            (fit?.summary as string | undefined) ||\n                            (analysis?.summary as string | undefined);\n                          const text = rehydrateText(raw);\n                          const lines = text.split(\"\\n\"",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/components/application-detail/ApplicationDetail.tsx",
+    "line": 1540,
+    "expression": "(() => {\n                    const share = fit?.shareSummary?.trim() ?? \"\";\n                    const verdict = fit?.quickVerdict?.trim() ?? \"\";\n                    if (verdict && isLegacyStructuredShareSummary(share)) {\n                      return rehydrateText(verdict);\n                    }\n    ",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/components/apply/ApplicationForm.tsx",
+    "line": 881,
+    "expression": "(() => {\n        if (typeof multiValue !== \"string\") return [];\n        try {\n          const parsed = JSON.parse(multiValue);\n          return Array.isArray(parsed) ? parsed : [];\n        } catch {\n          return [];\n        }\n      })()",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/components/hiring/ApplicationViewRecorder.tsx",
+    "line": 37,
+    "expression": "(async () => {\n      try {\n        await recordView({ jobId, applicationId, target });\n        if (!cancelled) recordedFor.current = key;\n      } catch {\n        if (cancelled) return;\n        attempts.current += 1;\n        if (attempts.current < MAX_RECORD_ATTEMPTS) {\n          setRetry((current) =",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/lib/dashboard-preload.ts",
+    "line": 24,
+    "expression": "(async () => {\n    try {\n      const sessionResult = await authClient.getSession();\n      const userId = sessionResult.data?.user?.id;\n\n      if (!userId) {\n        return;\n      }\n\n      const profile = await convexClient.query(api.userProfiles.getProfileByUserId, {\n        betterAuthUserId: userId",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/lib/public-application-ingress-server.ts",
+    "line": 27,
+    "expression": "super(\"Public application ingress is unavailable\")",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/lib/public-application-ingress-server.ts",
+    "line": 325,
+    "expression": "(options.fetchImpl ?? fetch)(\n    new URL(PUBLIC_APPLICATION_OUTCOME_PATH, options.convexSiteUrl),\n    {\n      method: \"POST\",\n      headers,\n      body,\n      redirect: \"manual\",\n    },\n  )",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "unknown",
+      "reason": "unresolved-identity"
+    }
+  },
+  {
+    "file": "src/routes/apply/$orgSlug.$jobId.tsx",
+    "line": 74,
+    "expression": "super(\"Candidate upload authorization was not accepted\")",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/routes/evals/index.tsx",
+    "line": 2231,
+    "expression": "(() => {\n                        // For jd-generation, try to extract model from generatedJD JSON\n                        if (prompt.slug === \"jd-generation\" && productionResult) {\n                          try {\n                            const parsed = JSON.parse(productionResult);\n              ",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/routes/jobs/new.tsx",
+    "line": 1433,
+    "expression": "(() => {\n                  const isDiscriminationBlock = validationIssues.some((i) => i.category !== \"error\");\n                  return (\n                    <div className='mb-6 p-4 rounded-lg bg-danger/10 border border-danger/20'>\n                      <div className='flex items-start gap-3'>\n    ",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/routes/shared/$token.tsx",
+    "line": 641,
+    "expression": "(() => {\n                            try {\n                              const arr = JSON.parse(\n                                answer.answer\n                              ) as unknown;\n                              return Array.isArray(arr)\n                                ? (arr as string[]).join(",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/routes/shared/$token.tsx",
+    "line": 704,
+    "expression": "(() => {\n                  const tableRows = evidenceResult?.requirementEvidence;\n                  return tableRows &&\n                    tableRows.length > 0 &&\n                    evidenceResult?.requirementEvidence ? (\n                    <>\n                    <p className='px-8 pb-0 pt-[22px]",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  },
+  {
+    "file": "src/routes/shared/$token.tsx",
+    "line": 754,
+    "expression": "(() => {\n                      const raw =\n                        fitResult?.summary || analysisResult?.summary || \"\";\n                      const lines = String(raw)\n                        .split(\"\\n\")\n                        .map((s) => s.trim())\n                        .filter(Boolean);\n       ",
+    "target": {
+      "root": null,
+      "members": [],
+      "binding": null
+    },
+    "after": {
+      "version": 1,
+      "status": "known",
+      "value": "clear",
+      "evidence": []
+    }
+  }
+]

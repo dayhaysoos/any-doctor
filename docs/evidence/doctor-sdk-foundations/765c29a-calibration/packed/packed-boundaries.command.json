@@ -1,0 +1,10 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "<repo>/test/sdk-candidate-boundaries.test.mjs"
+  ],
+  "cwd": "<consumer>/node_modules/any-doctor",
+  "exit": 0,
+  "wallMs": 20022
+}

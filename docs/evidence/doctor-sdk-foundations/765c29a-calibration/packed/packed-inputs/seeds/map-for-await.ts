@@ -1,0 +1,1 @@
+const tasks=[1,2].map(async x=>x); for await (const result of tasks) { console.log(result); }

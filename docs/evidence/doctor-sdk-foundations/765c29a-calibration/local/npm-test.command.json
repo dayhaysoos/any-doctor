@@ -1,0 +1,9 @@
+{
+  "command": [
+    "npm",
+    "test"
+  ],
+  "cwd": "<repo>",
+  "exit": 0,
+  "wallMs": 91851
+}

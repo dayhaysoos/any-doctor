@@ -1,0 +1,2 @@
+import {useEffect} from "react";function stop(h){clearTimeout(h)}useEffect(()=>{const h=setTimeout(()=>{},1);return()=>stop(h)},[]);
+import {useEffect} from "react";useEffect(()=>{setTimeout(()=>{},1)},[]);

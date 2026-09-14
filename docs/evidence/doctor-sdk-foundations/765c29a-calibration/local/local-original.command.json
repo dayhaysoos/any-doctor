@@ -1,0 +1,11 @@
+{
+  "command": [
+    "python3",
+    "<temp>/final-gates/local-inputs/challenges.py",
+    "local",
+    "<repo>"
+  ],
+  "cwd": "<repo>",
+  "exit": 0,
+  "wallMs": 600
+}

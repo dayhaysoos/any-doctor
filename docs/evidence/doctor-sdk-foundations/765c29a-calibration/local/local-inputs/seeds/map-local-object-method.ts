@@ -1,0 +1,1 @@
+const object={async map(callback){return await callback(1)}}; await object.map(async x=>x);

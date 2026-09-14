@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/usr/bin/time",
+    "-l",
+    "node",
+    "<consumer>/node_modules/any-doctor/bin/cli.js",
+    "run",
+    "<consumer>/node_modules/any-doctor/doctors/async.mjs",
+    "/private<frozen-target>",
+    "--format",
+    "json"
+  ],
+  "cwd": "<consumer>/node_modules/any-doctor",
+  "exit": 0,
+  "wallMs": 5476
+}

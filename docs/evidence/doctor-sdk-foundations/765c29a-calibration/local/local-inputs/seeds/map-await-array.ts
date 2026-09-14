@@ -1,0 +1,1 @@
+await [1,2].map(async x=>x);

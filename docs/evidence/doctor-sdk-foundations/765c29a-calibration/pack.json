@@ -1,0 +1,726 @@
+[
+  {
+    "id": "any-doctor@0.1.2",
+    "name": "any-doctor",
+    "version": "0.1.2",
+    "size": 273731,
+    "unpackedSize": 974434,
+    "shasum": "e31c24b684401b8a9cd1e219483a09de3e30e3b9",
+    "integrity": "sha512-dasKPR6sgY88q85xNVQo+LhMKR/9+67GOl38X1Uxx4w/GfZUYd6Qq8pXehT1/syP4zShwOI6Tyn6K/CyHppa7Q==",
+    "filename": "any-doctor-0.1.2.tgz",
+    "files": [
+      {
+        "path": "CONTEXT.md",
+        "size": 21944,
+        "mode": 420
+      },
+      {
+        "path": "README.md",
+        "size": 7685,
+        "mode": 420
+      },
+      {
+        "path": "bin/analysis-host.d.ts",
+        "size": 1429,
+        "mode": 420
+      },
+      {
+        "path": "bin/analysis-host.js",
+        "size": 11219,
+        "mode": 420
+      },
+      {
+        "path": "bin/analysis.d.ts",
+        "size": 1566,
+        "mode": 420
+      },
+      {
+        "path": "bin/analysis.js",
+        "size": 23193,
+        "mode": 420
+      },
+      {
+        "path": "bin/call-structure.d.ts",
+        "size": 449,
+        "mode": 420
+      },
+      {
+        "path": "bin/call-structure.js",
+        "size": 11830,
+        "mode": 420
+      },
+      {
+        "path": "bin/capabilities.d.ts",
+        "size": 545,
+        "mode": 420
+      },
+      {
+        "path": "bin/capabilities.js",
+        "size": 4931,
+        "mode": 420
+      },
+      {
+        "path": "bin/certify.d.ts",
+        "size": 823,
+        "mode": 420
+      },
+      {
+        "path": "bin/certify.js",
+        "size": 23718,
+        "mode": 420
+      },
+      {
+        "path": "bin/cli.d.ts",
+        "size": 331,
+        "mode": 420
+      },
+      {
+        "path": "bin/cli.js",
+        "size": 51879,
+        "mode": 493
+      },
+      {
+        "path": "bin/clipboard.d.ts",
+        "size": 64,
+        "mode": 420
+      },
+      {
+        "path": "bin/clipboard.js",
+        "size": 341,
+        "mode": 420
+      },
+      {
+        "path": "bin/cohort.d.ts",
+        "size": 595,
+        "mode": 420
+      },
+      {
+        "path": "bin/cohort.js",
+        "size": 2210,
+        "mode": 420
+      },
+      {
+        "path": "bin/contract.d.ts",
+        "size": 19679,
+        "mode": 420
+      },
+      {
+        "path": "bin/contract.js",
+        "size": 10203,
+        "mode": 420
+      },
+      {
+        "path": "bin/dashboard.d.ts",
+        "size": 3235,
+        "mode": 420
+      },
+      {
+        "path": "bin/dashboard.js",
+        "size": 43728,
+        "mode": 420
+      },
+      {
+        "path": "bin/diff.d.ts",
+        "size": 940,
+        "mode": 420
+      },
+      {
+        "path": "bin/diff.js",
+        "size": 7762,
+        "mode": 420
+      },
+      {
+        "path": "bin/discover.d.ts",
+        "size": 1060,
+        "mode": 420
+      },
+      {
+        "path": "bin/discover.js",
+        "size": 5827,
+        "mode": 420
+      },
+      {
+        "path": "bin/doctor-loader.d.mts",
+        "size": 48,
+        "mode": 420
+      },
+      {
+        "path": "bin/doctor-loader.mjs",
+        "size": 5179,
+        "mode": 493
+      },
+      {
+        "path": "bin/doctor-sdk.d.ts",
+        "size": 2848,
+        "mode": 420
+      },
+      {
+        "path": "bin/doctor-sdk.js",
+        "size": 47559,
+        "mode": 420
+      },
+      {
+        "path": "bin/doctor-tree.d.ts",
+        "size": 1560,
+        "mode": 420
+      },
+      {
+        "path": "bin/doctor-tree.js",
+        "size": 4804,
+        "mode": 420
+      },
+      {
+        "path": "bin/engine.d.ts",
+        "size": 1161,
+        "mode": 420
+      },
+      {
+        "path": "bin/engine.js",
+        "size": 8739,
+        "mode": 420
+      },
+      {
+        "path": "bin/file-scope.d.ts",
+        "size": 637,
+        "mode": 420
+      },
+      {
+        "path": "bin/file-scope.js",
+        "size": 3007,
+        "mode": 420
+      },
+      {
+        "path": "bin/finding-state.d.ts",
+        "size": 2460,
+        "mode": 420
+      },
+      {
+        "path": "bin/finding-state.js",
+        "size": 9674,
+        "mode": 420
+      },
+      {
+        "path": "bin/function-structure.d.ts",
+        "size": 398,
+        "mode": 420
+      },
+      {
+        "path": "bin/function-structure.js",
+        "size": 3485,
+        "mode": 420
+      },
+      {
+        "path": "bin/fuzzy.d.ts",
+        "size": 174,
+        "mode": 420
+      },
+      {
+        "path": "bin/fuzzy.js",
+        "size": 910,
+        "mode": 420
+      },
+      {
+        "path": "bin/gate.d.ts",
+        "size": 566,
+        "mode": 420
+      },
+      {
+        "path": "bin/gate.js",
+        "size": 1404,
+        "mode": 420
+      },
+      {
+        "path": "bin/identity.d.ts",
+        "size": 2459,
+        "mode": 420
+      },
+      {
+        "path": "bin/identity.js",
+        "size": 22901,
+        "mode": 420
+      },
+      {
+        "path": "bin/import-guard.mjs",
+        "size": 1592,
+        "mode": 420
+      },
+      {
+        "path": "bin/keys.d.ts",
+        "size": 140,
+        "mode": 420
+      },
+      {
+        "path": "bin/keys.js",
+        "size": 2378,
+        "mode": 420
+      },
+      {
+        "path": "bin/mask.d.ts",
+        "size": 61,
+        "mode": 420
+      },
+      {
+        "path": "bin/mask.js",
+        "size": 5424,
+        "mode": 420
+      },
+      {
+        "path": "bin/palette.d.ts",
+        "size": 700,
+        "mode": 420
+      },
+      {
+        "path": "bin/palette.js",
+        "size": 1484,
+        "mode": 420
+      },
+      {
+        "path": "bin/picker.d.ts",
+        "size": 803,
+        "mode": 420
+      },
+      {
+        "path": "bin/picker.js",
+        "size": 6479,
+        "mode": 420
+      },
+      {
+        "path": "bin/project-consumers.d.ts",
+        "size": 839,
+        "mode": 420
+      },
+      {
+        "path": "bin/project-consumers.js",
+        "size": 54845,
+        "mode": 420
+      },
+      {
+        "path": "bin/prompts.d.ts",
+        "size": 402,
+        "mode": 420
+      },
+      {
+        "path": "bin/prompts.js",
+        "size": 4963,
+        "mode": 420
+      },
+      {
+        "path": "bin/report.d.ts",
+        "size": 1894,
+        "mode": 420
+      },
+      {
+        "path": "bin/report.js",
+        "size": 17690,
+        "mode": 420
+      },
+      {
+        "path": "bin/review.d.ts",
+        "size": 1752,
+        "mode": 420
+      },
+      {
+        "path": "bin/review.js",
+        "size": 5927,
+        "mode": 420
+      },
+      {
+        "path": "bin/runner.d.ts",
+        "size": 3244,
+        "mode": 420
+      },
+      {
+        "path": "bin/runner.js",
+        "size": 15695,
+        "mode": 420
+      },
+      {
+        "path": "bin/scan-capture.d.ts",
+        "size": 1001,
+        "mode": 420
+      },
+      {
+        "path": "bin/scan-capture.js",
+        "size": 3534,
+        "mode": 420
+      },
+      {
+        "path": "bin/score.d.ts",
+        "size": 1142,
+        "mode": 420
+      },
+      {
+        "path": "bin/score.js",
+        "size": 4394,
+        "mode": 420
+      },
+      {
+        "path": "bin/sdk.d.ts",
+        "size": 572,
+        "mode": 420
+      },
+      {
+        "path": "bin/sdk.js",
+        "size": 30122,
+        "mode": 420
+      },
+      {
+        "path": "bin/search-host.d.ts",
+        "size": 222,
+        "mode": 420
+      },
+      {
+        "path": "bin/search-host.js",
+        "size": 3260,
+        "mode": 420
+      },
+      {
+        "path": "bin/select.d.ts",
+        "size": 854,
+        "mode": 420
+      },
+      {
+        "path": "bin/select.js",
+        "size": 2145,
+        "mode": 420
+      },
+      {
+        "path": "bin/spinner.d.ts",
+        "size": 617,
+        "mode": 420
+      },
+      {
+        "path": "bin/spinner.js",
+        "size": 2915,
+        "mode": 420
+      },
+      {
+        "path": "bin/summary.d.ts",
+        "size": 874,
+        "mode": 420
+      },
+      {
+        "path": "bin/summary.js",
+        "size": 6998,
+        "mode": 420
+      },
+      {
+        "path": "bin/tty.d.ts",
+        "size": 1296,
+        "mode": 420
+      },
+      {
+        "path": "bin/tty.js",
+        "size": 3983,
+        "mode": 420
+      },
+      {
+        "path": "bin/value-flow.d.ts",
+        "size": 2065,
+        "mode": 420
+      },
+      {
+        "path": "bin/value-flow.js",
+        "size": 9469,
+        "mode": 420
+      },
+      {
+        "path": "docs/call-structure.md",
+        "size": 3580,
+        "mode": 420
+      },
+      {
+        "path": "docs/decisions.md",
+        "size": 69036,
+        "mode": 420
+      },
+      {
+        "path": "docs/doctor-reliability.md",
+        "size": 7710,
+        "mode": 420
+      },
+      {
+        "path": "docs/doctor-sdk.md",
+        "size": 7505,
+        "mode": 420
+      },
+      {
+        "path": "docs/example-catalog.md",
+        "size": 5882,
+        "mode": 420
+      },
+      {
+        "path": "docs/features.md",
+        "size": 4001,
+        "mode": 420
+      },
+      {
+        "path": "docs/first-shot-results.md",
+        "size": 903,
+        "mode": 420
+      },
+      {
+        "path": "docs/HANDOFF.md",
+        "size": 7013,
+        "mode": 420
+      },
+      {
+        "path": "docs/intents.md",
+        "size": 1152,
+        "mode": 420
+      },
+      {
+        "path": "docs/kill-test.md",
+        "size": 2172,
+        "mode": 420
+      },
+      {
+        "path": "docs/project-consumer-analysis.md",
+        "size": 12284,
+        "mode": 420
+      },
+      {
+        "path": "docs/repair-audit-007.md",
+        "size": 4312,
+        "mode": 420
+      },
+      {
+        "path": "docs/REPAIR-LOG.md",
+        "size": 3337,
+        "mode": 420
+      },
+      {
+        "path": "docs/research-openrouter-patterns.md",
+        "size": 7533,
+        "mode": 420
+      },
+      {
+        "path": "docs/research-shadcn-registry.md",
+        "size": 11995,
+        "mode": 420
+      },
+      {
+        "path": "docs/research.md",
+        "size": 3414,
+        "mode": 420
+      },
+      {
+        "path": "docs/RESULTS.md",
+        "size": 3533,
+        "mode": 420
+      },
+      {
+        "path": "docs/vision.md",
+        "size": 5384,
+        "mode": 420
+      },
+      {
+        "path": "doctors/async.fixtures.mjs",
+        "size": 14892,
+        "mode": 420
+      },
+      {
+        "path": "doctors/async.mjs",
+        "size": 6903,
+        "mode": 420
+      },
+      {
+        "path": "doctors/convex.fixtures.mjs",
+        "size": 44514,
+        "mode": 420
+      },
+      {
+        "path": "doctors/convex.mjs",
+        "size": 33467,
+        "mode": 420
+      },
+      {
+        "path": "doctors/effect-v4-kitlangton.fixtures.mjs",
+        "size": 11294,
+        "mode": 420
+      },
+      {
+        "path": "doctors/effect-v4-kitlangton.mjs",
+        "size": 22279,
+        "mode": 420
+      },
+      {
+        "path": "doctors/openrouter.fixtures.mjs",
+        "size": 6152,
+        "mode": 420
+      },
+      {
+        "path": "doctors/openrouter.mjs",
+        "size": 10379,
+        "mode": 420
+      },
+      {
+        "path": "doctors/slop.fixtures.mjs",
+        "size": 20354,
+        "mode": 420
+      },
+      {
+        "path": "doctors/slop.mjs",
+        "size": 21150,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/doctor-sdk-reference.fixtures.mjs",
+        "size": 1050,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/doctor-sdk-reference.mjs",
+        "size": 3091,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/dynamic-import.ts",
+        "size": 166,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/index.ts",
+        "size": 563,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/jsx-use.tsx",
+        "size": 387,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/namespaced-api.ts",
+        "size": 395,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/normalize-dash.ts",
+        "size": 138,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/normalize-underscore.ts",
+        "size": 138,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/parts.tsx",
+        "size": 105,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/promise-batching.ts",
+        "size": 619,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/qa-guard.ts",
+        "size": 246,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/rest-exclusion.ts",
+        "size": 171,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/type-semicolons.ts",
+        "size": 165,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/innocent/widget.ts",
+        "size": 50,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/hooks/useChat.ts",
+        "size": 351,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/lib/ai/client.ts",
+        "size": 151,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/schemas/user.ts",
+        "size": 139,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/services/chat.ts",
+        "size": 510,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/services/user.ts",
+        "size": 252,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sample-app/src/utils/sync.ts",
+        "size": 389,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/billing-triple/billing.ts",
+        "size": 1179,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/billing-triple/expect.json",
+        "size": 563,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/dead-prompt-builders/expect.json",
+        "size": 373,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/dead-prompt-builders/prompts.ts",
+        "size": 816,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/discard-with-unrelated-combiner/convex/notes.ts",
+        "size": 318,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/discard-with-unrelated-combiner/expect.json",
+        "size": 319,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/ratelimiter-unbounded-collect/expect.json",
+        "size": 317,
+        "mode": 420
+      },
+      {
+        "path": "fixtures/sensitivity/ratelimiter-unbounded-collect/rateLimiter.ts",
+        "size": 607,
+        "mode": 420
+      },
+      {
+        "path": "package.json",
+        "size": 1199,
+        "mode": 420
+      },
+      {
+        "path": "skill/agent-usage.md",
+        "size": 3936,
+        "mode": 420
+      },
+      {
+        "path": "skill/any-doctor.skill.md",
+        "size": 24667,
+        "mode": 420
+      }
+    ],
+    "entryCount": 142,
+    "bundled": []
+  }
+]

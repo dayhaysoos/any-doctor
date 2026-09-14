@@ -1,0 +1,20 @@
+{
+  "baseline": {
+    "wallMs": 5884,
+    "scanMs": 5514,
+    "peakRssBytes": 636436480,
+    "parseAnalysisMs": 2343.7320009999935,
+    "recipeMs": 502.36487499999777,
+    "totalAnalysisMs": 2839.8514649999984,
+    "peakRssKiB": 282480
+  },
+  "candidate": {
+    "wallMs": 5637,
+    "scanMs": 5262,
+    "peakRssBytes": 667746304,
+    "parseAnalysisMs": 2375.5457790000005,
+    "recipeMs": 289.901964000002,
+    "totalAnalysisMs": 2665.4477430000024,
+    "peakRssKiB": 277168
+  }
+}

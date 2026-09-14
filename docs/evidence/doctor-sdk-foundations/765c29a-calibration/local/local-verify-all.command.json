@@ -1,0 +1,11 @@
+{
+  "command": [
+    "node",
+    "<repo>/bin/cli.js",
+    "verify",
+    "--all"
+  ],
+  "cwd": "<repo>",
+  "exit": 0,
+  "wallMs": 1431
+}

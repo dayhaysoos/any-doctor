@@ -1,0 +1,1 @@
+fetch("https://example.invalid",{headers:{signal:"text"}});

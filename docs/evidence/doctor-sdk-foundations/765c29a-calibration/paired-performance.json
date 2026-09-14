@@ -1,0 +1,230 @@
+[
+  {
+    "label": "baseline",
+    "run": 0,
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "node",
+      "<baseline-consumer>/node_modules/any-doctor/bin/cli.js",
+      "run",
+      "<baseline-consumer>/node_modules/any-doctor/doctors/async.mjs",
+      "<frozen-target>",
+      "--format",
+      "json"
+    ],
+    "cwd": "<baseline-consumer>/node_modules/any-doctor",
+    "exit": 0,
+    "stageCommand": [
+      "node",
+      "<repo>/dev/doctor-sdk/measure-analysis.mjs",
+      "<baseline-consumer>/node_modules/any-doctor",
+      "<frozen-target>"
+    ],
+    "stageExit": 0,
+    "wallMs": 6144,
+    "scanMs": 5739,
+    "peakRssBytes": 617545728,
+    "files": 671,
+    "queries": 45453,
+    "parseAnalysisMs": 2326.597091000004,
+    "recipeMs": 502.36487499999777,
+    "totalAnalysisMs": 2828.961966000002,
+    "peakRssKiB": 286496,
+    "unknowns": {
+      "required-or-recommended-option/unresolved-identity": 5384,
+      "unhandled-value/unsupported-expression": 933,
+      "required-or-recommended-option/unsupported-expression": 51
+    }
+  },
+  {
+    "label": "candidate",
+    "run": 0,
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "node",
+      "<consumer>/node_modules/any-doctor/bin/cli.js",
+      "run",
+      "<consumer>/node_modules/any-doctor/doctors/async.mjs",
+      "<frozen-target>",
+      "--format",
+      "json"
+    ],
+    "cwd": "<consumer>/node_modules/any-doctor",
+    "exit": 0,
+    "stageCommand": [
+      "node",
+      "<repo>/dev/doctor-sdk/measure-analysis.mjs",
+      "<consumer>/node_modules/any-doctor",
+      "<frozen-target>"
+    ],
+    "stageExit": 0,
+    "wallMs": 5593,
+    "scanMs": 5221,
+    "peakRssBytes": 688406528,
+    "files": 671,
+    "queries": 45453,
+    "parseAnalysisMs": 2356.3865379999984,
+    "recipeMs": 290.0275049999981,
+    "totalAnalysisMs": 2646.4140429999966,
+    "peakRssKiB": 276160,
+    "unknowns": {
+      "required-or-recommended-option/unsupported-expression": 12,
+      "required-or-recommended-option/unresolved-identity": 2027,
+      "unhandled-value/unsupported-expression": 21
+    }
+  },
+  {
+    "label": "baseline",
+    "run": 1,
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "node",
+      "<baseline-consumer>/node_modules/any-doctor/bin/cli.js",
+      "run",
+      "<baseline-consumer>/node_modules/any-doctor/doctors/async.mjs",
+      "<frozen-target>",
+      "--format",
+      "json"
+    ],
+    "cwd": "<baseline-consumer>/node_modules/any-doctor",
+    "exit": 0,
+    "stageCommand": [
+      "node",
+      "<repo>/dev/doctor-sdk/measure-analysis.mjs",
+      "<baseline-consumer>/node_modules/any-doctor",
+      "<frozen-target>"
+    ],
+    "stageExit": 0,
+    "wallMs": 5884,
+    "scanMs": 5514,
+    "peakRssBytes": 646053888,
+    "files": 671,
+    "queries": 45453,
+    "parseAnalysisMs": 2361.8700590000003,
+    "recipeMs": 510.53092199999594,
+    "totalAnalysisMs": 2872.400980999996,
+    "peakRssKiB": 282480,
+    "unknowns": {
+      "required-or-recommended-option/unresolved-identity": 5384,
+      "unhandled-value/unsupported-expression": 933,
+      "required-or-recommended-option/unsupported-expression": 51
+    }
+  },
+  {
+    "label": "candidate",
+    "run": 1,
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "node",
+      "<consumer>/node_modules/any-doctor/bin/cli.js",
+      "run",
+      "<consumer>/node_modules/any-doctor/doctors/async.mjs",
+      "<frozen-target>",
+      "--format",
+      "json"
+    ],
+    "cwd": "<consumer>/node_modules/any-doctor",
+    "exit": 0,
+    "stageCommand": [
+      "node",
+      "<repo>/dev/doctor-sdk/measure-analysis.mjs",
+      "<consumer>/node_modules/any-doctor",
+      "<frozen-target>"
+    ],
+    "stageExit": 0,
+    "wallMs": 5809,
+    "scanMs": 5370,
+    "peakRssBytes": 667746304,
+    "files": 671,
+    "queries": 45453,
+    "parseAnalysisMs": 2375.5457790000005,
+    "recipeMs": 289.901964000002,
+    "totalAnalysisMs": 2665.4477430000024,
+    "peakRssKiB": 291104,
+    "unknowns": {
+      "required-or-recommended-option/unsupported-expression": 12,
+      "required-or-recommended-option/unresolved-identity": 2027,
+      "unhandled-value/unsupported-expression": 21
+    }
+  },
+  {
+    "label": "baseline",
+    "run": 2,
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "node",
+      "<baseline-consumer>/node_modules/any-doctor/bin/cli.js",
+      "run",
+      "<baseline-consumer>/node_modules/any-doctor/doctors/async.mjs",
+      "<frozen-target>",
+      "--format",
+      "json"
+    ],
+    "cwd": "<baseline-consumer>/node_modules/any-doctor",
+    "exit": 0,
+    "stageCommand": [
+      "node",
+      "<repo>/dev/doctor-sdk/measure-analysis.mjs",
+      "<baseline-consumer>/node_modules/any-doctor",
+      "<frozen-target>"
+    ],
+    "stageExit": 0,
+    "wallMs": 5853,
+    "scanMs": 5488,
+    "peakRssBytes": 636436480,
+    "files": 671,
+    "queries": 45453,
+    "parseAnalysisMs": 2343.7320009999935,
+    "recipeMs": 496.11946400000494,
+    "totalAnalysisMs": 2839.8514649999984,
+    "peakRssKiB": 273040,
+    "unknowns": {
+      "required-or-recommended-option/unresolved-identity": 5384,
+      "unhandled-value/unsupported-expression": 933,
+      "required-or-recommended-option/unsupported-expression": 51
+    }
+  },
+  {
+    "label": "candidate",
+    "run": 2,
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "node",
+      "<consumer>/node_modules/any-doctor/bin/cli.js",
+      "run",
+      "<consumer>/node_modules/any-doctor/doctors/async.mjs",
+      "<frozen-target>",
+      "--format",
+      "json"
+    ],
+    "cwd": "<consumer>/node_modules/any-doctor",
+    "exit": 0,
+    "stageCommand": [
+      "node",
+      "<repo>/dev/doctor-sdk/measure-analysis.mjs",
+      "<consumer>/node_modules/any-doctor",
+      "<frozen-target>"
+    ],
+    "stageExit": 0,
+    "wallMs": 5637,
+    "scanMs": 5262,
+    "peakRssBytes": 622051328,
+    "files": 671,
+    "queries": 45453,
+    "parseAnalysisMs": 2456.4831329999984,
+    "recipeMs": 287.3000070000036,
+    "totalAnalysisMs": 2743.783140000002,
+    "peakRssKiB": 277168,
+    "unknowns": {
+      "required-or-recommended-option/unsupported-expression": 12,
+      "required-or-recommended-option/unresolved-identity": 2027,
+      "unhandled-value/unsupported-expression": 21
+    }
+  }
+]

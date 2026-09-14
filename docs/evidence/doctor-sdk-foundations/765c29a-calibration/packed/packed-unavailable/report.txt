@@ -1,0 +1,8 @@
+✔ Scanned 1 files in 0ms
+
+Any Doctor — 1 doctor
+Score: 100 / 100 — Excellent
+1/1 files clean
+No findings
+
+narrowed: analysis engine unavailable — fetch-calls-without-abortsignal, unawaited-async-map, uncleared-settimeout-in-effect ran in degraded mode

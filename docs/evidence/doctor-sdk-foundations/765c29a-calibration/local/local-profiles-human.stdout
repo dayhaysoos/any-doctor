@@ -1,0 +1,74 @@
+[2mcapabilities: reads via ctx only — no imports, no network, no writes, no subprocesses[0m
+  ✔ reports a fetch call without options
+  ✔ reports options that omit signal
+  ✔ accepts an explicit signal property among other options
+  ✔ accepts a shorthand signal property
+  ✔ reports a nested signal that is not a RequestInit signal
+  ✔ accepts known options carrying a signal property
+  ✔ commented-out map(async) lookalike is not flagged
+  ✔ string-literal map(async) lookalike is not flagged
+  ✔ unawaited map(async) is flagged
+  ✔ Promise.all-consumed result is not flagged
+  ✔ await on the promise array does not settle it — flagged
+  ✔ per-element for-of consumption is recognized — not flagged
+  ✔ unavailable analysis abstains: src/for-of.ts
+  ✔ an inline for-of over the mapped array with awaited elements is not flagged
+  ✔ a same-named binding in another scope cannot silence this one
+  ✔ unavailable analysis abstains: src/shadow-off.ts
+  ✔ a never-reassigned let binding is checked like a const — flagged
+  ✔ a reassigned binding is inconclusive and skipped
+  ✔ unavailable analysis abstains: src/off-a.ts
+  ✔ unavailable analysis abstains: src/off-b.ts
+  ✔ unavailable analysis abstains: src/off-bare.ts
+  ✔ unavailable analysis abstains: src/off-await-array.ts
+  ✔ unavailable analysis abstains: src/off-one-line.ts
+  ✔ unavailable analysis abstains: src/off-opt-bound.ts
+  ✔ allSettled-consumed result in a later batch loop is not flagged
+  ✔ consumption on the declaration's own line is seen
+  ✔ a map(async) wrapped in Promise.all at the declaration is not flagged
+  ✔ a bare discarded map(async) with no binding is flagged
+  ✔ a bare map(async) in an else branch is flagged
+  ✔ an optional-chained bare map(async) is flagged
+  ✔ an optional-chained bound map(async) with no consumer is flagged
+  ✔ await directly on the mapped array does not settle it — flagged
+  ✔ an async-function callback in a dropped binding is flagged
+  ✔ a bare async-function map statement is flagged
+  ✔ an async-function map consumed by a combiner is not flagged
+  ✔ reports an assigned timeout without cleanup
+  ✔ allows cleanup of the assigned timeout
+  ✔ reports only the timer missing from multi-timer cleanup
+  ✔ reports an unassigned timer despite unrelated cleanup
+  ✔ ignores timeout lookalikes outside effects and in comments
+  ✔ unresolved effect identity: reports an assigned timeout without cleanup
+  ✔ unresolved effect identity: reports only the timer missing from multi-timer cleanup
+  ✔ unresolved effect identity: reports an unassigned timer despite unrelated cleanup
+  ✔ locations: fetch-calls-without-abortsignal
+  ✔ locations: unawaited-async-map
+  ✔ locations: uncleared-settimeout-in-effect
+  ✔ challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / genuine absence positive
+  ✔ challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / present option lookalike
+  ✔ challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / shadowed call identity
+  ✔ challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / immutable call alias
+  ✔ challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor
+  ✔ challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / two same-line occurrences
+  ✔ challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / analysis unavailable
+  ✔ challenge profile: unhandled-value / unawaited-async-map / genuine positive
+  ✔ challenge profile: unhandled-value / unawaited-async-map / valid lookalike and shadowed producer
+  ✔ challenge profile: unhandled-value / unawaited-async-map / ownership transfer
+  ✔ challenge profile: unhandled-value / unawaited-async-map / unsupported receiver with positive neighbor
+  ✔ challenge profile: unhandled-value / unawaited-async-map / two same-line occurrences
+  ✔ challenge profile: unhandled-value / unawaited-async-map / analysis unavailable
+  ✔ challenge profile: resource-without-release / uncleared-settimeout-in-effect / genuine unreleased positive
+  ✔ challenge profile: resource-without-release / uncleared-settimeout-in-effect / shadowed acquisition with positive neighbor
+  ✔ challenge profile: resource-without-release / uncleared-settimeout-in-effect / immutable handle alias release
+  ✔ challenge profile: resource-without-release / uncleared-settimeout-in-effect / different handle does not release acquisition
+  ✔ challenge profile: resource-without-release / uncleared-settimeout-in-effect / supported local cleanup transfer
+  ✔ challenge profile: resource-without-release / uncleared-settimeout-in-effect / unsupported cleanup transfer with positive neighbor
+  ✔ challenge profile: resource-without-release / uncleared-settimeout-in-effect / two same-line occurrences
+  ✔ challenge profile: resource-without-release / uncleared-settimeout-in-effect / analysis unavailable
+  ✔ shared innocent corpus (12 files)
+  ✔ location coverage: fetch-calls-without-abortsignal
+  ✔ location coverage: unawaited-async-map
+  ✔ location coverage: uncleared-settimeout-in-effect
+
+[2m71/71 fixtures passed for async[0m

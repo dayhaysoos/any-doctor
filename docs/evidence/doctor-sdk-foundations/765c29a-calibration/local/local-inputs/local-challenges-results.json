@@ -1,0 +1,775 @@
+{
+  "label": "local",
+  "command": [
+    "node",
+    "<repo>/bin/cli.js",
+    "run",
+    "<repo>/doctors/async.mjs",
+    "<temp>/final-gates/local-inputs/seeds",
+    "--format",
+    "json"
+  ],
+  "exit": 0,
+  "passed": 55,
+  "failed": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "name": "fetch-no-options",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 1,
+      "reason": "No cancellation signal supplied; candidate, not automatically a bug.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "fetch-no-options.ts",
+          "line": 1,
+          "column": 0,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1uby1vcHRpb25zLnRzADg2YTBhM2VjYmM2YTRhNmVhOGY4OWM4ZTk5MjZjMGNhZjYyNjY3ZjNjYzVjOWI4NjM3MmVmNmZlZmFlYjg5MDkAAG5vbmUAMAByYW5nZQ",
+          "rule": "fetch-calls-without-abortsignal"
+        }
+      ]
+    },
+    {
+      "name": "fetch-inline-signal",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Inline signal present.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-shorthand-signal",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Shorthand signal present.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-options-variable",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Known options object carries a real signal.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-spread-options",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Spread preserves signal.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-request-object",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Request carries its own cancellation signal.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-inline-request",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Inline Request also carries signal.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-forwarded-init",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Unknown caller options cannot prove absent signal; abstain or narrower claim.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-local-lookalike",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Synchronous local function, not network fetch.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-parameter-lookalike",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Caller-provided unrelated function is not established network fetch.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-signal-undefined",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 1,
+      "reason": "No usable cancellation signal despite a property key.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "fetch-signal-undefined.ts",
+          "line": 1,
+          "column": 0,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1zaWduYWwtdW5kZWZpbmVkLnRzAGU1ODNkMjI2NGU0NDg3N2RmMzM5MjljOTk4OWE1MjMyZTVkMjc1YTYxNmVjYTkyOTFkNmE1NmFhNWNkYzFmMGMAAG5vbmUAMAByYW5nZQ",
+          "rule": "fetch-calls-without-abortsignal"
+        }
+      ]
+    },
+    {
+      "name": "fetch-signal-null",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 1,
+      "reason": "Null does not supply an abort controller signal.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "fetch-signal-null.ts",
+          "line": 1,
+          "column": 0,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1zaWduYWwtbnVsbC50cwA5MTdmMDhjMWZjYzA5MDc2NDJlMzRkZWMzNDU1Y2I2OTBkOGYyZWE3NTZjMmQ5ZDI5NWZmMzlhNjMwOGQ4NDgxAABub25lADAAcmFuZ2U",
+          "rule": "fetch-calls-without-abortsignal"
+        }
+      ]
+    },
+    {
+      "name": "fetch-computed-signal",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Static computed property supplies signal.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-comment-before-signal",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Comment does not disable the property.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-overridden-signal",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 1,
+      "reason": "Later spread overrides the signal.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "fetch-overridden-signal.ts",
+          "line": 1,
+          "column": 31,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1vdmVycmlkZGVuLXNpZ25hbC50cwA3NTg3MjQxYmJhNjM2OTczYmYzMmU3MDFiMGU4NjljODQ5YzQxMzZjYWU5MGVmMTM0NzJlOWY5NWFjZDA2YTkyAABub25lADMxAHJhbmdl",
+          "rule": "fetch-calls-without-abortsignal"
+        }
+      ]
+    },
+    {
+      "name": "fetch-no-call-comment",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 0,
+      "reason": "Comments/strings are not calls.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "fetch-nested-signal",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 1,
+      "reason": "A nested key is not RequestInit.signal.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "fetch-nested-signal.ts",
+          "line": 1,
+          "column": 0,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1uZXN0ZWQtc2lnbmFsLnRzAGY0ZGI3MTYyZDE4NTc4YTA0OGZiNDMwZjRiNmM5MDk2MDllMDIzNDdmZDA0MTQ1NmQzYjU5NDA5N2FmMTg0YjYAAG5vbmUAMAByYW5nZQ",
+          "rule": "fetch-calls-without-abortsignal"
+        }
+      ]
+    },
+    {
+      "name": "fetch-global-member",
+      "rule": "fetch-calls-without-abortsignal",
+      "expected": 1,
+      "reason": "Real global fetch in a member form; tests declared coverage limitation.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "fetch-global-member.ts",
+          "line": 1,
+          "column": 0,
+          "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABmZXRjaC1nbG9iYWwtbWVtYmVyLnRzAGQ2MGU1YzlkYThiNGM5ZmE0NTgzNDk5YTJlNDIwZmZkYmQzZGE4N2VkZGYxMTBjMjc4MzY2ZjRiNzMyZGMyZTMAAG5vbmUAMAByYW5nZQ",
+          "rule": "fetch-calls-without-abortsignal"
+        }
+      ]
+    },
+    {
+      "name": "map-dropped-binding",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Real array of promises dropped.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-dropped-binding.ts",
+          "line": 1,
+          "column": 12,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtZHJvcHBlZC1iaW5kaW5nLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAAG5vbmUAMTIAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "map-bare-discard",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Bare real array map result dropped.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-bare-discard.ts",
+          "line": 1,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtYmFyZS1kaXNjYXJkLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAAG5vbmUAMAByYW5nZQ",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "map-await-array",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Awaiting an ordinary array does not await its elements.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-await-array.ts",
+          "line": 1,
+          "column": 6,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtYXdhaXQtYXJyYXkudHMANzMyYWUwOWZhYTJhZjM3NTNlMTRmNTQ2MDNkNTVlNjZjYzM0ZmRhOGVkODcyMGI1NTFhNzMyMmY3M2YzODhmZgAAbm9uZQA2AHJhbmdl",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "map-combined",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "reason": "Correct iterable of promises passed to real combiner.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "map-returned-binding",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "reason": "Returning an array transfers it to caller; not proof of dropped promises.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "map-helper-consumption",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "reason": "Helper actually settles the array.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "map-aliased-consumption",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "reason": "Alias points to same array consumed by combiner.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "map-for-await",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "reason": "for-await unwraps each yielded promise.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "map-per-element-await",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "reason": "Each element explicitly awaited.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "map-inline-combiner",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "reason": "Direct inline consumption.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "map-nested-array-combiner",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Combiner does not recursively settle nested arrays.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-nested-array-combiner.ts",
+          "line": 1,
+          "column": 12,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtbmVzdGVkLWFycmF5LWNvbWJpbmVyLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAAG5vbmUAMTIAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "map-combiner-unrelated-callback",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Nested discarded inner map is not consumed by outer combiner.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-combiner-unrelated-callback.ts",
+          "line": 1,
+          "column": 38,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtY29tYmluZXItdW5yZWxhdGVkLWNhbGxiYWNrLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAYXJyb3c6ADAAMzgAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "map-length-in-combiner",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Reading array length in combiner does not settle elements.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-length-in-combiner.ts",
+          "line": 1,
+          "column": 12,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtbGVuZ3RoLWluLWNvbWJpbmVyLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAAG5vbmUAMTIAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "map-spread-into-combiner",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "reason": "Spread passes individual promises.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "map-shadowed-combiner",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Same-named object does not perform promise settlement.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-shadowed-combiner.ts",
+          "line": 1,
+          "column": 47,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtc2hhZG93ZWQtY29tYmluZXIudHMANzMyYWUwOWZhYTJhZjM3NTNlMTRmNTQ2MDNkNTVlNjZjYzM0ZmRhOGVkODcyMGI1NTFhNzMyMmY3M2YzODhmZgAAbm9uZQA0NwByYW5nZQ",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "map-await-object-containing-element",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Awaiting object containing a promise does not unwrap its field.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-await-object-containing-element.ts",
+          "line": 1,
+          "column": 12,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtYXdhaXQtb2JqZWN0LWNvbnRhaW5pbmctZWxlbWVudC50cwA3MzJhZTA5ZmFhMmFmMzc1M2UxNGY1NDYwM2Q1NWU2NmNjMzRmZGE4ZWQ4NzIwYjU1MWE3MzIyZjczZjM4OGZmAABub25lADEyAHJhbmdl",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "map-unrelated-scope-combiner",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Other binding cannot consume first array.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-unrelated-scope-combiner.ts",
+          "line": 1,
+          "column": 12,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtdW5yZWxhdGVkLXNjb3BlLWNvbWJpbmVyLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAAG5vbmUAMTIAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "map-local-object-method",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "reason": "Custom map is promise-returning and is properly awaited.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "map-returned-direct",
+      "rule": "unawaited-async-map",
+      "expected": 0,
+      "reason": "Direct return transfers the array.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "map-filtered-chain-discard",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Dropped array behind chained receiver; tests declared coverage limitation.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-filtered-chain-discard.ts",
+          "line": 1,
+          "column": 0,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtZmlsdGVyZWQtY2hhaW4tZGlzY2FyZC50cwBiMjBiMTk4MzQ0MzVkNWFjYjRlNDM1ZjBmY2JmOGMxYWY4YzdkZDk2ZWU1ZDA0ZDFjYjc4MWJjYjc5MDlhZDBiAABub25lADAAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "map-const-enclosing-function",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Passing the enclosing function value does not consume inner map results.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-const-enclosing-function.ts",
+          "line": 1,
+          "column": 17,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtY29uc3QtZW5jbG9zaW5nLWZ1bmN0aW9uLnRzADczMmFlMDlmYWEyYWYzNzUzZTE0ZjU0NjAzZDU1ZTY2Y2MzNGZkYThlZDg3MjBiNTUxYTczMjJmNzNmMzg4ZmYAYXJyb3c6ADAAMTcAcmFuZ2U",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "map-async-function-callback",
+      "rule": "unawaited-async-map",
+      "expected": 1,
+      "reason": "Async function callback has same promise-array semantics.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "map-async-function-callback.ts",
+          "line": 1,
+          "column": 12,
+          "decisionKey": "YXN5bmMvdW5hd2FpdGVkLWFzeW5jLW1hcABtYXAtYXN5bmMtZnVuY3Rpb24tY2FsbGJhY2sudHMAZTgwYWRjZTJmN2NiZmVmMzQ4ZTRiN2E0NjYwNDE5NzI2OGVlNTIyNTU4MDA1ZTA3NDgxNmE2MmI4YzNjOTQ4NAAAbm9uZQAxMgByYW5nZQ",
+          "rule": "unawaited-async-map"
+        }
+      ]
+    },
+    {
+      "name": "timer-positive",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 1,
+      "reason": "Effect starts a timer without cancellation cleanup.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "timer-positive.ts",
+          "line": 2,
+          "column": 27,
+          "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLXBvc2l0aXZlLnRzADFiOWM2Y2MyNmU2OTUyNjcyOWU5NTNmMzViYWFmMThmMmEyZTk0MDgxYWQ3NWNmYjNkNGFmNTBmNjRmYzgyMWMAYXJyb3c6ADAAMjcAcmFuZ2U",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    },
+    {
+      "name": "timer-cleanup",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 0,
+      "reason": "Cleanup clears same handle.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "timer-window-cleanup",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 0,
+      "reason": "Window qualification preserves timer identity and cleanup.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "timer-globalthis-cleanup",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 0,
+      "reason": "Global qualification preserves cleanup.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "timer-local-effect-lookalike",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 0,
+      "reason": "Local ordinary function is not a React effect.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "timer-local-timer-lookalike",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 0,
+      "reason": "Synchronous local function is not a timer.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "timer-local-clear-lookalike",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 1,
+      "reason": "Unrelated clearTimeout does not cancel timer.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "timer-local-clear-lookalike.ts",
+          "line": 2,
+          "column": 54,
+          "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWxvY2FsLWNsZWFyLWxvb2thbGlrZS50cwAxYjljNmNjMjZlNjk1MjY3MjllOTUzZjM1YmFhZjE4ZjJhMmU5NDA4MWFkNzVjZmIzZDRhZjUwZjY0ZmM4MjFjAGFycm93OgAwADU0AHJhbmdl",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    },
+    {
+      "name": "timer-shadowed-handle",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 1,
+      "reason": "Cleanup clears different shadowed binding.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "timer-shadowed-handle.ts",
+          "line": 2,
+          "column": 27,
+          "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLXNoYWRvd2VkLWhhbmRsZS50cwAxYjljNmNjMjZlNjk1MjY3MjllOTUzZjM1YmFhZjE4ZjJhMmU5NDA4MWFkNzVjZmIzZDRhZjUwZjY0ZmM4MjFjAGFycm93OgAwADI3AHJhbmdl",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    },
+    {
+      "name": "timer-unused-clear-helper",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 1,
+      "reason": "Never invoked or returned helper is not cleanup.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "timer-unused-clear-helper.ts",
+          "line": 2,
+          "column": 27,
+          "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLXVudXNlZC1jbGVhci1oZWxwZXIudHMAMWI5YzZjYzI2ZTY5NTI2NzI5ZTk1M2YzNWJhYWYxOGYyYTJlOTQwODFhZDc1Y2ZiM2Q0YWY1MGY2NGZjODIxYwBhcnJvdzoAMAAyNwByYW5nZQ",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    },
+    {
+      "name": "timer-wrong-handle",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 1,
+      "reason": "Second timer is uncancelled.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "timer-wrong-handle.ts",
+          "line": 2,
+          "column": 63,
+          "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLXdyb25nLWhhbmRsZS50cwAxYjljNmNjMjZlNjk1MjY3MjllOTUzZjM1YmFhZjE4ZjJhMmU5NDA4MWFkNzVjZmIzZDRhZjUwZjY0ZmM4MjFjAGFycm93OgAwADYzAHJhbmdl",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    },
+    {
+      "name": "timer-concise-effect",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 1,
+      "reason": "Concise effect returns undefined and creates an uncancelled timer.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "timer-concise-effect.ts",
+          "line": 2,
+          "column": 19,
+          "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWNvbmNpc2UtZWZmZWN0LnRzADFiOWM2Y2MyNmU2OTUyNjcyOWU5NTNmMzViYWFmMThmMmEyZTk0MDgxYWQ3NWNmYjNkNGFmNTBmNjRmYzgyMWMAYXJyb3c6ADAAMTkAcmFuZ2U",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    },
+    {
+      "name": "timer-alias-effect",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 1,
+      "reason": "Real React effect import alias; tests declared limitation.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "timer-alias-effect.ts",
+          "line": 2,
+          "column": 12,
+          "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLWFsaWFzLWVmZmVjdC50cwAxYjljNmNjMjZlNjk1MjY3MjllOTUzZjM1YmFhZjE4ZjJhMmU5NDA4MWFkNzVjZmIzZDRhZjUwZjY0ZmM4MjFjAGFycm93OgAwADEyAHJhbmdl",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    },
+    {
+      "name": "timer-namespace-effect",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 1,
+      "reason": "Real namespace React effect.",
+      "actual": 1,
+      "passed": true,
+      "findings": [
+        {
+          "file": "timer-namespace-effect.ts",
+          "line": 2,
+          "column": 21,
+          "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+          "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHRpbWVyLW5hbWVzcGFjZS1lZmZlY3QudHMAMWI5YzZjYzI2ZTY5NTI2NzI5ZTk1M2YzNWJhYWYxOGYyYTJlOTQwODFhZDc1Y2ZiM2Q0YWY1MGY2NGZjODIxYwBhcnJvdzoAMAAyMQByYW5nZQ",
+          "rule": "uncleared-settimeout-in-effect"
+        }
+      ]
+    },
+    {
+      "name": "timer-outside-effect",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 0,
+      "reason": "Outside this effect-specific rule.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "name": "timer-helper-cleanup",
+      "rule": "uncleared-settimeout-in-effect",
+      "expected": 0,
+      "reason": "Started helper timer cleared through shared handle.",
+      "actual": 0,
+      "passed": true,
+      "findings": []
+    }
+  ],
+  "locations": [
+    {
+      "name": "map-location",
+      "rule": "unawaited-async-map",
+      "source": "const xs=[1,2];\nxs.map(async x=>x);",
+      "expected": [
+        {
+          "line": 2,
+          "column": 0
+        }
+      ],
+      "actual": [
+        {
+          "line": 2,
+          "column": 0
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "timers-same-line",
+      "rule": "uncleared-settimeout-in-effect",
+      "source": "import {useEffect} from \"react\";\nuseEffect(()=>{setTimeout(()=>{},100);setTimeout(()=>{},100);},[]);",
+      "expected": [
+        {
+          "line": 2,
+          "column": 15
+        },
+        {
+          "line": 2,
+          "column": 38
+        }
+      ],
+      "actual": [
+        {
+          "line": 2,
+          "column": 15
+        },
+        {
+          "line": 2,
+          "column": 38
+        }
+      ],
+      "passed": true
+    }
+  ]
+}

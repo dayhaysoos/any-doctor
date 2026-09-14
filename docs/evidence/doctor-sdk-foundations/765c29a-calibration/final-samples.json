@@ -1,0 +1,129 @@
+[
+  {
+    "check": "fetch-calls-without-abortsignal",
+    "reason": "unsupported-expression",
+    "file": "convex/analysis/extractText.ts",
+    "line": 118,
+    "expression": "fetch(fileUrl)",
+    "status": "unknown"
+  },
+  {
+    "check": "fetch-calls-without-abortsignal",
+    "reason": "unsupported-expression",
+    "file": "convex/devApplicationFileUploadQa.ts",
+    "line": 326,
+    "expression": "fetch(issued.uploadUrl, {\n      method: \"POST\",\n      headers: { \"Content-Type\": \"application/pdf\" },\n      body: new Blob(\n        [\n          `%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\nQA resume upload ${suffix}\n`,\n        ],\n        { type: \"application/pdf\" },\n      ),\n    })",
+    "status": "unknown"
+  },
+  {
+    "check": "fetch-calls-without-abortsignal",
+    "reason": "unsupported-expression",
+    "file": "extensions/sift-chrome/popup.ts",
+    "line": 305,
+    "expression": "fetch(buildInfoUrl, { cache: \"no-store\" })",
+    "status": "unknown"
+  },
+  {
+    "check": "fetch-calls-without-abortsignal",
+    "reason": "unsupported-expression",
+    "file": "src/components/support/SupportPageContent.tsx",
+    "line": 123,
+    "expression": "fetch(uploadUrl, {\n        method: \"POST\",\n        headers: { \"Content-Type\": file.type },\n        body: file,\n      })",
+    "status": "unknown"
+  },
+  {
+    "check": "fetch-calls-without-abortsignal",
+    "reason": "unsupported-expression",
+    "file": "src/routes/api/resumes/$applicationId.ts",
+    "line": 74,
+    "expression": "fetch(targetUrl, {\n    headers: requestHeaders,\n    method: \"GET\",\n    redirect: \"manual\",\n  })",
+    "status": "unknown"
+  },
+  {
+    "check": "fetch-calls-without-abortsignal",
+    "reason": "unresolved-identity",
+    "file": "convex/analysis/profileExistenceCheck.ts",
+    "line": 145,
+    "expression": "fetchFn(validation.normalizedUrl, {\n          method: \"HEAD\",\n          redirect: \"follow\",\n          signal: AbortSignal.timeout(timeoutMs),\n          headers: {\n            // Identify the status probe plainly; we never read the response body.\n            \"User-Agent\": \"SiftSkills-ProfileExistenceCheck/1.0\",\n            Accept: \"text/html\",\n          },\n        })",
+    "initializer": "deps.fetchFn ?? fetch",
+    "status": "unknown"
+  },
+  {
+    "check": "fetch-calls-without-abortsignal",
+    "reason": "unresolved-identity",
+    "file": "convex/chatTools.ts",
+    "line": 1724,
+    "expression": "titleMatches(jobTitleById.get(jobId) ?? \"\")",
+    "initializer": "createCaseInsensitiveMatcher(args.jobTitle.trim())",
+    "status": "unknown"
+  },
+  {
+    "check": "fetch-calls-without-abortsignal",
+    "reason": "unresolved-identity",
+    "file": "convex/evals/renderer.ts",
+    "line": 119,
+    "expression": "systemTemplate(inputs)",
+    "initializer": "Handlebars.compile(template.systemPrompt)",
+    "status": "unknown"
+  },
+  {
+    "check": "fetch-calls-without-abortsignal",
+    "reason": "unresolved-identity",
+    "file": "convex/hiring/stageSummaryModel.ts",
+    "line": 17,
+    "expression": "provider(process.env.STAGE_SUMMARY_MODEL ?? \"openai/gpt-4.1-mini\")",
+    "initializer": "createOpenRouter({\n      apiKey: process.env.OPENROUTER_API_KEY,\n    })",
+    "status": "unknown"
+  },
+  {
+    "check": "fetch-calls-without-abortsignal",
+    "reason": "unresolved-identity",
+    "file": "convex/lib/recruiterChatModelMetrics.ts",
+    "line": 52,
+    "expression": "doGenerate()",
+    "status": "unknown"
+  },
+  {
+    "check": "unawaited-async-map",
+    "reason": "unsupported-expression",
+    "file": "convex/applications.ts",
+    "line": 1294,
+    "expression": "applications.map(async (app) => ({\n        ...app,\n        resumeUrl: await ctx.storage.getUrl(app.resumeStorageId),\n        customAnswersCount: app.customAnswers?.length ?? 0,\n        locationMismatchDisplay: computeLiveLocationMismatch(\n          job,\n          app,\n          locationMismatchContextFromRecords(job, app),\n        ),\n        queueState: app.queueState ?? \"active\",\n      }))",
+    "initializer": "typeof args.limit === \"number\"\n        ? await ctx.db\n            .query(\"applications\")\n            .withIndex(\"by_jobId_submittedAt\", (q) => q.eq(\"jobId\", args.jobId))\n            .order(\"desc\")\n            .take(Math.min(1000, Math.max(1, args.limit)))\n        : await ctx.db\n            .query(\"applications\")\n            .withIndex(\"by_jobId\", (q) => q.eq(\"jobId\", args.jobId))\n            .coll",
+    "status": "unknown"
+  },
+  {
+    "check": "unawaited-async-map",
+    "reason": "unsupported-expression",
+    "file": "convex/billing.ts",
+    "line": 881,
+    "expression": "memberships.map(async (membership) => ({\n        membership,\n        org: await ctx.db.get(membership.orgId),\n      }))",
+    "initializer": "await getWorkspaceMembershipsForProfile(ctx, profile._id)",
+    "status": "unknown"
+  },
+  {
+    "check": "unawaited-async-map",
+    "reason": "unsupported-expression",
+    "file": "convex/candidateIdentity.ts",
+    "line": 125,
+    "expression": "scanned\n          .filter((row) => row.applicationId !== args.applicationId)\n          .slice(0, OTHER_APPLICATIONS_SCAN)\n          .map(async (row) => {\n            const application = await ctx.db.get(row.applicationId);\n            if (\n              !application ||\n              (application.orgId ?? access.org._id) !== access.org._id\n            )\n              return null;\n            const jobAccess = await hiringJobAccess(ctx, application.jobId);\n            if (!jobAccess) return null;\n            return {\n              applicationId: application._id,\n              jobId: application.",
+    "status": "unknown"
+  },
+  {
+    "check": "unawaited-async-map",
+    "reason": "unsupported-expression",
+    "file": "convex/chat.ts",
+    "line": 1268,
+    "expression": "workspaceStates\n        .filter((state) =>\n          isRecruiterChatWorkspaceBound(state, String(membership.orgId)),\n        )\n        .map(async (state) => {\n        try {\n          const conversation = await ctx.runQuery(\n            components.databaseChat.conversations.getForExternalId,\n            {\n              conversationId: state.conversationId as ComponentId,\n              externalId: expectedExternalId,\n            },\n          );\n          if (!conversation) return null;\n          return {\n            _id: state.conversationId,\n            title: state.title ?? RECRUITER_CHAT_DEFA",
+    "status": "unknown"
+  },
+  {
+    "check": "unawaited-async-map",
+    "reason": "unsupported-expression",
+    "file": "convex/chatResultSets.ts",
+    "line": 1421,
+    "expression": "displayCandidates.map(async (candidate) => {\n      const hydration = await ctx.db\n        .query(\"chatSearchResultHydrations\")\n        .withIndex(\"by_conversation_external_application\", (q) =>\n          q\n            .eq(\"conversationId\", resultSet.conversationId)\n            .eq(\"externalId\", resultSet.externalId)\n            .eq(\"applicationId\", candidate.applicationId as Id<\"applications\">),\n        )\n        .unique();\n      if (\n        !hydration ||\n        hydration.orgId !== resultSet.orgId ||\n        hydration.userId !== resultSet.userId\n      ) {\n        return candidate;\n      }\n   ",
+    "initializer": "candidates",
+    "status": "unknown"
+  }
+]

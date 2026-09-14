@@ -1,0 +1,56 @@
+[
+  {
+    "wallMs": 5841,
+    "durationMs": 5513,
+    "peakRssBytes": 611893248,
+    "stages": {
+      "files": 671,
+      "queries": 45453,
+      "parseAnalysisMs": 2410.3091179999988,
+      "recipeMs": 286.31450000000495,
+      "totalAnalysisMs": 2696.6236180000037,
+      "peakRssKiB": 296320,
+      "unknowns": {
+        "required-or-recommended-option/unsupported-expression": 12,
+        "required-or-recommended-option/unresolved-identity": 2027,
+        "unhandled-value/unsupported-expression": 21
+      }
+    }
+  },
+  {
+    "wallMs": 5577,
+    "durationMs": 5252,
+    "peakRssBytes": 625836032,
+    "stages": {
+      "files": 671,
+      "queries": 45453,
+      "parseAnalysisMs": 2372.716677,
+      "recipeMs": 290.29845800000083,
+      "totalAnalysisMs": 2663.0151350000006,
+      "peakRssKiB": 292864,
+      "unknowns": {
+        "required-or-recommended-option/unsupported-expression": 12,
+        "required-or-recommended-option/unresolved-identity": 2027,
+        "unhandled-value/unsupported-expression": 21
+      }
+    }
+  },
+  {
+    "wallMs": 5679,
+    "durationMs": 5356,
+    "peakRssBytes": 602177536,
+    "stages": {
+      "files": 671,
+      "queries": 45453,
+      "parseAnalysisMs": 2392.4700819999975,
+      "recipeMs": 291.96479100000226,
+      "totalAnalysisMs": 2684.4348729999997,
+      "peakRssKiB": 285024,
+      "unknowns": {
+        "required-or-recommended-option/unsupported-expression": 12,
+        "required-or-recommended-option/unresolved-identity": 2027,
+        "unhandled-value/unsupported-expression": 21
+      }
+    }
+  }
+]

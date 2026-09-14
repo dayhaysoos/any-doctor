@@ -1,0 +1,2875 @@
+{
+  "schema": 1,
+  "tool": "any-doctor",
+  "target": "<frozen-target>",
+  "fileCount": 671,
+  "durationMs": 5633,
+  "score": {
+    "score": null,
+    "grade": null,
+    "filesClean": 664,
+    "filesTotal": 671,
+    "emptyScan": false,
+    "narrowedScan": true
+  },
+  "counts": {
+    "error": 0,
+    "warning": 1,
+    "info": 8,
+    "total": 9,
+    "hiddenDuplicates": 0
+  },
+  "analysisAvailable": true,
+  "emptyScan": false,
+  "groups": [
+    {
+      "doctor": "async",
+      "checks": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "heading": "Review a native fetch with no established caller cancellation signal.",
+          "severity": "info",
+          "impact": "Cancellation or a deadline may help bound unnecessary or stalled work; omission alone does not establish a bug.",
+          "why": "Request lifetime requirements differ between server, extension and UI requests. This is a cancellation-policy review candidate.",
+          "fix": "Check the intended request lifetime and caller contract. If cancellation or a deadline is required, preserve forwarded options and provide an appropriate AbortSignal; abort only when the work should stop.",
+          "findings": [
+            {
+              "file": "convex/lib/emailClient.ts",
+              "line": 30,
+              "column": 27,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABjb252ZXgvbGliL2VtYWlsQ2xpZW50LnRzAGRlMmVlY2ZhOGNmZTYwMzU1NDhkYjZlM2RmMDdkOTk1ZGMxZWZkYzZjZTZmNjM2NWQwYmRkYmQwOTQxMjRmZTkAZnVuY3Rpb246c2VuZEVtYWlsIzAAMjMAcmFuZ2U"
+            },
+            {
+              "file": "convex/lib/langfuse.ts",
+              "line": 254,
+              "column": 25,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABjb252ZXgvbGliL2xhbmdmdXNlLnRzADMwZTMzOTIyYWQwNTIzMmMwYzhjOWExZjExMWY0M2Q4MzBiYTc4MGJmYTU1ZTIzNGY1NDhmNGZjMzY1ODhiYTIAZnVuY3Rpb246ZmV0Y2hPcGVuUm91dGVyR2VuZXJhdGlvblJlc3QjMAAyMwByYW5nZQ"
+            },
+            {
+              "file": "extensions/sift-chrome/background.ts",
+              "line": 89,
+              "column": 25,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL2JhY2tncm91bmQudHMAN2U3YWQxMTViNGVlMmNhYzc5OTk1ODk5YzY5Yjk1NWNlZGYwNjYyODcwMmZhNTQ3ODQ4Y2E3ZTFlNGE5M2YyNABmdW5jdGlvbjpleGNoYW5nZVBhaXJpbmdDb2RlIzAAMjMAcmFuZ2U"
+            },
+            {
+              "file": "extensions/sift-chrome/src/api/client.ts",
+              "line": 69,
+              "column": 25,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL3NyYy9hcGkvY2xpZW50LnRzAGFkMGNkZjQwYjRiOGMzOTBiODQ0YzRkNGYyOGNjMTg5MTg4ZDQ3NDBmNDAxMWEwNDlmNzRhMzM1ODJmODk5MTYAZnVuY3Rpb246Y2FsbENvbnZleCMwADIzAHJhbmdl"
+            },
+            {
+              "file": "src/components/EmailSignupForm.tsx",
+              "line": 56,
+              "column": 29,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvY29tcG9uZW50cy9FbWFpbFNpZ251cEZvcm0udHN4AGQ5ZjIzNGI0OTE5MTNkODQyOWQ0NGM2NTcyYmM3ZDEzYzAwODk1MWIwZTE1YzkzYmQ4YjkzYTE0OTVlNTU0YzgAYXJyb3c6ADAAMjMAcmFuZ2U"
+            },
+            {
+              "file": "src/routes/api/kit/subscribe.ts",
+              "line": 146,
+              "column": 39,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzADJhZDg2NzFhOGVjNTQ3NTM4NWRlZjg1ZDZiYTBhZjM4M2JlMGE4NzljYTUxZTQ2ODExYmFhZDIzODYyOTVhZDgAYXJyb3c6ADAAMjkAcmFuZ2U"
+            },
+            {
+              "file": "src/routes/api/kit/subscribe.ts",
+              "line": 176,
+              "column": 38,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzADhjOGViYjY3MTJkZTUwYWU2OWFjN2ZiZDkxMjhjYzU3YmE4MWU0ZjhkNmUyOWRhYjcwOTA1N2JkMjc3N2MxMTQAYXJyb3c6ADAAMjYAcmFuZ2U"
+            },
+            {
+              "file": "src/routes/api/kit/subscribe.ts",
+              "line": 199,
+              "column": 37,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzADZjZDEwMTQ5MGZmZDMwOGRiNmM0YjhkYzc0ZjI2ZDFhZWJiY2ExZDYzZmZhOWY5YjEzNTFjMTU1MDYyYjYyZGUAYXJyb3c6ADAAMjcAcmFuZ2U"
+            }
+          ]
+        },
+        {
+          "rule": "uncleared-settimeout-in-effect",
+          "heading": "Review an effect timer with no matching cancellation in its returned cleanup.",
+          "severity": "warning",
+          "impact": "The callback may outlive the effect that scheduled it; whether that is wrong depends on the intended lifetime.",
+          "why": "A matching name or an uncalled helper does not cancel this timer. React runs the returned cleanup on replacement or unmount.",
+          "fix": "If this timer belongs to the effect lifetime, retain its handle and cancel that handle from returned cleanup. Preserve deliberate completion, rescheduling and cancellation guards; inspect unresolved helper or handle flow before editing.",
+          "findings": [
+            {
+              "file": "src/lib/theme.tsx",
+              "line": 49,
+              "column": 2,
+              "message": "No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHNyYy9saWIvdGhlbWUudHN4AGEwOGRlOTI3YmQwMzBhZmQ3MzY1ODY4ODY3MWFlOGU0N2E3MGJmMTc2OTU0NzM5NzRjMjk5ZjJmZmNmYzIwNGEAZnVuY3Rpb246YXBwbHlUaGVtZSMwADAAcmFuZ2U"
+            }
+          ]
+        }
+      ],
+      "semantic": {
+        "protocolVersion": 1,
+        "provider": {
+          "id": "any-doctor/syntax-flow",
+          "version": "1",
+          "available": true,
+          "dependencies": [
+            {
+              "id": "oxc-parser",
+              "version": "0.149.0"
+            },
+            {
+              "id": "@typescript-eslint/scope-manager",
+              "version": "8.70.0"
+            }
+          ]
+        },
+        "capabilities": [
+          {
+            "name": "calls",
+            "available": true
+          },
+          {
+            "name": "identity",
+            "available": true
+          },
+          {
+            "name": "option-presence",
+            "available": true
+          },
+          {
+            "name": "value-disposition",
+            "available": true
+          },
+          {
+            "name": "resource-lifetime",
+            "available": true
+          }
+        ],
+        "recipes": [
+          {
+            "check": "fetch-calls-without-abortsignal",
+            "name": "required-or-recommended-option",
+            "available": true
+          },
+          {
+            "check": "unawaited-async-map",
+            "name": "unhandled-value",
+            "available": true
+          },
+          {
+            "check": "uncleared-settimeout-in-effect",
+            "name": "resource-without-release",
+            "available": true
+          }
+        ],
+        "narrowed": [
+          {
+            "check": "fetch-calls-without-abortsignal",
+            "recipe": "required-or-recommended-option",
+            "reason": "unresolved-identity",
+            "occurrences": 5384,
+            "files": [
+              {
+                "file": "convex/activeChatResultContext.ts",
+                "occurrences": 10
+              },
+              {
+                "file": "convex/analysis/analysisProfile.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/analysis/bonus.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/analysis/evidence.ts",
+                "occurrences": 25
+              },
+              {
+                "file": "convex/analysis/evidenceAttribution.ts",
+                "occurrences": 22
+              },
+              {
+                "file": "convex/analysis/evidenceGrounding.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "convex/analysis/extractJobStructure.ts",
+                "occurrences": 31
+              },
+              {
+                "file": "convex/analysis/extractText.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/analysis/fit.ts",
+                "occurrences": 55
+              },
+              {
+                "file": "convex/analysis/fitSummaryGuardrails.ts",
+                "occurrences": 17
+              },
+              {
+                "file": "convex/analysis/gaps.ts",
+                "occurrences": 26
+              },
+              {
+                "file": "convex/analysis/githubProfileReader.ts",
+                "occurrences": 14
+              },
+              {
+                "file": "convex/analysis/index.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "convex/analysis/internal.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/analysis/jsonExtractor.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/analysis/piiLLMCleanup.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/analysis/piiRemoval.ts",
+                "occurrences": 39
+              },
+              {
+                "file": "convex/analysis/portfolioExtractor.ts",
+                "occurrences": 22
+              },
+              {
+                "file": "convex/analysis/profileEvidenceMapper.ts",
+                "occurrences": 21
+              },
+              {
+                "file": "convex/analysis/profileEvidenceResumeClaims.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "convex/analysis/profileExistenceCheck.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/analysis/proportionalScore.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "convex/analysis/queue.ts",
+                "occurrences": 37
+              },
+              {
+                "file": "convex/analysis/scrapeJobUrl.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/analysis/stepRunner.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/analysis/traitBonusRemap.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/analysis/transferable.ts",
+                "occurrences": 21
+              },
+              {
+                "file": "convex/analysis/validateDiscriminatoryContent.ts",
+                "occurrences": 10
+              },
+              {
+                "file": "convex/analysis/verification.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "convex/analysis/verificationInsights.ts",
+                "occurrences": 24
+              },
+              {
+                "file": "convex/analysis/verificationScrape.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/applicationFileRetention.ts",
+                "occurrences": 121
+              },
+              {
+                "file": "convex/applicationFileUploads.ts",
+                "occurrences": 20
+              },
+              {
+                "file": "convex/applications.ts",
+                "occurrences": 46
+              },
+              {
+                "file": "convex/billing.ts",
+                "occurrences": 51
+              },
+              {
+                "file": "convex/billingNotificationOps.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/billingNotifications.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/candidateIdentity.ts",
+                "occurrences": 20
+              },
+              {
+                "file": "convex/candidateRecruiterNotes.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "convex/chat.ts",
+                "occurrences": 74
+              },
+              {
+                "file": "convex/chatConversationState.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "convex/chatResultSets.ts",
+                "occurrences": 84
+              },
+              {
+                "file": "convex/chatSearchHydration.ts",
+                "occurrences": 13
+              },
+              {
+                "file": "convex/chatTools.ts",
+                "occurrences": 67
+              },
+              {
+                "file": "convex/compareCandidates.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/contact.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/conversionReconciliation.ts",
+                "occurrences": 45
+              },
+              {
+                "file": "convex/dashboard.ts",
+                "occurrences": 66
+              },
+              {
+                "file": "convex/dashboardMetricsReconciliation.ts",
+                "occurrences": 44
+              },
+              {
+                "file": "convex/devApplicationFileUploadQa.ts",
+                "occurrences": 17
+              },
+              {
+                "file": "convex/devCandidateIdentityQa.ts",
+                "occurrences": 29
+              },
+              {
+                "file": "convex/devChatResultsWorkspaceQa.ts",
+                "occurrences": 25
+              },
+              {
+                "file": "convex/devHiringHomeQa.ts",
+                "occurrences": 49
+              },
+              {
+                "file": "convex/devHiringPipelineQa.ts",
+                "occurrences": 111
+              },
+              {
+                "file": "convex/devJobWizardQa.ts",
+                "occurrences": 32
+              },
+              {
+                "file": "convex/devMembershipTools.ts",
+                "occurrences": 39
+              },
+              {
+                "file": "convex/devRecruiterChatQa.ts",
+                "occurrences": 53
+              },
+              {
+                "file": "convex/durableApplicationIntake.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "convex/embeddings.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/evals/auth.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/evals/data.ts",
+                "occurrences": 17
+              },
+              {
+                "file": "convex/evals/overrides.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "convex/evals/queries.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/evals/registry.ts",
+                "occurrences": 16
+              },
+              {
+                "file": "convex/evals/renderer.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/evals/results.ts",
+                "occurrences": 49
+              },
+              {
+                "file": "convex/evals/runner.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "convex/evals/runnerInternal.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "convex/evals/tokens.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "convex/extensionAuth.ts",
+                "occurrences": 10
+              },
+              {
+                "file": "convex/extensionIngestion.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "convex/hiring/access.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "convex/hiring/closureFeedback.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/hiring/consumerRead.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/hiring/feedbackAccess.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/hiring/feedbackCompletion.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/hiring/feedbackDisplayContext.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/hiring/history.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "convex/hiring/lifecycleState.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/hiring/pipelineImpact.ts",
+                "occurrences": 24
+              },
+              {
+                "file": "convex/hiring/stageSummaryFixtureModel.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/hiring/stateRead.ts",
+                "occurrences": 14
+              },
+              {
+                "file": "convex/hiring/summaryGenerationEffect.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/hiring/summaryModel.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "convex/hiring/summarySources.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/hiring/workModel.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/hiringApplication.ts",
+                "occurrences": 78
+              },
+              {
+                "file": "convex/hiringBulk.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "convex/hiringLifecycle.ts",
+                "occurrences": 18
+              },
+              {
+                "file": "convex/hiringPipeline.ts",
+                "occurrences": 32
+              },
+              {
+                "file": "convex/hiringStatusCompatibility.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/hiringWork.ts",
+                "occurrences": 36
+              },
+              {
+                "file": "convex/http.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/interviewFeedback.ts",
+                "occurrences": 57
+              },
+              {
+                "file": "convex/jobApplicantExportBuild.ts",
+                "occurrences": 13
+              },
+              {
+                "file": "convex/jobApplicantExports.ts",
+                "occurrences": 12
+              },
+              {
+                "file": "convex/job_wizard_ai.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/jobs.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "convex/lib/analysisStats.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "convex/lib/applicationFileUploads.ts",
+                "occurrences": 12
+              },
+              {
+                "file": "convex/lib/applicationIntake.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "convex/lib/applicationProfileLinks.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/applicationResumeIdentityCoverage.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "convex/lib/applicationWorkspaceIndexBackfill.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/authHelpers.ts",
+                "occurrences": 13
+              },
+              {
+                "file": "convex/lib/authOrigins.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/lib/billing.ts",
+                "occurrences": 17
+              },
+              {
+                "file": "convex/lib/candidateDataIntakeAccess.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/candidateIdentityAttach.ts",
+                "occurrences": 16
+              },
+              {
+                "file": "convex/lib/chatAnonymousResults.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/chatAnswerComposer.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "convex/lib/chatAnswerDisplay.ts",
+                "occurrences": 252
+              },
+              {
+                "file": "convex/lib/chatCareerTimeline.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "convex/lib/chatClientUiContext.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/lib/chatPayloadSanitize.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/lib/chatSafety.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/chatSearchEvidence.ts",
+                "occurrences": 44
+              },
+              {
+                "file": "convex/lib/chatSubmittedAtDisplay.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/compareCandidatesPayload.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/lib/contactForm.ts",
+                "occurrences": 10
+              },
+              {
+                "file": "convex/lib/conversionMetrics.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/lib/dashboardMetrics.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/lib/durableBulkApplicationIntake.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/effectBatch.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/emailTemplates.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/lib/extensionAuth.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "convex/lib/fileValidation.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/firecrawlClient.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/lib/fitSummaryFirstBulletRoleLabel.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/lib/generatedJdFidelity.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "convex/lib/jobRequirements.ts",
+                "occurrences": 14
+              },
+              {
+                "file": "convex/lib/langfuse.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/legacyLinkedInSanitization.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "convex/lib/llmObservability.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/lib/locationPolicy.ts",
+                "occurrences": 69
+              },
+              {
+                "file": "convex/lib/mcpApiKeys.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "convex/lib/mcpListJobs.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/lib/mcpProtocol.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/lib/portfolioSanitize.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/promoCodes.ts",
+                "occurrences": 13
+              },
+              {
+                "file": "convex/lib/publicApplicationEmailIdentity.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/publicApplicationIngressAuth.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/publicApplicationPolicy.ts",
+                "occurrences": 24
+              },
+              {
+                "file": "convex/lib/qaBrowserAuth.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/rateLimiter.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "convex/lib/recruiterCandidateEvidenceBundle.ts",
+                "occurrences": 74
+              },
+              {
+                "file": "convex/lib/recruiterCandidateRetrieval.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+                "occurrences": 18
+              },
+              {
+                "file": "convex/lib/recruiterCandidateSemanticEvidence.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/lib/recruiterChatCandidateSearchPolicy.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/lib/recruiterChatEmploymentDecisionPolicy.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/recruiterChatHistory.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/recruiterChatModel.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/recruiterChatPrimaryDecision.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "convex/lib/recruiterChatPromptResolver.ts",
+                "occurrences": 10
+              },
+              {
+                "file": "convex/lib/recruiterChatQaTargetPolicy.ts",
+                "occurrences": 22
+              },
+              {
+                "file": "convex/lib/recruiterChatToolExposure.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "convex/lib/recruiterChatTurn.ts",
+                "occurrences": 29
+              },
+              {
+                "file": "convex/lib/recruiterSearchContext.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/redactionMapValidate.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/resumeOrgRedaction.ts",
+                "occurrences": 52
+              },
+              {
+                "file": "convex/lib/shareViewerProofCrypto.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/sharedViewDto.ts",
+                "occurrences": 14
+              },
+              {
+                "file": "convex/lib/stagingQaStorage.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/supportForm.ts",
+                "occurrences": 13
+              },
+              {
+                "file": "convex/lib/talentPoolAssignmentBatch.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/lib/utils.ts",
+                "occurrences": 10
+              },
+              {
+                "file": "convex/lib/validation.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/verificationConfidence.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/verificationStatus.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/verificationSummary.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/mcpApiKeys.ts",
+                "occurrences": 13
+              },
+              {
+                "file": "convex/mcpHttp.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/migrations/backfillApplicationOrgIds.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/migrations/backfillBillingAccounts.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/migrations/backfillBillingCatalogFields.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/migrations/backfillGeneratedJDModel.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "convex/migrations/backfillRoleDefiningRequirements.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/migrations/backfillTeamRoles.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/migrations/removeSeverityFromGaps.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/onboarding.ts",
+                "occurrences": 18
+              },
+              {
+                "file": "convex/orgJobDefaults.ts",
+                "occurrences": 33
+              },
+              {
+                "file": "convex/orgMemberships.ts",
+                "occurrences": 22
+              },
+              {
+                "file": "convex/orgs.ts",
+                "occurrences": 47
+              },
+              {
+                "file": "convex/pausedAnalysisPrompt.ts",
+                "occurrences": 14
+              },
+              {
+                "file": "convex/priorFeedbackNotices.ts",
+                "occurrences": 14
+              },
+              {
+                "file": "convex/promoCodes.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/publicApplicationIngressHttp.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/qaBrowserAccounts.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "convex/recruiterCandidateRetrievalOutcomes.ts",
+                "occurrences": 23
+              },
+              {
+                "file": "convex/recruiterChatMessages.ts",
+                "occurrences": 12
+              },
+              {
+                "file": "convex/recruiterChatPromptCache.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/recruiting/batch.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/recruiting/context.ts",
+                "occurrences": 12
+              },
+              {
+                "file": "convex/recruiting/fixtureTransport.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/recruiting/model.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/recruiting/transport.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/recruitingAttempts.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/recruitingMessages.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "convex/resumeScanUsageNotifications.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/schema.ts",
+                "occurrences": 328
+              },
+              {
+                "file": "convex/semanticSearch.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/shareLinkEmails.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/shareLinks.ts",
+                "occurrences": 58
+              },
+              {
+                "file": "convex/stageSummaries.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "convex/stagingDurableApplicationIntakeQa.ts",
+                "occurrences": 49
+              },
+              {
+                "file": "convex/stagingPublicApplicationQa.ts",
+                "occurrences": 92
+              },
+              {
+                "file": "convex/stagingShareViewerQa.ts",
+                "occurrences": 46
+              },
+              {
+                "file": "convex/stripeWebhook.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/support.ts",
+                "occurrences": 17
+              },
+              {
+                "file": "convex/talentPoolAssignments.ts",
+                "occurrences": 77
+              },
+              {
+                "file": "convex/teamInvites.ts",
+                "occurrences": 26
+              },
+              {
+                "file": "convex/tokenUsage.ts",
+                "occurrences": 52
+              },
+              {
+                "file": "convex/tokenUsageReconciliation.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/userProfiles.ts",
+                "occurrences": 13
+              },
+              {
+                "file": "design-prototypes/scripts/build-compare-domain.mjs",
+                "occurrences": 1
+              },
+              {
+                "file": "design-prototypes/scripts/build-wizard-domain.mjs",
+                "occurrences": 1
+              },
+              {
+                "file": "extensions/sift-chrome/background.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "extensions/sift-chrome/popup.ts",
+                "occurrences": 29
+              },
+              {
+                "file": "extensions/sift-chrome/src/api/client.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "extensions/sift-chrome/src/background/submitPipeline.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "extensions/sift-chrome/src/background/uploadResumePayload.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "extensions/sift-chrome/src/detection/detectAttachments.ts",
+                "occurrences": 17
+              },
+              {
+                "file": "extensions/sift-chrome/src/state/selectionReducer.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "extensions/sift-chrome/src/storage/durableRetryContext.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "extensions/sift-chrome/src/storage/settings.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "extensions/sift-chrome/src/utils/fileNameUtils.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "scripts/dashboard-backfill.mjs",
+                "occurrences": 3
+              },
+              {
+                "file": "scripts/dev-convex-target.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "scripts/generate-extension-build-info.mjs",
+                "occurrences": 8
+              },
+              {
+                "file": "scripts/generate-legal-dates.mjs",
+                "occurrences": 3
+              },
+              {
+                "file": "scripts/recruiterChatEvals/langfuseUpload.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "scripts/recruiterChatEvals/runner.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "scripts/recruiterChatEvals/tracePromotion.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "scripts/recruiterChatEvals/tracePromotionCli.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "scripts/run-recruiter-chat-employment-decision-evals.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "scripts/run-recruiter-chat-full-stack-evals.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "scripts/validate-railway-build-env.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "server/lib/stagingIndexing.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "shared/analysisRequirementTags.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "shared/authNetworkSignal.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "shared/candidateCardTitle.ts",
+                "occurrences": 17
+              },
+              {
+                "file": "shared/candidatePersonIdentity.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "shared/chatAdditionalCandidateFollowUp.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "shared/chatDisplayPlaceholderRehydration.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "shared/chatDisplayText.ts",
+                "occurrences": 12
+              },
+              {
+                "file": "shared/chatRoleLens.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "shared/chatSearchDisplayLabel.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "shared/compareChipPhrase.ts",
+                "occurrences": 24
+              },
+              {
+                "file": "shared/compareDisplayName.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "shared/comparePhraseCompress.ts",
+                "occurrences": 22
+              },
+              {
+                "file": "shared/compareRoleSubtitle.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "shared/datePlaceholderStripping.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "shared/employmentRangeEnd.ts",
+                "occurrences": 14
+              },
+              {
+                "file": "shared/evidenceQuality.ts",
+                "occurrences": 16
+              },
+              {
+                "file": "shared/generatedJdTone.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "shared/preferenceLanguage.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "shared/profileExistence.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "shared/publicApplicationIngress.ts",
+                "occurrences": 12
+              },
+              {
+                "file": "shared/redactionMapSync.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "shared/redactionMapValidate.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "shared/resumeBodyHygiene.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "shared/resumeTextNormalize.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "shared/roleLineUtils.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "shared/talentPoolAssignment.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "shared/textUtils.ts",
+                "occurrences": 10
+              },
+              {
+                "file": "src/components/AnalysisRequirementSummary.tsx",
+                "occurrences": 12
+              },
+              {
+                "file": "src/components/ChatWidget.tsx",
+                "occurrences": 47
+              },
+              {
+                "file": "src/components/FitQuickVerdictBlock.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/PersistentChatHost.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/TourBackdrop.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/applicants/ApplicantsDirectory.tsx",
+                "occurrences": 18
+              },
+              {
+                "file": "src/components/application-detail/ApplicationDetail.tsx",
+                "occurrences": 30
+              },
+              {
+                "file": "src/components/application-detail/ApplicationShareDialog.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/apply/ApplicationForm.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/apply/JobDescriptionDisplay.tsx",
+                "occurrences": 7
+              },
+              {
+                "file": "src/components/apply/PublicJobHeader.tsx",
+                "occurrences": 9
+              },
+              {
+                "file": "src/components/apply/ResumeUpload.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/candidate-comparison/CandidateComparisonDialog.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/candidate-comparison/ComparisonExplanation.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/chat-results/ChatResultsPresentation.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/chat-results/ChatResultsWorkspace.tsx",
+                "occurrences": 12
+              },
+              {
+                "file": "src/components/dashboard/DashboardKpiSection.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/dashboard/dashboardSparkline.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/extension/ExtensionConnectPanel.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/hiring/ApplicationLifecyclePanel.tsx",
+                "occurrences": 6
+              },
+              {
+                "file": "src/components/hiring/ApplicationWorkPanel.tsx",
+                "occurrences": 9
+              },
+              {
+                "file": "src/components/hiring/ApplicationWorkspace.tsx",
+                "occurrences": 13
+              },
+              {
+                "file": "src/components/hiring/BulkHiringActions.tsx",
+                "occurrences": 6
+              },
+              {
+                "file": "src/components/hiring/CandidateIdentityContext.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/hiring/FeedbackDisplay.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/hiring/FeedbackWorkChange.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/hiring/HiringHomeWork.tsx",
+                "occurrences": 6
+              },
+              {
+                "file": "src/components/hiring/HiringStageControl.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/hiring/HiringWorkQueue.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/hiring/InterviewFeedbackPanel.tsx",
+                "occurrences": 15
+              },
+              {
+                "file": "src/components/hiring/JobHiringProcessPanel.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/hiring/PriorFeedbackNotices.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/hiring/RecruitingMessages.tsx",
+                "occurrences": 8
+              },
+              {
+                "file": "src/components/hiring/StageSummaryPanel.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/jobs/ApplicationsTabPanel.tsx",
+                "occurrences": 14
+              },
+              {
+                "file": "src/components/jobs/HiringHomeRolePanel.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/jobs/JobWorkspacePanel.tsx",
+                "occurrences": 8
+              },
+              {
+                "file": "src/components/jobs/JobsInventory.tsx",
+                "occurrences": 17
+              },
+              {
+                "file": "src/components/jobs/UploadResumesBody.tsx",
+                "occurrences": 6
+              },
+              {
+                "file": "src/components/jobs/import/ImportReviewEditor.tsx",
+                "occurrences": 10
+              },
+              {
+                "file": "src/components/jobs/wizard/JobWizardLivePreview.tsx",
+                "occurrences": 23
+              },
+              {
+                "file": "src/components/jobs/wizard/primitives/WizardGrowTextarea.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/jobs/wizard/steps/StepBenefits.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/jobs/wizard/steps/StepCompany.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/knowledge-base/KnowledgeBasePageContent.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/landing/LandingCandidatesMock.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/layout/Sidebar.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/settings/job-defaults/BenefitOptionsEditor.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/settings/job-defaults/JobDefaultsTabSkeleton.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/settings/job-defaults/JobDefaultsUnsavedGuard.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/social-cross-reference/SocialCrossReferenceSection.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/support/SupportPageContent.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/talent-pool/TalentPoolPicker.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/ui/markdown-editor.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/ui/safe-markdown.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/lib/analysis-requirement-summary.ts",
+                "occurrences": 10
+              },
+              {
+                "file": "src/lib/application-presentation.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/benefit-options.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "src/lib/brand-contrast.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "src/lib/bulk-resume-intake.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "src/lib/capitalizeSentenceLead.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "src/lib/chatWidgetDisplay.ts",
+                "occurrences": 56
+              },
+              {
+                "file": "src/lib/compareCandidates.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "src/lib/compareDisplayCompact.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "src/lib/compareWhyDifferBullet.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/lib/convex-user-error.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "src/lib/convexDocumentId.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/dashboard-preload.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/date-format.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/dedupe-top-strengths-vs-matches.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "src/lib/extension-connect-client.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "src/lib/fit-summary-bullets.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "src/lib/formatQuickVerdictDisplay.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "src/lib/gapClustering.ts",
+                "occurrences": 18
+              },
+              {
+                "file": "src/lib/generated-jd.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "src/lib/hiring-bulk-effect.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/hiring-home-jobs.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "src/lib/hiring-home-search.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "src/lib/imported-job-overview.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/job-defaults-snapshot.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "src/lib/job-types.ts",
+                "occurrences": 165
+              },
+              {
+                "file": "src/lib/job-wizard-save.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "src/lib/knowledge-base.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "src/lib/mcp-site-url.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "src/lib/posthog.tsx",
+                "occurrences": 6
+              },
+              {
+                "file": "src/lib/preload-markdown-editor.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/pricing-catalog.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "src/lib/public-application-ingress-client.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "src/lib/public-application-ingress-server.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "src/lib/resume-upload-client.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/sentry-client.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "src/lib/social-cross-reference-view-model.ts",
+                "occurrences": 41
+              },
+              {
+                "file": "src/lib/split-evidence-bullets.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "src/lib/support-form.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/team-roles.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "src/lib/upload-session.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "src/lib/utils.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "src/lib/validation-constants.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "src/lib/years-experience-requirement.ts",
+                "occurrences": 13
+              },
+              {
+                "file": "src/routes/__root.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/routes/api/kit/subscribe.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "src/routes/api/public-applications/submissions.ts",
+                "occurrences": 10
+              },
+              {
+                "file": "src/routes/api/public-applications/uploads.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "src/routes/api/resumes/$applicationId.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/apply/$orgSlug.$jobId.tsx",
+                "occurrences": 5
+              },
+              {
+                "file": "src/routes/dashboard.tsx",
+                "occurrences": 5
+              },
+              {
+                "file": "src/routes/evals/index.tsx",
+                "occurrences": 15
+              },
+              {
+                "file": "src/routes/get-started.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/index.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/routes/insights.tsx",
+                "occurrences": 9
+              },
+              {
+                "file": "src/routes/invite/$token.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/jobs/$jobId/-components/ApplicationsSection.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/routes/jobs/$jobId/compare.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/jobs/$jobId/index.tsx",
+                "occurrences": 11
+              },
+              {
+                "file": "src/routes/jobs/$jobId/upload.tsx",
+                "occurrences": 6
+              },
+              {
+                "file": "src/routes/jobs/import.tsx",
+                "occurrences": 6
+              },
+              {
+                "file": "src/routes/jobs/new.tsx",
+                "occurrences": 9
+              },
+              {
+                "file": "src/routes/qa/login.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/routes/settings/billing.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/settings/index.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/settings/job-defaults-helpers.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/settings/job-defaults.tsx",
+                "occurrences": 5
+              },
+              {
+                "file": "src/routes/settings/mcp.tsx",
+                "occurrences": 7
+              },
+              {
+                "file": "src/routes/settings/team.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/routes/shared/$token.tsx",
+                "occurrences": 9
+              },
+              {
+                "file": "src/routes/support.tsx",
+                "occurrences": 4
+              }
+            ]
+          },
+          {
+            "check": "unawaited-async-map",
+            "recipe": "unhandled-value",
+            "reason": "unsupported-expression",
+            "occurrences": 933,
+            "files": [
+              {
+                "file": "convex/activeChatResultContext.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/analysis/analysisProfile.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/analysis/bonus.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/analysis/evidence.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/analysis/evidenceAttribution.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/analysis/extractJobStructure.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/analysis/fit.ts",
+                "occurrences": 19
+              },
+              {
+                "file": "convex/analysis/gaps.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/analysis/githubProfileReader.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/analysis/index.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/analysis/internal.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/analysis/portfolioExtractor.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/analysis/profileEvidenceMapper.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "convex/analysis/profileEvidenceResumeClaims.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/analysis/profileExistenceCheck.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/analysis/queue.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/analysis/queueTest.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/analysis/stepRunner.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/analysis/transferable.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "convex/analysis/validateDiscriminatoryContent.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/analysis/verification.ts",
+                "occurrences": 10
+              },
+              {
+                "file": "convex/analysis/verificationInsights.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/applicationFileRetention.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/applications.ts",
+                "occurrences": 14
+              },
+              {
+                "file": "convex/billing.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/candidateIdentity.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/candidateRecruiterNotes.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/chat.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "convex/chatResultSets.ts",
+                "occurrences": 30
+              },
+              {
+                "file": "convex/chatSearchHydration.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/chatTools.ts",
+                "occurrences": 20
+              },
+              {
+                "file": "convex/compareCandidates.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/dashboard.ts",
+                "occurrences": 25
+              },
+              {
+                "file": "convex/dashboardMetricsReconciliation.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/devCandidateIdentityQa.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/devHiringHomeQa.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/devHiringPipelineQa.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "convex/devMembershipTools.ts",
+                "occurrences": 12
+              },
+              {
+                "file": "convex/devRecruiterChatQa.ts",
+                "occurrences": 31
+              },
+              {
+                "file": "convex/durableApplicationIntake.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/evals/data.ts",
+                "occurrences": 16
+              },
+              {
+                "file": "convex/evals/overrides.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/evals/registryQueries.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/evals/renderer.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/evals/results.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/evals/runner.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/evals/runnerInternal.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/evals/validator.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/extensionAuth.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/extensionIngestion.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/hiring/closureFeedback.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/hiring/consumerRead.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/hiring/jobSummary.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/hiring/stageSummaryFixtureModel.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/hiring/stateRead.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/hiring/summaryGenerationEffect.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/hiringApplication.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "convex/hiringBulk.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/hiringLifecycle.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/hiringPipeline.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "convex/interviewFeedback.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/jobApplicantExportBuild.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/job_wizard_ai.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/jobs.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/jobsActions.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/analysisStats.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/applicationSource.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/authOrigins.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/chatAnonymousResults.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/chatAnswerDisplay.ts",
+                "occurrences": 22
+              },
+              {
+                "file": "convex/lib/chatCareerTimeline.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/chatPayloadSanitize.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/chatSearchEvidence.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/lib/chatToolCallLog.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/compareCandidatesPayload.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/extensionAuth.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/generatedJdFidelity.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/jobRequirements.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "convex/lib/legacyLinkedInSanitization.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/llmObservability.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/locationPolicy.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/mcpApiKeys.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/mcpListJobs.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/promoCodes.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/publicApplicationPolicy.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/recruiterCandidateEvidenceBundle.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/recruiterCandidateRetrieval.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/lib/recruiterCandidateSemanticEvidence.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/recruiterChatModel.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/recruiterChatPrimaryDecision.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/recruiterChatPromptResolver.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/recruiterChatToolExposure.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/recruiterChatTurn.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "convex/lib/recruiterSearchContext.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/resumeOrgRedaction.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/sharedViewDto.ts",
+                "occurrences": 15
+              },
+              {
+                "file": "convex/lib/utils.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/validation.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/mcpApiKeys.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/mcpHttp.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/migrations/backfillApplicationOrgIds.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/migrations/backfillBillingAccounts.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/migrations/removeSeverityFromGaps.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/onboarding.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/orgJobDefaults.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/orgMemberships.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/orgs.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/promoCodes.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/publicApplicationIngress.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/recruiterCandidateRetrievalOutcomes.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/recruiterChatMessages.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/recruiting/context.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/recruiting/fixtureTransport.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/recruitingMessages.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/semanticSearch.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/shareLinks.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/stageSummaries.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/stagingDurableApplicationIntakeQa.ts",
+                "occurrences": 11
+              },
+              {
+                "file": "convex/stagingPublicApplicationQa.ts",
+                "occurrences": 9
+              },
+              {
+                "file": "convex/stagingShareViewerQa.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "convex/stripeWebhook.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/support.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "convex/talentPoolAssignments.ts",
+                "occurrences": 6
+              },
+              {
+                "file": "convex/teamInvites.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/tokenUsage.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/userProfiles.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "extensions/sift-chrome/popup.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "extensions/sift-chrome/src/background/submitPipeline.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "extensions/sift-chrome/src/state/selectionReducer.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "scripts/dashboard-backfill.mjs",
+                "occurrences": 3
+              },
+              {
+                "file": "scripts/recruiterChatEvals/langfuseUpload.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "scripts/recruiterChatEvals/runner.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "scripts/recruiterChatEvals/tracePromotion.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "scripts/run-recruiter-chat-employment-decision-evals.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "scripts/upload-sentry-sourcemaps.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "scripts/validate-railway-build-env.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "shared/chatAdditionalCandidateFollowUp.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "shared/chatDisplayPlaceholderRehydration.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "shared/compareChipPhrase.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "shared/employmentRangeEnd.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "shared/evidenceQuality.ts",
+                "occurrences": 4
+              },
+              {
+                "file": "shared/generatedJdTone.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "shared/resumeTextNormalize.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "shared/roleLineUtils.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/AnalysisRequirementSummary.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/ChatWidget.tsx",
+                "occurrences": 20
+              },
+              {
+                "file": "src/components/FitQuickVerdictBlock.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/FitSummaryBulletGrid.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/applicants/ApplicantsDirectory.tsx",
+                "occurrences": 11
+              },
+              {
+                "file": "src/components/application-detail/ApplicationDetail.tsx",
+                "occurrences": 7
+              },
+              {
+                "file": "src/components/application-detail/ApplicationShareDialog.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/apply/ApplicationForm.tsx",
+                "occurrences": 8
+              },
+              {
+                "file": "src/components/apply/JobDescriptionDisplay.tsx",
+                "occurrences": 5
+              },
+              {
+                "file": "src/components/apply/PublicJobHeader.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/candidate-comparison/CandidateComparisonDialog.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/candidate-comparison/ComparisonExplanation.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/candidate-comparison/ComparisonMatrix.tsx",
+                "occurrences": 5
+              },
+              {
+                "file": "src/components/chat-results/ChatResultsWorkspace.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/contact/ContactPicker.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/contact/contact-picker-options.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/dashboard/DashboardKpiSection.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/extension/ExtensionConnectPanel.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/hiring/ApplicationLifecyclePanel.tsx",
+                "occurrences": 6
+              },
+              {
+                "file": "src/components/hiring/ApplicationWorkPanel.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/hiring/ApplicationWorkspace.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/hiring/BulkHiringActions.tsx",
+                "occurrences": 15
+              },
+              {
+                "file": "src/components/hiring/CandidateIdentityContext.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/hiring/HiringHomeWork.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/hiring/HiringStageControl.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/hiring/HiringWorkQueue.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/hiring/InterviewFeedbackPanel.tsx",
+                "occurrences": 6
+              },
+              {
+                "file": "src/components/hiring/JobHiringProcessPanel.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/hiring/PipelineChangeReview.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/hiring/PriorFeedbackNotices.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/hiring/QaHiringTeammatePicker.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/hiring/RecruitingMessages.tsx",
+                "occurrences": 13
+              },
+              {
+                "file": "src/components/hiring/StageSummaryPanel.tsx",
+                "occurrences": 5
+              },
+              {
+                "file": "src/components/jobs/ApplicationsTabPanel.tsx",
+                "occurrences": 9
+              },
+              {
+                "file": "src/components/jobs/ExpandableBenefitChipGrid.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/jobs/GeneratedJDPreview.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/jobs/JobWorkspacePanel.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/jobs/JobsInventory.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/jobs/RoleTemplatePicker.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/jobs/SocialFieldsConfigurator.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/jobs/UploadResumesBody.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/jobs/ValidationIssuesPanel.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/jobs/import/ImportReviewEditor.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/jobs/wizard/JobWizardLivePreview.tsx",
+                "occurrences": 14
+              },
+              {
+                "file": "src/components/jobs/wizard/primitives/WizardChipGroup.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/jobs/wizard/primitives/WizardCompanyStory.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/jobs/wizard/primitives/WizardListBuilder.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/jobs/wizard/primitives/WizardVoiceCards.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/jobs/wizard/steps/StepBenefits.tsx",
+                "occurrences": 8
+              },
+              {
+                "file": "src/components/jobs/wizard/steps/StepRole.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/knowledge-base/KnowledgeBasePageContent.tsx",
+                "occurrences": 6
+              },
+              {
+                "file": "src/components/layout/WorkspaceNotifications.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/pricing/PricingFeatureList.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/settings/job-defaults/BenefitOptionsEditor.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/components/settings/job-defaults/JobDefaultsSocialFields.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/components/settings/job-defaults/JobDefaultsTabSkeleton.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/social-cross-reference/SocialCrossReferenceSection.tsx",
+                "occurrences": 7
+              },
+              {
+                "file": "src/components/support/SupportFieldPicker.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/support/SupportPageContent.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/support/SupportPriorityPicker.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/talent-pool/TalentPoolPicker.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/components/team/InviteMemberDialog.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/team/TeamRolePill.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/analysis-requirement-summary.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/brand-contrast.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/chatWidgetDisplay.ts",
+                "occurrences": 7
+              },
+              {
+                "file": "src/lib/compareCandidates.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "src/lib/compareDisplayCompact.ts",
+                "occurrences": 8
+              },
+              {
+                "file": "src/lib/compareWhyDifferBullet.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/lib/extension-connect-client.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/formatQuickVerdictDisplay.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/gapClustering.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "src/lib/generated-jd.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/hiring-bulk-effect.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/job-types.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/resume-upload-client.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/role-templates.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/social-cross-reference-view-model.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/dashboard.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/routes/evals/index.tsx",
+                "occurrences": 20
+              },
+              {
+                "file": "src/routes/index.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/insights.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/routes/jobs/$jobId/-components/ApplicationsSection.tsx",
+                "occurrences": 3
+              },
+              {
+                "file": "src/routes/jobs/$jobId/compare.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/jobs/$jobId/index.tsx",
+                "occurrences": 4
+              },
+              {
+                "file": "src/routes/jobs/$jobId/upload.tsx",
+                "occurrences": 15
+              },
+              {
+                "file": "src/routes/jobs/import.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/jobs/new.tsx",
+                "occurrences": 5
+              },
+              {
+                "file": "src/routes/pricing.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/settings/job-defaults.tsx",
+                "occurrences": 5
+              },
+              {
+                "file": "src/routes/settings/mcp.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/settings/team.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/routes/shared/$token.tsx",
+                "occurrences": 2
+              }
+            ]
+          },
+          {
+            "check": "fetch-calls-without-abortsignal",
+            "recipe": "required-or-recommended-option",
+            "reason": "unsupported-expression",
+            "occurrences": 51,
+            "files": [
+              {
+                "file": "convex/analysis/extractText.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/analysis/transferable.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/chat.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/chatTools.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/devApplicationFileUploadQa.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/evals/runner.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/authHelpers.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/fileValidation.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/firecrawlClient.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/locationPolicy.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+                "occurrences": 3
+              },
+              {
+                "file": "convex/lib/recruiterChatCandidateSearchPolicy.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/lib/recruiterSearchContext.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "convex/lib/validation.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/publicApplicationIngress.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "convex/semanticSearch.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "extensions/sift-chrome/popup.ts",
+                "occurrences": 5
+              },
+              {
+                "file": "extensions/sift-chrome/src/background/submitPipeline.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "shared/chatSearchDisplayLabel.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/application-detail/ApplicationDetail.tsx",
+                "occurrences": 5
+              },
+              {
+                "file": "src/components/apply/ApplicationForm.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/hiring/ApplicationViewRecorder.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/components/support/SupportPageContent.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/dashboard-preload.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/lib/public-application-ingress-server.ts",
+                "occurrences": 2
+              },
+              {
+                "file": "src/routes/api/resumes/$applicationId.ts",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/apply/$orgSlug.$jobId.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/evals/index.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/jobs/new.tsx",
+                "occurrences": 2
+              },
+              {
+                "file": "src/routes/settings/index.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/settings/job-defaults.tsx",
+                "occurrences": 1
+              },
+              {
+                "file": "src/routes/shared/$token.tsx",
+                "occurrences": 3
+              }
+            ]
+          }
+        ],
+        "incomplete": true,
+        "execution": {
+          "semanticQueries": 45453,
+          "modelRequests": 671,
+          "modelCacheHits": 45462
+        }
+      },
+      "narrowed": [
+        "fetch-calls-without-abortsignal",
+        "unawaited-async-map"
+      ],
+      "blindSpots": [
+        "All checks require calls analysis and abstain when it is unavailable; the report exposes narrowed coverage, never a clean bill of health.",
+        "Native globals and React imports are resolved lexically. Cross-file wrappers, monkey-patched globals and arbitrary runtime types are not interpreted.",
+        "Array identity uses literals, declared array parameters and supported array-producing chains. Unknown receivers/transfers abstain; return transfers ownership, not proof of settlement.",
+        "Timer cleanup follows returned functions and direct local helper calls. Conditional cancellation and multiple outstanding writes to one handle remain review cases, not proofs of a leak.",
+        "Fetch options use ordered local properties/spreads and Request constructors. Unknown inputs/options, mutation and escapes abstain; signal presence is not proof that anyone aborts.",
+        "Fixture-named files and default diagnostic extension exclusions remain outside the scan."
+      ]
+    }
+  ],
+  "crashed": [],
+  "broken": [],
+  "skippedUnsafe": [],
+  "gate": {
+    "failOn": "none",
+    "mode": "full",
+    "fails": false
+  }
+}

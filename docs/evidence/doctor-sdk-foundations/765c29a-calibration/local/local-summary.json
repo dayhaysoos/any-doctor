@@ -1,0 +1,77 @@
+{
+  "automated": {
+    "passed": 623,
+    "failed": 0,
+    "skipped": 0
+  },
+  "bundled": {
+    "passed": 265,
+    "failed": 0,
+    "skipped": 15
+  },
+  "profiles": {
+    "passed": 21,
+    "failed": 0,
+    "skipped": 0
+  },
+  "original": {
+    "passed": 55,
+    "failed": 0
+  },
+  "fresh": {
+    "passed": 20,
+    "failed": 0
+  },
+  "locations": {
+    "passed": 2,
+    "failed": 0
+  },
+  "unavailable": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "rows": [
+      {
+        "name": "no unsupported findings",
+        "passed": true
+      },
+      {
+        "name": "analysis unavailable flag",
+        "passed": true
+      },
+      {
+        "name": "all three narrowed check ids in JSON",
+        "passed": true
+      },
+      {
+        "name": "unavailable coverage in prose",
+        "passed": true
+      },
+      {
+        "name": "all checks declare calls and skip",
+        "passed": true
+      }
+    ]
+  },
+  "sift": {
+    "files": 671,
+    "findings": 9,
+    "narrowed": [
+      {
+        "check": "fetch-calls-without-abortsignal",
+        "reason": "unsupported-expression",
+        "occurrences": 12
+      },
+      {
+        "check": "fetch-calls-without-abortsignal",
+        "reason": "unresolved-identity",
+        "occurrences": 2027
+      },
+      {
+        "check": "unawaited-async-map",
+        "reason": "unsupported-expression",
+        "occurrences": 21
+      }
+    ]
+  }
+}

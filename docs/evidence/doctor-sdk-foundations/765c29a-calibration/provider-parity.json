@@ -1,0 +1,33 @@
+{
+  "baseline": {
+    "id": "any-doctor/syntax-flow",
+    "version": "1",
+    "available": true,
+    "dependencies": [
+      {
+        "id": "oxc-parser",
+        "version": "0.149.0"
+      },
+      {
+        "id": "@typescript-eslint/scope-manager",
+        "version": "8.70.0"
+      }
+    ]
+  },
+  "candidate": {
+    "id": "any-doctor/syntax-flow",
+    "version": "1",
+    "available": true,
+    "dependencies": [
+      {
+        "id": "oxc-parser",
+        "version": "0.149.0"
+      },
+      {
+        "id": "@typescript-eslint/scope-manager",
+        "version": "8.70.0"
+      }
+    ]
+  },
+  "identical": true
+}

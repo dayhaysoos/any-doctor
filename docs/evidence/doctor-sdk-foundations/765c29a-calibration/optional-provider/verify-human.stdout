@@ -1,0 +1,74 @@
+[2mcapabilities: reads via ctx only — no imports, no network, no writes, no subprocesses[0m
+  – reports a fetch call without options — skipped: analysis engine unavailable — pins the analysis-on path
+  – reports options that omit signal — skipped: analysis engine unavailable — pins the analysis-on path
+  – accepts an explicit signal property among other options — skipped: analysis engine unavailable — pins the analysis-on path
+  – accepts a shorthand signal property — skipped: analysis engine unavailable — pins the analysis-on path
+  – reports a nested signal that is not a RequestInit signal — skipped: analysis engine unavailable — pins the analysis-on path
+  – accepts known options carrying a signal property — skipped: analysis engine unavailable — pins the analysis-on path
+  – commented-out map(async) lookalike is not flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – string-literal map(async) lookalike is not flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – unawaited map(async) is flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – Promise.all-consumed result is not flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – await on the promise array does not settle it — flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – per-element for-of consumption is recognized — not flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  ✔ unavailable analysis abstains: src/for-of.ts
+  – an inline for-of over the mapped array with awaited elements is not flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – a same-named binding in another scope cannot silence this one — skipped: analysis engine unavailable — pins the analysis-on path
+  ✔ unavailable analysis abstains: src/shadow-off.ts
+  – a never-reassigned let binding is checked like a const — flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – a reassigned binding is inconclusive and skipped — skipped: analysis engine unavailable — pins the analysis-on path
+  ✔ unavailable analysis abstains: src/off-a.ts
+  ✔ unavailable analysis abstains: src/off-b.ts
+  ✔ unavailable analysis abstains: src/off-bare.ts
+  ✔ unavailable analysis abstains: src/off-await-array.ts
+  ✔ unavailable analysis abstains: src/off-one-line.ts
+  ✔ unavailable analysis abstains: src/off-opt-bound.ts
+  – allSettled-consumed result in a later batch loop is not flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – consumption on the declaration's own line is seen — skipped: analysis engine unavailable — pins the analysis-on path
+  – a map(async) wrapped in Promise.all at the declaration is not flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – a bare discarded map(async) with no binding is flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – a bare map(async) in an else branch is flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – an optional-chained bare map(async) is flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – an optional-chained bound map(async) with no consumer is flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – await directly on the mapped array does not settle it — flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – an async-function callback in a dropped binding is flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – a bare async-function map statement is flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – an async-function map consumed by a combiner is not flagged — skipped: analysis engine unavailable — pins the analysis-on path
+  – reports an assigned timeout without cleanup — skipped: analysis engine unavailable — pins the analysis-on path
+  – allows cleanup of the assigned timeout — skipped: analysis engine unavailable — pins the analysis-on path
+  – reports only the timer missing from multi-timer cleanup — skipped: analysis engine unavailable — pins the analysis-on path
+  – reports an unassigned timer despite unrelated cleanup — skipped: analysis engine unavailable — pins the analysis-on path
+  – ignores timeout lookalikes outside effects and in comments — skipped: analysis engine unavailable — pins the analysis-on path
+  – unresolved effect identity: reports an assigned timeout without cleanup — skipped: analysis engine unavailable — pins the analysis-on path
+  – unresolved effect identity: reports only the timer missing from multi-timer cleanup — skipped: analysis engine unavailable — pins the analysis-on path
+  – unresolved effect identity: reports an unassigned timer despite unrelated cleanup — skipped: analysis engine unavailable — pins the analysis-on path
+  – locations: fetch-calls-without-abortsignal — skipped: analysis engine unavailable — pins the analysis-on path
+  – locations: unawaited-async-map — skipped: analysis engine unavailable — pins the analysis-on path
+  – locations: uncleared-settimeout-in-effect — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / genuine absence positive — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / present option lookalike — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / shadowed call identity — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / immutable call alias — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / two same-line occurrences — skipped: analysis engine unavailable — pins the analysis-on path
+  ✔ challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / analysis unavailable
+  – challenge profile: unhandled-value / unawaited-async-map / genuine positive — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: unhandled-value / unawaited-async-map / valid lookalike and shadowed producer — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: unhandled-value / unawaited-async-map / ownership transfer — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: unhandled-value / unawaited-async-map / unsupported receiver with positive neighbor — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: unhandled-value / unawaited-async-map / two same-line occurrences — skipped: analysis engine unavailable — pins the analysis-on path
+  ✔ challenge profile: unhandled-value / unawaited-async-map / analysis unavailable
+  – challenge profile: resource-without-release / uncleared-settimeout-in-effect / genuine unreleased positive — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: resource-without-release / uncleared-settimeout-in-effect / shadowed acquisition with positive neighbor — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: resource-without-release / uncleared-settimeout-in-effect / immutable handle alias release — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: resource-without-release / uncleared-settimeout-in-effect / different handle does not release acquisition — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: resource-without-release / uncleared-settimeout-in-effect / supported local cleanup transfer — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: resource-without-release / uncleared-settimeout-in-effect / unsupported cleanup transfer with positive neighbor — skipped: analysis engine unavailable — pins the analysis-on path
+  – challenge profile: resource-without-release / uncleared-settimeout-in-effect / two same-line occurrences — skipped: analysis engine unavailable — pins the analysis-on path
+  ✔ challenge profile: resource-without-release / uncleared-settimeout-in-effect / analysis unavailable
+  ✔ shared innocent corpus (12 files)
+  – location coverage: fetch-calls-without-abortsignal — skipped: analysis engine unavailable — pins the analysis-on path
+  – location coverage: unawaited-async-map — skipped: analysis engine unavailable — pins the analysis-on path
+  – location coverage: uncleared-settimeout-in-effect — skipped: analysis engine unavailable — pins the analysis-on path
+
+[2m12/71 fixtures passed for async — 59 not exercised (see reasons above)[0m

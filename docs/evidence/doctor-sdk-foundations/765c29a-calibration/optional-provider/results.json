@@ -1,0 +1,162 @@
+{
+  "exit": 0,
+  "providerAbsent": true,
+  "counts": {
+    "passed": 12,
+    "failed": 0,
+    "skipped": 59
+  },
+  "profiles": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 18
+  },
+  "executedOff": [
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / analysis unavailable",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / analysis unavailable",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / analysis unavailable",
+      "ok": true,
+      "missing": [],
+      "unexpected": []
+    }
+  ],
+  "skippedOn": [
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / genuine absence positive",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / present option lookalike",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / shadowed call identity",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / immutable call alias",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / unknown options with positive neighbor",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: required-or-recommended-option / fetch-calls-without-abortsignal / two same-line occurrences",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / genuine positive",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / valid lookalike and shadowed producer",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / ownership transfer",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / unsupported receiver with positive neighbor",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: unhandled-value / unawaited-async-map / two same-line occurrences",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / genuine unreleased positive",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / shadowed acquisition with positive neighbor",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / immutable handle alias release",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / different handle does not release acquisition",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / supported local cleanup transfer",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / unsupported cleanup transfer with positive neighbor",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    },
+    {
+      "name": "challenge profile: resource-without-release / uncleared-settimeout-in-effect / two same-line occurrences",
+      "ok": true,
+      "missing": [],
+      "unexpected": [],
+      "skipped": "analysis engine unavailable — pins the analysis-on path"
+    }
+  ]
+}

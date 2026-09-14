@@ -1,0 +1,11 @@
+{
+  "command": [
+    "node",
+    "<consumer>/node_modules/any-doctor/bin/cli.js",
+    "verify",
+    "--all"
+  ],
+  "cwd": "<consumer>/node_modules/any-doctor",
+  "exit": 0,
+  "wallMs": 1485
+}

@@ -1,0 +1,11 @@
+{
+  "command": [
+    "python3",
+    "<temp>/packed-final/packed-inputs/challenges.py",
+    "packed",
+    "<consumer>/node_modules/any-doctor"
+  ],
+  "cwd": "<consumer>/node_modules/any-doctor",
+  "exit": 0,
+  "wallMs": 523
+}

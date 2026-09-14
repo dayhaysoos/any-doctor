@@ -1,0 +1,11 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "--test-name-pattern=unknown recipe analysis",
+    "<repo>/test/doctor-sdk.test.mjs"
+  ],
+  "cwd": "<repo>",
+  "exit": 0,
+  "wallMs": 1421
+}

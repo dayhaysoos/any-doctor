@@ -1,0 +1,13 @@
+{
+  "command": [
+    "node",
+    "node_modules/any-doctor/bin/cli.js",
+    "verify",
+    "node_modules/any-doctor/doctors/async.mjs",
+    "--format",
+    "json"
+  ],
+  "cwd": "<temp>/baseline-optional",
+  "exit": 1,
+  "wallMs": 447
+}

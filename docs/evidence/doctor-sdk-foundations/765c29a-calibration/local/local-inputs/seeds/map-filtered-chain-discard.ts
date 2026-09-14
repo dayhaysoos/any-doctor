@@ -1,0 +1,1 @@
+[1,2].filter(Boolean).map(async x=>x);

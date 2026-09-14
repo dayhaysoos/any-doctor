@@ -1,0 +1,1 @@
+const tasks=[1,2].map(async x=>x); for (const task of tasks) { await task; }

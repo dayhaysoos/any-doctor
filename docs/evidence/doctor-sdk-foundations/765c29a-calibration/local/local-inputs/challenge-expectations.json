@@ -1,0 +1,387 @@
+[
+  {
+    "name": "fetch-no-options",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 1,
+    "source": "fetch(\"https://example.invalid\");",
+    "reason": "No cancellation signal supplied; candidate, not automatically a bug."
+  },
+  {
+    "name": "fetch-inline-signal",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "const c=new AbortController(); fetch(\"https://example.invalid\",{signal:c.signal});",
+    "reason": "Inline signal present."
+  },
+  {
+    "name": "fetch-shorthand-signal",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "const signal=new AbortController().signal; fetch(\"https://example.invalid\",{signal});",
+    "reason": "Shorthand signal present."
+  },
+  {
+    "name": "fetch-options-variable",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "const c=new AbortController(); const options={signal:c.signal}; fetch(\"https://example.invalid\",options);",
+    "reason": "Known options object carries a real signal."
+  },
+  {
+    "name": "fetch-spread-options",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "const c=new AbortController(); const options={signal:c.signal}; fetch(\"https://example.invalid\",{...options});",
+    "reason": "Spread preserves signal."
+  },
+  {
+    "name": "fetch-request-object",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "const c=new AbortController(); const request=new Request(\"https://example.invalid\",{signal:c.signal}); fetch(request);",
+    "reason": "Request carries its own cancellation signal."
+  },
+  {
+    "name": "fetch-inline-request",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "const c=new AbortController(); fetch(new Request(\"https://example.invalid\",{signal:c.signal}));",
+    "reason": "Inline Request also carries signal."
+  },
+  {
+    "name": "fetch-forwarded-init",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "export function forward(url, init: RequestInit){ return fetch(url,init); }",
+    "reason": "Unknown caller options cannot prove absent signal; abstain or narrower claim."
+  },
+  {
+    "name": "fetch-local-lookalike",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "function fetch(value){return value;} fetch(1);",
+    "reason": "Synchronous local function, not network fetch."
+  },
+  {
+    "name": "fetch-parameter-lookalike",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "export function f(fetch: (x:number)=>number){return fetch(1)}",
+    "reason": "Caller-provided unrelated function is not established network fetch."
+  },
+  {
+    "name": "fetch-signal-undefined",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 1,
+    "source": "fetch(\"https://example.invalid\",{signal:undefined});",
+    "reason": "No usable cancellation signal despite a property key."
+  },
+  {
+    "name": "fetch-signal-null",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 1,
+    "source": "fetch(\"https://example.invalid\",{signal:null});",
+    "reason": "Null does not supply an abort controller signal."
+  },
+  {
+    "name": "fetch-computed-signal",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "const c=new AbortController(); fetch(\"https://example.invalid\",{[\"signal\"]:c.signal});",
+    "reason": "Static computed property supplies signal."
+  },
+  {
+    "name": "fetch-comment-before-signal",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "const c=new AbortController(); fetch(\"https://example.invalid\",{/* cancellation */ signal:c.signal});",
+    "reason": "Comment does not disable the property."
+  },
+  {
+    "name": "fetch-overridden-signal",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 1,
+    "source": "const c=new AbortController(); fetch(\"https://example.invalid\",{signal:c.signal,...{signal:undefined}});",
+    "reason": "Later spread overrides the signal."
+  },
+  {
+    "name": "fetch-no-call-comment",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 0,
+    "source": "// fetch(\"https://example.invalid\");\nconst example=\"fetch(url)\";",
+    "reason": "Comments/strings are not calls."
+  },
+  {
+    "name": "fetch-nested-signal",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 1,
+    "source": "fetch(\"https://example.invalid\",{headers:{signal:\"text\"}});",
+    "reason": "A nested key is not RequestInit.signal."
+  },
+  {
+    "name": "fetch-global-member",
+    "rule": "fetch-calls-without-abortsignal",
+    "expected": 1,
+    "source": "globalThis.fetch(\"https://example.invalid\");",
+    "reason": "Real global fetch in a member form; tests declared coverage limitation."
+  },
+  {
+    "name": "map-dropped-binding",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "const tasks=[1,2].map(async x=>x);",
+    "reason": "Real array of promises dropped."
+  },
+  {
+    "name": "map-bare-discard",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "[1,2].map(async x=>x);",
+    "reason": "Bare real array map result dropped."
+  },
+  {
+    "name": "map-await-array",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "await [1,2].map(async x=>x);",
+    "reason": "Awaiting an ordinary array does not await its elements."
+  },
+  {
+    "name": "map-combined",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "const tasks=[1,2].map(async x=>x); await Promise.all(tasks);",
+    "reason": "Correct iterable of promises passed to real combiner."
+  },
+  {
+    "name": "map-returned-binding",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "export function f(){ const tasks=[1,2].map(async x=>x); return tasks; }",
+    "reason": "Returning an array transfers it to caller; not proof of dropped promises."
+  },
+  {
+    "name": "map-helper-consumption",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "async function settle(tasks){return await Promise.all(tasks)}\nconst tasks=[1,2].map(async x=>x); await settle(tasks);",
+    "reason": "Helper actually settles the array."
+  },
+  {
+    "name": "map-aliased-consumption",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "const tasks=[1,2].map(async x=>x); const pending=tasks; await Promise.all(pending);",
+    "reason": "Alias points to same array consumed by combiner."
+  },
+  {
+    "name": "map-for-await",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "const tasks=[1,2].map(async x=>x); for await (const result of tasks) { console.log(result); }",
+    "reason": "for-await unwraps each yielded promise."
+  },
+  {
+    "name": "map-per-element-await",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "const tasks=[1,2].map(async x=>x); for (const task of tasks) { await task; }",
+    "reason": "Each element explicitly awaited."
+  },
+  {
+    "name": "map-inline-combiner",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "await Promise.all([1,2].map(async x=>x));",
+    "reason": "Direct inline consumption."
+  },
+  {
+    "name": "map-nested-array-combiner",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "const tasks=[1,2].map(async x=>x); await Promise.all([tasks]);",
+    "reason": "Combiner does not recursively settle nested arrays."
+  },
+  {
+    "name": "map-combiner-unrelated-callback",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "await Promise.all([1].map(async ()=>{ [1,2].map(async x=>x); }));",
+    "reason": "Nested discarded inner map is not consumed by outer combiner."
+  },
+  {
+    "name": "map-length-in-combiner",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "const tasks=[1,2].map(async x=>x); await Promise.all([tasks.length]);",
+    "reason": "Reading array length in combiner does not settle elements."
+  },
+  {
+    "name": "map-spread-into-combiner",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "const tasks=[1,2].map(async x=>x); await Promise.all([...tasks]);",
+    "reason": "Spread passes individual promises."
+  },
+  {
+    "name": "map-shadowed-combiner",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "const Promise={all:async x=>null}; const tasks=[1,2].map(async x=>x); await Promise.all(tasks);",
+    "reason": "Same-named object does not perform promise settlement."
+  },
+  {
+    "name": "map-await-object-containing-element",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "const tasks=[1,2].map(async x=>x); for(const task of tasks){ await {task}; }",
+    "reason": "Awaiting object containing a promise does not unwrap its field."
+  },
+  {
+    "name": "map-unrelated-scope-combiner",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "const tasks=[1,2].map(async x=>x); function other(){ const tasks=[]; return Promise.all(tasks); }",
+    "reason": "Other binding cannot consume first array."
+  },
+  {
+    "name": "map-local-object-method",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "const object={async map(callback){return await callback(1)}}; await object.map(async x=>x);",
+    "reason": "Custom map is promise-returning and is properly awaited."
+  },
+  {
+    "name": "map-returned-direct",
+    "rule": "unawaited-async-map",
+    "expected": 0,
+    "source": "export function f(){return [1,2].map(async x=>x)}",
+    "reason": "Direct return transfers the array."
+  },
+  {
+    "name": "map-filtered-chain-discard",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "[1,2].filter(Boolean).map(async x=>x);",
+    "reason": "Dropped array behind chained receiver; tests declared coverage limitation."
+  },
+  {
+    "name": "map-const-enclosing-function",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "const work=()=>{ [1,2].map(async x=>x); }; await Promise.all([work]);",
+    "reason": "Passing the enclosing function value does not consume inner map results."
+  },
+  {
+    "name": "map-async-function-callback",
+    "rule": "unawaited-async-map",
+    "expected": 1,
+    "source": "const tasks=[1,2].map(async function(x){return x});",
+    "reason": "Async function callback has same promise-array semantics."
+  },
+  {
+    "name": "timer-positive",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 1,
+    "source": "import {useEffect} from \"react\";\nuseEffect(()=>{const timer=setTimeout(()=>{},100);},[]);",
+    "reason": "Effect starts a timer without cancellation cleanup."
+  },
+  {
+    "name": "timer-cleanup",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 0,
+    "source": "import {useEffect} from \"react\";\nuseEffect(()=>{const timer=setTimeout(()=>{},100);return ()=>clearTimeout(timer);},[]);",
+    "reason": "Cleanup clears same handle."
+  },
+  {
+    "name": "timer-window-cleanup",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 0,
+    "source": "import {useEffect} from \"react\";\nuseEffect(()=>{const timer=window.setTimeout(()=>{},100);return ()=>window.clearTimeout(timer);},[]);",
+    "reason": "Window qualification preserves timer identity and cleanup."
+  },
+  {
+    "name": "timer-globalthis-cleanup",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 0,
+    "source": "import {useEffect} from \"react\";\nuseEffect(()=>{const timer=globalThis.setTimeout(()=>{},100);return ()=>globalThis.clearTimeout(timer);},[]);",
+    "reason": "Global qualification preserves cleanup."
+  },
+  {
+    "name": "timer-local-effect-lookalike",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 0,
+    "source": "function useEffect(callback){callback()}\nuseEffect(()=>{setTimeout(()=>{},100);});",
+    "reason": "Local ordinary function is not a React effect."
+  },
+  {
+    "name": "timer-local-timer-lookalike",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 0,
+    "source": "import {useEffect} from \"react\";\nuseEffect(()=>{const setTimeout=()=>42;const timer=setTimeout();},[]);",
+    "reason": "Synchronous local function is not a timer."
+  },
+  {
+    "name": "timer-local-clear-lookalike",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 1,
+    "source": "import {useEffect} from \"react\";\nuseEffect(()=>{const clearTimeout=()=>{}; const timer=setTimeout(()=>{},100);return ()=>clearTimeout(timer);},[]);",
+    "reason": "Unrelated clearTimeout does not cancel timer."
+  },
+  {
+    "name": "timer-shadowed-handle",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 1,
+    "source": "import {useEffect} from \"react\";\nuseEffect(()=>{const timer=setTimeout(()=>{},100);return ()=>{const timer=0;clearTimeout(timer);};},[]);",
+    "reason": "Cleanup clears different shadowed binding."
+  },
+  {
+    "name": "timer-unused-clear-helper",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 1,
+    "source": "import {useEffect} from \"react\";\nuseEffect(()=>{const timer=setTimeout(()=>{},100);const cancel=()=>clearTimeout(timer);},[]);",
+    "reason": "Never invoked or returned helper is not cleanup."
+  },
+  {
+    "name": "timer-wrong-handle",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 1,
+    "source": "import {useEffect} from \"react\";\nuseEffect(()=>{const first=setTimeout(()=>{},100);const second=setTimeout(()=>{},100);return ()=>clearTimeout(first);},[]);",
+    "reason": "Second timer is uncancelled."
+  },
+  {
+    "name": "timer-concise-effect",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 1,
+    "source": "import {useEffect} from \"react\";\nuseEffect(()=>void setTimeout(()=>{},100),[]);",
+    "reason": "Concise effect returns undefined and creates an uncancelled timer."
+  },
+  {
+    "name": "timer-alias-effect",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 1,
+    "source": "import {useEffect as effect} from \"react\";\neffect(()=>{setTimeout(()=>{},100);},[]);",
+    "reason": "Real React effect import alias; tests declared limitation."
+  },
+  {
+    "name": "timer-namespace-effect",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 1,
+    "source": "import * as React from \"react\";\nReact.useEffect(()=>{setTimeout(()=>{},100);},[]);",
+    "reason": "Real namespace React effect."
+  },
+  {
+    "name": "timer-outside-effect",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 0,
+    "source": "const timer=setTimeout(()=>{},100);",
+    "reason": "Outside this effect-specific rule."
+  },
+  {
+    "name": "timer-helper-cleanup",
+    "rule": "uncleared-settimeout-in-effect",
+    "expected": 0,
+    "source": "import {useEffect} from \"react\";\nuseEffect(()=>{let timer=0;const start=()=>{timer=setTimeout(()=>{},100);};start();return ()=>clearTimeout(timer);},[]);",
+    "reason": "Started helper timer cleared through shared handle."
+  }
+]

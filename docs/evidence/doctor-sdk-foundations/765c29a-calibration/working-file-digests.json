@@ -1,0 +1,107 @@
+[
+  {
+    "file": "bin/certify.js",
+    "bytes": 23718,
+    "sha256": "1d7312d84e2dd24c086d191adf3bba5c00fab7227bdcbf6d4b74b044c453d05c"
+  },
+  {
+    "file": "bin/dashboard.d.ts",
+    "bytes": 3235,
+    "sha256": "da3caa93408d8f1a100fb8eab571c6d1f59040b37e82900330554c85dd9286fb"
+  },
+  {
+    "file": "bin/dashboard.js",
+    "bytes": 43728,
+    "sha256": "b316113a6f8cc6e4c4cf81413baa4b60559eb01fede015fc41b01b9469c03161"
+  },
+  {
+    "file": "bin/doctor-sdk.js",
+    "bytes": 47559,
+    "sha256": "cecde0054906563282b3f5f49e892b2f38452c7cb9fa8dbff91765403200ff4a"
+  },
+  {
+    "file": "bin/doctor-tree.js",
+    "bytes": 4804,
+    "sha256": "55e5ac8786eb330850c2348e4f6e3bcc2985d39e29761204b34a06aa036446fa"
+  },
+  {
+    "file": "bin/report.js",
+    "bytes": 17690,
+    "sha256": "584f796e2913fc587622853a4515e3fa89c2ecadfd70871fbf75716ec92a6642"
+  },
+  {
+    "file": "bin/value-flow.d.ts",
+    "bytes": 2065,
+    "sha256": "cb933cb16b99f74ed141b578553ad7d08a044949b6f04be212a47c8ccb6307c6"
+  },
+  {
+    "file": "bin/value-flow.js",
+    "bytes": 9469,
+    "sha256": "64b497bb746428ed8092dbbdcb0ca09d2e6b4aba5dccfaeeac5553fd240f71e4"
+  },
+  {
+    "file": "dev/doctor-sdk/check-optional-provider.mjs",
+    "bytes": 2644,
+    "sha256": "a2593a867676fa40c778278d3e401e612d71ac9cf60e7bde67c1a01933216517"
+  },
+  {
+    "file": "dev/doctor-sdk/measure-analysis.mjs",
+    "bytes": 2012,
+    "sha256": "bedfff64f8afed0919295b9bbf3c486dd06e6708c2c0a232d5c6cc1b9fc5765b"
+  },
+  {
+    "file": "dev/doctor-sdk/run-calibration.py",
+    "bytes": 5874,
+    "sha256": "4094c5a1630e37b0a1826a3ded04da22e9477a2e677b0ddc96712d52b9e578d0"
+  },
+  {
+    "file": "dev/doctor-sdk/run-profile-mutations.mjs",
+    "bytes": 3710,
+    "sha256": "110a913441d0e21a84d79f62e11571dcd0322d54e790354fb2aabbe7e9b48aba"
+  },
+  {
+    "file": "docs/doctor-sdk.md",
+    "bytes": 7505,
+    "sha256": "7e60d0153cdf9284b9afbb2c0d0e50a7743b8ae0a6a54d4e34217a4725ed585d"
+  },
+  {
+    "file": "src/certify.ts",
+    "bytes": 23103,
+    "sha256": "3e350583a62b3b561c55581cedfedb93282ab3126d1a76117a22ac6abc6f5950"
+  },
+  {
+    "file": "src/dashboard.ts",
+    "bytes": 41475,
+    "sha256": "221346f497ff250cae100bd675e7c8e4f8d92f2481744375dad4218268d92ae6"
+  },
+  {
+    "file": "src/doctor-sdk.ts",
+    "bytes": 35941,
+    "sha256": "ac1aa39a84f1d9d3f8846fe8d2d897cfbcb106c74595dbda6bb45f0b7f981a27"
+  },
+  {
+    "file": "src/doctor-tree.ts",
+    "bytes": 6426,
+    "sha256": "766312534207d4fbfa14d29baf64412a2c10b8bbc2598abffd8f119d532958a2"
+  },
+  {
+    "file": "src/report.ts",
+    "bytes": 19498,
+    "sha256": "b7a0b367f9b7ec1286157fe9ef09c3e7feef47f38639dc7fc76ecb9c0bcd246e"
+  },
+  {
+    "file": "src/value-flow.ts",
+    "bytes": 9937,
+    "sha256": "3d10984ae98424fb1d024e197d5ec73d07019e73a7c7f3fc8fa11c781caf26c8"
+  },
+  {
+    "file": "test/doctor-sdk.test.mjs",
+    "bytes": 12978,
+    "sha256": "a009b77e195cecf1c021246b54ad0f36c67e802536d6104ebdb60031a48c9ed6"
+  },
+  {
+    "file": "test/sdk-candidate-boundaries.test.mjs",
+    "bytes": 5678,
+    "sha256": "5071f5f69daaa1db6501b0346cf8be3bb9dd9e04fbda45730263dc8e440c2079"
+  }
+]

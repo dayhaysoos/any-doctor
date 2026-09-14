@@ -1,0 +1,12 @@
+{
+  "command": [
+    "npm",
+    "install",
+    "--ignore-scripts",
+    "--no-audit",
+    "--no-fund",
+    "<temp>/package/any-doctor-0.1.2.tgz"
+  ],
+  "cwd": "<consumer>",
+  "exit": 0
+}

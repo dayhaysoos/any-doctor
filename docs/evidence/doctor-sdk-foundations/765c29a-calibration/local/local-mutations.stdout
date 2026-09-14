@@ -1,0 +1,22 @@
+{
+  "mutations": [
+    {
+      "mutation": "broken-identity",
+      "exit": 1,
+      "intendedProfile": "shadowed call identity",
+      "failedProfiles": 14
+    },
+    {
+      "mutation": "unknown-as-absent",
+      "exit": 1,
+      "intendedProfile": "unknown options with positive neighbor",
+      "failedProfiles": 1
+    },
+    {
+      "mutation": "suppressed-reporting",
+      "exit": 1,
+      "intendedProfile": "genuine absence positive",
+      "failedProfiles": 12
+    }
+  ]
+}
