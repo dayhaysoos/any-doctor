@@ -25,7 +25,7 @@ type Engine = typeof runEngine;
 // to the sibling analysis host.
 export function handleSearchLine(line: string, mode: Mode, engine: Engine = runEngine): string | null {
   if (!line.startsWith(SEARCH_REQUEST)) return null;
-  let req: { op?: unknown; pattern?: unknown; rule?: unknown; rules?: unknown; kind?: unknown; file?: unknown; language?: unknown; root?: unknown; includeTests?: unknown; sourceDigest?: unknown };
+  let req: { op?: unknown; pattern?: unknown; rule?: unknown; rules?: unknown; kind?: unknown; file?: unknown; language?: unknown; root?: unknown; includeTests?: unknown; sourceDigest?: unknown; expression?: unknown; query?: unknown };
   try {
     req = JSON.parse(line.slice(SEARCH_REQUEST.length));
   } catch {
@@ -41,7 +41,7 @@ export function handleSearchLine(line: string, mode: Mode, engine: Engine = runE
   const decoded = decodeSearchOp(req.op ?? "pattern");
   if ("error" in decoded) return JSON.stringify({ error: decoded.error });
   if (decoded.op === "analysis") {
-    return JSON.stringify(handleAnalysisRequest({ kind: req.kind, file: req.file, root: req.root, sourceDigest: req.sourceDigest }, mode));
+    return JSON.stringify(handleAnalysisRequest({ kind: req.kind, file: req.file, root: req.root, sourceDigest: req.sourceDigest, expression: req.expression, query: req.query }, mode));
   }
   const language = typeof req.language === "string" ? req.language : "TypeScript";
   const query: EngineQuery =

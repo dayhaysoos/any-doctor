@@ -1,6 +1,6 @@
 import { ProjectConsumers } from "./project-consumers.js";
 import { FunctionStructure } from "./function-structure.js";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, Mode } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, IdentityValue, Mode, SemanticResult } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls } from "./analysis.js";
 type Analyzer = typeof analyzeBindings;
 type SpansAnalyzer = typeof analyzeSpans;
@@ -11,6 +11,8 @@ export interface AnalysisRequestBody {
     file?: unknown;
     root?: unknown;
     sourceDigest?: unknown;
+    expression?: unknown;
+    query?: unknown;
 }
 export type AnalysisResponse = {
     project: ProjectConsumers;
@@ -25,6 +27,8 @@ export type AnalysisResponse = {
     file: AnalysisSpans;
 } | {
     file: AnalysisCalls;
+} | {
+    semantic: SemanticResult<IdentityValue>;
 } | {
     error: string;
 };

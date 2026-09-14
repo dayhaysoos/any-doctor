@@ -19,6 +19,9 @@ export const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 export function cohortFileCount(counts) {
     return counts.reduce((m, n) => Math.max(m, n), 0);
 }
+/** Doctor SDK semantic results are versioned, JSON-safe answers tied to the
+ * exact source snapshot analyzed. Unknown is never absence. */
+export const SEMANTIC_RESULT_VERSION = 1;
 export const PROTOCOL_VERSION = 1;
 export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 // ctx.search host protocol: doctor children cannot spawn (permission

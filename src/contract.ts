@@ -313,6 +313,36 @@ export interface AnalysisCalls {
   differences: (SourceRange & { functionStart: number | null; left: OperandInfo; right: OperandInfo })[];
 }
 
+/** Doctor SDK semantic results are versioned, JSON-safe answers tied to the
+ * exact source snapshot analyzed. Unknown is never absence. */
+export const SEMANTIC_RESULT_VERSION = 1 as const;
+export type UnknownReason =
+  | "analysis-unavailable"
+  | "provider-failure"
+  | "unsupported-expression"
+  | "unresolved-identity"
+  | "source-changed";
+export interface SemanticEvidence {
+  kind: "expression" | "binding" | "alias";
+  file: string;
+  sourceDigest: string;
+  range: SourceRange;
+  relationship?: string;
+}
+export type SemanticResult<T> =
+  | { version: typeof SEMANTIC_RESULT_VERSION; status: "known"; value: T; evidence: SemanticEvidence[] }
+  | { version: typeof SEMANTIC_RESULT_VERSION; status: "unknown"; reason: UnknownReason; evidence?: SemanticEvidence[] };
+export interface ExpressionRef { id: number; start: number; end: number }
+export interface IdentityQuery {
+  globals?: string[];
+  imports?: { source: string; names: string[] }[];
+}
+export type IdentityOrigin =
+  | { kind: "global"; name: string }
+  | { kind: "import"; source: string; name: string }
+  | { kind: "local"; binding: number };
+export interface IdentityValue { matches: boolean; origin: IdentityOrigin }
+
 export interface DoctorCtx {
   root: string;
   files: {
@@ -348,6 +378,9 @@ export interface DoctorCtx {
     spans(file: string): AnalysisSpans;
     /** Calls, immediate uses, callback registrations and subtraction operands. */
     calls(file: string): AnalysisCalls;
+    /** Resolve one captured expression through immutable aliases. Local and
+     * shadowed lookalikes are known non-matches; unresolved targets are unknown. */
+    identity(file: string, expression: ExpressionRef, query: IdentityQuery): SemanticResult<IdentityValue>;
     consumers(file: string): { exports: ExportConsumers[]; coverage: ProjectConsumers["coverage"] };
     structures(file: string): FunctionStructure[];
   };
@@ -627,4 +660,3 @@ export function resolveFinding(meta: DoctorMeta, finding: Finding): JoinedFindin
     finding,
   };
 }
-

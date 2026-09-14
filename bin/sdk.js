@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { inventory } from "./file-scope.js";
 import * as fs from "fs";
 import * as path from "path";
-import { SEARCH_REQUEST, SEARCH_RESULT, withinDir } from "./contract.js";
+import { SEARCH_REQUEST, SEARCH_RESULT, SEMANTIC_RESULT_VERSION, withinDir } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 // The verify harness forces the degraded path per fixture (fixture
 // `analysis: "off"`): the loader flips this switch before running that
@@ -140,6 +140,19 @@ export function buildCtx(root, opts = {}) {
             },
             calls(file) {
                 return analysisFile("calls", file);
+            },
+            identity(file, expression, query) {
+                if (analysisForcedOff || !ctx.analysis.available)
+                    return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" };
+                try {
+                    const response = runAnalysis({ kind: "identity", file, expression, query, sourceDigest: digest(readSource(file)) }, root);
+                    if (response.semantic)
+                        return response.semantic;
+                    return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" };
+                }
+                catch {
+                    return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" };
+                }
             },
         },
         report: {

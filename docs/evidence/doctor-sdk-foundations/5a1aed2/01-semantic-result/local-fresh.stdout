@@ -1,0 +1,12 @@
+local 9 11
+return-await-array: expected 0 actual 1 control 1
+return-await-inline: expected 0 actual 1 control 1
+return-choice-array: expected 0 actual 1 control 1
+yield-array: expected 0 actual 1 control 1
+spread-helper-consumption: expected 0 actual 1 control 1
+spread-opaque-consumption: expected 0 actual 1 control 1
+push-spread-consumption: expected 0 actual 1 control 1
+combiner-spread-arguments: expected 0 actual 1 control 1
+fetch-prototype-signal: expected 0 actual 1 control 1
+timer-cleanup-call-parameter: expected 0 actual 1 control 1
+timer-cleanup-factory: expected 0 actual 1 control 1

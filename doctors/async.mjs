@@ -10,7 +10,7 @@ export const meta = {
     'Fixture-named files and default diagnostic extension exclusions remain outside the scan.',
   ],
   checks: [
-    {id:'fetch-calls-without-abortsignal',revision:2,reportingUnit:'occurrence',needs:['calls'],onUnknown:'skip',severity:'info',
+    {id:'fetch-calls-without-abortsignal',revision:2,reportingUnit:'occurrence',needs:['calls','identity'],onUnknown:'skip',severity:'info',
       description:'Review a native fetch with no established caller cancellation signal.',
       claim:'A resolved native fetch whose input and ordered options establish no caller signal, including an explicit null override of an unknown input.',
       impact:'Cancellation or a deadline may help bound unnecessary or stalled work; omission alone does not establish a bug.',
@@ -42,7 +42,8 @@ export async function doctor(ctx) {
     const report=(rule,c,message)=>ctx.report.finding({rule,file,line:c.line,column:c.column,
       evidence:{endLine:c.endLine,endColumn:c.endColumn},...(message?{message}: {})});
     for(const c of m.calls){
-      if(m.native(c.callee,'fetch') && m.fetchSignal(c)==='absent') report('fetch-calls-without-abortsignal',c);
+      const fetchIdentity=ctx.analysis.identity(file,m.ref(c.callee),{globals:['fetch','window.fetch','globalThis.fetch','self.fetch']});
+      if(fetchIdentity.status==='known'&&fetchIdentity.value.matches && m.fetchSignal(c)==='absent') report('fetch-calls-without-abortsignal',c);
       if(c.member==='map' && m.array(c.receiver) && m.resolve(c.arguments[0])?.async){
         if(m.arrayUse(c)==='dropped') report('unawaited-async-map',c);
       }
@@ -223,5 +224,6 @@ function model(facts){
     for(const binding of out)if(flow.uses.some(u=>!u.dead&&u.kind==='write'&&u.binding===binding&&u.value!==c.id))out.delete(binding);
     return out;
   }
-  return {flow,calls,resolve,native,reactEffect,array,arrayUse,fetchSignal,reachable,handle,handles};
+  const ref=id=>{const v=values.get(id);return {id:v.id,start:v.start,end:v.end}};
+  return {flow,calls,resolve,native,reactEffect,array,arrayUse,fetchSignal,reachable,handle,handles,ref};
 }

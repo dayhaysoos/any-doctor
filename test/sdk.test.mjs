@@ -70,6 +70,11 @@ test("ctx.analysis: forced-off (verify's degraded fixtures) makes available fals
       assert.equal(c.analysis.available, false);
       assert.equal(probeAnalysisAvailable(dir), false);
       assert.throws(() => c.analysis.bindings("a.ts"), /requires the analysis engine/);
+      assert.deepEqual(c.analysis.identity("a.ts", { id: 0, start: 0, end: 1 }, { globals: ["fetch"] }), {
+        version: 1,
+        status: "unknown",
+        reason: "analysis-unavailable",
+      });
     } finally {
       setAnalysisDisabled(false);
     }

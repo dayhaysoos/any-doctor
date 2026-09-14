@@ -31,7 +31,7 @@ export function handleSearchLine(line, mode, engine = runEngine) {
     if ("error" in decoded)
         return JSON.stringify({ error: decoded.error });
     if (decoded.op === "analysis") {
-        return JSON.stringify(handleAnalysisRequest({ kind: req.kind, file: req.file, root: req.root, sourceDigest: req.sourceDigest }, mode));
+        return JSON.stringify(handleAnalysisRequest({ kind: req.kind, file: req.file, root: req.root, sourceDigest: req.sourceDigest, expression: req.expression, query: req.query }, mode));
     }
     const language = typeof req.language === "string" ? req.language : "TypeScript";
     const query = decoded.op === "rule"

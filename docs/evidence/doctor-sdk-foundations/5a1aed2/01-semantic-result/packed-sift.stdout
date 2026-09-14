@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "tool": "any-doctor",
+  "target": "/tmp/any-doctor-frozen-sift",
+  "fileCount": 671,
+  "durationMs": 31225,
+  "score": {
+    "score": 99,
+    "grade": "Excellent",
+    "filesClean": 664,
+    "filesTotal": 671,
+    "emptyScan": false
+  },
+  "counts": {
+    "error": 0,
+    "warning": 1,
+    "info": 8,
+    "total": 9,
+    "hiddenDuplicates": 0
+  },
+  "analysisAvailable": true,
+  "emptyScan": false,
+  "groups": [
+    {
+      "doctor": "async",
+      "checks": [
+        {
+          "rule": "fetch-calls-without-abortsignal",
+          "heading": "Review a native fetch with no established caller cancellation signal.",
+          "severity": "info",
+          "impact": "Cancellation or a deadline may help bound unnecessary or stalled work; omission alone does not establish a bug.",
+          "why": "Request lifetime requirements differ between server, extension and UI requests. This is a cancellation-policy review candidate.",
+          "fix": "Check the intended request lifetime and caller contract. If cancellation or a deadline is required, preserve forwarded options and provide an appropriate AbortSignal; abort only when the work should stop.",
+          "findings": [
+            {
+              "file": "convex/lib/emailClient.ts",
+              "line": 30,
+              "column": 27,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABjb252ZXgvbGliL2VtYWlsQ2xpZW50LnRzAGRlMmVlY2ZhOGNmZTYwMzU1NDhkYjZlM2RmMDdkOTk1ZGMxZWZkYzZjZTZmNjM2NWQwYmRkYmQwOTQxMjRmZTkAZnVuY3Rpb246c2VuZEVtYWlsIzAAMjMAcmFuZ2U"
+            },
+            {
+              "file": "convex/lib/langfuse.ts",
+              "line": 254,
+              "column": 25,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABjb252ZXgvbGliL2xhbmdmdXNlLnRzADMwZTMzOTIyYWQwNTIzMmMwYzhjOWExZjExMWY0M2Q4MzBiYTc4MGJmYTU1ZTIzNGY1NDhmNGZjMzY1ODhiYTIAZnVuY3Rpb246ZmV0Y2hPcGVuUm91dGVyR2VuZXJhdGlvblJlc3QjMAAyMwByYW5nZQ"
+            },
+            {
+              "file": "extensions/sift-chrome/background.ts",
+              "line": 89,
+              "column": 25,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL2JhY2tncm91bmQudHMAN2U3YWQxMTViNGVlMmNhYzc5OTk1ODk5YzY5Yjk1NWNlZGYwNjYyODcwMmZhNTQ3ODQ4Y2E3ZTFlNGE5M2YyNABmdW5jdGlvbjpleGNoYW5nZVBhaXJpbmdDb2RlIzAAMjMAcmFuZ2U"
+            },
+            {
+              "file": "extensions/sift-chrome/src/api/client.ts",
+              "line": 69,
+              "column": 25,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABleHRlbnNpb25zL3NpZnQtY2hyb21lL3NyYy9hcGkvY2xpZW50LnRzAGFkMGNkZjQwYjRiOGMzOTBiODQ0YzRkNGYyOGNjMTg5MTg4ZDQ3NDBmNDAxMWEwNDlmNzRhMzM1ODJmODk5MTYAZnVuY3Rpb246Y2FsbENvbnZleCMwADIzAHJhbmdl"
+            },
+            {
+              "file": "src/components/EmailSignupForm.tsx",
+              "line": 56,
+              "column": 29,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvY29tcG9uZW50cy9FbWFpbFNpZ251cEZvcm0udHN4AGQ5ZjIzNGI0OTE5MTNkODQyOWQ0NGM2NTcyYmM3ZDEzYzAwODk1MWIwZTE1YzkzYmQ4YjkzYTE0OTVlNTU0YzgAYXJyb3c6ADAAMjMAcmFuZ2U"
+            },
+            {
+              "file": "src/routes/api/kit/subscribe.ts",
+              "line": 146,
+              "column": 39,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzADJhZDg2NzFhOGVjNTQ3NTM4NWRlZjg1ZDZiYTBhZjM4M2JlMGE4NzljYTUxZTQ2ODExYmFhZDIzODYyOTVhZDgAYXJyb3c6ADAAMjkAcmFuZ2U"
+            },
+            {
+              "file": "src/routes/api/kit/subscribe.ts",
+              "line": 176,
+              "column": 38,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzADhjOGViYjY3MTJkZTUwYWU2OWFjN2ZiZDkxMjhjYzU3YmE4MWU0ZjhkNmUyOWRhYjcwOTA1N2JkMjc3N2MxMTQAYXJyb3c6ADAAMjYAcmFuZ2U"
+            },
+            {
+              "file": "src/routes/api/kit/subscribe.ts",
+              "line": 199,
+              "column": 37,
+              "decisionKey": "YXN5bmMvZmV0Y2gtY2FsbHMtd2l0aG91dC1hYm9ydHNpZ25hbABzcmMvcm91dGVzL2FwaS9raXQvc3Vic2NyaWJlLnRzADZjZDEwMTQ5MGZmZDMwOGRiNmM0YjhkYzc0ZjI2ZDFhZWJiY2ExZDYzZmZhOWY5YjEzNTFjMTU1MDYyYjYyZGUAYXJyb3c6ADAAMjcAcmFuZ2U"
+            }
+          ]
+        },
+        {
+          "rule": "uncleared-settimeout-in-effect",
+          "heading": "Review an effect timer with no matching cancellation in its returned cleanup.",
+          "severity": "warning",
+          "impact": "The callback may outlive the effect that scheduled it; whether that is wrong depends on the intended lifetime.",
+          "why": "A matching name or an uncalled helper does not cancel this timer. React runs the returned cleanup on replacement or unmount.",
+          "fix": "If this timer belongs to the effect lifetime, retain its handle and cancel that handle from returned cleanup. Preserve deliberate completion, rescheduling and cancellation guards; inspect unresolved helper or handle flow before editing.",
+          "findings": [
+            {
+              "file": "src/lib/theme.tsx",
+              "line": 49,
+              "column": 2,
+              "message": "No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.",
+              "decisionKey": "YXN5bmMvdW5jbGVhcmVkLXNldHRpbWVvdXQtaW4tZWZmZWN0AHNyYy9saWIvdGhlbWUudHN4AGEwOGRlOTI3YmQwMzBhZmQ3MzY1ODY4ODY3MWFlOGU0N2E3MGJmMTc2OTU0NzM5NzRjMjk5ZjJmZmNmYzIwNGEAZnVuY3Rpb246YXBwbHlUaGVtZSMwADAAcmFuZ2U"
+            }
+          ]
+        }
+      ],
+      "blindSpots": [
+        "All checks require calls analysis and abstain when it is unavailable; the report exposes narrowed coverage, never a clean bill of health.",
+        "Native globals and React imports are resolved lexically. Cross-file wrappers, monkey-patched globals and arbitrary runtime types are not interpreted.",
+        "Array identity uses literals, declared array parameters and supported array-producing chains. Unknown receivers/transfers abstain; return transfers ownership, not proof of settlement.",
+        "Timer cleanup follows returned functions and direct local helper calls. Conditional cancellation and multiple outstanding writes to one handle remain review cases, not proofs of a leak.",
+        "Fetch options use ordered local properties/spreads and Request constructors. Unknown inputs/options, mutation and escapes abstain; signal presence is not proof that anyone aborts.",
+        "Fixture-named files and default diagnostic extension exclusions remain outside the scan."
+      ]
+    }
+  ],
+  "crashed": [],
+  "broken": [],
+  "skippedUnsafe": [],
+  "gate": {
+    "failOn": "none",
+    "mode": "full",
+    "fails": false
+  }
+}

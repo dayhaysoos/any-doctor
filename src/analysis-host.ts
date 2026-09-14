@@ -3,8 +3,9 @@ import { projectConsumers, ProjectConsumers } from "./project-consumers.js";
 import { functionStructures, FunctionStructure } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, Mode, searchBase, withinBase, withinDir } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, ExpressionRef, IdentityQuery, IdentityValue, Mode, searchBase, SemanticResult, SEMANTIC_RESULT_VERSION, withinBase, withinDir } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls, AnalysisResult, AnalysisStatusResult, SpansResult } from "./analysis.js";
+import { identityResult } from "./doctor-sdk.js";
 
 // The analysis host: the identity engine's side of the channel, a sibling
 // to the search host. The search host routes `op: "analysis"` requests
@@ -40,6 +41,8 @@ export interface AnalysisRequestBody {
   file?: unknown;
   root?: unknown;
   sourceDigest?: unknown;
+  expression?: unknown;
+  query?: unknown;
 }
 
 export type AnalysisResponse =
@@ -49,6 +52,7 @@ export type AnalysisResponse =
   | { file: AnalysisFile }
   | { file: AnalysisSpans }
   | { file: AnalysisCalls }
+  | { semantic: SemanticResult<IdentityValue> }
   | { error: string };
 
 export function handleAnalysisRequest(
@@ -68,6 +72,9 @@ export function handleAnalysisRequest(
     const s: AnalysisStatusResult = status();
     return s.available ? { available: true } : { available: false, reason: s.reason };
   }
+  if (req.kind === "identity" && !status().available) {
+    return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" } };
+  }
   if (typeof req.file === "string" && req.sourceDigest !== undefined) {
     try {
       const abs = path.resolve(root, req.file);
@@ -86,7 +93,7 @@ export function handleAnalysisRequest(
       return { structures: functionStructures(req.file, fs.readFileSync(abs, "utf8")) };
     } catch (e) { return { error: String(e) }; }
   }
-  if (req.kind === "bindings" || req.kind === "spans" || req.kind === "calls") {
+  if (req.kind === "bindings" || req.kind === "spans" || req.kind === "calls" || req.kind === "identity") {
     if (typeof req.file !== "string" || req.file === "") {
       return { error: `ctx.analysis.${req.kind} needs a "file" path` };
     }
@@ -94,13 +101,39 @@ export function handleAnalysisRequest(
     if (!withinDir(abs, root)) {
       return { error: `ctx.analysis failed: file is outside the search root: ${req.file}` };
     }
+    if (req.kind === "identity") {
+      const expression = parseExpression(req.expression);
+      const query = parseIdentityQuery(req.query);
+      if (!expression || !query) return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "unsupported-expression" } };
+      const model = cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
+      if ("error" in model) return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
+      try {
+        return { semantic: identityResult(req.file, fs.readFileSync(abs, "utf8"), model.file, expression, query) };
+      } catch {
+        return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
+      }
+    }
     if (req.kind === "bindings") {
       return cachedModel(abs, root, modelCache, analyzer, req.file);
     }
     if (req.kind === "calls") return cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
     return cachedModel(abs, root, spansCache, spansAnalyzer, req.file);
   }
-  return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans, calls` };
+  return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans, calls, identity` };
+}
+
+function parseExpression(value: unknown): ExpressionRef | null {
+  if (!value || typeof value !== "object") return null;
+  const ref = value as Record<string, unknown>;
+  return [ref.id, ref.start, ref.end].every(Number.isInteger) ? ref as unknown as ExpressionRef : null;
+}
+
+function parseIdentityQuery(value: unknown): IdentityQuery | null {
+  if (!value || typeof value !== "object") return null;
+  const query = value as Record<string, unknown>;
+  if (query.globals !== undefined && (!Array.isArray(query.globals) || !query.globals.every((item) => typeof item === "string"))) return null;
+  if (query.imports !== undefined && (!Array.isArray(query.imports) || !query.imports.every((item) => item && typeof item === "object" && typeof item.source === "string" && Array.isArray(item.names) && item.names.every((name: unknown) => typeof name === "string")))) return null;
+  return query as unknown as IdentityQuery;
 }
 
 // The shared per-file model lifecycle: read (cache hit on content digest),

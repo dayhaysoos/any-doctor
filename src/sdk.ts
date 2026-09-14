@@ -5,7 +5,7 @@ import type { ProjectConsumers } from "./project-consumers.js";
 import type { FunctionStructure } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, Finding, isTestPath, Match, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, withinDir } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, ExpressionRef, Finding, IdentityQuery, IdentityValue, isTestPath, Match, NamedRuleQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, SemanticResult, SEMANTIC_RESULT_VERSION, withinDir } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 import { EngineQuery, RawSgCapture, RawSgMatch } from "./engine.js";
 
@@ -148,6 +148,16 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
       },
       calls(file: string): AnalysisCalls {
         return analysisFile("calls", file);
+      },
+      identity(file: string, expression: ExpressionRef, query: IdentityQuery): SemanticResult<IdentityValue> {
+        if (analysisForcedOff || !ctx.analysis.available) return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" };
+        try {
+          const response = runAnalysis({ kind: "identity", file, expression, query, sourceDigest: digest(readSource(file)) }, root);
+          if (response.semantic) return response.semantic;
+          return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" };
+        } catch {
+          return { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" };
+        }
       },
     },
 
@@ -330,10 +340,11 @@ interface AnalysisResponse {
   available?: boolean;
   reason?: string;
   file?: AnalysisFile | AnalysisSpans | AnalysisCalls;
+  semantic?: SemanticResult<IdentityValue>;
   error?: string;
 }
 
-function runAnalysis(body: { kind: "project" } | { kind: "structures"; file: string; sourceDigest?: string } | { kind: "available" } | { kind: "bindings"; file: string; sourceDigest?: string } | { kind: "spans"; file: string; sourceDigest?: string } | { kind: "calls"; file: string; sourceDigest?: string }, root: string): AnalysisResponse {
+function runAnalysis(body: { kind: "project" } | { kind: "structures"; file: string; sourceDigest?: string } | { kind: "available" } | { kind: "bindings"; file: string; sourceDigest?: string } | { kind: "spans"; file: string; sourceDigest?: string } | { kind: "calls"; file: string; sourceDigest?: string } | { kind: "identity"; file: string; expression: ExpressionRef; query: IdentityQuery; sourceDigest?: string }, root: string): AnalysisResponse {
   let response: AnalysisResponse;
   try {
     fs.writeSync(3, SEARCH_REQUEST + JSON.stringify({ op: "analysis", ...body, root }) + "\n");
