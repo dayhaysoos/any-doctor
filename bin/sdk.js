@@ -194,12 +194,37 @@ export function buildCtx(root, opts = {}) {
                 }
             },
         },
+        recipes: {
+            unhandledValue(file, producer, query, finding) { return recipe('recipe-unhandled-value', file, producer, query, finding); },
+            resourceWithoutRelease(file, acquisition, query, finding) { return recipe('recipe-resource-without-release', file, acquisition, query, finding); },
+            requiredOrRecommendedOption(file, call, query, finding) { return recipe('recipe-required-option', file, call, query, finding); },
+        },
         report: {
             finding(f) {
                 findings.push(f);
             },
         },
     };
+    function recipe(kind, file, expression, query, finding) {
+        var _a, _b, _c;
+        if (analysisForcedOff || !ctx.analysis.available)
+            return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'analysis-unavailable' };
+        let result;
+        try {
+            const response = runAnalysis({ kind, file, expression, query, sourceDigest: digest(readSource(file)) }, root);
+            result = (_a = response.semantic) !== null && _a !== void 0 ? _a : { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+        }
+        catch {
+            return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' };
+        }
+        if (result.status === 'known' && result.value === 'report' || result.status === 'unknown' && ((_b = query.reportUnknown) === null || _b === void 0 ? void 0 : _b.includes(result.reason))) {
+            const value = (_c = ctx.analysis.calls(file).structure.flow.values.find(item => item.id === expression.id && item.start === expression.start && item.end === expression.end)) !== null && _c !== void 0 ? _c : ctx.analysis.calls(file).structure.flow.values.find(item => item.start === expression.start && item.end === expression.end);
+            if (!value)
+                return { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'source-changed' };
+            ctx.report.finding({ rule: finding.rule, file, line: value.line, column: value.column, evidence: { endLine: value.endLine, endColumn: value.endColumn }, ...(finding.message ? { message: finding.message } : {}) });
+        }
+        return result;
+    }
     return { ctx, getFindings: () => findings.slice(), getAnalysisCoverage: () => {
             if (project) {
                 const files = inventory(root, [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cts", ".cjs", ".json"]).files;

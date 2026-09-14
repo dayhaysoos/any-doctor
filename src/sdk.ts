@@ -5,7 +5,7 @@ import type { ProjectConsumers } from "./project-consumers.js";
 import type { FunctionStructure } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, ExpressionRef, Finding, IdentityQuery, IdentityValue, isTestPath, Match, NamedRuleQuery, OptionPresence, OptionPresenceQuery, ResourceLifetime, ResourceLifetimeQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, SemanticResult, SEMANTIC_RESULT_VERSION, ValueDisposition, ValueDispositionQuery, withinDir } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, ExpressionRef, Finding, IdentityQuery, IdentityValue, isTestPath, Match, NamedRuleQuery, OptionPresence, OptionPresenceQuery, RecipeDecision, RecipeFinding, RequiredOptionRecipeQuery, ResourceLifetime, ResourceLifetimeQuery, ResourceWithoutReleaseRecipeQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, SemanticResult, SEMANTIC_RESULT_VERSION, UnhandledValueRecipeQuery, ValueDisposition, ValueDispositionQuery, withinDir } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 import { EngineQuery, RawSgCapture, RawSgMatch } from "./engine.js";
 
@@ -177,12 +177,30 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
       },
     },
 
+    recipes: {
+      unhandledValue(file:string,producer:ExpressionRef,query:UnhandledValueRecipeQuery,finding:RecipeFinding):SemanticResult<RecipeDecision>{return recipe('recipe-unhandled-value',file,producer,query,finding);},
+      resourceWithoutRelease(file:string,acquisition:ExpressionRef,query:ResourceWithoutReleaseRecipeQuery,finding:RecipeFinding):SemanticResult<RecipeDecision>{return recipe('recipe-resource-without-release',file,acquisition,query,finding);},
+      requiredOrRecommendedOption(file:string,call:ExpressionRef,query:RequiredOptionRecipeQuery,finding:RecipeFinding):SemanticResult<RecipeDecision>{return recipe('recipe-required-option',file,call,query,finding);},
+    },
+
     report: {
       finding(f: Finding): void {
         findings.push(f);
       },
     },
   };
+
+  function recipe(kind:'recipe-unhandled-value'|'recipe-resource-without-release'|'recipe-required-option',file:string,expression:ExpressionRef,query:UnhandledValueRecipeQuery|ResourceWithoutReleaseRecipeQuery|RequiredOptionRecipeQuery,finding:RecipeFinding):SemanticResult<RecipeDecision>{
+    if(analysisForcedOff||!ctx.analysis.available)return {version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'analysis-unavailable'};
+    let result:SemanticResult<RecipeDecision>;
+    try{const response=runAnalysis({kind,file,expression,query,sourceDigest:digest(readSource(file))},root);result=response.semantic as SemanticResult<RecipeDecision>??{version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'provider-failure'};}catch{return {version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'provider-failure'};}
+    if(result.status==='known'&&result.value==='report'||result.status==='unknown'&&query.reportUnknown?.includes(result.reason)){
+      const value=ctx.analysis.calls(file).structure.flow.values.find(item=>item.id===expression.id&&item.start===expression.start&&item.end===expression.end)??ctx.analysis.calls(file).structure.flow.values.find(item=>item.start===expression.start&&item.end===expression.end);
+      if(!value)return {version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'source-changed'};
+      ctx.report.finding({rule:finding.rule,file,line:value.line,column:value.column,evidence:{endLine:value.endLine,endColumn:value.endColumn},...(finding.message?{message:finding.message}:{})});
+    }
+    return result;
+  }
 
   return { ctx, getFindings: () => findings.slice(), getAnalysisCoverage: () => {
     if(project) {
@@ -356,11 +374,11 @@ interface AnalysisResponse {
   available?: boolean;
   reason?: string;
   file?: AnalysisFile | AnalysisSpans | AnalysisCalls;
-  semantic?: SemanticResult<IdentityValue | ValueDisposition | ResourceLifetime | OptionPresence>;
+  semantic?: SemanticResult<IdentityValue | ValueDisposition | ResourceLifetime | OptionPresence | RecipeDecision>;
   error?: string;
 }
 
-function runAnalysis(body: { kind: "project" } | { kind: "structures"; file: string; sourceDigest?: string } | { kind: "available" } | { kind: "bindings"; file: string; sourceDigest?: string } | { kind: "spans"; file: string; sourceDigest?: string } | { kind: "calls"; file: string; sourceDigest?: string } | { kind: "identity"; file: string; expression: ExpressionRef; query: IdentityQuery; sourceDigest?: string } | {kind:"value-disposition";file:string;expression:ExpressionRef;query:ValueDispositionQuery;sourceDigest?:string}|{kind:'resource-lifetime';file:string;expression:ExpressionRef;query:ResourceLifetimeQuery;sourceDigest?:string}|{kind:'option-presence';file:string;expression:ExpressionRef;query:OptionPresenceQuery;sourceDigest?:string}, root: string): AnalysisResponse {
+function runAnalysis(body: { kind: "project" } | { kind: "structures"; file: string; sourceDigest?: string } | { kind: "available" } | { kind: "bindings"; file: string; sourceDigest?: string } | { kind: "spans"; file: string; sourceDigest?: string } | { kind: "calls"; file: string; sourceDigest?: string } | { kind: "identity"; file: string; expression: ExpressionRef; query: IdentityQuery; sourceDigest?: string } | {kind:"value-disposition";file:string;expression:ExpressionRef;query:ValueDispositionQuery;sourceDigest?:string}|{kind:'resource-lifetime';file:string;expression:ExpressionRef;query:ResourceLifetimeQuery;sourceDigest?:string}|{kind:'option-presence';file:string;expression:ExpressionRef;query:OptionPresenceQuery;sourceDigest?:string}|{kind:'recipe-unhandled-value'|'recipe-resource-without-release'|'recipe-required-option';file:string;expression:ExpressionRef;query:UnhandledValueRecipeQuery|ResourceWithoutReleaseRecipeQuery|RequiredOptionRecipeQuery;sourceDigest?:string}, root: string): AnalysisResponse {
   let response: AnalysisResponse;
   try {
     fs.writeSync(3, SEARCH_REQUEST + JSON.stringify({ op: "analysis", ...body, root }) + "\n");

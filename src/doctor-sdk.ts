@@ -4,6 +4,8 @@ import type {
   IdentityValue, SemanticEvidence, SemanticResult, SourceRange, ValueDisposition,
   ValueDispositionQuery, ResourceLifetime, ResourceLifetimeQuery,
   OptionPresence, OptionPresenceQuery,
+  RecipeDecision, RequiredOptionRecipeQuery, ResourceWithoutReleaseRecipeQuery,
+  UnhandledValueRecipeQuery,
 } from "./contract.js";
 import { SEMANTIC_RESULT_VERSION } from "./contract.js";
 
@@ -227,8 +229,58 @@ export function optionPresenceResult(
   return result==="unknown"||result==="ignored"||result==="missing"?unknown("unsupported-expression",evidence):{version:SEMANTIC_RESULT_VERSION,status:"known",value:result,evidence};
 }
 
+const semanticRef=(value:FlowValue):ExpressionRef=>({id:value.id,start:value.start,end:value.end});
+const recipeUnknown=(result:SemanticResult<unknown>):SemanticResult<RecipeDecision>=>result.status==='unknown'?{version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:result.reason,...(result.evidence?.length?{evidence:result.evidence}:{})}:unknown('provider-failure');
+const recipeKnown=(value:RecipeDecision,evidence:SemanticEvidence[]):SemanticResult<RecipeDecision>=>({version:SEMANTIC_RESULT_VERSION,status:'known',value,evidence});
+
+/** Recipe: resolve a configured producer and report only when its exact value is
+ * established as discarded. Array identity is owned here, not by consumers. */
+export function unhandledValueRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:UnhandledValueRecipeQuery):SemanticResult<RecipeDecision>{
+  const flow=facts.structure.flow,values=new Map(flow.values.map(value=>[value.id,value])),bindings=new Map(flow.bindings.map(binding=>[binding.binding,binding])),states=new Map(facts.structure.bindings.map(binding=>[binding.binding,binding]));
+  const subject=values.get(expression.id)?.start===expression.start&&values.get(expression.id)?.end===expression.end?values.get(expression.id):flow.values.find(value=>value.start===expression.start&&value.end===expression.end);
+  if(!subject||subject.kind!=='call')return unknown('unsupported-expression');
+  if(subject.member!==query.producer.member)return recipeKnown('clear',[]);
+  const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
+  const resolve=(id:number|undefined,seen=new Set<number>()):FlowValue|null=>{if(id===undefined)return null;const value=values.get(id);if(!value||seen.has(id))return null;seen=new Set(seen).add(id);if(value.kind==='reference'&&value.target?.binding!==null&&value.target?.binding!==undefined){if(!stable(value.target.binding))return null;const initializer=bindings.get(value.target.binding)?.initializer;if(initializer!==undefined)return resolve(initializer,seen)??value;}return value;};
+  const array=(id:number|undefined,seen=new Set<number>()):boolean|'unknown'=>{if(id===undefined||seen.has(id))return 'unknown';seen=new Set(seen).add(id);const raw=values.get(id),binding=raw?.target?.binding;if(binding!==null&&binding!==undefined&&states.get(binding)?.escapes?.length)return 'unknown';if(binding!==null&&binding!==undefined&&bindings.get(binding)?.array&&stable(binding))return true;const value=resolve(id);if(!value)return 'unknown';if(value.kind==='array')return true;if(value.kind==='call'&&['filter','slice','concat','map','flat','flatMap','toSorted','toReversed','toSpliced'].includes(value.member??''))return array(value.receiver,seen);return 'unknown';};
+  const receiver=array(subject.receiver);if(receiver==='unknown')return unknown('unsupported-expression');
+  const callback=resolve(subject.arguments?.[query.producer.asyncArgument]);if(callback?.kind!=='function')return unknown('unsupported-expression');if(!callback.async)return recipeKnown('clear',[]);
+  const disposition=valueDispositionResult(file,source,facts,semanticRef(subject),{consumers:query.consumers});if(disposition.status==='unknown')return recipeUnknown(disposition);
+  return recipeKnown(disposition.value==='discarded'?'report':'clear',disposition.evidence);
+}
+
+/** Recipe: combine configured call identity with structured option presence. */
+export function requiredOptionRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:RequiredOptionRecipeQuery):SemanticResult<RecipeDecision>{
+  const values=facts.structure.flow.values,subject=values.find(value=>value.id===expression.id&&value.start===expression.start&&value.end===expression.end)??values.find(value=>value.start===expression.start&&value.end===expression.end);
+  if(!subject||subject.kind!=='call'||subject.callee===undefined)return unknown('unsupported-expression');
+  const identity=identityResult(file,source,facts,semanticRef(values[subject.callee]),query.call);if(identity.status==='unknown')return recipeUnknown(identity);if(!identity.value.matches)return recipeKnown('clear',identity.evidence);
+  const option=optionPresenceResult(file,source,facts,semanticRef(subject),query.option);if(option.status==='unknown')return recipeUnknown(option);
+  return recipeKnown(option.value==='absent'?'report':'clear',[...identity.evidence,...option.evidence]);
+}
+
+/** Recipe: find a configured owner, validate acquisition identity and classify
+ * the exact handle in that owner's returned cleanup. */
+export function resourceWithoutReleaseRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:ResourceWithoutReleaseRecipeQuery):SemanticResult<RecipeDecision>{
+  const flow=facts.structure.flow,values=new Map(flow.values.map(value=>[value.id,value])),bindings=new Map(flow.bindings.map(binding=>[binding.binding,binding])),states=new Map(facts.structure.bindings.map(binding=>[binding.binding,binding]));
+  const subject=values.get(expression.id)?.start===expression.start&&values.get(expression.id)?.end===expression.end?values.get(expression.id):flow.values.find(value=>value.start===expression.start&&value.end===expression.end);
+  if(!subject||subject.kind!=='call'||subject.callee===undefined)return unknown('unsupported-expression');
+  const acquisitionIdentity=identityResult(file,source,facts,semanticRef(values.get(subject.callee)!),query.acquisition);if(acquisitionIdentity.status==='unknown')return recipeUnknown(acquisitionIdentity);if(!acquisitionIdentity.value.matches)return recipeKnown('clear',acquisitionIdentity.evidence);
+  const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
+  const resolve=(id:number|undefined,seen=new Set<number>()):FlowValue|null=>{if(id===undefined)return null;const value=values.get(id);if(!value||seen.has(id))return null;seen=new Set(seen).add(id);if(value.kind==='reference'&&value.target?.binding!==null&&value.target?.binding!==undefined&&stable(value.target.binding)){const initializer=bindings.get(value.target.binding)?.initializer;if(initializer!==undefined)return resolve(initializer,seen)??value;}return value;};
+  let sawOwner=false;
+  for(const ownerCall of flow.values.filter(value=>value.kind==='call'&&!value.dead&&value.callee!==undefined)){
+    const ownerIdentity=identityResult(file,source,facts,semanticRef(values.get(ownerCall.callee!)!),query.owner.identity);if(ownerIdentity.status!=='known'||!ownerIdentity.value.matches)continue;sawOwner=true;
+    const owner=resolve(ownerCall.arguments?.[query.owner.argument]);if(owner?.kind!=='function')continue;
+    const lifetime=resourceLifetimeResult(file,source,facts,semanticRef(subject),{owner:semanticRef(owner),release:query.release});
+    if(lifetime.status==='unknown'&&lifetime.reason==='outside-owner')continue;
+    if(lifetime.status==='unknown')return recipeUnknown(lifetime);
+    return recipeKnown(lifetime.value==='unreleased'?'report':'clear',[...acquisitionIdentity.evidence,...ownerIdentity.evidence,...lifetime.evidence]);
+  }
+  return recipeKnown('clear',acquisitionIdentity.evidence);
+}
+
 function originOf(target: CallTarget): IdentityOrigin | null {
-  if (target.source && target.importedName) return { kind: "import", source: target.source, name: target.importedName };
+  if (target.source && target.importedName) return { kind: "import", source: target.source, name: [target.importedName,...target.members].join('.') };
   if (target.binding !== null) return { kind: "local", binding: target.binding };
   if (!target.root) return null;
   const name = [target.root, ...target.members].join(".");

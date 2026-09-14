@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {analyzeCalls} from '../bin/analysis.js';
 import {identityResult,optionPresenceResult,resourceLifetimeResult,valueDispositionResult} from '../bin/doctor-sdk.js';
 
@@ -103,4 +105,11 @@ test('Doctor SDK establishes ordered, inherited and Request-carried option prese
     'fetch("/",{get signal(){return external}})',
     'function f(key){fetch("/",{[key]:external})}',
   ])assert.equal(option(source).status,'unknown',source);
+});
+
+test('a confined reference doctor reuses all recipes with different APIs and copy',()=>{
+  const repo=fileURLToPath(new URL('../',import.meta.url));
+  const run=spawnSync(process.execPath,[`${repo}bin/cli.js`,'verify',`${repo}fixtures/doctor-sdk-reference.mjs`],{cwd:repo,encoding:'utf8',timeout:30000});
+  assert.equal(run.status,0,run.stdout+run.stderr);
+  assert.match(run.stdout,/three reusable recipes/);
 });

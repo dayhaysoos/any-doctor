@@ -317,6 +317,34 @@ export interface OptionPresenceQuery {
     sources: string[];
 }
 export type OptionPresence = "present" | "absent";
+export type RecipeDecision = "report" | "clear";
+export interface RecipeFinding {
+    rule: string;
+    message?: string;
+}
+export interface UnhandledValueRecipeQuery {
+    producer: {
+        member: string;
+        asyncArgument: number;
+        receiver: "array";
+    };
+    consumers: string[];
+    reportUnknown?: UnknownReason[];
+}
+export interface ResourceWithoutReleaseRecipeQuery {
+    acquisition: IdentityQuery;
+    owner: {
+        identity: IdentityQuery;
+        argument: number;
+    };
+    release: string[];
+    reportUnknown?: UnknownReason[];
+}
+export interface RequiredOptionRecipeQuery {
+    call: IdentityQuery;
+    option: OptionPresenceQuery;
+    reportUnknown?: UnknownReason[];
+}
 export interface DoctorCtx {
     root: string;
     files: {
@@ -365,6 +393,13 @@ export interface DoctorCtx {
             coverage: ProjectConsumers["coverage"];
         };
         structures(file: string): FunctionStructure[];
+    };
+    /** Serializable, host-maintained compositions. A reported occurrence uses
+     * the exact subject range; unknown results never report. */
+    recipes: {
+        unhandledValue(file: string, producer: ExpressionRef, query: UnhandledValueRecipeQuery, finding: RecipeFinding): SemanticResult<RecipeDecision>;
+        resourceWithoutRelease(file: string, acquisition: ExpressionRef, query: ResourceWithoutReleaseRecipeQuery, finding: RecipeFinding): SemanticResult<RecipeDecision>;
+        requiredOrRecommendedOption(file: string, call: ExpressionRef, query: RequiredOptionRecipeQuery, finding: RecipeFinding): SemanticResult<RecipeDecision>;
     };
     report: {
         finding(f: Finding): void;

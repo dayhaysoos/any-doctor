@@ -1,0 +1,1 @@
+{"passed":5,"failed":0,"skipped":0,"rows":[{"name":"no unsupported findings","passed":true},{"name":"analysis unavailable flag","passed":true},{"name":"all three narrowed check ids in JSON","passed":true},{"name":"unavailable coverage in prose","passed":true},{"name":"all checks declare calls and skip","passed":true}]}

@@ -420,9 +420,107 @@ export function optionPresenceResult(file, source, facts, expression, query) {
     const result = input(subject);
     return result === "unknown" || result === "ignored" || result === "missing" ? unknown("unsupported-expression", evidence) : { version: SEMANTIC_RESULT_VERSION, status: "known", value: result, evidence };
 }
+const semanticRef = (value) => ({ id: value.id, start: value.start, end: value.end });
+const recipeUnknown = (result) => { var _a; return result.status === 'unknown' ? { version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: result.reason, ...(((_a = result.evidence) === null || _a === void 0 ? void 0 : _a.length) ? { evidence: result.evidence } : {}) } : unknown('provider-failure'); };
+const recipeKnown = (value, evidence) => ({ version: SEMANTIC_RESULT_VERSION, status: 'known', value, evidence });
+/** Recipe: resolve a configured producer and report only when its exact value is
+ * established as discarded. Array identity is owned here, not by consumers. */
+export function unhandledValueRecipeResult(file, source, facts, expression, query) {
+    var _a, _b, _c;
+    const flow = facts.structure.flow, values = new Map(flow.values.map(value => [value.id, value])), bindings = new Map(flow.bindings.map(binding => [binding.binding, binding])), states = new Map(facts.structure.bindings.map(binding => [binding.binding, binding]));
+    const subject = ((_a = values.get(expression.id)) === null || _a === void 0 ? void 0 : _a.start) === expression.start && ((_b = values.get(expression.id)) === null || _b === void 0 ? void 0 : _b.end) === expression.end ? values.get(expression.id) : flow.values.find(value => value.start === expression.start && value.end === expression.end);
+    if (!subject || subject.kind !== 'call')
+        return unknown('unsupported-expression');
+    if (subject.member !== query.producer.member)
+        return recipeKnown('clear', []);
+    const stable = (binding) => { var _a, _b; return !((_a = states.get(binding)) === null || _a === void 0 ? void 0 : _a.reassigned) && !((_b = states.get(binding)) === null || _b === void 0 ? void 0 : _b.mutated); };
+    const resolve = (id, seen = new Set()) => { var _a, _b, _c, _d; if (id === undefined)
+        return null; const value = values.get(id); if (!value || seen.has(id))
+        return null; seen = new Set(seen).add(id); if (value.kind === 'reference' && ((_a = value.target) === null || _a === void 0 ? void 0 : _a.binding) !== null && ((_b = value.target) === null || _b === void 0 ? void 0 : _b.binding) !== undefined) {
+        if (!stable(value.target.binding))
+            return null;
+        const initializer = (_c = bindings.get(value.target.binding)) === null || _c === void 0 ? void 0 : _c.initializer;
+        if (initializer !== undefined)
+            return (_d = resolve(initializer, seen)) !== null && _d !== void 0 ? _d : value;
+    } return value; };
+    const array = (id, seen = new Set()) => { var _a, _b, _c, _d, _e; if (id === undefined || seen.has(id))
+        return 'unknown'; seen = new Set(seen).add(id); const raw = values.get(id), binding = (_a = raw === null || raw === void 0 ? void 0 : raw.target) === null || _a === void 0 ? void 0 : _a.binding; if (binding !== null && binding !== undefined && ((_c = (_b = states.get(binding)) === null || _b === void 0 ? void 0 : _b.escapes) === null || _c === void 0 ? void 0 : _c.length))
+        return 'unknown'; if (binding !== null && binding !== undefined && ((_d = bindings.get(binding)) === null || _d === void 0 ? void 0 : _d.array) && stable(binding))
+        return true; const value = resolve(id); if (!value)
+        return 'unknown'; if (value.kind === 'array')
+        return true; if (value.kind === 'call' && ['filter', 'slice', 'concat', 'map', 'flat', 'flatMap', 'toSorted', 'toReversed', 'toSpliced'].includes((_e = value.member) !== null && _e !== void 0 ? _e : ''))
+        return array(value.receiver, seen); return 'unknown'; };
+    const receiver = array(subject.receiver);
+    if (receiver === 'unknown')
+        return unknown('unsupported-expression');
+    const callback = resolve((_c = subject.arguments) === null || _c === void 0 ? void 0 : _c[query.producer.asyncArgument]);
+    if ((callback === null || callback === void 0 ? void 0 : callback.kind) !== 'function')
+        return unknown('unsupported-expression');
+    if (!callback.async)
+        return recipeKnown('clear', []);
+    const disposition = valueDispositionResult(file, source, facts, semanticRef(subject), { consumers: query.consumers });
+    if (disposition.status === 'unknown')
+        return recipeUnknown(disposition);
+    return recipeKnown(disposition.value === 'discarded' ? 'report' : 'clear', disposition.evidence);
+}
+/** Recipe: combine configured call identity with structured option presence. */
+export function requiredOptionRecipeResult(file, source, facts, expression, query) {
+    var _a;
+    const values = facts.structure.flow.values, subject = (_a = values.find(value => value.id === expression.id && value.start === expression.start && value.end === expression.end)) !== null && _a !== void 0 ? _a : values.find(value => value.start === expression.start && value.end === expression.end);
+    if (!subject || subject.kind !== 'call' || subject.callee === undefined)
+        return unknown('unsupported-expression');
+    const identity = identityResult(file, source, facts, semanticRef(values[subject.callee]), query.call);
+    if (identity.status === 'unknown')
+        return recipeUnknown(identity);
+    if (!identity.value.matches)
+        return recipeKnown('clear', identity.evidence);
+    const option = optionPresenceResult(file, source, facts, semanticRef(subject), query.option);
+    if (option.status === 'unknown')
+        return recipeUnknown(option);
+    return recipeKnown(option.value === 'absent' ? 'report' : 'clear', [...identity.evidence, ...option.evidence]);
+}
+/** Recipe: find a configured owner, validate acquisition identity and classify
+ * the exact handle in that owner's returned cleanup. */
+export function resourceWithoutReleaseRecipeResult(file, source, facts, expression, query) {
+    var _a, _b, _c;
+    const flow = facts.structure.flow, values = new Map(flow.values.map(value => [value.id, value])), bindings = new Map(flow.bindings.map(binding => [binding.binding, binding])), states = new Map(facts.structure.bindings.map(binding => [binding.binding, binding]));
+    const subject = ((_a = values.get(expression.id)) === null || _a === void 0 ? void 0 : _a.start) === expression.start && ((_b = values.get(expression.id)) === null || _b === void 0 ? void 0 : _b.end) === expression.end ? values.get(expression.id) : flow.values.find(value => value.start === expression.start && value.end === expression.end);
+    if (!subject || subject.kind !== 'call' || subject.callee === undefined)
+        return unknown('unsupported-expression');
+    const acquisitionIdentity = identityResult(file, source, facts, semanticRef(values.get(subject.callee)), query.acquisition);
+    if (acquisitionIdentity.status === 'unknown')
+        return recipeUnknown(acquisitionIdentity);
+    if (!acquisitionIdentity.value.matches)
+        return recipeKnown('clear', acquisitionIdentity.evidence);
+    const stable = (binding) => { var _a, _b; return !((_a = states.get(binding)) === null || _a === void 0 ? void 0 : _a.reassigned) && !((_b = states.get(binding)) === null || _b === void 0 ? void 0 : _b.mutated); };
+    const resolve = (id, seen = new Set()) => { var _a, _b, _c, _d; if (id === undefined)
+        return null; const value = values.get(id); if (!value || seen.has(id))
+        return null; seen = new Set(seen).add(id); if (value.kind === 'reference' && ((_a = value.target) === null || _a === void 0 ? void 0 : _a.binding) !== null && ((_b = value.target) === null || _b === void 0 ? void 0 : _b.binding) !== undefined && stable(value.target.binding)) {
+        const initializer = (_c = bindings.get(value.target.binding)) === null || _c === void 0 ? void 0 : _c.initializer;
+        if (initializer !== undefined)
+            return (_d = resolve(initializer, seen)) !== null && _d !== void 0 ? _d : value;
+    } return value; };
+    let sawOwner = false;
+    for (const ownerCall of flow.values.filter(value => value.kind === 'call' && !value.dead && value.callee !== undefined)) {
+        const ownerIdentity = identityResult(file, source, facts, semanticRef(values.get(ownerCall.callee)), query.owner.identity);
+        if (ownerIdentity.status !== 'known' || !ownerIdentity.value.matches)
+            continue;
+        sawOwner = true;
+        const owner = resolve((_c = ownerCall.arguments) === null || _c === void 0 ? void 0 : _c[query.owner.argument]);
+        if ((owner === null || owner === void 0 ? void 0 : owner.kind) !== 'function')
+            continue;
+        const lifetime = resourceLifetimeResult(file, source, facts, semanticRef(subject), { owner: semanticRef(owner), release: query.release });
+        if (lifetime.status === 'unknown' && lifetime.reason === 'outside-owner')
+            continue;
+        if (lifetime.status === 'unknown')
+            return recipeUnknown(lifetime);
+        return recipeKnown(lifetime.value === 'unreleased' ? 'report' : 'clear', [...acquisitionIdentity.evidence, ...ownerIdentity.evidence, ...lifetime.evidence]);
+    }
+    return recipeKnown('clear', acquisitionIdentity.evidence);
+}
 function originOf(target) {
     if (target.source && target.importedName)
-        return { kind: "import", source: target.source, name: target.importedName };
+        return { kind: "import", source: target.source, name: [target.importedName, ...target.members].join('.') };
     if (target.binding !== null)
         return { kind: "local", binding: target.binding };
     if (!target.root)

@@ -5,7 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { searchBase, SEMANTIC_RESULT_VERSION, withinBase, withinDir } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls } from "./analysis.js";
-import { identityResult, optionPresenceResult, resourceLifetimeResult, valueDispositionResult } from "./doctor-sdk.js";
+import { identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
 // One cache per host process. The host lives in the runner process, so
 // the lifetime is the any-doctor invocation; across a cohort's doctors
 // the same unchanged file answers from memory.
@@ -30,7 +30,7 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
         const s = status();
         return s.available ? { available: true } : { available: false, reason: s.reason };
     }
-    if ((req.kind === "identity" || req.kind === "value-disposition" || req.kind === "resource-lifetime" || req.kind === "option-presence") && !status().available) {
+    if ((req.kind === "identity" || req.kind === "value-disposition" || req.kind === "resource-lifetime" || req.kind === "option-presence" || req.kind === "recipe-unhandled-value" || req.kind === "recipe-resource-without-release" || req.kind === "recipe-required-option") && !status().available) {
         return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" } };
     }
     if (typeof req.file === "string" && req.sourceDigest !== undefined) {
@@ -63,7 +63,7 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
             return { error: String(e) };
         }
     }
-    if (req.kind === "bindings" || req.kind === "spans" || req.kind === "calls" || req.kind === "identity" || req.kind === "value-disposition" || req.kind === "resource-lifetime" || req.kind === "option-presence") {
+    if (req.kind === "bindings" || req.kind === "spans" || req.kind === "calls" || req.kind === "identity" || req.kind === "value-disposition" || req.kind === "resource-lifetime" || req.kind === "option-presence" || req.kind === "recipe-unhandled-value" || req.kind === "recipe-resource-without-release" || req.kind === "recipe-required-option") {
         if (typeof req.file !== "string" || req.file === "") {
             return { error: `ctx.analysis.${req.kind} needs a "file" path` };
         }
@@ -71,9 +71,9 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
         if (!withinDir(abs, root)) {
             return { error: `ctx.analysis failed: file is outside the search root: ${req.file}` };
         }
-        if (req.kind === "identity" || req.kind === "value-disposition" || req.kind === "resource-lifetime" || req.kind === "option-presence") {
+        if (req.kind === "identity" || req.kind === "value-disposition" || req.kind === "resource-lifetime" || req.kind === "option-presence" || req.kind === "recipe-unhandled-value" || req.kind === "recipe-resource-without-release" || req.kind === "recipe-required-option") {
             const expression = parseExpression(req.expression);
-            const query = req.kind === "identity" ? parseIdentityQuery(req.query) : req.kind === "value-disposition" ? parseDispositionQuery(req.query) : req.kind === "resource-lifetime" ? parseResourceQuery(req.query) : parseOptionQuery(req.query);
+            const query = req.kind === "identity" ? parseIdentityQuery(req.query) : req.kind === "value-disposition" ? parseDispositionQuery(req.query) : req.kind === "resource-lifetime" ? parseResourceQuery(req.query) : req.kind === "option-presence" ? parseOptionQuery(req.query) : req.kind === "recipe-unhandled-value" ? parseUnhandledRecipe(req.query) : req.kind === "recipe-resource-without-release" ? parseResourceRecipe(req.query) : parseRequiredOptionRecipe(req.query);
             if (!expression || !query)
                 return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "unsupported-expression" } };
             const model = cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
@@ -81,7 +81,7 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
                 return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
             try {
                 const source = fs.readFileSync(abs, "utf8");
-                return { semantic: req.kind === "identity" ? identityResult(req.file, source, model.file, expression, query) : req.kind === "value-disposition" ? valueDispositionResult(req.file, source, model.file, expression, query) : req.kind === "resource-lifetime" ? resourceLifetimeResult(req.file, source, model.file, expression, query) : optionPresenceResult(req.file, source, model.file, expression, query) };
+                return { semantic: req.kind === "identity" ? identityResult(req.file, source, model.file, expression, query) : req.kind === "value-disposition" ? valueDispositionResult(req.file, source, model.file, expression, query) : req.kind === "resource-lifetime" ? resourceLifetimeResult(req.file, source, model.file, expression, query) : req.kind === "option-presence" ? optionPresenceResult(req.file, source, model.file, expression, query) : req.kind === "recipe-unhandled-value" ? unhandledValueRecipeResult(req.file, source, model.file, expression, query) : req.kind === "recipe-resource-without-release" ? resourceWithoutReleaseRecipeResult(req.file, source, model.file, expression, query) : requiredOptionRecipeResult(req.file, source, model.file, expression, query) };
             }
             catch {
                 return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
@@ -94,7 +94,7 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
             return cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
         return cachedModel(abs, root, spansCache, spansAnalyzer, req.file);
     }
-    return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans, calls, identity, value-disposition, resource-lifetime, option-presence` };
+    return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans, calls, identity, value-disposition, resource-lifetime, option-presence, recipe-unhandled-value, recipe-resource-without-release, recipe-required-option` };
 }
 function parseDispositionQuery(value) {
     if (!value || typeof value !== "object")
@@ -106,6 +106,12 @@ function parseResourceQuery(value) { if (!value || typeof value !== 'object')
     return null; const record = value, owner = parseExpression(record.owner), release = record.release; return owner && Array.isArray(release) && release.every(item => typeof item === 'string') ? { owner, release } : null; }
 function parseOptionQuery(value) { if (!value || typeof value !== "object")
     return null; const record = value; return typeof record.option === "string" && Array.isArray(record.sources) && record.sources.every(item => typeof item === "string") ? { option: record.option, sources: record.sources } : null; }
+function parseUnhandledRecipe(value) { if (!value || typeof value !== "object")
+    return null; const record = value, producer = record.producer, consumers = record.consumers; return producer && typeof producer.member === 'string' && Number.isInteger(producer.asyncArgument) && producer.receiver === 'array' && Array.isArray(consumers) && consumers.every(item => typeof item === 'string') ? value : null; }
+function parseResourceRecipe(value) { if (!value || typeof value !== "object")
+    return null; const record = value, acquisition = parseIdentityQuery(record.acquisition), owner = record.owner, ownerIdentity = parseIdentityQuery(owner === null || owner === void 0 ? void 0 : owner.identity), release = record.release; return acquisition && ownerIdentity && Number.isInteger(owner === null || owner === void 0 ? void 0 : owner.argument) && Array.isArray(release) && release.every(item => typeof item === 'string') ? value : null; }
+function parseRequiredOptionRecipe(value) { if (!value || typeof value !== "object")
+    return null; const record = value, call = parseIdentityQuery(record.call), option = parseOptionQuery(record.option); return call && option ? value : null; }
 function parseExpression(value) {
     if (!value || typeof value !== "object")
         return null;

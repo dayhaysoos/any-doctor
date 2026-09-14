@@ -38,89 +38,18 @@ export async function doctor(ctx) {
   if (!ctx.analysis.available) return;
   for (const file of ctx.files.list()) {
     if (file.endsWith('.fixtures.mjs')) continue;
-    const facts=ctx.analysis.calls(file), m=model(facts);
-    const report=(rule,c,message)=>ctx.report.finding({rule,file,line:c.line,column:c.column,
-      evidence:{endLine:c.endLine,endColumn:c.endColumn},...(message?{message}: {})});
-    for(const c of m.calls){
-      const fetchIdentity=ctx.analysis.identity(file,m.ref(c.callee),{globals:['fetch','window.fetch','globalThis.fetch','self.fetch']});
-      if(fetchIdentity.status==='known'&&fetchIdentity.value.matches){const option=ctx.analysis.optionPresence(file,m.ref(c.id),{option:'signal',sources:['RequestInit','Request']});if(option.status==='known'&&option.value==='absent')report('fetch-calls-without-abortsignal',c);}
-      if(c.member==='map' && m.array(c.receiver) && m.resolve(c.arguments[0])?.async){
-        const disposition=ctx.analysis.valueDisposition(file,m.ref(c.id),{consumers:['Promise.all','Promise.allSettled','Promise.any','Promise.race','globalThis.Promise.all','globalThis.Promise.allSettled','globalThis.Promise.any','globalThis.Promise.race']});
-        if(disposition.status==='known'&&disposition.value==='discarded') report('unawaited-async-map',c);
-      }
-    }
-    for(const effect of m.calls.filter(c=>m.reactEffect(c.callee))){
-      const setup=m.resolve(effect.arguments[0]);if(setup?.kind!=='function')continue;
-      for(const timer of m.calls){
-        const timerIdentity=ctx.analysis.identity(file,m.ref(timer.callee),{globals:['setTimeout','window.setTimeout','globalThis.setTimeout']});
-        if(timerIdentity.status!=='known'||!timerIdentity.value.matches)continue;
-        const lifetime=ctx.analysis.resourceLifetime(file,m.ref(timer.id),{owner:m.ref(setup.id),release:['clearTimeout','window.clearTimeout','globalThis.clearTimeout']});
-        if(lifetime.status==='known'&&lifetime.value==='unreleased')report('uncleared-settimeout-in-effect',timer,'No matching native cancellation was established in a returned cleanup. Opaque cleanup factories, handle reassignment and conditional lifetimes require source review.');
-        if(lifetime.status==='unknown'&&lifetime.reason!=='outside-owner')report('uncleared-settimeout-in-effect',timer,'Cleanup analysis is uncertain for this timer. No supported matching cancellation was established; inspect opaque, conditional or reassigned cleanup flow before editing.');
-      }
+    const flow=ctx.analysis.calls(file).structure.flow, calls=flow.values.filter(value=>value.kind==='call'&&!value.dead);
+    const ref=value=>({id:value.id,start:value.start,end:value.end});
+    for(const call of calls){
+      ctx.recipes.requiredOrRecommendedOption(file,ref(call),{
+        call:{globals:['fetch','window.fetch','globalThis.fetch','self.fetch']},option:{option:'signal',sources:['RequestInit','Request']},
+      },{rule:'fetch-calls-without-abortsignal'});
+      if(call.member==='map')ctx.recipes.unhandledValue(file,ref(call),{
+        producer:{member:'map',asyncArgument:0,receiver:'array'},consumers:['Promise.all','Promise.allSettled','Promise.any','Promise.race','globalThis.Promise.all','globalThis.Promise.allSettled','globalThis.Promise.any','globalThis.Promise.race'],
+      },{rule:'unawaited-async-map'});
+      if(call.target?.root==='setTimeout'||call.target?.members?.at(-1)==='setTimeout')ctx.recipes.resourceWithoutRelease(file,ref(call),{
+        acquisition:{globals:['setTimeout','window.setTimeout','globalThis.setTimeout']},owner:{identity:{imports:[{source:'react',names:['useEffect','*.useEffect','default.useEffect']}]},argument:0},release:['clearTimeout','window.clearTimeout','globalThis.clearTimeout'],reportUnknown:['unsupported-expression'],
+      },{rule:'uncleared-settimeout-in-effect',message:'No supported matching native cancellation was established in a returned cleanup. Opaque, conditional or reassigned cleanup flow requires source review.'});
     }
   }
-}
-
-function model(facts){
-  const flow=facts.structure.flow, values=new Map(flow.values.map(v=>[v.id,v])),
-    bindings=new Map(flow.bindings.map(b=>[b.binding,b])), states=new Map(facts.structure.bindings.map(b=>[b.binding,b]));
-  const calls=flow.values.filter(v=>v.kind==='call'&&!v.dead), absent={state:'absent'}, unknown={state:'unknown'};
-  const stable=b=>!states.get(b)?.reassigned&&!states.get(b)?.mutated;
-  function resolve(id,seen=new Set()){
-    const v=values.get(id);if(!v||seen.has(id))return null;seen=new Set(seen).add(id);
-    if(v.kind==='reference'&&v.target.binding!==null){
-      const b=bindings.get(v.target.binding);
-      if(!stable(v.target.binding))return null;
-      if(b?.initializer!==undefined)return resolve(b.initializer,seen);
-      const shared=states.get(v.target.binding);
-      if(shared?.path?.length && shared.initializer!==undefined){
-        // Existing destructuring facts address the initializer's source start.
-        const root=flow.values.find(x=>x.start===shared.initializer&&x.kind==='reference');
-        let current=root;for(const name of shared.path){const p=property(current?.id,name,seen);current=p.state==='present'?resolve(p.value,seen):null;}
-        if(current)return current;
-      }
-    }
-    if(v.kind==='member'){
-      const p=property(v.receiver,v.member,seen);if(p.state==='present')return resolve(p.value,seen);
-      if(p.state==='unknown' && resolve(v.receiver,seen)?.kind==='object')return null;
-    }
-    return v;
-  }
-  function property(id,name,seen=new Set()){
-    if(name===null)return unknown;
-    const raw=values.get(id), state=states.get(raw?.target?.binding);
-    if(state?.escapes?.some(t=>!(t.binding===null&&t.root==='fetch')&&!(t.binding===null&&['window','globalThis','self'].includes(t.root)&&t.members.join('.')==='fetch')))return unknown;
-    const v=resolve(id,seen);if(!v)return unknown;
-    if(v.kind!=='object')return unknown;
-    let result=absent;
-    for(const p of v.properties){
-      if(p.spread){const s=property(p.value,name,new Set(seen).add(v.id));if(s.state!=='absent')result=s;}
-      else if(p.name===null)result=unknown;
-      else if(p.name===name)result=p.accessor?unknown:{state:'present',value:p.value};
-    }
-    return result;
-  }
-  function native(id,name){
-    const v=resolve(id);if(!v)return false;
-    if(v.kind==='reference')return v.target.binding===null && v.target.root===name;
-    if(v.kind==='member'&&v.member===name){const root=resolve(v.receiver);return root?.kind==='reference'&&root.target.binding===null&&['window','globalThis','self'].includes(root.target.root);}
-    return false;
-  }
-  function reactEffect(id){
-    const v=resolve(id);if(!v)return false;
-    if(v.kind==='reference')return v.target.source==='react'&&v.target.importedName==='useEffect';
-    if(v.kind==='member'&&v.member==='useEffect'){const root=resolve(v.receiver);return root?.target?.source==='react'&&['*','default'].includes(root.target.importedName);}
-    return false;
-  }
-  function array(id,seen=new Set()){
-    if(seen.has(id))return false;seen=new Set(seen).add(id);
-    const raw=values.get(id);if(states.get(raw?.target?.binding)?.escapes?.length)return false;
-    if(raw?.kind==='reference'&&bindings.get(raw.target.binding)?.array&&stable(raw.target.binding))return true;
-    const v=resolve(id);if(!v)return false;if(v.kind==='array')return true;
-    if(v.kind==='call'&&['filter','slice','concat','map','flat','flatMap','toSorted','toReversed','toSpliced'].includes(v.member))return array(v.receiver,seen);
-    return false;
-  }
-  const ref=id=>{const v=values.get(id);return {id:v.id,start:v.start,end:v.end}};
-  return {flow,calls,resolve,native,reactEffect,array,ref};
 }
