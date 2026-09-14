@@ -1,0 +1,338 @@
+{
+  "startingCommit": "cfc3bf0cea874e81ff6a3684c00cd9dfd00b8168",
+  "sourceCommit": "e29f2ef7f636a2006b283aa6afc29ef2450d2a49",
+  "artifact": {
+    "filename": "any-doctor-0.1.2.tgz",
+    "sha256": "9cad3a6db601481de194b20d12dd413195061a901ceeb73c1ffe9260c4401bb4",
+    "bytes": 275089,
+    "files": 144,
+    "workingTreeAndSourceCommitPacksIdentical": true
+  },
+  "automated": {
+    "passed": 638,
+    "failed": 0,
+    "skipped": 0
+  },
+  "local": {
+    "bundled": {
+      "passed": 265,
+      "failed": 0,
+      "skipped": 15
+    },
+    "profiles": {
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    "focused": {
+      "passed": 60,
+      "failed": 0,
+      "skipped": 0
+    },
+    "frozen": {
+      "files": 671,
+      "findings": 9,
+      "coverage": [
+        {
+          "check": "fetch-calls-without-abortsignal",
+          "reason": "unsupported-expression",
+          "occurrences": 12
+        },
+        {
+          "check": "fetch-calls-without-abortsignal",
+          "reason": "unresolved-identity",
+          "occurrences": 2027
+        },
+        {
+          "check": "unawaited-async-map",
+          "reason": "unsupported-expression",
+          "occurrences": 21
+        }
+      ]
+    },
+    "originalIndependent": {
+      "passed": 55,
+      "failed": 0
+    },
+    "freshIndependent": {
+      "passed": 20,
+      "failed": 0
+    },
+    "locations": {
+      "passed": 2,
+      "failed": 0
+    }
+  },
+  "packed": {
+    "bundled": {
+      "passed": 265,
+      "failed": 0,
+      "skipped": 15
+    },
+    "profiles": {
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    "focused": {
+      "passed": 60,
+      "failed": 0,
+      "skipped": 0
+    },
+    "frozen": {
+      "files": 671,
+      "findings": 9,
+      "coverage": [
+        {
+          "check": "fetch-calls-without-abortsignal",
+          "reason": "unsupported-expression",
+          "occurrences": 12
+        },
+        {
+          "check": "fetch-calls-without-abortsignal",
+          "reason": "unresolved-identity",
+          "occurrences": 2027
+        },
+        {
+          "check": "unawaited-async-map",
+          "reason": "unsupported-expression",
+          "occurrences": 21
+        }
+      ]
+    },
+    "originalIndependent": {
+      "passed": 55,
+      "failed": 0
+    },
+    "freshIndependent": {
+      "passed": 20,
+      "failed": 0
+    },
+    "locations": {
+      "passed": 2,
+      "failed": 0
+    }
+  },
+  "optional": {
+    "asyncDoctor": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 59
+    },
+    "recipeOnly": {
+      "counts": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 6
+      },
+      "profiles": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 5
+      },
+      "runtimeNarrowed": [
+        "recipe-only-map"
+      ]
+    },
+    "exit": 0
+  },
+  "independentFocused": {
+    "local": {
+      "command": [
+        "node",
+        "<repo>/bin/cli.js",
+        "run",
+        "<repo>/doctors/async.mjs",
+        "<temp>/focused-seeds",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "rows": [
+        {
+          "name": "synchronous-array",
+          "passed": true,
+          "findings": [],
+          "narrowing": []
+        },
+        {
+          "name": "local-object",
+          "passed": true,
+          "findings": [],
+          "narrowing": []
+        },
+        {
+          "name": "native-array",
+          "passed": true,
+          "findings": [
+            [
+              "unawaited-async-map",
+              1,
+              0
+            ]
+          ],
+          "narrowing": []
+        },
+        {
+          "name": "unknown-receiver",
+          "passed": true,
+          "findings": [],
+          "narrowing": [
+            [
+              "unawaited-async-map",
+              "unsupported-expression"
+            ]
+          ]
+        },
+        {
+          "name": "unknown-with-positive",
+          "passed": true,
+          "findings": [
+            [
+              "unawaited-async-map",
+              2,
+              0
+            ]
+          ],
+          "narrowing": [
+            [
+              "unawaited-async-map",
+              "unsupported-expression"
+            ]
+          ]
+        },
+        {
+          "name": "unrelated-chain",
+          "passed": true,
+          "findings": [],
+          "narrowing": []
+        },
+        {
+          "name": "stable-alias",
+          "passed": true,
+          "findings": [
+            [
+              "fetch-calls-without-abortsignal",
+              2,
+              0
+            ]
+          ],
+          "narrowing": []
+        },
+        {
+          "name": "conditional-alias",
+          "passed": true,
+          "findings": [],
+          "narrowing": [
+            [
+              "fetch-calls-without-abortsignal",
+              "unresolved-identity"
+            ]
+          ]
+        }
+      ]
+    },
+    "packed": {
+      "command": [
+        "node",
+        "<consumer>/node_modules/any-doctor/bin/cli.js",
+        "run",
+        "<consumer>/node_modules/any-doctor/doctors/async.mjs",
+        "<temp>/focused-seeds",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "rows": [
+        {
+          "name": "synchronous-array",
+          "passed": true,
+          "findings": [],
+          "narrowing": []
+        },
+        {
+          "name": "local-object",
+          "passed": true,
+          "findings": [],
+          "narrowing": []
+        },
+        {
+          "name": "native-array",
+          "passed": true,
+          "findings": [
+            [
+              "unawaited-async-map",
+              1,
+              0
+            ]
+          ],
+          "narrowing": []
+        },
+        {
+          "name": "unknown-receiver",
+          "passed": true,
+          "findings": [],
+          "narrowing": [
+            [
+              "unawaited-async-map",
+              "unsupported-expression"
+            ]
+          ]
+        },
+        {
+          "name": "unknown-with-positive",
+          "passed": true,
+          "findings": [
+            [
+              "unawaited-async-map",
+              2,
+              0
+            ]
+          ],
+          "narrowing": [
+            [
+              "unawaited-async-map",
+              "unsupported-expression"
+            ]
+          ]
+        },
+        {
+          "name": "unrelated-chain",
+          "passed": true,
+          "findings": [],
+          "narrowing": []
+        },
+        {
+          "name": "stable-alias",
+          "passed": true,
+          "findings": [
+            [
+              "fetch-calls-without-abortsignal",
+              2,
+              0
+            ]
+          ],
+          "narrowing": []
+        },
+        {
+          "name": "conditional-alias",
+          "passed": true,
+          "findings": [],
+          "narrowing": [
+            [
+              "fetch-calls-without-abortsignal",
+              "unresolved-identity"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  "localPackedProjectionIdentical": true
+}

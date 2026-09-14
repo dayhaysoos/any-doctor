@@ -1,0 +1,118 @@
+[
+  {
+    "file": "bin/certify.d.ts",
+    "reason": "Regenerated runtime or declaration matching the corresponding TypeScript implementation.",
+    "sha256": "6550d5b7ca7c5acf7301b5129a79a0169030e079248a75da0b01195cb4441031"
+  },
+  {
+    "file": "bin/certify.js",
+    "reason": "Regenerated runtime or declaration matching the corresponding TypeScript implementation.",
+    "sha256": "bf283dd9808445ca049a21368a7456082e80f1cbdf7566a67335c90636d14c2c"
+  },
+  {
+    "file": "bin/contract.d.ts",
+    "reason": "Regenerated runtime or declaration matching the corresponding TypeScript implementation.",
+    "sha256": "63f658e765db22b06943b09614732aa6b0ebb1f9854034cd3867685c7487ba98"
+  },
+  {
+    "file": "bin/contract.js",
+    "reason": "Regenerated runtime or declaration matching the corresponding TypeScript implementation.",
+    "sha256": "c26bdef455f9e83ba71103f2aface03e32912448654ee32f7e9092dc150d08f1"
+  },
+  {
+    "file": "bin/dashboard.js",
+    "reason": "Regenerated runtime or declaration matching the corresponding TypeScript implementation.",
+    "sha256": "bced4aeca83832ad6b6c9ac026136b7e31330e1e73f76037d9d11a7638372613"
+  },
+  {
+    "file": "bin/doctor-sdk.js",
+    "reason": "Regenerated runtime or declaration matching the corresponding TypeScript implementation.",
+    "sha256": "8a5fd4981febad2a21e9b09452c1d20aaa70180d5fd441d03a54250178a4e0a9"
+  },
+  {
+    "file": "bin/sdk.js",
+    "reason": "Regenerated runtime or declaration matching the corresponding TypeScript implementation.",
+    "sha256": "33390fde8f9075dfc08d25ee694c0a85ae7119e227f2caeb318a0ce1bb2856f4"
+  },
+  {
+    "file": "dev/doctor-sdk/check-optional-provider.mjs",
+    "reason": "Verify a recipe-only consumer with optional dependencies omitted and assert runtime narrowing.",
+    "sha256": "3d1a815a5b91045dbe089dda3dbeed71061f35540e7db855063a8881bbd4b628"
+  },
+  {
+    "file": "docs/doctor-sdk.md",
+    "reason": "Document implied requirements and maintained semantic expectations.",
+    "sha256": "8018adf51ddcf6a41967b31682145eaaa1cbf0c946b953263064751cee3903df"
+  },
+  {
+    "file": "docs/evidence/doctor-sdk-foundations/765c29a-calibration/verification-report.md",
+    "reason": "Correct the historical verdict, exhaustive-review scope and sampling limitations.",
+    "sha256": "864911131dc00669b2f89fad343f0aaa6562ce9d81c5fdbdab97006d91b58e05"
+  },
+  {
+    "file": "fixtures/doctor-sdk-recipe-only.fixtures.mjs",
+    "reason": "Empty author fixture companion; maintained profiles supply challenges.",
+    "sha256": "7ad6cae603a894371765df19581c649a2ef18b1e4e3d68f2343e565046a272d5"
+  },
+  {
+    "file": "fixtures/doctor-sdk-recipe-only.mjs",
+    "reason": "Synthetic recipe-only doctor without explicit needs.",
+    "sha256": "9f97159b56a56096ab2ce6ce8c93c27add55c7d920a37e451650b8fd69536a45"
+  },
+  {
+    "file": "src/certify.ts",
+    "reason": "Assert maintained profile semantic coverage independently of findings; enforce implied analysis policy.",
+    "sha256": "f410f9b38893e9828507a8db9e1782c70a7865dd4aeea75afdb36d72af899b2d"
+  },
+  {
+    "file": "src/contract.ts",
+    "reason": "Canonical explicit plus recipe-implied requirements and semantic result-row fields.",
+    "sha256": "41cca194a1e810593fa39468b0416b5a7fd93da74d55669fbce17cbc34d2c4d6"
+  },
+  {
+    "file": "src/dashboard.ts",
+    "reason": "Render zero-finding doctor statuses beside the selected finding tree.",
+    "sha256": "60512e59aa72dea550c64125cc94c043dc839e61b0f6a31d27b7ba4ca9657f91"
+  },
+  {
+    "file": "src/doctor-sdk.ts",
+    "reason": "Recognize stable object literals with known custom map methods as non-array producers; preserve unresolved chains.",
+    "sha256": "f317f497459106c1f8bd682a46bccf0993e774ef50d20a4db815e176869bdc78"
+  },
+  {
+    "file": "src/sdk.ts",
+    "reason": "Use canonical requirements for runtime capability provenance.",
+    "sha256": "5d443f004050541497053e123dcd7965ad6e3d09ebe5533db87d27afdf343eb8"
+  },
+  {
+    "file": "test/dashboard.test.mjs",
+    "reason": "Exercise mixed-status disclosure through the live dashboard navigation seam.",
+    "sha256": "547a997d6bd93e5f5690853d0ef9056555240c276d1c5b1f141d8d17c0ba8a26"
+  },
+  {
+    "file": "test/sdk-candidate-boundaries.test.mjs",
+    "reason": "Add object lookalike, native producer and unresolved receiver with positive controls.",
+    "sha256": "77d881971a9e63d8de2470220aba7911ca27f81e78df08bf654d1d2195a0618f"
+  },
+  {
+    "file": "test/sdk-invariants.test.mjs",
+    "reason": "Semantic certification rejection, implied requirements and mixed dashboard assertions.",
+    "sha256": "457229eb0cffa371d86b408be5f88a69a91535a520795f6af259df04df85fc1e"
+  },
+  {
+    "file": "docs/evidence/doctor-sdk-foundations/e29f2ef-invariants/verification-report.md",
+    "reason": "Bounded completion report, commands, per-counterexample verdicts and remaining limits."
+  },
+  {
+    "file": "docs/evidence/doctor-sdk-foundations/e29f2ef-invariants/results.json",
+    "reason": "Exact local/packed/optional counts and package provenance."
+  },
+  {
+    "file": "docs/evidence/doctor-sdk-foundations/e29f2ef-invariants/evidence.tar.gz",
+    "reason": "Sanitized full logs, JSON rows, executable seeds, commands and frozen integrity proof."
+  },
+  {
+    "file": "docs/evidence/doctor-sdk-foundations/e29f2ef-invariants/changed-files.json",
+    "reason": "Complete file-by-file change inventory and source-file digests."
+  }
+]
