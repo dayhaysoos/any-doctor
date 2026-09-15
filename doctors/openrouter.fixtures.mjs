@@ -141,7 +141,7 @@ export const fixtures = [
         "};",
       ].join("\n"),
     },
-    expected: [{ rule: "hardcoded-dated-model-slug", file: "src/model-bad.ts", line: 4 }],
+    expected: [], // Revision 1 expected line 4; unused catalog is not a model selection.
   },
   {
     name: "slug: ~latest alias survives provider removals",
@@ -173,4 +173,10 @@ fixtures.push({name:'abort: two native calls retain distinct positions',seed:{'s
  'fetch("https://openrouter.ai/api/v1/chat/completions");\nfetch("https://openrouter.ai/api/v1/chat/completions");'},expected:[
  {rule:'missing-abort-signal',file:'src/two.ts',line:1,column:0},
  {rule:'missing-abort-signal',file:'src/two.ts',line:2,column:0},
+]});
+
+fixtures.push({name:'slug: two actual model selections',seed:{'src/pins.ts':
+ "import {openrouter} from '@openrouter/ai-sdk-provider';\nopenrouter('openai/gpt-4.1');\nopenrouter('openai/gpt-4.1');"},expected:[
+ {rule:'hardcoded-dated-model-slug',file:'src/pins.ts',line:2,column:0},
+ {rule:'hardcoded-dated-model-slug',file:'src/pins.ts',line:3,column:0},
 ]});

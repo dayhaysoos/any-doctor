@@ -57,15 +57,14 @@ export const meta = {
       lookalikes: ["SDK-managed backoff"],
     },
     {
-      id: "hardcoded-dated-model-slug",
-      description: "A dated model slug is hardcoded where a maintained alias would survive provider removals",
-      severity: "info",
-      revision: 1,
-      impact: "Model availability is separate from API versioning — the docs state models are added and removed by providers independently, and a removed slug starts returning 404s with zero code changes around it.",
-      why: "OpenRouter maintains ~family-latest aliases and per-slug routing variants (:nitro, :floor, :free). A versioned slug is sometimes a deliberate reproducibility pin — this is advice to pin consciously, not a defect.",
-      fix: "Prefer `~author/family-latest` aliases or read slugs from config; if the pin is deliberate, keep it and note why.",
-      claim: "A dated model slug hardcoded \u2014 advice to pin consciously, at info.",
-      lookalikes: ["~family-latest aliases", "slugs read from config"],
+      id: 'hardcoded-dated-model-slug', revision: 2, reportingUnit: 'occurrence', needs: ['calls'], onUnknown: 'narrow', severity: 'info',
+      description: 'Review a concrete model pin selected for OpenRouter.',
+      claim: 'A version-looking concrete model literal in a supported OpenRouter request or model-factory selection.',
+      impact: 'A pin preserves reproducibility but requires deliberate availability and upgrade decisions.',
+      why: 'Maintained latest aliases trade fixed model behavior for automatic upgrades; neither choice is universally better.',
+      fix: 'Confirm that the pin is intentional and available; consider a documented maintained alias only if changing model behavior is acceptable.',
+      lookalikes: ['Logs and pricing tables','Other providers','Maintained aliases','URLs, dates, filenames and labels'],
+      blindSpots: ['Computed, reassigned and externally supplied model selections narrow. Cross-file configuration is not evaluated.'],
     },
   ],
 };
@@ -86,7 +85,7 @@ export async function doctor(ctx) {
     checkSseComments(ctx, file, rawLines, lines);
 
     checkRetryAfter(ctx, file, rawLines, lines);
-    checkDatedSlugs(ctx, file, rawLines);
+
   }
 }
 
@@ -136,18 +135,6 @@ function checkRetryAfter(ctx, file, rawLines, lines) {
     if (/\bcatch\b/.test(lines[i])) {
       ctx.report.finding({ rule: "retry-after-ignored", file, line: i + 1 });
       return;
-    }
-  }
-}
-
-// Quoted vendor/model-version slugs; ~aliases and URLs are fine.
-function checkDatedSlugs(ctx, file, rawLines) {
-  for (let i = 0; i < rawLines.length; i++) {
-    const line = rawLines[i];
-    if (/openrouter\.ai|api\/v1|https?:|~/.test(line)) continue;
-    const m = /["']([a-z0-9][a-z0-9.-]*\/[a-z0-9._-]*\d[a-z0-9._-]*)["']/.exec(line);
-    if (m && /[a-z]/.test(m[1].split("/")[0])) {
-      ctx.report.finding({ rule: "hardcoded-dated-model-slug", file, line: i + 1 });
     }
   }
 }
@@ -264,6 +251,7 @@ function requestFacts(ctx, file) {
 function checkRequests(ctx,file) {
   const m=requestFacts(ctx,file);
   for(const call of m.flow.values.filter(v=>v.kind==='call'&&!v.dead)) {
+    checkModel(ctx,file,m,call);
     const native=m.native(call);
     if(!native){
       const client=m.clientCall(call);if(!client||client.endpoint===false)continue;
@@ -279,4 +267,35 @@ function checkRequests(ctx,file) {
     if(native===UNKNOWN||endpoint===UNKNOWN){ctx.report.narrowing({check:'missing-abort-signal',file,reason:'unsupported-expression',capability:'calls'});continue;}
     ctx.recipes.requiredOrRecommendedOption(file,{id:call.id,start:call.start,end:call.end},{call:{globals:FETCH_NAMES},option:{option:'signal',sources:['RequestInit','Request']}},{rule:'missing-abort-signal'});
   }
+}
+
+function checkModel(ctx,file,m,call) {
+  const rule='hardcoded-dated-model-slug';
+  const narrow=()=>ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});
+  let model, candidate=false, endpoint=true;
+  const fn=m.resolve(call.callee), factory=fn?.kind==='call'?m.name(fn.callee):undefined;
+  if(m.name(call.callee)==='@openrouter/ai-sdk-provider:openrouter'||factory==='@openrouter/ai-sdk-provider:createOpenRouter'){
+    candidate=true;model=m.resolve(call.arguments?.[0]);
+    if(factory){const base=m.property(fn.arguments?.[0],'baseURL');if(base!==undefined)endpoint=base===UNKNOWN?UNKNOWN:m.endpoint(base.id);}
+  } else {
+    const native=m.native(call), client=m.clientCall(call);
+    if(native){
+      endpoint=m.endpoint(call.arguments?.[0]);
+      let body=m.property(call.arguments?.[1],'body');
+      const input=m.resolve(call.arguments?.[0]);
+      if(body===undefined&&input?.kind==='construct'&&m.name(input.callee)==='Request')body=m.property(input.arguments?.[1],'body');
+      if(body!==undefined){candidate=true;model=body?.kind==='call'&&m.name(body.callee)==='JSON.stringify'?m.property(body.arguments?.[0],'model'):UNKNOWN;}
+    }else if(client){
+      candidate=true;endpoint=client.endpoint;
+      const nested=m.property(call.arguments?.[0],'chatRequest');
+      model=m.property(nested!==undefined&&nested!==UNKNOWN?nested.id:call.arguments?.[0],'model');
+    }
+  }
+  if(!candidate||endpoint===false)return;
+  if(endpoint===UNKNOWN||model===UNKNOWN){narrow();return;}
+  if(model===undefined)return; // no explicit selection (server/client default)
+  const text=m.literal(model.id);
+  if(text===UNKNOWN){narrow();return;}
+  if(typeof text==='string'&&/^[a-z][a-z0-9.-]*\/[a-z0-9._-]*\d[a-z0-9._-]*(?::[a-z-]+)?$/i.test(text)&&! /\.(?:[cm]?[jt]sx?|json|md|txt)$/i.test(text))
+    ctx.report.finding({rule,file,line:call.line,column:call.column});
 }
