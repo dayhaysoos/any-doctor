@@ -1,0 +1,50 @@
+[
+  {
+    "change": "added",
+    "rule": "index-filter-combo",
+    "finding": {
+      "file": "convex/lib/rateLimiter.ts",
+      "line": 74,
+      "column": 7,
+      "decisionKey": "Y29udmV4L2luZGV4LWZpbHRlci1jb21ibwBjb252ZXgvbGliL3JhdGVMaW1pdGVyLnRzADQwNDdiMzE5YjBjMThkNTI3OTQ0OTY3ZGVmZDg3Yzg2NDZhMGZhMmVkMjU2NzQyM2MyNjU2MDIwMzBiMmExNzAAYXJyb3c6ADEAMQBsaW5l"
+    },
+    "classification": "informational review candidate",
+    "rationale": "The executed maintenance query selects timestamp index order without a range callback and then filters timestamps before collecting. The original index-without-range observation remains. Independent evaluation now also reports the definite index/filter combination. This is a possible index-range optimization, not proof of harmful cost; table size, workload and complete cleanup requirements remain unmeasured.",
+    "sourceSha256": "a85ac32f6d9478ee2380e9fe36afe420c4a9c7b5ec2a4fcedf3cb52615e4f369",
+    "excerptStart": 68,
+    "excerptEnd": 83,
+    "excerpt": "  args: {},\n  handler: async (ctx) => {\n    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;\n    const oldBuckets = await ctx.db\n      .query(\"rateLimitBuckets\")\n      .withIndex(\"by_createdAt\")\n      .filter((q) => q.lt(q.field(\"createdAt\"), twentyFourHoursAgo))\n      .collect();\n\n    for (const bucket of oldBuckets) {\n      await ctx.db.delete(bucket._id);\n    }\n\n    return { deletedCount: oldBuckets.length };\n  },\n});"
+  },
+  {
+    "change": "added",
+    "rule": "index-filter-combo",
+    "finding": {
+      "file": "convex/orgs.ts",
+      "line": 1002,
+      "column": 9,
+      "decisionKey": "Y29udmV4L2luZGV4LWZpbHRlci1jb21ibwBjb252ZXgvb3Jncy50cwA2ZTkyYTM5NmMzYWU5OTBmNDQ2NTNhYmNhOGM2ZjlhZDQ3ZGM4Y2U3MzkzMmQ1OWM2ZDllNjI0YjlmMGUyNDA4AGFycm93OgA0OAAxAGxpbmU"
+    },
+    "classification": "informational review candidate",
+    "rationale": "The executed maintenance query selects timestamp index order without a range callback and then filters timestamps before collecting. The original index-without-range observation remains. Independent evaluation now also reports the definite index/filter combination. This is a possible index-range optimization, not proof of harmful cost; table size, workload and complete cleanup requirements remain unmeasured.",
+    "sourceSha256": "1025ab893058d603cafa94fc07357b4f49d73b5fb1ce33cf0800b80f53571246",
+    "excerptStart": 996,
+    "excerptEnd": 1011,
+    "excerpt": "  handler: async (ctx) => {\n    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;\n    const [oldUploads, oldUploadTokens] = await Promise.all([\n      ctx.db\n        .query(\"pendingLogoUploads\")\n        .withIndex(\"by_uploadedAt\")\n        .filter((q) => q.lt(q.field(\"uploadedAt\"), twentyFourHoursAgo))\n        .collect(),\n      ctx.db\n        .query(\"pendingLogoUploadTokens\")\n        .withIndex(\"by_createdAt\")\n        .filter((q) => q.lt(q.field(\"createdAt\"), twentyFourHoursAgo))\n        .collect(),\n    ]);\n\n    await Promise.all(["
+  },
+  {
+    "change": "added",
+    "rule": "index-filter-combo",
+    "finding": {
+      "file": "convex/orgs.ts",
+      "line": 1007,
+      "column": 9,
+      "decisionKey": "Y29udmV4L2luZGV4LWZpbHRlci1jb21ibwBjb252ZXgvb3Jncy50cwA0MDQ3YjMxOWIwYzE4ZDUyNzk0NDk2N2RlZmQ4N2M4NjQ2YTBmYTJlZDI1Njc0MjNjMjY1NjAyMDMwYjJhMTcwAGFycm93OgA0OAAxAGxpbmU"
+    },
+    "classification": "informational review candidate",
+    "rationale": "The executed maintenance query selects timestamp index order without a range callback and then filters timestamps before collecting. The original index-without-range observation remains. Independent evaluation now also reports the definite index/filter combination. This is a possible index-range optimization, not proof of harmful cost; table size, workload and complete cleanup requirements remain unmeasured.",
+    "sourceSha256": "1025ab893058d603cafa94fc07357b4f49d73b5fb1ce33cf0800b80f53571246",
+    "excerptStart": 1001,
+    "excerptEnd": 1016,
+    "excerpt": "        .withIndex(\"by_uploadedAt\")\n        .filter((q) => q.lt(q.field(\"uploadedAt\"), twentyFourHoursAgo))\n        .collect(),\n      ctx.db\n        .query(\"pendingLogoUploadTokens\")\n        .withIndex(\"by_createdAt\")\n        .filter((q) => q.lt(q.field(\"createdAt\"), twentyFourHoursAgo))\n        .collect(),\n    ]);\n\n    await Promise.all([\n      Effect.runPromise(\n        orgDeleteBatchEffect(oldUploads, (upload) =>\n          Effect.gen(function* () {\n            yield* ignoreStorageDelete(() =>\n              ctx.storage.delete(upload.storageId)"
+  }
+]

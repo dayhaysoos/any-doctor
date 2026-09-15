@@ -1,0 +1,725 @@
+{
+  "startingState": {
+    "branch": "feature/convex-doctor-sdk-migration",
+    "head": "de4efe8871bc7489eca7f4923f5c20fe3cd015f9",
+    "status": "",
+    "recent": "de4efe8871bc7489eca7f4923f5c20fe3cd015f9 Record completed Convex SDK migration verification evidence\n5c1350de69c741fdbd6a4517c783436273338399 Merge equivalent query states to bound assignment traversal\nc023c64e782dea53d10da70199bd10bc227b6cde Preserve uncertain query builder flow and shared context methods\nea3019df82417d1213426a5eb84a62907a42b830 Calibrate Convex async producers and opaque patch coverage\n543ccb9f4f1b23671755e840adcaf40f419c02b1 Bound Convex contract uncertainty to context and API provenance\n8ed86698b10cec1d7d1d25fb111b387ea195a44a Preserve Convex clock identity and mixed runtime uncertainty"
+  },
+  "productionCandidate": "505100c32c040a9a8efff3cb30fe50cd4c9bfdac",
+  "releaseVerdict": "acceptable with named limitations for the tested bounded static-analysis contract",
+  "automated": {
+    "passed": 815,
+    "failed": 0,
+    "skipped": 0
+  },
+  "verifyAll": {
+    "passed": 267,
+    "failed": 0,
+    "skipped": 15
+  },
+  "verification": {
+    "local": {
+      "convex": {
+        "passed": 106,
+        "failed": 0,
+        "skipped": 0
+      },
+      "existing": {
+        "passed": 83,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": {
+        "passed": 63,
+        "failed": 0,
+        "skipped": 0
+      },
+      "slices": {
+        "passed": 151,
+        "failed": 0,
+        "skipped": 0
+      },
+      "repair": {
+        "passed": 25,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scaling": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      "SDKAndIntegration": {
+        "passed": 30,
+        "failed": 0,
+        "skipped": 0
+      },
+      "unavailableMetadata": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "recipes": {
+        "passed": 2,
+        "failed": 0
+      }
+    },
+    "packed": {
+      "convex": {
+        "passed": 106,
+        "failed": 0,
+        "skipped": 0
+      },
+      "existing": {
+        "passed": 83,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": {
+        "passed": 63,
+        "failed": 0,
+        "skipped": 0
+      },
+      "slices": {
+        "passed": 151,
+        "failed": 0,
+        "skipped": 0
+      },
+      "repair": {
+        "passed": 25,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scaling": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      "SDKAndIntegration": {
+        "passed": 30,
+        "failed": 0,
+        "skipped": 0
+      },
+      "unavailableMetadata": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "recipes": {
+        "passed": 2,
+        "failed": 0
+      }
+    }
+  },
+  "sdkFocused": {
+    "passed": 23,
+    "failed": 0,
+    "skipped": 0
+  },
+  "package": {
+    "candidate": "505100c32c040a9a8efff3cb30fe50cd4c9bfdac",
+    "path": "/private/tmp/convex-summary-repair/package/any-doctor-0.1.2.tgz",
+    "sha256": "59dcf60685794d42ba3733d708240d51a0482b45555af604fcdaca81c366ba5a",
+    "bytes": 281904,
+    "files": 144,
+    "installedCLI": "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+    "installedDoctor": "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs"
+  },
+  "parity": {
+    "siftGroupsEqual": true,
+    "originalDefectGroupsEqual": true,
+    "suiteCountsEqual": true,
+    "scalingResultsEqual": true,
+    "allPayloadBytesEqualWorkingCandidate": true
+  },
+  "providerOmitted": {
+    "fixtures": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 101
+    },
+    "analysisAvailable": false,
+    "findings": 0,
+    "score": {
+      "score": null,
+      "grade": null,
+      "filesClean": 63,
+      "filesTotal": 63,
+      "emptyScan": false,
+      "narrowedScan": true
+    },
+    "semantic": {
+      "protocolVersion": 1,
+      "provider": {
+        "id": "any-doctor/syntax-flow",
+        "version": "1",
+        "available": false,
+        "reason": "the analysis engine is not installed (Cannot find module 'oxc-parser'\nRequire stack:\n- /private/tmp/convex-summary-repair/package/omitted/node_modules/any-doctor/bin/analysis.js) \u2014 npm install oxc-parser",
+        "dependencies": [
+          {
+            "id": "oxc-parser",
+            "version": "unavailable"
+          },
+          {
+            "id": "@typescript-eslint/scope-manager",
+            "version": "8.70.0"
+          }
+        ]
+      },
+      "capabilities": [
+        {
+          "name": "calls",
+          "available": false,
+          "reason": "the analysis engine is not installed (Cannot find module 'oxc-parser'\nRequire stack:\n- /private/tmp/convex-summary-repair/package/omitted/node_modules/any-doctor/bin/analysis.js) \u2014 npm install oxc-parser"
+        }
+      ],
+      "recipes": [],
+      "narrowed": [
+        {
+          "check": "filter-table-scan",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "index-without-range",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "query-clock-reactivity",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "transaction-clock-duration",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "unbounded-collect",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "index-filter-combo",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "presence-patch-on-shared-document",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "missing-args-validator",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "public-api-in-server-call",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "write-in-query",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "db-in-action",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "unawaited-convex-call",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "node-runtime-transaction",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "sequential-run-in-loop",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        },
+        {
+          "check": "spread-into-patch",
+          "reason": "analysis-unavailable",
+          "occurrences": 0,
+          "files": []
+        }
+      ],
+      "incomplete": true,
+      "execution": {
+        "semanticQueries": 0,
+        "modelRequests": 0,
+        "modelCacheHits": 0
+      }
+    },
+    "human": "No findings established \u2014 semantic coverage narrowed; no Excellent grade"
+  },
+  "frozen": {
+    "eligibleFiles": 671,
+    "beforeFindings": 124,
+    "afterFindings": 127,
+    "removed": 0,
+    "added": 3,
+    "classificationCounts": {
+      "informational review candidate": 127,
+      "confirmed defect": 0,
+      "actionable candidate": 0,
+      "false positive": 0,
+      "unknown": 0
+    },
+    "beforeNarrowings": [
+      {
+        "check": "spread-into-patch",
+        "capability": "calls",
+        "reason": "unsupported-expression",
+        "occurrences": 24,
+        "files": [
+          {
+            "file": "convex/analysis/internal.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/devMembershipTools.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/evals/overrides.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/hiring/closureFeedback.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/hiringWork.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/jobs.ts",
+            "occurrences": 4
+          },
+          {
+            "file": "convex/lib/applicationResumeIdentityCoverage.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/lib/applicationWorkspaceIndexBackfill.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/lib/candidateIdentityAttach.ts",
+            "occurrences": 3
+          },
+          {
+            "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/onboarding.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/orgs.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/priorFeedbackNotices.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/recruitingAttempts.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/userProfiles.ts",
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "check": "presence-patch-on-shared-document",
+        "capability": "calls",
+        "reason": "unsupported-expression",
+        "occurrences": 24,
+        "files": [
+          {
+            "file": "convex/analysis/internal.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/devMembershipTools.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/evals/overrides.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/hiring/closureFeedback.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/hiringWork.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/jobs.ts",
+            "occurrences": 4
+          },
+          {
+            "file": "convex/lib/applicationResumeIdentityCoverage.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/lib/applicationWorkspaceIndexBackfill.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/lib/candidateIdentityAttach.ts",
+            "occurrences": 3
+          },
+          {
+            "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/onboarding.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/orgs.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/priorFeedbackNotices.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/recruitingAttempts.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/userProfiles.ts",
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "check": "missing-args-validator",
+        "capability": "calls",
+        "reason": "unsupported-expression",
+        "occurrences": 15,
+        "files": [
+          {
+            "file": "convex/devChatResultsWorkspaceQa.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/devHiringHomeQa.ts",
+            "occurrences": 8
+          },
+          {
+            "file": "convex/hiringApplication.ts",
+            "occurrences": 3
+          },
+          {
+            "file": "convex/hiringLifecycle.ts",
+            "occurrences": 3
+          }
+        ]
+      }
+    ],
+    "afterNarrowings": [
+      {
+        "check": "spread-into-patch",
+        "capability": "calls",
+        "reason": "unsupported-expression",
+        "occurrences": 24,
+        "files": [
+          {
+            "file": "convex/analysis/internal.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/devMembershipTools.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/evals/overrides.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/hiring/closureFeedback.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/hiringWork.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/jobs.ts",
+            "occurrences": 4
+          },
+          {
+            "file": "convex/lib/applicationResumeIdentityCoverage.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/lib/applicationWorkspaceIndexBackfill.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/lib/candidateIdentityAttach.ts",
+            "occurrences": 3
+          },
+          {
+            "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/onboarding.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/orgs.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/priorFeedbackNotices.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/recruitingAttempts.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/userProfiles.ts",
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "check": "presence-patch-on-shared-document",
+        "capability": "calls",
+        "reason": "unsupported-expression",
+        "occurrences": 41,
+        "files": [
+          {
+            "file": "convex/analysis/internal.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/applicationFileRetention.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/chat.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/chatConversationState.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/devMembershipTools.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/devRecruiterChatQa.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/evals/overrides.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/hiring/closureFeedback.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/hiringLifecycle.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/hiringWork.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/interviewFeedback.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/jobs.ts",
+            "occurrences": 4
+          },
+          {
+            "file": "convex/lib/applicationResumeIdentityCoverage.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/lib/applicationWorkspaceIndexBackfill.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/lib/candidateIdentityAttach.ts",
+            "occurrences": 3
+          },
+          {
+            "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/onboarding.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/orgJobDefaults.ts",
+            "occurrences": 2
+          },
+          {
+            "file": "convex/orgs.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/priorFeedbackNotices.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/qaBrowserAccounts.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/recruiterChatMessages.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/recruitingAttempts.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/shareLinks.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/stageSummaries.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/teamInvites.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/userProfiles.ts",
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "check": "missing-args-validator",
+        "capability": "calls",
+        "reason": "unsupported-expression",
+        "occurrences": 15,
+        "files": [
+          {
+            "file": "convex/devChatResultsWorkspaceQa.ts",
+            "occurrences": 1
+          },
+          {
+            "file": "convex/devHiringHomeQa.ts",
+            "occurrences": 8
+          },
+          {
+            "file": "convex/hiringApplication.ts",
+            "occurrences": 3
+          },
+          {
+            "file": "convex/hiringLifecycle.ts",
+            "occurrences": 3
+          }
+        ]
+      }
+    ],
+    "score": {
+      "score": null,
+      "grade": null,
+      "filesClean": 618,
+      "filesTotal": 671,
+      "emptyScan": false,
+      "narrowedScan": true
+    },
+    "manifestEntries": 1530,
+    "allFourManifestMatches": 1530,
+    "localPackedEqual": true
+  },
+  "review": {
+    "standardsActionable": 0,
+    "specActionable": 0,
+    "originalReproductionsReviewed": true,
+    "allFiveScalingSizesReviewed": true
+  },
+  "remainingLimits": [
+    "Static Convex provenance and declared type contracts are not runtime proofs.",
+    "Unsupported reassignment remains explicit uncertainty; no whole-program execution or external wrapper inference.",
+    "Query checks report bounded observations, not measured cost or automatic remediation safety.",
+    "Diagnostics retain .ts/.tsx/.js/.jsx/.mjs scope; .mts/.cts/.cjs are unchanged.",
+    "Graph-state convergence is not a formal performance bound for the entire parser/provider pipeline."
+  ],
+  "inheritedFailures": [],
+  "inheritedSkips": "15 Effect/OpenRouter location-coverage cases have undeclared reporting units; retained unchanged",
+  "publication": "No push or publish",
+  "nodeVersion": "v26.5.0",
+  "gitBinary": "/Library/Developer/CommandLineTools/usr/bin/git"
+}

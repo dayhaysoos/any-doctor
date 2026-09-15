@@ -1,0 +1,17 @@
+{
+  "base": "de4efe8871bc7489eca7f4923f5c20fe3cd015f9",
+  "candidate": "505100c32c040a9a8efff3cb30fe50cd4c9bfdac",
+  "algorithm": "SHA-256",
+  "files": {
+    "bin/sdk.js": "95fe0f685c60592f4b3c5323318e7cfc145e091bc959b6e89788cd2707cedd20",
+    "dev/convex-summary-repair/controls.mjs": "474ce808e5a94ea2e1e0e0d4fb3d7b835a51aeea58a5783786cacd323e2329a7",
+    "dev/convex-summary-repair/run-controls.mjs": "476ba7e71c9c290843c2783501da244f0ced7c86bee71ef27c15cb3d18f179ab",
+    "dev/convex-summary-repair/run-scaling.mjs": "9d2473e5f40e48959b133e532ec5e575d68af460134c820df594d4f7bb184c19",
+    "docs/doctor-sdk.md": "c70e4ab9f9905ebc79af98898f9be9dd843db982c2097c81e7f715c0ba293147",
+    "doctors/convex.fixtures.mjs": "fe646c2cdb6cfe29e5bde891956e38189b9058f4470e287ef5836df09d1d9f11",
+    "doctors/convex.mjs": "bb34848d6da74c9f1a92d9cadc5a68ea4feb6a384446be93a5057422b276b7ce",
+    "src/sdk.ts": "0f426c8be27890199f9ca44bb66904fd02157b1f0e5564a61a634272c6e7cf51",
+    "test/convex-summary-repair.test.mjs": "8cdc23ac9fd3b539d514eda68e2565ad159287bde78cf283a345110ed66e420a",
+    "test/sdk-custom-narrowing.test.mjs": "3bb34b23b3cd217c6ce2e34c78b124fcbd5ff398c9f2a52a31f7156d137349f8"
+  }
+}

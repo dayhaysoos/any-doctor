@@ -1,0 +1,842 @@
+{
+  "heapMB": 128,
+  "perCaseTimeoutMs": 20000,
+  "peakRSS": "not collected; heap limit is not a total process RSS limit",
+  "before": [
+    {
+      "name": "scaling-20",
+      "sourceBytes": 1123,
+      "assignments": 20,
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/convex-summary-repair/before/scaling-20/seed",
+        "--format",
+        "json"
+      ],
+      "heapMB": 128,
+      "timeoutSeconds": 20,
+      "timedOut": false,
+      "exit": 0,
+      "wallMs": 478,
+      "findings": {
+        "error": 0,
+        "warning": 0,
+        "info": 0,
+        "total": 0,
+        "hiddenDuplicates": 0
+      },
+      "score": {
+        "score": null,
+        "grade": null,
+        "filesClean": 1,
+        "filesTotal": 1,
+        "emptyScan": false,
+        "narrowedScan": true
+      },
+      "narrowings": [
+        {
+          "check": "filter-table-scan",
+          "capability": "calls",
+          "reason": "unresolved-identity",
+          "occurrences": 20,
+          "files": [
+            {
+              "file": "entry.ts",
+              "occurrences": 20
+            }
+          ]
+        },
+        {
+          "check": "unbounded-collect",
+          "capability": "calls",
+          "reason": "unresolved-identity",
+          "occurrences": 1,
+          "files": [
+            {
+              "file": "entry.ts",
+              "occurrences": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "scaling-80",
+      "sourceBytes": 4063,
+      "assignments": 80,
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/convex-summary-repair/before/scaling-80/seed",
+        "--format",
+        "json"
+      ],
+      "heapMB": 128,
+      "timeoutSeconds": 20,
+      "timedOut": false,
+      "exit": 0,
+      "wallMs": 1741,
+      "findings": {
+        "error": 0,
+        "warning": 0,
+        "info": 0,
+        "total": 0,
+        "hiddenDuplicates": 0
+      },
+      "score": {
+        "score": null,
+        "grade": null,
+        "filesClean": 1,
+        "filesTotal": 1,
+        "emptyScan": false,
+        "narrowedScan": true
+      },
+      "narrowings": [
+        {
+          "check": "filter-table-scan",
+          "capability": "calls",
+          "reason": "unresolved-identity",
+          "occurrences": 80,
+          "files": [
+            {
+              "file": "entry.ts",
+              "occurrences": 80
+            }
+          ]
+        },
+        {
+          "check": "unbounded-collect",
+          "capability": "calls",
+          "reason": "unresolved-identity",
+          "occurrences": 1,
+          "files": [
+            {
+              "file": "entry.ts",
+              "occurrences": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "scaling-160",
+      "sourceBytes": 7983,
+      "assignments": 160,
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/convex-summary-repair/before/scaling-160/seed",
+        "--format",
+        "json"
+      ],
+      "heapMB": 128,
+      "timeoutSeconds": 20,
+      "timedOut": false,
+      "exit": 0,
+      "wallMs": 12721,
+      "findings": {
+        "error": 0,
+        "warning": 0,
+        "info": 0,
+        "total": 0,
+        "hiddenDuplicates": 0
+      },
+      "score": {
+        "score": null,
+        "grade": null,
+        "filesClean": 1,
+        "filesTotal": 1,
+        "emptyScan": false,
+        "narrowedScan": true
+      },
+      "narrowings": [
+        {
+          "check": "filter-table-scan",
+          "capability": "calls",
+          "reason": "unresolved-identity",
+          "occurrences": 160,
+          "files": [
+            {
+              "file": "entry.ts",
+              "occurrences": 160
+            }
+          ]
+        },
+        {
+          "check": "unbounded-collect",
+          "capability": "calls",
+          "reason": "unresolved-identity",
+          "occurrences": 1,
+          "files": [
+            {
+              "file": "entry.ts",
+              "occurrences": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "scaling-320",
+      "sourceBytes": 15823,
+      "assignments": 320,
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/convex-summary-repair/before/scaling-320/seed",
+        "--format",
+        "json"
+      ],
+      "heapMB": 128,
+      "timeoutSeconds": 20,
+      "timedOut": true,
+      "exit": -15,
+      "wallMs": 20017,
+      "findings": null,
+      "score": null,
+      "narrowings": null
+    },
+    {
+      "name": "scaling-1000",
+      "sourceBytes": 49143,
+      "assignments": 1000,
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/convex-summary-repair/before/scaling-1000/seed",
+        "--format",
+        "json"
+      ],
+      "heapMB": 128,
+      "timeoutSeconds": 20,
+      "timedOut": true,
+      "exit": -15,
+      "wallMs": 20021,
+      "findings": null,
+      "score": null,
+      "narrowings": null
+    }
+  ],
+  "local": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "rows": [
+      {
+        "assignments": 20,
+        "sourceBytes": 1123,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/convex-summary-repair/final-scaling-local/20",
+          "--format",
+          "json"
+        ],
+        "wallMs": 612,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 80,
+        "sourceBytes": 4063,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/convex-summary-repair/final-scaling-local/80",
+          "--format",
+          "json"
+        ],
+        "wallMs": 475,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 160,
+        "sourceBytes": 7983,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/convex-summary-repair/final-scaling-local/160",
+          "--format",
+          "json"
+        ],
+        "wallMs": 491,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 320,
+        "sourceBytes": 15823,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/convex-summary-repair/final-scaling-local/320",
+          "--format",
+          "json"
+        ],
+        "wallMs": 586,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 1000,
+        "sourceBytes": 49143,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/convex-summary-repair/final-scaling-local/1000",
+          "--format",
+          "json"
+        ],
+        "wallMs": 1391,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      }
+    ]
+  },
+  "packed": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "rows": [
+      {
+        "assignments": 20,
+        "sourceBytes": 1123,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/convex-summary-repair/final-scaling-packed/20",
+          "--format",
+          "json"
+        ],
+        "wallMs": 531,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 80,
+        "sourceBytes": 4063,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/convex-summary-repair/final-scaling-packed/80",
+          "--format",
+          "json"
+        ],
+        "wallMs": 468,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 160,
+        "sourceBytes": 7983,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/convex-summary-repair/final-scaling-packed/160",
+          "--format",
+          "json"
+        ],
+        "wallMs": 506,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 320,
+        "sourceBytes": 15823,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/convex-summary-repair/final-scaling-packed/320",
+          "--format",
+          "json"
+        ],
+        "wallMs": 603,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 1000,
+        "sourceBytes": 49143,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/convex-summary-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/convex-summary-repair/final-scaling-packed/1000",
+          "--format",
+          "json"
+        ],
+        "wallMs": 1347,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      }
+    ]
+  },
+  "providedPriorMeasurementsSeconds": {
+    "20": 0.58,
+    "40": 0.64,
+    "80": 1.53,
+    "120": 4.65,
+    "160": 12.85
+  }
+}

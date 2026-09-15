@@ -1,0 +1,47 @@
+[
+  {
+    "file": "dev/convex-analysis/cases.mjs",
+    "sha256": "2610cf882876ee78054f55cf4e1deba62aaa8d9b6dbc6b1c7aa6781307601f3a",
+    "unchanged": true
+  },
+  {
+    "file": "dev/convex-analysis/coverage-expectations.mjs",
+    "sha256": "3655d0899fd13a05cf7db16e28635109cbe8699a44a260a2fb7f1d8b5ea0e902",
+    "unchanged": true
+  },
+  {
+    "file": "dev/convex-sdk-migration/guardrail-cases.mjs",
+    "sha256": "2f01347ce221362e4f421493958acd26e865ca05ed42fcfaea5aa057afb826de",
+    "unchanged": true
+  },
+  {
+    "file": "dev/convex-sdk-migration/run-guardrails.mjs",
+    "sha256": "97e769745660989b9d74253ce29704b9786e7cb64b7eed639873eb26eefaf81b",
+    "unchanged": true
+  },
+  {
+    "file": "dev/convex-sdk-migration/assess-case.mjs",
+    "sha256": "3fbe5ec346748b3cd07b446d508643e28dfe8f886e2a26832caa2056281d5ea8",
+    "unchanged": true
+  },
+  {
+    "file": "dev/convex-sdk-migration/slice-cases.mjs",
+    "sha256": "70c5c7432d1683b8a16c77e7ce60d675d6655c08e6ce3f0b33e04bb79a5183cb",
+    "unchanged": true
+  },
+  {
+    "file": "dev/convex-sdk-migration/run-slices.mjs",
+    "sha256": "fd4e38f64059ba095aa767c213ee4276882542d0ebceb06b6cf7a23f2e556549",
+    "unchanged": true
+  },
+  {
+    "file": "dev/convex-sdk-migration/repro-unavailable.mjs",
+    "sha256": "245b39e23c965a2a6ac6675fcda0e65f5c96e9c84e1faa3b49eb145a5df23d6f",
+    "unchanged": true
+  },
+  {
+    "file": "test/convex-sdk-migration.test.mjs",
+    "sha256": "94efb2ee63f6d88e2e4229dc7b52efab5e794299405d8603c1dc58fff7535f69",
+    "unchanged": true
+  }
+]

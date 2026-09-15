@@ -1,0 +1,486 @@
+[
+  {
+    "name": "opaque-range",
+    "before": {
+      "name": "opaque-range",
+      "sourceBytes": 196,
+      "assignments": null,
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/convex-summary-repair/before/opaque-range/seed",
+        "--format",
+        "json"
+      ],
+      "heapMB": 128,
+      "timeoutSeconds": 20,
+      "timedOut": false,
+      "exit": 0,
+      "wallMs": 674,
+      "findings": {
+        "error": 0,
+        "warning": 0,
+        "info": 0,
+        "total": 0,
+        "hiddenDuplicates": 0
+      },
+      "score": {
+        "score": null,
+        "grade": null,
+        "filesClean": 1,
+        "filesTotal": 1,
+        "emptyScan": false,
+        "narrowedScan": true
+      },
+      "narrowings": [
+        {
+          "check": "index-without-range",
+          "capability": "calls",
+          "reason": "unsupported-expression",
+          "occurrences": 1,
+          "files": [
+            {
+              "file": "entry.ts",
+              "occurrences": 1
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "counts": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "findings": [],
+        "narrowings": [
+          {
+            "check": "index-without-range",
+            "capability": "calls",
+            "reason": "unsupported-expression",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "crashed": []
+      }
+    },
+    "after": {
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/convex-summary-repair/before/opaque-range/seed",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "wallMs": 453,
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "outcome": {
+        "counts": {
+          "error": 0,
+          "warning": 0,
+          "info": 1,
+          "total": 1,
+          "hiddenDuplicates": 0
+        },
+        "findings": [
+          {
+            "rule": "index-filter-combo",
+            "file": "entry.ts",
+            "line": 2,
+            "column": 98,
+            "decisionKey": "Y29udmV4L2luZGV4LWZpbHRlci1jb21ibwBlbnRyeS50cwA3YjAxMjg2ZjkxODI4ZTRkMzRmYTk1MWI1N2M1NGEzMjE0MWI3ZTc0MThhOTAzMjdhOTgzZDMzN2NlZmY5NWFhAGFycm93OgAwADk4AGxpbmU"
+          }
+        ],
+        "narrowings": [
+          {
+            "check": "index-without-range",
+            "capability": "calls",
+            "reason": "unsupported-expression",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "crashed": []
+      }
+    }
+  },
+  {
+    "name": "computed-patch",
+    "before": {
+      "name": "computed-patch",
+      "sourceBytes": 149,
+      "assignments": null,
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/convex-summary-repair/before/computed-patch/seed",
+        "--format",
+        "json"
+      ],
+      "heapMB": 128,
+      "timeoutSeconds": 20,
+      "timedOut": false,
+      "exit": 0,
+      "wallMs": 458,
+      "findings": {
+        "error": 0,
+        "warning": 0,
+        "info": 0,
+        "total": 0,
+        "hiddenDuplicates": 0
+      },
+      "score": {
+        "score": 100,
+        "grade": "Excellent",
+        "filesClean": 1,
+        "filesTotal": 1,
+        "emptyScan": false
+      },
+      "narrowings": [],
+      "outcome": {
+        "counts": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "findings": [],
+        "narrowings": [],
+        "score": {
+          "score": 100,
+          "grade": "Excellent",
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false
+        },
+        "crashed": []
+      }
+    },
+    "after": {
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/convex-summary-repair/before/computed-patch/seed",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "wallMs": 446,
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "outcome": {
+        "counts": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "findings": [],
+        "narrowings": [
+          {
+            "check": "presence-patch-on-shared-document",
+            "capability": "calls",
+            "reason": "unsupported-expression",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "crashed": []
+      }
+    }
+  },
+  {
+    "name": "spread-patch",
+    "before": {
+      "name": "spread-patch",
+      "sourceBytes": 133,
+      "assignments": null,
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/convex-summary-repair/before/spread-patch/seed",
+        "--format",
+        "json"
+      ],
+      "heapMB": 128,
+      "timeoutSeconds": 20,
+      "timedOut": false,
+      "exit": 0,
+      "wallMs": 448,
+      "findings": {
+        "error": 0,
+        "warning": 0,
+        "info": 1,
+        "total": 1,
+        "hiddenDuplicates": 0
+      },
+      "score": {
+        "score": 90,
+        "grade": "Excellent",
+        "filesClean": 0,
+        "filesTotal": 1,
+        "emptyScan": false
+      },
+      "narrowings": [],
+      "outcome": {
+        "counts": {
+          "error": 0,
+          "warning": 0,
+          "info": 1,
+          "total": 1,
+          "hiddenDuplicates": 0
+        },
+        "findings": [
+          {
+            "rule": "spread-into-patch",
+            "file": "entry.ts",
+            "line": 2,
+            "column": 51,
+            "message": "Patch copies top-level object fields. Runtime validators, deliberate state copying and server field selection may make this correct; field ownership is not established.",
+            "decisionKey": "Y29udmV4L3NwcmVhZC1pbnRvLXBhdGNoAGVudHJ5LnRzADY2MWIwYzllM2I0ZTE5MjYyYjJkODJkNWU1YTlhYzhlZjlmZjRkNjJlZDU0NDQyNDI5ZmQxYTAxZWJmNjNkY2YAYXJyb3c6ADAANTEAbGluZQ"
+          }
+        ],
+        "narrowings": [],
+        "score": {
+          "score": 90,
+          "grade": "Excellent",
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false
+        },
+        "crashed": []
+      }
+    },
+    "after": {
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/convex-summary-repair/before/spread-patch/seed",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "wallMs": 445,
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "outcome": {
+        "counts": {
+          "error": 0,
+          "warning": 0,
+          "info": 1,
+          "total": 1,
+          "hiddenDuplicates": 0
+        },
+        "findings": [
+          {
+            "rule": "spread-into-patch",
+            "file": "entry.ts",
+            "line": 2,
+            "column": 51,
+            "message": "Patch copies top-level object fields. Runtime validators, deliberate state copying and server field selection may make this correct; field ownership is not established.",
+            "decisionKey": "Y29udmV4L3NwcmVhZC1pbnRvLXBhdGNoAGVudHJ5LnRzADY2MWIwYzllM2I0ZTE5MjYyYjJkODJkNWU1YTlhYzhlZjlmZjRkNjJlZDU0NDQyNDI5ZmQxYTAxZWJmNjNkY2YAYXJyb3c6ADAANTEAbGluZQ"
+          }
+        ],
+        "narrowings": [
+          {
+            "check": "presence-patch-on-shared-document",
+            "capability": "calls",
+            "reason": "unsupported-expression",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "crashed": []
+      }
+    }
+  },
+  {
+    "name": "no-needs",
+    "before": {
+      "name": "no-needs",
+      "sourceBytes": 8,
+      "assignments": null,
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/private/tmp/convex-summary-repair/before/no-needs/doctor.mjs",
+        "/private/tmp/convex-summary-repair/before/no-needs/seed",
+        "--format",
+        "json"
+      ],
+      "heapMB": 128,
+      "timeoutSeconds": 20,
+      "timedOut": false,
+      "exit": 0,
+      "wallMs": 501,
+      "findings": {
+        "error": 0,
+        "warning": 0,
+        "info": 0,
+        "total": 0,
+        "hiddenDuplicates": 0
+      },
+      "score": {
+        "score": null,
+        "grade": null,
+        "filesClean": 1,
+        "filesTotal": 1,
+        "emptyScan": false,
+        "narrowedScan": true
+      },
+      "narrowings": [
+        {
+          "check": "plain",
+          "reason": "unresolved-identity",
+          "occurrences": 1,
+          "files": [
+            {
+              "file": "entry.ts",
+              "occurrences": 1
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "counts": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "findings": [],
+        "narrowings": [
+          {
+            "check": "plain",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "crashed": []
+      }
+    },
+    "after": {
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/private/tmp/convex-summary-repair/before/no-needs/doctor.mjs",
+        "/private/tmp/convex-summary-repair/before/no-needs/seed",
+        "--format",
+        "json"
+      ],
+      "exit": 1,
+      "wallMs": 407,
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "outcome": {
+        "counts": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "findings": [],
+        "narrowings": [],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 0,
+          "filesTotal": 0,
+          "emptyScan": true,
+          "partialScan": true
+        },
+        "crashed": [
+          {
+            "id": "doctor",
+            "detail": "doctor crashed:\nError: invalid custom narrowing: check plain must declare semantic needs\n    at getSemanticReport (file:///Users/nickdejesus/Code/any-doctor/bin/sdk.js:324:27)\n    at file:///Users/nickdejesus/Code/any-doctor/bin/certify.js:21:26\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+          }
+        ]
+      }
+    }
+  }
+]
