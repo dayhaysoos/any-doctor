@@ -167,3 +167,10 @@ export const fixtures = [
     expected: [],
   },
 ];
+
+// Revision 2 cancellation is an informational, occurrence-scoped review.
+fixtures.push({name:'abort: two native calls retain distinct positions',seed:{'src/two.ts':
+ 'fetch("https://openrouter.ai/api/v1/chat/completions");\nfetch("https://openrouter.ai/api/v1/chat/completions");'},expected:[
+ {rule:'missing-abort-signal',file:'src/two.ts',line:1,column:0},
+ {rule:'missing-abort-signal',file:'src/two.ts',line:2,column:0},
+]});

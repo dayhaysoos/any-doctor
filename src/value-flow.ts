@@ -23,6 +23,8 @@ export interface FlowValue extends SourceRange {
   /** Source slot index preserves array holes; spread slots may expand at runtime. */
   elements?: { value: number; spread: boolean; index?: number }[];
   properties?: { name: string | null; value: number; spread: boolean; accessor: boolean }[];
+  /** Cooked template segments interleaved with expression IDs; no evaluation. */
+  template?: { quasis: (string | null)[]; expressions: number[] };
   async?: boolean;
 }
 export interface ValueFlow {
@@ -76,7 +78,7 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     else if (n.type === 'Identifier') { v.kind='reference';v.target=target(n); }
     else if (n.type === 'Literal' && (n.value === null || ['string','number','boolean'].includes(typeof n.value))) { v.kind='literal';v.literal=n.value as FlowValue['literal']; }
     else if (n.type === 'TemplateLiteral' && !(n.expressions as Node[]).length) { v.kind='literal';v.literal=String((((n.quasis as Node[])[0].value) as {cooked?:string}).cooked); }
-    else if (n.type === 'TemplateLiteral') {v.primitive='string';}
+    else if (n.type === 'TemplateLiteral') {v.primitive='string';v.template={quasis:(n.quasis as Node[]).map(q=>((q.value as {cooked?:string|null}).cooked??null)),expressions:(n.expressions as Node[]).map(value)};}
     else if (n.type === 'MemberExpression') {v.kind='member';v.target=target(n);v.receiver=value(n.object as Node);v.member=key(n.property as Node,n.computed);}
     else if (n.type === 'ArrayExpression') {v.kind='array';v.elements=(n.elements as (Node|null)[]).flatMap((e,index)=>e?[{value:value((e.type==='SpreadElement'?e.argument:e) as Node),spread:e.type==='SpreadElement',index}]:[]);}
     else if (n.type === 'ObjectExpression') {v.kind='object';v.properties=(n.properties as Node[]).map(p=>({name:p.type==='SpreadElement'?null:key(p.key as Node,p.computed),spread:p.type==='SpreadElement',accessor:p.kind==='get'||p.kind==='set',value:value((p.type==='SpreadElement'?p.argument:p.value) as Node)}));}

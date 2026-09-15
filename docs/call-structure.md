@@ -52,3 +52,9 @@ function is different from executing its body; awaiting an object does not await
 its fields. Framework and native-API identity, promise settlement policy and
 cleanup interpretation remain in the doctor. The Async doctor uses this graph;
 its source, installed package and unavailable-analysis contracts are tested together.
+
+Template expressions retain additive `template: {quasis, expressions}` facts.
+Cooked quasis can be null for invalid escapes; expression entries are flow IDs.
+The host does not evaluate or stringify the expressions. Existing consumers still
+see an unknown string value; a policy can establish a bounded literal only when
+all of its substitutions independently resolve to supported primitives.

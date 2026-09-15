@@ -34,6 +34,11 @@ export interface FlowValue extends SourceRange {
         spread: boolean;
         accessor: boolean;
     }[];
+    /** Cooked template segments interleaved with expression IDs; no evaluation. */
+    template?: {
+        quasis: (string | null)[];
+        expressions: number[];
+    };
     async?: boolean;
 }
 export interface ValueFlow {

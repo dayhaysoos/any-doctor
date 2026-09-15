@@ -65,6 +65,7 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         }
         else if (n.type === 'TemplateLiteral') {
             v.primitive = 'string';
+            v.template = { quasis: n.quasis.map(q => { var _a; return ((_a = q.value.cooked) !== null && _a !== void 0 ? _a : null); }), expressions: n.expressions.map(value) };
         }
         else if (n.type === 'MemberExpression') {
             v.kind = 'member';
