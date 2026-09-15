@@ -41,7 +41,7 @@ export const fixtures = [
         "}",
       ].join("\n"),
     },
-    expected: [{ rule: "sse-comment-parse-crash", file: "src/sse-bad.ts", line: 6 }],
+    expected: [], // Revision 1 expected line 6; the data-prefix guard excludes comments.
   },
   {
     name: "sse: comment lines skipped before parsing",
@@ -180,3 +180,15 @@ fixtures.push({name:'slug: two actual model selections',seed:{'src/pins.ts':
  {rule:'hardcoded-dated-model-slug',file:'src/pins.ts',line:2,column:0},
  {rule:'hardcoded-dated-model-slug',file:'src/pins.ts',line:3,column:0},
 ]});
+
+fixtures.push({name:'sse: two unfiltered parse occurrences',seed:{'src/framing.ts':[
+ 'const c=new AbortController();',
+ 'const response=await fetch("https://openrouter.ai/api/v1/chat/completions",{signal:c.signal,body:JSON.stringify({stream:true})});',
+ 'const reader=response.body.getReader();',
+ 'const {value}=await reader.read();',
+ 'const text=new TextDecoder().decode(value);',
+ 'for(const line of text.split("\\n")){',
+ '  JSON.parse(line.slice(6));',
+ '  JSON.parse(line.slice(6));',
+ '}',
+].join('\n')},expected:[{rule:'sse-comment-parse-crash',file:'src/framing.ts',line:7,column:2},{rule:'sse-comment-parse-crash',file:'src/framing.ts',line:8,column:2}]});

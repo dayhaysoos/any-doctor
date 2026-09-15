@@ -1,0 +1,31 @@
+const head=`const c=new AbortController();const response=await fetch('https://openrouter.ai/api/v1/chat/completions',{signal:c.signal,body:JSON.stringify({stream:true})});const reader=response.body.getReader();const {value}=await reader.read();const text=new TextDecoder().decode(value);`;
+const parse=`const chunk=JSON.parse(line.slice(6));`;
+const loop=body=>`${head}for(const line of text.split('\n')){${body}}`.replace("split('\n')","split('\\n')");
+export const cases=[
+ ['opaque-guard',loop(`if(skipLine(line))continue;${parse}`),0,2],
+ ['computed',loop(`const chunk=JSON['parse'](line['slice'](6));`),1,0],
+ ['wrapped',loop(`const chunk=JSON.parse((line as string)!.slice(6));`),1,0],
+ ['conditional-line',loop(`const input=flag?line:external;JSON.parse(input);`),0,1],
+ ['reassigned-line',loop(`let input=line;input=external;JSON.parse(input);`),0,1],
+ ['parser-helper',`function parseEvent(value){return JSON.parse(value)}${loop('parseEvent(line)')}`,0,1],
+ ['direct',loop(parse),1,0],
+ ['data-guard',loop(`if(line.startsWith('data: ')){${parse}}`),0,0],
+ ['comment-guard',loop(`if(line.startsWith(':'))continue;${parse}`),0,0],
+ ['negative-data-guard',loop(`if(!line.startsWith('data:'))continue;${parse}`),0,0],
+ ['unrelated-guard',loop(`if(other.startsWith(':'))continue;${parse}`),1,0],
+ ['late-guard',loop(`${parse}if(line.startsWith(':'))continue;`),1,0],
+ ['guard-function',loop(`function unrelated(){if(line.startsWith(':'))return;} ${parse}`),1,0],
+ ['alias',loop(`const alias=line;const payload=alias.slice(6);const chunk=JSON.parse(payload);`),1,0],
+ ['multiline',loop(`const chunk=JSON\n.parse(\nline.slice(6)\n);`),1,0],
+ ['shadow-json',loop(`const JSON={parse(x){return x}};${parse}`),0,0],
+ ['opaque-parser',loop(`parseEvent(line)`),0,1],
+ ['opaque-neighbor',loop(`parseEvent(line);${parse}`),1,1],
+ ['unknown-reader',head+`const wrapped=wrap(reader);`,0,1],
+ ['two',loop(`${parse}const second=JSON.parse(line.slice(6));`),2,0],
+ ['two-loops',loop(`if(line.startsWith(':'))continue;${parse}`)+`for(const line of text.split('\\n')){${parse}}`,1,0],
+ ['other-stream',loop(`for(const line of other.split('\\n')){if(line.startsWith(':'))continue;} ${parse}`),1,0],
+ ['unrelated-json',head+`JSON.parse('{"ok":true}')`,0,0],
+ ['other-provider',loop(parse).replace('openrouter.ai','example.org'),0,0],
+ ['sdk-parser',`import {OpenRouter} from '@openrouter/sdk';const c=new OpenRouter();const stream=await c.chat.send({stream:true});for await(const chunk of stream){console.log(chunk)}`,0,0],
+ ['parser-library',`import {createParser} from 'eventsource-parser';${head}const parser=createParser({onEvent(e){JSON.parse(e.data)}});parser.feed(text);`,0,0],
+].map(([name,source,count,unknown])=>({name,source,count,unknown}));

@@ -23,15 +23,14 @@ export const meta = {
       lookalikes: ["error handling living in a different file"],
     },
     {
-      id: "sse-comment-parse-crash",
-      description: "A hand-rolled SSE reader will feed OpenRouter's keep-alive comments to JSON.parse",
-      severity: "warning",
-      revision: 1,
-      impact: "OpenRouter sends `: OPENROUTER PROCESSING` comment lines while routing; the docs warn hand parsers must skip them. A loop that JSON.parses every data-bearing line crashes mid-generation.",
-      why: "SSE keep-alive comments start with `:` and are legal on any stream, but OpenRouter sends them as a matter of course during provider routing — a naive `split(\"\\n\")` + JSON.parse loop meets one on the first slow request.",
-      fix: "Skip comment lines before parsing: `if (line.startsWith(\":\")) continue;` — or use an SDK stream helper that handles SSE framing.",
-      claim: "A hand-rolled SSE loop that does not skip colon-prefixed comment lines.",
-      lookalikes: ["SDK stream helpers handling SSE framing"],
+      id: 'sse-comment-parse-crash', revision: 2, reportingUnit: 'occurrence', needs: ['calls'], onUnknown: 'narrow', severity: 'warning',
+      description: 'OpenRouter SSE comment lines can reach a handwritten JSON parser.',
+      claim: 'A native JSON.parse receives a line from a supported OpenRouter SSE reader without a preceding effective comment exclusion.',
+      impact: 'Legal keep-alive comments can interrupt stream parsing.',
+      why: 'SSE framing distinguishes data fields from colon-prefixed comments; unrelated guards do not filter this line.',
+      fix: 'Use a spec-compliant framing parser or exclude comments and non-data fields on this path before parsing payloads.',
+      lookalikes: ['Data-prefix guards','Comment exclusions','SDK or eventsource-parser framing','Non-stream response JSON'],
+      blindSpots: ['Opaque parser helpers, transforms and mutated line flow narrow; no cross-module execution.'],
     },
     {
       id: "missing-abort-signal",
@@ -82,7 +81,7 @@ export async function doctor(ctx) {
     const lines = masked.split("\n");
 
     checkMidstreamErrors(ctx, file, lines);
-    checkSseComments(ctx, file, rawLines, lines);
+
 
     checkRetryAfter(ctx, file, rawLines, lines);
 
@@ -99,25 +98,6 @@ function checkMidstreamErrors(ctx, file, lines) {
       ctx.report.finding({ rule: "midstream-error-ignored", file, line: i + 1 });
     }
     return;
-  }
-}
-
-// Hand-rolled SSE framing: data-line handling plus JSON.parse, but no
-// guard for `:` keep-alive comments. Structure is read from the masked
-// source; the data/guard signals live inside strings, so those come from
-// the raw text.
-function checkSseComments(ctx, file, rawLines, lines) {
-  const masked = lines.join("\n");
-  const raw = rawLines.join("\n");
-  const manualSse = /\bgetReader\s*\(/.test(masked) || /split\s*\(\s*["']\\n["']\s*\)/.test(raw);
-  if (!manualSse) return;
-  if (!/\bdata:\s/.test(raw) && !/startsWith\s*\(\s*["']data:/.test(raw)) return;
-  if (/startsWith\s*\(\s*["']:["']/.test(raw)) return;
-  for (let i = 0; i < lines.length; i++) {
-    if (/\bJSON\s*\.\s*parse\s*\(/.test(lines[i])) {
-      ctx.report.finding({ rule: "sse-comment-parse-crash", file, line: i + 1 });
-      return;
-    }
   }
 }
 
@@ -246,10 +226,11 @@ function requestFacts(ctx, file) {
     const ep=base===UNKNOWN||custom!==undefined?UNKNOWN:base===undefined?official:endpoint(base.id);
     return {endpoint:ep,official,config,body:call.arguments?.[0]};
   }
-  return {facts,flow,values,bindings,states,resolve,property,propertyValue,literal,name,endpoint,native,clientCall};
+  return {facts,flow,values,bindings,states,byStart,stable,resolve,property,propertyValue,literal,name,endpoint,native,clientCall};
 }
 function checkRequests(ctx,file) {
   const m=requestFacts(ctx,file);
+  checkSse(ctx,file,m);
   for(const call of m.flow.values.filter(v=>v.kind==='call'&&!v.dead)) {
     checkModel(ctx,file,m,call);
     const native=m.native(call);
@@ -298,4 +279,85 @@ function checkModel(ctx,file,m,call) {
   if(text===UNKNOWN){narrow();return;}
   if(typeof text==='string'&&/^[a-z][a-z0-9.-]*\/[a-z0-9._-]*\d[a-z0-9._-]*(?::[a-z-]+)?$/i.test(text)&&! /\.(?:[cm]?[jt]sx?|json|md|txt)$/i.test(text))
     ctx.report.finding({rule,file,line:call.line,column:call.column});
+}
+
+// Interpret only documented transport transformations over the host graph.
+// An opaque transfer retains its source identity and is reported as coverage.
+function streamFacts(m) {
+  const cache=new Map();
+  function propertyStage(p,key){
+    if(!p)return undefined;
+    if(p.stage==='response'&&key==='body')return {...p,stage:'body'};
+    if(p.stage==='read'&&key==='value')return {...p,stage:'bytes'};
+    return {...p,unknown:true};
+  }
+  function provenance(id,seen=new Set()) {
+    if(id===undefined||seen.has(id))return undefined;
+    if(cache.has(id))return cache.get(id);
+    seen=new Set(seen).add(id);const v=m.values.get(id);if(!v)return undefined;
+    let p;
+    if(v.kind==='reference'&&v.target?.binding!=null){
+      const b=v.target.binding,state=m.states.get(b),init=m.bindings.get(b)?.initializer??m.byStart.get(state?.initializer)?.id;
+      if(init!==undefined){p=provenance(init,seen);for(const key of state?.path??[])p=propertyStage(p,key);}
+      else {const loop=m.flow.loops.find(l=>l.binding===b);if(loop){const source=provenance(loop.iterable,seen);if(source)p={...source,stage:source.stage==='lines'?'line':source.stage==='chunks'?'chunk':source.stage,unknown:source.unknown||!['lines','chunks'].includes(source.stage),lineBinding:b};}}
+      if(p&&!m.stable(b))p={...p,unknown:true};
+    }else if(v.kind==='await')p=provenance(v.value,seen);
+    else if(v.kind==='member')p=propertyStage(provenance(v.receiver,seen),v.member);
+    else if(v.alternatives){const candidates=v.alternatives.map(x=>provenance(x,seen)).filter(Boolean);if(candidates.length)p={...candidates[0],unknown:true};}
+    else if(v.kind==='call'){
+      const native=m.native(v),client=m.clientCall(v);
+      if(native&&m.endpoint(v.arguments?.[0])!==false){
+        const body=m.property(v.arguments?.[1],'body');
+        const config=body?.kind==='call'&&m.name(body.callee)==='JSON.stringify'?body.arguments?.[0]:undefined;
+        const stream=m.property(config,'stream');
+        if(stream?.literal!==false)p={origin:v.id,stage:'response',unknown:native===UNKNOWN||m.endpoint(v.arguments?.[0])===UNKNOWN||stream?.literal!==true};
+      }else if(client&&client.endpoint!==false&&m.property(v.arguments?.[0],'stream')?.literal===true)p={origin:v.id,stage:'chunks',unknown:client.endpoint===UNKNOWN};
+      if(!p){
+        const receiver=provenance(v.receiver,seen),args=(v.arguments??[]).map(x=>provenance(x,seen));
+        if(v.member==='getReader'&&receiver?.stage==='body')p={...receiver,stage:'reader'};
+        else if(v.member==='read'&&receiver?.stage==='reader')p={...receiver,stage:'read'};
+        else if(v.member==='decode'&&m.name(m.resolve(v.receiver)?.callee)==='TextDecoder'&&args[0])p={...args[0],stage:'text',unknown:args[0].unknown||args[0].stage!=='bytes'};
+        else if(v.member==='split'&&receiver?.stage==='text'&&m.literal(v.arguments?.[0])==='\n')p={...receiver,stage:'lines'};
+        else if(v.member==='slice'&&receiver?.stage==='line'&&[0,5,6].includes(m.literal(v.arguments?.[0])))p={...receiver,stage:'payload'};
+        else if(m.name(v.callee)==='JSON.parse'&&args[0]&&['line','payload'].includes(args[0].stage))p={...args[0],stage:'chunk',chunk:v.id};
+        else if(receiver||args.some(Boolean))p={...(receiver??args.find(Boolean)),unknown:true};
+      }
+    }
+    cache.set(id,p);return p;
+  }
+  return {provenance};
+}
+function checkSse(ctx,file,m) {
+  const rule='sse-comment-parse-crash',{provenance}=streamFacts(m);
+  function excludes(id,truthy,line,seen=new Set()) {
+    if(seen.has(id))return false;seen=new Set(seen).add(id);
+    const v=m.resolve(id);if(!v||v===UNKNOWN)return false;
+    if(v.operation?.operator==='!')return excludes(v.operation.operands[0],!truthy,line,seen);
+    if(v.operation && (v.operation.operator==='&&'&&truthy || v.operation.operator==='||'&&!truthy)){const parts=v.operation.operands.map(x=>excludes(x,truthy,line,seen));return parts.includes(true)?true:parts.includes(UNKNOWN)?UNKNOWN:false;}
+    if(v.kind!=='call'||v.member!=='startsWith'){
+      const related=[v.id,...(v.operation?.operands??[])].some(id=>{const p=provenance(id);return p&&p.lineBinding===line.lineBinding&&p.origin===line.origin});
+      return related?UNKNOWN:false;
+    }
+    const p=provenance(v.receiver);if(!p||p.unknown||p.lineBinding!==line.lineBinding||p.origin!==line.origin)return false;
+    const prefix=m.literal(v.arguments?.[0]);if(prefix===UNKNOWN)return UNKNOWN;return truthy&&typeof prefix==='string'&&prefix.startsWith('data:')||!truthy&&prefix===':';
+  }
+  const parserReceivers=new Set(m.flow.values.filter(v=>v.kind==='call'&&['eventsource-parser:createParser'].includes(m.name(v.callee))).map(v=>v.id));
+  for(const call of m.flow.values.filter(v=>v.kind==='call'&&!v.dead)){
+    const isParse=m.name(call.callee)==='JSON.parse',arg=provenance(call.arguments?.[0]);
+    if(isParse&&arg&&['line','payload'].includes(arg.stage)){
+      if(arg.unknown){ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});continue;}
+      const guards=(call.guards??[]).map(g=>excludes(g.test,g.truthy,arg));
+      if(guards.includes(true))continue;
+      if(guards.includes(UNKNOWN))ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});
+      else ctx.report.finding({rule,file,line:call.line,column:call.column});
+    }else if(!isParse){
+      const own=provenance(call.id),receiver=m.resolve(call.receiver),callee=m.resolve(call.callee);
+      if(callee?.kind==='function'&&!m.flow.values.some(v=>v.kind==='call'&&v.functionStart===callee.start))continue;
+      // Predicates inspect a line without transferring parser ownership.
+      if(['startsWith','endsWith'].includes(call.member))continue;
+      if(call.member==='feed'&&parserReceivers.has(receiver?.id))continue;
+      if(own?.unknown && (call.arguments??[]).some(id=>{const p=provenance(id);return p&&!p.unknown&&['body','reader','bytes','text','lines','line','payload'].includes(p.stage)}))
+        ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});
+    }
+  }
 }

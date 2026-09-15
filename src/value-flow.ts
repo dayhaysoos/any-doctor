@@ -25,6 +25,9 @@ export interface FlowValue extends SourceRange {
   properties?: { name: string | null; value: number; spread: boolean; accessor: boolean }[];
   /** Cooked template segments interleaved with expression IDs; no evaluation. */
   template?: { quasis: (string | null)[]; expressions: number[] };
+  /** Syntax-only predicates established on entry to this expression. */
+  guards?: { test: number; truthy: boolean }[];
+  operation?: { operator: string; operands: number[] };
   async?: boolean;
 }
 export interface ValueFlow {
@@ -70,6 +73,24 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     return !computed && n.type === 'Identifier' ? String(n.name)
       : n.type === 'Literal' && ['string','number'].includes(typeof n.value) ? String(n.value) : null;
   };
+  const precedingExits = new Map<Node, {test:Node;truthy:boolean}[]>();
+  const exits = (node:Node|undefined):boolean => {
+    if(!node)return false;
+    if(node.type==='BlockStatement')return exits((node.body as Node[]).at(-1));
+    return ['ThrowStatement','ReturnStatement','ContinueStatement','BreakStatement'].includes(node.type)&&!node.label;
+  };
+  // Build block-prefix facts once. Independent statements do not rescan all
+  // earlier siblings for every nested expression.
+  for(const block of nodes.filter(n=>n.type==='BlockStatement')){
+    let prefix:{test:Node;truthy:boolean}[]=[];
+    for(const statement of block.body as Node[]){
+      precedingExits.set(statement,prefix);
+      if(statement.type==='IfStatement'){
+        if(exits(statement.consequent as Node))prefix=[...prefix,{test:statement.test as Node,truthy:false}];
+        else if(exits(statement.alternate as Node))prefix=[...prefix,{test:statement.test as Node,truthy:true}];
+      }
+    }
+  }
   const value = (input: Node): number => {
     const n = unwrap(input); const prior = ids.get(n); if (prior !== undefined) return prior;
     const id = values.length, v: FlowValue = { id, ...range(n), kind:'unknown', functionStart:functionStart(n), dead:dead(n), ...(conditional(n)?{conditional:true}:{}) };
@@ -102,6 +123,21 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
       v.alternatives=known?[value((right?n.right:n.left) as Node)]:[value(n.left as Node),value(n.right as Node)];
     }
     else if (n.type==='ConditionalExpression') {v.kind='choice';const test=unwrap(n.test as Node);v.alternatives=test.type==='Literal'&&typeof test.value==='boolean'?[value((test.value?n.consequent:n.alternate) as Node)]:[value(n.consequent as Node),value(n.alternate as Node)];}
+    if (['BinaryExpression','LogicalExpression','UnaryExpression'].includes(n.type))
+      v.operation={operator:String(n.operator),operands:(n.type==='UnaryExpression'?[n.argument]:[n.left,n.right]).map(x=>value(x as Node))};
+    const guards: NonNullable<FlowValue['guards']> = [];
+    let child=n,parent=parents.get(child);
+    while(parent&&!functions.has(parent.type)){
+      if(parent.type==='IfStatement'){
+        if(child===parent.consequent)guards.push({test:value(parent.test as Node),truthy:true});
+        if(child===parent.alternate)guards.push({test:value(parent.test as Node),truthy:false});
+      }
+      if(parent.type==='BlockStatement'){
+        for(const guard of precedingExits.get(child)??[])guards.push({test:value(guard.test),truthy:guard.truthy});
+      }
+      child=parent;parent=parents.get(parent);
+    }
+    if(guards.length)v.guards=guards;
     return id;
   };
   const arrayType=(n:Node|undefined):boolean=>!!n&&(n.type==='TSArrayType'||n.type==='TSTupleType'||n.type==='TSTypeOperator'&&arrayType(n.typeAnnotation as Node)||n.type==='TSTypeReference'&&['Array','ReadonlyArray'].includes(target(n.typeName as Node).root??'')&&target(n.typeName as Node).binding===null);

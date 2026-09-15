@@ -58,3 +58,10 @@ Cooked quasis can be null for invalid escapes; expression entries are flow IDs.
 The host does not evaluate or stringify the expressions. Existing consumers still
 see an unknown string value; a policy can establish a bounded literal only when
 all of its substitutions independently resolve to supported primitives.
+
+Expression `guards` contain test flow IDs and required truth values for lexical
+if branches and preceding unconditional exits in the same block. Function
+boundaries stop inheritance. Late or unrelated-block guards do not dominate.
+`operation` retains operator spelling and operand IDs without evaluation. These
+are syntax facts, not a complete control-flow graph: doctors must not infer
+arbitrary predicate meaning, exceptional interprocedural flow or mutation safety.

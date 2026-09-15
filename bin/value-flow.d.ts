@@ -39,6 +39,15 @@ export interface FlowValue extends SourceRange {
         quasis: (string | null)[];
         expressions: number[];
     };
+    /** Syntax-only predicates established on entry to this expression. */
+    guards?: {
+        test: number;
+        truthy: boolean;
+    }[];
+    operation?: {
+        operator: string;
+        operands: number[];
+    };
     async?: boolean;
 }
 export interface ValueFlow {

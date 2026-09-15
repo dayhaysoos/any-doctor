@@ -40,7 +40,30 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         return !computed && n.type === 'Identifier' ? String(n.name)
             : n.type === 'Literal' && ['string', 'number'].includes(typeof n.value) ? String(n.value) : null;
     };
+    const precedingExits = new Map();
+    const exits = (node) => {
+        if (!node)
+            return false;
+        if (node.type === 'BlockStatement')
+            return exits(node.body.at(-1));
+        return ['ThrowStatement', 'ReturnStatement', 'ContinueStatement', 'BreakStatement'].includes(node.type) && !node.label;
+    };
+    // Build block-prefix facts once. Independent statements do not rescan all
+    // earlier siblings for every nested expression.
+    for (const block of nodes.filter(n => n.type === 'BlockStatement')) {
+        let prefix = [];
+        for (const statement of block.body) {
+            precedingExits.set(statement, prefix);
+            if (statement.type === 'IfStatement') {
+                if (exits(statement.consequent))
+                    prefix = [...prefix, { test: statement.test, truthy: false }];
+                else if (exits(statement.alternate))
+                    prefix = [...prefix, { test: statement.test, truthy: true }];
+            }
+        }
+    }
     const value = (input) => {
+        var _a;
         const n = unwrap(input);
         const prior = ids.get(n);
         if (prior !== undefined)
@@ -128,6 +151,26 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
             const test = unwrap(n.test);
             v.alternatives = test.type === 'Literal' && typeof test.value === 'boolean' ? [value((test.value ? n.consequent : n.alternate))] : [value(n.consequent), value(n.alternate)];
         }
+        if (['BinaryExpression', 'LogicalExpression', 'UnaryExpression'].includes(n.type))
+            v.operation = { operator: String(n.operator), operands: (n.type === 'UnaryExpression' ? [n.argument] : [n.left, n.right]).map(x => value(x)) };
+        const guards = [];
+        let child = n, parent = parents.get(child);
+        while (parent && !functions.has(parent.type)) {
+            if (parent.type === 'IfStatement') {
+                if (child === parent.consequent)
+                    guards.push({ test: value(parent.test), truthy: true });
+                if (child === parent.alternate)
+                    guards.push({ test: value(parent.test), truthy: false });
+            }
+            if (parent.type === 'BlockStatement') {
+                for (const guard of (_a = precedingExits.get(child)) !== null && _a !== void 0 ? _a : [])
+                    guards.push({ test: value(guard.test), truthy: guard.truthy });
+            }
+            child = parent;
+            parent = parents.get(parent);
+        }
+        if (guards.length)
+            v.guards = guards;
         return id;
     };
     const arrayType = (n) => { var _a; return !!n && (n.type === 'TSArrayType' || n.type === 'TSTupleType' || n.type === 'TSTypeOperator' && arrayType(n.typeAnnotation) || n.type === 'TSTypeReference' && ['Array', 'ReadonlyArray'].includes((_a = target(n.typeName).root) !== null && _a !== void 0 ? _a : '') && target(n.typeName).binding === null); };
