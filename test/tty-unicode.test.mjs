@@ -6,7 +6,7 @@ const candidate = process.env.DOCTOR_CANDIDATE_ROOT ?? fileURLToPath(new URL('..
 const { visibleWidth, truncateVisible } = await import(`${candidate}/bin/tty.js`);
 
 const corpus = [
-  ['⚠', 1], ['ℹ', 1], ['✔', 1], ['⚠️', 2], ['abc', 3], ['界', 2], ['界界界', 6], ['Ａ', 2], ['　', 2],
+  ['ℹ\u200d', 1], ['©\u200d', 1], ['⚠\u200d', 1], ['⚡', 2], ['\u20e3', 0], ['\u0301\u20e3', 0], ['A\u20e3', 1], ['#️⃣', 2], ['⚠', 1], ['ℹ', 1], ['✔', 1], ['⚠️', 2], ['abc', 3], ['界', 2], ['界界界', 6], ['Ａ', 2], ['　', 2],
   ['e\u0301', 1], ['🧪', 2], ['👩‍💻', 2], ['❤️', 2], ['👍🏽', 2], ['🇺🇸', 2],
   ['\x1b[31m界界界\x1b[0m', 6], ['\x1b[32me\u0301\x1b[0m', 1],
   ['\u0301', 0], ['\u05b0', 0], ['\ufe0f', 0], ['\u200d', 0], ['·', 1],
@@ -48,4 +48,9 @@ test('terminal controls cannot escape a bounded content line', () => {
     assert.doesNotMatch(plainSgr(out), /[\x00-\x1f\x7f-\x9f\u2028\u2029\u202a-\u202e\u2066-\u2069]/);
     assert.ok(terminalCells(out) <= 20);
   }
+});
+
+test('combining keycap marks alone fit without an invented ellipsis', () => {
+  assert.equal(truncateVisible('\u20e3', 1), '\u20e3');
+  assert.equal(truncateVisible('A\u20e3x', 2), 'A\u20e3x');
 });

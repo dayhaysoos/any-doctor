@@ -27,13 +27,17 @@ function safeLine(s) {
         : stripVTControlCharacters(part).replace(/[\x00-\x1f\x7f-\x9f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, "")).join("");
 }
 function clusterWidth(cluster) {
-    // Text-default symbols (e.g. warning/info) stay text-width unless VS16 or
-    // a ZWJ emoji sequence requests emoji presentation. No per-glyph exceptions.
-    if (/\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\u20E3/u.test(cluster)
-        || (cluster.includes("\u200d") && /\p{Extended_Pictographic}/u.test(cluster)))
-        return 2;
     const base = [...cluster].find(ch => !/[\p{Mark}\p{Default_Ignorable_Code_Point}]/u.test(ch));
-    return base === undefined ? 0 : eastAsianWidth(base.codePointAt(0), { ambiguousAsWide: false });
+    if (base === undefined)
+        return 0;
+    // Text-default symbols stay text-width unless a complete emoji presentation
+    // or joined pictograph sequence requests two cells. A trailing ZWJ and a
+    // standalone enclosing-keycap mark add no width by themselves.
+    if (/\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F/u.test(cluster)
+        || /^[#*0-9]\uFE0F?\u20E3$/u.test(cluster)
+        || /\p{Extended_Pictographic}\uFE0F?\u200d\p{Extended_Pictographic}/u.test(cluster))
+        return 2;
+    return eastAsianWidth(base.codePointAt(0), { ambiguousAsWide: false });
 }
 export function visibleWidth(s) {
     let width = 0;

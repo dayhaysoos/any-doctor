@@ -4,10 +4,10 @@
 // encode complete reviewed clusters, so a split mark/ZWJ sequence also fails.
 const clusters = new Map([
   ['👩‍💻', 2], ['❤️', 2], ['e\u0301', 1], ['👍🏽', 2], ['🇺🇸', 2],
-  ['🧪', 2], ['界', 2], ['医', 2], ['師', 2], ['文', 2], ['件', 2],
+  ['⚡', 2], ['🧪', 2], ['界', 2], ['医', 2], ['師', 2], ['文', 2], ['件', 2],
   ['名', 2], ['Ａ', 2], ['　', 2],
 ]);
-const narrow = new Set('ℹ›✖…—–·×△✔✓⚠↑↓→←─│┌┐└┘├┤┬┴┼▸▾▏█░▒▓●○✘⊘◆◇↳•⚡✗✕➜┊╭╮╰╯');
+const narrow = new Set('ℹ›✖…—–·×△✔✓⚠↑↓→←─│┌┐└┘├┤┬┴┼▸▾▏█░▒▓●○✘⊘◆◇↳•✗✕➜┊╭╮╰╯');
 export const plainSgr = text => text.replace(/\x1b\[[0-9;:]*m/g, '');
 export function terminalCells(text) {
   let remaining = plainSgr(text), cells = 0;
