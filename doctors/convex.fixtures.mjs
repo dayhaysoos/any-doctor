@@ -949,3 +949,11 @@ fixtures.push({
   name:'all checks abstain without analysis, including former text-only checks',analysis:'off',
   seed:{'convex/example.ts':'"use node"; import {query} from "./_generated/server"; query({handler:async(ctx)=>{ctx.db.patch("x",{lastSeen:Date.now(),...unknown});return ctx.db.query("x").collect();}});'},expected:[],
 });
+
+// Preserve the historical unresolved seeds as coverage controls. The positive
+// witnesses additionally need a real generated API import; their locations stay fixed.
+for(const name of ['public-api-in-server-call: flags ctx.runMutation pointing at the public api tree','locations: public-api-in-server-call two separate statements']){
+  const fixture=fixtures.find(f=>f.name===name);
+  fixtures.push({name:`unresolved API abstains: ${name}`,seed:{...fixture.seed},expected:[]});
+  for(const file of Object.keys(fixture.seed))fixture.seed[file]=fixture.seed[file].replace(';\n','; import {api} from "./_generated/api";\n');
+}

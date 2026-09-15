@@ -305,7 +305,7 @@ export const meta = {
 };
 
 // Framework policy over shared identity, property, return and execution facts.
-function model(facts) {
+function model(facts,ctx,file) {
   const s=facts.structure, values=new Map(s.values.map(v=>[v.start,v])), bindings=new Map(s.bindings.map(b=>[b.binding,b]));
   const calls=new Map(facts.calls.map(c=>[c.end,c]));
   function resolveValue(id,seen=new Set()) {
@@ -351,21 +351,41 @@ function model(facts) {
     return t;
   }
   function framework(t){return t?.source==='convex/server' || /(?:^|\/)_generated\/server(?:\.[cm]?[jt]s)?$/.test(t?.source??'');}
-  function registration(t){
-    t=resolveTarget(t);if(!framework(t))return null;
+  function registrationOrigin(t){
+    if(!framework(t))return null;
     const name=t.importedName==='*' && t.members.length===1?t.members[0]:t.members.length===0?t.importedName:null;
     if(!/^(query|mutation|action|internalQuery|internalMutation|internalAction|queryGeneric|mutationGeneric|actionGeneric|internalQueryGeneric|internalMutationGeneric|internalActionGeneric|httpAction|httpActionGeneric)$/.test(name??''))return null;
     return {kind:name.replace(/Generic$/,'').replace(/^internal/,'').toLowerCase(),internal:name.startsWith('internal')};
   }
+  function registration(t){return registrationOrigin(resolveTarget(t));}
+  // Candidate provenance survives unsupported selection/reassignment. A local
+  // ordinary function with no imported registration origin is still outside scope.
+  function possibleRegistrations(t,seen=new Set()) {
+    if(!t || seen.has(t.binding))return [];
+    const direct=registrationOrigin(t);if(direct)return [direct];
+    const b=bindings.get(t.binding);if(!b)return [];
+    seen=new Set(seen).add(t.binding);
+    function fromValue(id,visited=new Set()){
+      if(visited.has(id))return [];visited=new Set(visited).add(id);
+      const v=values.get(id);if(!v)return [];
+      if(v.kind==='alias')return fromValue(v.value,visited);
+      if(v.kind==='choice')return v.alternatives.flatMap(id=>fromValue(id,visited));
+      if(v.kind==='reference')return possibleRegistrations({...v.target,members:[...v.target.members,...(b.path??[]),...t.members]},seen);
+      return [];
+    }
+    return [...fromValue(b.initializer),...(b.writes??[]).flatMap(w=>fromValue(w.value))];
+  }
   const registrations=[], handlers=new Map();
   for(const call of facts.calls){
-    const reg=registration(call.target);if(!reg)continue;
+    const known=registration(call.target),possible=known?[known]:possibleRegistrations(call.target);
+    if(!possible.length)continue;
+    const reg={...possible[0],kinds:[...new Set(possible.map(p=>p.kind))],uncertain:!known};
     const config=call.arguments[0] && resolveValue(call.arguments[0].start);
     const handler=config?.kind==='function'?config:property(config,'handler');
     const entry={...reg,call,config,handler,args:property(config,'args')};registrations.push(entry);
     if(handler?.kind==='function'){
       const old=handlers.get(handler.value);
-      handlers.set(handler.value,old && old.kind!==entry.kind?{kind:'unknown'}:entry);
+      handlers.set(handler.value,old && old.kind!==entry.kind?{...entry,kinds:[...new Set([...old.kinds,...entry.kinds])],uncertain:true}:entry);
     }
   }
   function context(t,seen=new Set()){
@@ -397,35 +417,48 @@ function model(facts) {
     }
     return null;
   }
-  return {s,values,bindings,calls,resolveValue,resolveTarget,property,registrations,handlers,context};
+  const reported=new Set();
+  function narrow(rule,location,reason='unsupported-expression'){
+    const key=`${rule}:${location.start}:${reason}`;
+    if(reported.has(key))return;reported.add(key);
+    ctx.report.narrowing({check:rule,file,reason,capability:'calls'});
+  }
+  function emit(rule,location,extra={}){
+    if(registrations.some(r=>r.uncertain&&r.call.start<=location.start&&location.end<=r.call.end)){
+      narrow(rule,location,'unresolved-identity');return;
+    }
+    ctx.report.finding({rule,file,line:location.line,column:location.column,...extra});
+  }
+  return {s,values,bindings,calls,resolveValue,resolveTarget,property,registrations,handlers,context,narrow,emit};
 }
-function emit(ctx,file,rule,location,extra={}){ctx.report.finding({rule,file,line:location.line,column:location.column,...extra});}
 export async function doctor(ctx){
   if(!ctx.analysis.available)return;
   for(const file of ctx.files.list(['.ts','.tsx','.js','.jsx','.mjs'])){
     if(/\.fixtures\.mjs$/.test(file))continue;
     const facts=ctx.analysis.calls(file);if(!facts.structure)throw Error('Convex doctor requires structural call facts from the current Any Doctor host');
-    const m=model(facts);
+    const m=model(facts,ctx,file);
     for(const reg of m.registrations){
       if(reg.kind==='httpaction')continue;
       const config=reg.config;
       const absent=config?.kind==='function' || (config?.kind==='object' && !config.properties.some(p=>p.spread || p.name===null || p.name==='args'));
-      if(absent)emit(ctx,file,'missing-args-validator',reg.call,reg.internal?{severity:'info',message:'Internal function omits args validators; optional contract review, not client exposure.'}:{});
-      if(m.s.directives.includes('use node') && ['query','mutation'].includes(reg.kind))emit(ctx,file,'node-runtime-transaction',reg.call);
+      if(!absent && !reg.args && config?.kind!=='function')m.narrow('missing-args-validator',reg.call);
+      if(absent)m.emit('missing-args-validator',reg.call,reg.internal?{severity:'info',message:'Internal function omits args validators; optional contract review, not client exposure.'}:{});
+      if(m.s.directives.includes('use node') && ['query','mutation'].includes(reg.kind))m.emit('node-runtime-transaction',reg.call);
     }
     const clocks=new Map(),clockBindings=new Map();
     for(const call of facts.calls){
       const c=m.context(call.target),member=c?.members.join('.');
       if(c){
-        if(call.usage==='discarded' && /^(?:db\.(?:insert|patch|replace|delete|get)|scheduler\.(?:runAfter|runAt|cancel)|run(?:Query|Mutation|Action)|storage\.(?:get|store|delete|generateUploadUrl|getUrl))$/.test(member))emit(ctx,file,'unawaited-convex-call',call);
-        if(c.kind==='query' && /^(?:db\.(?:insert|patch|replace|delete)|scheduler\.[^.]+|runMutation|runAction)$/.test(member))emit(ctx,file,'write-in-query',call);
-        if(c.kind==='action' && /^db\.[^.]+$/.test(member))emit(ctx,file,'db-in-action',call);
+        if(call.usage==='discarded' && /^(?:db\.(?:insert|patch|replace|delete|get)|scheduler\.(?:runAfter|runAt|cancel)|run(?:Query|Mutation|Action)|storage\.(?:get|store|delete|generateUploadUrl|getUrl))$/.test(member))m.emit('unawaited-convex-call',call);
+        if(c.kind==='query' && /^(?:db\.(?:insert|patch|replace|delete)|scheduler\.[^.]+|runMutation|runAction)$/.test(member))m.emit('write-in-query',call);
+        if(c.kind==='action' && /^db\.[^.]+$/.test(member))m.emit('db-in-action',call);
         if(/^run(Query|Mutation|Action)$/.test(member)){
           const arg=call.arguments[0] && m.resolveValue(call.arguments[0].start),t=arg?.kind==='reference'?m.resolveTarget(arg.target):null;
           const imported=t && /(?:^|\/)_generated\/api(?:\.[cm]?[jt]s)?$/.test(t.source??'') && ((t.importedName==='api' && t.members.length>0)||(t.importedName==='*' && t.members[0]==='api'));
           const unresolved=t?.binding===null && t.root==='api' && t.members.length>0;
-          if(imported||unresolved)emit(ctx,file,'public-api-in-server-call',call,{message:unresolved?'Unresolved api-shaped reference in a Convex server call; public registration and intended callers are not established.':'Generated public API reference in a server call; preserve required client access and review authorization and intended callers.'});
-          if(call.usage==='awaited' && m.s.loops.some(l=>l.functionStart===call.functionStart && l.start<=call.start && call.end<=l.end))emit(ctx,file,'sequential-run-in-loop',call);
+          if(unresolved)m.narrow('public-api-in-server-call',call,'unresolved-identity');
+          if(imported)m.emit('public-api-in-server-call',call,{message:'Generated public API reference in a server call; preserve required client access and review authorization and intended callers.'});
+          if(call.usage==='awaited' && m.s.loops.some(l=>l.functionStart===call.functionStart && l.start<=call.start && call.end<=l.end))m.emit('sequential-run-in-loop',call);
         }
         if(member==='db.patch'||member==='db.replace')checkPatch(ctx,file,call,c,m);
       }
@@ -434,13 +467,13 @@ export async function doctor(ctx){
         const kind=m.handlers.get(call.functionStart)?.kind;
         if(kind==='query'||kind==='mutation'){
           clocks.set(call.start,call);if(call.resultBinding!==undefined)clockBindings.set(call.resultBinding,call);
-          if(kind==='query')emit(ctx,file,'query-clock-reactivity',call);
+          if(kind==='query')m.emit('query-clock-reactivity',call);
         }
       }
     }
     for(const diff of facts.differences){
       const get=o=>o.call!==undefined?clocks.get(o.call):clockBindings.get(o.binding),a=get(diff.left),b=get(diff.right);
-      if(a&&b&&a.functionStart===diff.functionStart&&b.functionStart===diff.functionStart)emit(ctx,file,'transaction-clock-duration',diff);
+      if(a&&b&&a.functionStart===diff.functionStart&&b.functionStart===diff.functionStart)m.emit('transaction-clock-duration',diff);
     }
     checkQueryChains(ctx,file,facts,m);
   }
@@ -451,7 +484,7 @@ function checkPatch(ctx,file,call,c,m){
   const spreads=patch.properties.filter(p=>p.spread);
   if(spreads.length){
     const selected=spreads.every(p=>{const v=m.resolveValue(p.value);return v?.kind==='object' && v.properties.every(p=>p.name!==null && !p.spread);});
-    emit(ctx,file,'spread-into-patch',call,{message:selected?'Patch copies explicitly named fields from local server-built objects; review intent, not an arbitrary-client-fields finding.':'Patch copies top-level object fields. Runtime validators, deliberate state copying and server field selection may make this correct; field ownership is not established.'});
+    m.emit('spread-into-patch',call,{message:selected?'Patch copies explicitly named fields from local server-built objects; review intent, not an arbitrary-client-fields finding.':'Patch copies top-level object fields. Runtime validators, deliberate state copying and server field selection may make this correct; field ownership is not established.'});
   }
   if(!patch.properties.some(p=>/^(lastSeen|lastPing|lastActive|lastHeartbeat|heartbeat|pingAt|lastOnline)$/.test(p.name??'')))return;
   const explicitTable=call.arguments.length===3?m.resolveValue(call.arguments[0].start):null;
@@ -469,7 +502,7 @@ function checkPatch(ctx,file,call,c,m){
       }
     }
   }
-  if(!segmented)emit(ctx,file,'presence-patch-on-shared-document',call);
+  if(!segmented)m.emit('presence-patch-on-shared-document',call);
 }
 function checkQueryChains(ctx,file,facts,m){
   const byEnd=m.calls, receivers=new Set(facts.calls.map(c=>c.receiverCall).filter(x=>x!==undefined));
@@ -522,6 +555,7 @@ function checkQueryChains(ctx,file,facts,m){
     if(filter&&!index)rule='filter-table-scan';else if(index&&!ranged&&!bounded)rule='index-without-range';else if(index&&filter)rule='index-filter-combo';else if(collect&&!bounded&&!ranged)rule='unbounded-collect';
     if(!rule)continue;
     const trigger=rule==='index-filter-combo'?filter:steps.find(c=>['withIndex','filter','collect'].includes(method(c)));
-    emit(ctx,file,rule,trigger.memberRange??trigger,unknown?{severity:'info',message:'Returned index range is unresolved on at least one path; review this chain without assuming an unrestricted or small result set.'}:{});
+    if(unknown && rule==='index-without-range')m.narrow(rule,trigger);
+    else m.emit(rule,trigger.memberRange??trigger);
   }
 }

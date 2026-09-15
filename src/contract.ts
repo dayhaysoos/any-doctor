@@ -38,8 +38,8 @@ export interface CheckMeta {
   claim?: string;
   /** Innocent lookalike shapes that must remain silent (corpus candidates). */
   lookalikes?: string[];
-  /** When analysis the check needs is unavailable: "narrow" (report says
-   *  narrowed) or "skip" (silent, declared in blindSpots). */
+  /** When required analysis is unavailable, run a partial check ("narrow")
+   * or abstain ("skip"). Both are recorded as unmeasured coverage. */
   onUnknown?: "narrow" | "skip";
   /** Unit counted by certification; occurrence checks require a two-location witness. */
   reportingUnit?: "occurrence" | "file" | "project";
@@ -321,13 +321,15 @@ export interface AnalysisCalls {
 /** Doctor SDK semantic results are versioned, JSON-safe answers tied to the
  * exact source snapshot analyzed. Unknown is never absence. */
 export const SEMANTIC_RESULT_VERSION = 1 as const;
-export type UnknownReason =
-  | "analysis-unavailable"
-  | "provider-failure"
-  | "unsupported-expression"
-  | "outside-owner"
-  | "unresolved-identity"
-  | "source-changed";
+export const UNKNOWN_REASONS = ["analysis-unavailable", "provider-failure", "unsupported-expression", "outside-owner", "unresolved-identity", "source-changed"] as const;
+export type UnknownReason = typeof UNKNOWN_REASONS[number];
+/** One observed custom-check uncertainty; counts are owned by the host. */
+export interface CustomNarrowing {
+  check: string;
+  file: string;
+  reason: UnknownReason;
+  capability?: string;
+}
 export interface SemanticEvidence {
   kind: "expression" | "binding" | "alias";
   file: string;
@@ -475,6 +477,8 @@ export interface DoctorCtx {
   };
   report: {
     finding(f: Finding): void;
+    /** Coverage only: aggregate an unresolved occurrence without creating a finding. */
+    narrowing(n: CustomNarrowing): void;
   };
 }
 

@@ -9,6 +9,7 @@ import { checkAnalysisNeeds, AnalysisFile, AnalysisSpans, AnalysisCalls, Capture
 import { maskNonCode } from "./mask.js";
 import { EngineQuery, RawSgCapture, RawSgMatch } from "./engine.js";
 import { identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
+import { UNKNOWN_REASONS, type CustomNarrowing } from "./contract.js";
 
 // The verify harness forces the degraded path per fixture (fixture
 // `analysis: "off"`): the loader flips this switch before running that
@@ -45,6 +46,7 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
   const sourceStats = new Map<string,{size:number;mtimeMs:number}>();
   const analysisFiles = new Map<string,AnalysisFile|AnalysisSpans|AnalysisCalls>();
   const narrowings = new Map<string,SemanticNarrowing>();
+  const customChecks = new Map<string, Set<string>>();
   const execution={semanticQueries:0,modelRequests:0,modelCacheHits:0};
   const digest = (source: string) => createHash("sha256").update(source).digest("hex");
   function readSource(file: string): string {
@@ -221,6 +223,25 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
       finding(f: Finding): void {
         findings.push(f);
       },
+      narrowing(n: CustomNarrowing): void {
+        if (!n || typeof n !== "object" || Object.keys(n).some(key => !["check", "file", "reason", "capability"].includes(key))
+          || typeof n.check !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(n.check)
+          || !UNKNOWN_REASONS.includes(n.reason)
+          || (n.capability !== undefined && (typeof n.capability !== "string" || !n.capability.length))) {
+          throw new Error("invalid custom narrowing: expected check, relative file, structured reason and optional capability");
+        }
+        if (typeof n.file !== "string" || !n.file.length || /[\\\\:\x00-\x1f]/.test(n.file)
+          || path.isAbsolute(n.file) || n.file.split("/").some(part => !part || part === "." || part === "..")) {
+          throw new Error("invalid custom narrowing: file must be a normalized relative path");
+        }
+        // Reuse confinement and snapshot validation, including realpath containment.
+        readSource(n.file);
+        const capabilities = customChecks.get(n.check) ?? new Set<string>();
+        if (n.capability !== undefined) capabilities.add(n.capability);
+        customChecks.set(n.check, capabilities);
+        recordUnknown({version:SEMANTIC_RESULT_VERSION,status:"unknown",reason:n.reason},n.file,
+          {check:n.check,...(n.capability !== undefined ? {capability:n.capability} : {})});
+      },
     },
   };
 
@@ -249,18 +270,33 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
     return project?.coverage;
   }, getSemanticReport:(meta:DoctorMeta):SemanticRunReport|undefined=>{
     const checks=meta.checks??[],capabilityNames=[...new Set(checks.flatMap(check=>checkAnalysisNeeds(check)))],recipeDeclarations=checks.flatMap(check=>check.recipe?[{check:check.id,name:check.recipe.name}]:[]);
+    // Metadata is authoritative at the run boundary, before any report is serialized.
+    for (const [id, capabilities] of customChecks) {
+      const check = checks.find(check => check.id === id);
+      if (!check) throw new Error(`invalid custom narrowing: undeclared check ${id}`);
+      for (const capability of capabilities) if (!checkAnalysisNeeds(check).includes(capability)) {
+        throw new Error(`invalid custom narrowing: undeclared capability ${capability} for ${id}`);
+      }
+    }
     if(!capabilityNames.length&&!recipeDeclarations.length&&!narrowings.size)return undefined;
     for(const [file,source] of sourceCache){
       try{if(digest(readFileWithin(root,file))!==digest(source))recordUnknown({version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'source-changed'},file,{capability:'source-integrity'});}
       catch{recordUnknown({version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'source-changed'},file,{capability:'source-integrity'});}
     }
     const available=ctx.analysis.available;
+    // This provider implements these public analysis methods. Unknown capability
+    // names must not inherit the provider's overall availability by accident.
+    const supported = new Set(["bindings", "spans", "calls", "identity", "value-disposition", "resource-lifetime", "option-presence", "consumers", "structures"]);
+    const capabilityAvailable = (name: string) => available && supported.has(name);
     const unavailableReason=providerCache?.reason??"analysis engine unavailable";
     const provider=providerCache??{id:"any-doctor/syntax-flow",version:"1",available, ...(!available?{reason:unavailableReason}:{}),dependencies:[]};
     const synthesized:SemanticNarrowing[]=[];
-    if(!available)for(const declaration of recipeDeclarations)synthesized.push({check:declaration.check,recipe:declaration.name,reason:"analysis-unavailable",occurrences:0,files:[]});
+    for(const check of checks.filter(check=>checkAnalysisNeeds(check).some(name=>!capabilityAvailable(name)))) {
+      if(check.recipe)synthesized.push({check:check.id,recipe:check.recipe.name,reason:"analysis-unavailable",occurrences:0,files:[]});
+      else if(checkAnalysisNeeds(check).length)synthesized.push({check:check.id,reason:"analysis-unavailable",occurrences:0,files:[]});
+    }
     const narrowed=[...narrowings.values(),...synthesized];
-    return {protocolVersion:SEMANTIC_RESULT_VERSION,provider,capabilities:capabilityNames.map(name=>({name,available,...(!available?{reason:unavailableReason}:{})})),recipes:recipeDeclarations.map(item=>({...item,available,...(!available?{reason:unavailableReason}:{})})),narrowed,incomplete:narrowed.length>0,execution:{...execution}};
+    return {protocolVersion:SEMANTIC_RESULT_VERSION,provider,capabilities:capabilityNames.map(name=>({name,available:capabilityAvailable(name),...(!capabilityAvailable(name)?{reason:supported.has(name)?unavailableReason:"unsupported analysis capability"}:{})})),recipes:recipeDeclarations.map(item=>({...item,available,...(!available?{reason:unavailableReason}:{})})),narrowed,incomplete:narrowed.length>0,execution:{...execution}};
   } };
 }
 

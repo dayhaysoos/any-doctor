@@ -22,6 +22,7 @@ export function cohortFileCount(counts) {
 /** Doctor SDK semantic results are versioned, JSON-safe answers tied to the
  * exact source snapshot analyzed. Unknown is never absence. */
 export const SEMANTIC_RESULT_VERSION = 1;
+export const UNKNOWN_REASONS = ["analysis-unavailable", "provider-failure", "unsupported-expression", "outside-owner", "unresolved-identity", "source-changed"];
 export const PROTOCOL_VERSION = 1;
 export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
 // ctx.search host protocol: doctor children cannot spawn (permission

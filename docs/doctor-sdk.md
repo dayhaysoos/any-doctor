@@ -196,3 +196,37 @@ construct a whole-program call graph, or infer runtime intent. Mutation,
 reassignment, getters, dynamic properties, opaque calls, unsupported owners and
 cross-file wrappers can remain unknown. Type-aware analysis is a later measured
 adapter, not something these APIs silently approximate.
+
+## Custom-check uncertainty
+
+Framework-specific checks can use shared facts and report a conclusion the
+maintained recipes do not model:
+
+```js
+ctx.report.narrowing({
+  check: "framework-contract",
+  file,
+  reason: "unresolved-identity",
+  capability: "calls",
+});
+```
+
+Declare that check and its `needs` in metadata. `capability` is optional; when
+present it must be among that check's declared or recipe-implied requirements.
+The host validates check membership before serializing the run. Each submission
+records one uncertain occurrence; repeated submissions aggregate by check,
+capability and reason, with counts for every affected file. A narrowed occurrence
+is coverage information, not a warning or a penalty. Independent findings remain.
+
+Use a normalized relative path to an existing file inside the target. Absolute
+paths, traversal, malformed fields/reasons, out-of-root symlinks and undeclared
+check/capability IDs are rejected. Reasons use the existing `UnknownReason`
+vocabulary. This API records the custom check's bounded conclusion; it does not
+prove that its candidate selection is correct. Do not narrow arbitrary unrelated
+calls just because they could not be interpreted.
+
+Without analysis, declared custom `needs` now produce the same incomplete-scan
+state as recipe needs. Declaration-level unavailability has zero occurrences and
+no files because the population was not measured. Both `onUnknown: "skip"` and
+`"narrow"` retain that coverage receipt; neither can earn a confident score for an
+unmeasured scan. Provider-independent checks continue to run.
