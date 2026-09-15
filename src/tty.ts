@@ -50,13 +50,16 @@ export interface TtyStdout {
 // occupy two cells; ambiguous characters occupy one. Grapheme boundaries come
 // from the runtime's ICU. get-east-asian-width supplies the Unicode width table.
 const graphemes = new Intl.Segmenter("en", { granularity: "grapheme" });
+// Include semicolon and colon SGR forms (e.g. RGB); the generic VT stripper
+// does not fully consume colon SGR on every supported Node release.
+const sgr = /(\x1b\[[0-9;:]*m)/g;
 
 // Content is one inert line. Preserve SGR styling, remove other VT commands,
 // cursor-moving C0/C1 controls, line separators and bidi layout controls. This
 // also removes stray ESC bytes from malformed sequences. Paint commands belong
 // to paintFrame, never to doctor-controlled text.
 function safeLine(s: string): string {
-  return s.split(/(\x1b\[[0-9;:]*m)/g).map((part, i) => i % 2 ? part
+  return s.split(sgr).map((part, i) => i % 2 ? part
     : stripVTControlCharacters(part).replace(/[\x00-\x1f\x7f-\x9f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, "")).join("");
 }
 
@@ -74,7 +77,7 @@ function clusterWidth(cluster: string): number {
 
 export function visibleWidth(s: string): number {
   let width = 0;
-  for (const { segment } of graphemes.segment(stripVTControlCharacters(safeLine(s)))) width += clusterWidth(segment);
+  for (const { segment } of graphemes.segment(safeLine(s).replace(sgr, ""))) width += clusterWidth(segment);
   return width;
 }
 
@@ -87,7 +90,7 @@ export function truncateVisible(s: string, width: number): string {
   // even an SGR transition inside a combining/ZWJ cluster cannot split it or
   // leave an active color behind. Fitting, safe strings retain their bytes.
   let out = "", cells = 0;
-  for (const { segment } of graphemes.segment(stripVTControlCharacters(safe))) {
+  for (const { segment } of graphemes.segment(safe.replace(sgr, ""))) {
     const next = clusterWidth(segment);
     if (cells + next > limit - 1) break;
     out += segment;
