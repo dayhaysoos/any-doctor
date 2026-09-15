@@ -12,15 +12,14 @@ export const meta = {
   ],
   checks: [
     {
-      id: "midstream-error-ignored",
-      description: "A streamed OpenRouter response is consumed without ever checking for mid-stream errors",
-      severity: "warning",
-      revision: 1,
-      impact: "After headers commit, OpenRouter keeps the status at 200 and delivers failures as SSE events — the docs note the error chunk 'can be the first and only event'. A loop that only reads delta.content records a silent empty reply as success.",
-      why: "OpenRouter's stream protocol puts errors inside the 200-OK body: a top-level error field on the chunk, with choices[0].finish_reason === \"error\". Neither the HTTP status nor the types say anything is wrong.",
-      fix: "Check each chunk: `if (chunk.error ?? parsed.choices?.[0]?.finish_reason === \"error\") throw new Error(chunk.error?.message)` before reading delta.content.",
-      claim: "A file consuming OpenRouter stream deltas with no error-shape check anywhere in the file.",
-      lookalikes: ["error handling living in a different file"],
+      id: 'midstream-error-ignored', revision: 2, reportingUnit: 'occurrence', needs: ['calls'], onUnknown: 'narrow', severity: 'warning',
+      description: 'OpenRouter stream content is accepted without a prior same-chunk error exclusion.',
+      claim: 'A supported chat stream delta is written, returned or passed onward without a dominating exclusion of the same chunk error shape.',
+      impact: 'A midstream failure can be mistaken for a successful empty or partial reply.',
+      why: 'Chat completion error events can retain HTTP 200; an unrelated or later error check does not protect this content consumer.',
+      fix: 'Handle the same chunk error before accepting its content, preserving existing error propagation and partial-result policy.',
+      lookalikes: ['Prior same-chunk error exits','Other streams or objects','Unused content reads'],
+      blindSpots: ['Opaque chunk handlers and reassigned or conditional flow narrow. Library error guarantees and cross-file handlers are not executed.'],
     },
     {
       id: 'sse-comment-parse-crash', revision: 2, reportingUnit: 'occurrence', needs: ['calls'], onUnknown: 'narrow', severity: 'warning',
@@ -80,24 +79,11 @@ export async function doctor(ctx) {
     const masked = ctx.files.readMasked(file);
     const lines = masked.split("\n");
 
-    checkMidstreamErrors(ctx, file, lines);
+
 
 
     checkRetryAfter(ctx, file, rawLines, lines);
 
-  }
-}
-
-// A 200-OK stream can carry its failure as the first and only event; flag
-// delta consumption in a file that never looks for the error shape.
-function checkMidstreamErrors(ctx, file, lines) {
-  const handlesErrors = /\bfinish_reason\b|\.\s*error\b|chunk\s*\.\s*error|\.error\s*[?){,:;]/.test(lines.join("\n"));
-  for (let i = 0; i < lines.length; i++) {
-    if (!/(?:delta\s*\.\s*content|choices\s*\[\s*\d+\s*\]\s*\.\s*delta)/.test(lines[i])) continue;
-    if (!handlesErrors) {
-      ctx.report.finding({ rule: "midstream-error-ignored", file, line: i + 1 });
-    }
-    return;
   }
 }
 
@@ -231,6 +217,7 @@ function requestFacts(ctx, file) {
 function checkRequests(ctx,file) {
   const m=requestFacts(ctx,file);
   checkSse(ctx,file,m);
+  checkStreamErrors(ctx,file,m);
   for(const call of m.flow.values.filter(v=>v.kind==='call'&&!v.dead)) {
     checkModel(ctx,file,m,call);
     const native=m.native(call);
@@ -289,6 +276,10 @@ function streamFacts(m) {
     if(!p)return undefined;
     if(p.stage==='response'&&key==='body')return {...p,stage:'body'};
     if(p.stage==='read'&&key==='value')return {...p,stage:'bytes'};
+    if(p.stage==='chunk'||p.stage==='content'){
+      const members=[...(p.members??[]),key];
+      return {...p,members,stage:/^choices\.\d+\.delta\.content$/.test(members.join('.'))?'content':'chunk',unknown:p.unknown||key===null};
+    }
     return {...p,unknown:true};
   }
   function provenance(id,seen=new Set()) {
@@ -299,7 +290,7 @@ function streamFacts(m) {
     if(v.kind==='reference'&&v.target?.binding!=null){
       const b=v.target.binding,state=m.states.get(b),init=m.bindings.get(b)?.initializer??m.byStart.get(state?.initializer)?.id;
       if(init!==undefined){p=provenance(init,seen);for(const key of state?.path??[])p=propertyStage(p,key);}
-      else {const loop=m.flow.loops.find(l=>l.binding===b);if(loop){const source=provenance(loop.iterable,seen);if(source)p={...source,stage:source.stage==='lines'?'line':source.stage==='chunks'?'chunk':source.stage,unknown:source.unknown||!['lines','chunks'].includes(source.stage),lineBinding:b};}}
+      else {const loop=m.flow.loops.find(l=>l.binding===b||l.bindings?.some(item=>item.binding===b));if(loop){const source=provenance(loop.iterable,seen);if(source)p={...source,stage:source.stage==='lines'?'line':source.stage==='chunks'?'chunk':source.stage,unknown:source.unknown||!['lines','chunks'].includes(source.stage),lineBinding:loop.binding??loop.start};for(const key of loop.bindings?.find(item=>item.binding===b)?.path??[])p=propertyStage(p,key);}}
       if(p&&!m.stable(b))p={...p,unknown:true};
     }else if(v.kind==='await')p=provenance(v.value,seen);
     else if(v.kind==='member')p=propertyStage(provenance(v.receiver,seen),v.member);
@@ -358,6 +349,50 @@ function checkSse(ctx,file,m) {
       if(call.member==='feed'&&parserReceivers.has(receiver?.id))continue;
       if(own?.unknown && (call.arguments??[]).some(id=>{const p=provenance(id);return p&&!p.unknown&&['body','reader','bytes','text','lines','line','payload'].includes(p.stage)}))
         ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});
+    }
+  }
+}
+
+function checkStreamErrors(ctx,file,m) {
+  const rule='midstream-error-ignored',{provenance}=streamFacts(m),reported=new Set();
+  const same=(a,b)=>a&&b&&a.origin===b.origin&&(a.chunk??a.lineBinding)===(b.chunk??b.lineBinding);
+  function excludes(id,truthy,chunk,seen=new Set()) {
+    if(seen.has(id))return UNKNOWN;seen=new Set(seen).add(id);
+    const v=m.resolve(id);if(!v||v===UNKNOWN)return same(provenance(id),chunk)?UNKNOWN:false;
+    const p=provenance(id),path=p?.members?.join('.');
+    if(same(p,chunk)&&!p.unknown&&path==='error')return !truthy;
+    const op=v.operation;
+    if(op?.operator==='!')return excludes(op.operands[0],!truthy,chunk,seen);
+    if(op&&(op.operator==='||'&&!truthy||op.operator==='&&'&&truthy)){
+      const parts=op.operands.map(x=>excludes(x,truthy,chunk,seen));return parts.includes(true)?true:parts.includes(UNKNOWN)?UNKNOWN:false;
+    }
+    if(op&&['===','==','!==','!='].includes(op.operator)){
+      const [a,b]=op.operands,pa=provenance(a),pb=provenance(b);
+      const subject=same(pa,chunk)?pa:same(pb,chunk)?pb:undefined;
+      const other=subject===pa?m.literal(b):m.literal(a);
+      if(subject&&!subject.unknown&&/^choices\.\d+\.finish_reason$/.test(subject.members?.join('.'))&&other==='error')return ['===','=='].includes(op.operator)?!truthy:truthy;
+    }
+    if(same(p,chunk)||(op?.operands??[]).some(x=>same(provenance(x),chunk)))return UNKNOWN;
+    return false;
+  }
+  function consume(id,opaque=false) {
+    const value=m.values.get(id),p=provenance(id);if(!value||!p||reported.has(id))return;
+    if(p.stage!=='content'&&!(opaque&&p.stage==='chunk'&&!p.members?.length))return;
+    reported.add(id);
+    const guards=(value.guards??[]).map(g=>excludes(g.test,g.truthy,p));
+    if(guards.includes(true))return;
+    if(p.unknown||opaque&&p.stage==='chunk'||guards.includes(UNKNOWN))ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});
+    else ctx.report.finding({rule,file,line:value.line,column:value.column});
+  }
+  for(const use of m.flow.uses)if(!use.dead&&['write','return','yield','discard'].includes(use.kind))consume(use.value);
+  for(const call of m.flow.values.filter(v=>v.kind==='call'&&!v.dead)){
+    for(const arg of call.arguments??[])consume(arg,true);
+    if(provenance(call.id)?.unknown&&!['startsWith','endsWith'].includes(call.member)){
+      for(const id of call.arguments??[]){const p=provenance(id);
+        if(p&&!p.unknown&&['response','body','reader','bytes','text','lines','line','payload'].includes(p.stage)&&!reported.has(id)){
+          reported.add(id);ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});
+        }
+      }
     }
   }
 }

@@ -16,3 +16,15 @@ test('boolean operator facts remain serializable without pretending to evaluate 
  const test=flow.values[call.guards[0].test];assert.equal(test.operation.operator,'||');
  assert.deepEqual(test.operation.operands.map(id=>flow.values[id].operation.operator),['!','===']);
 });
+test('array destructuring retains lexical slot paths including holes',()=>{
+ const result=analyzeCalls('entry.ts','const [, {delta: payload}]=choices; use(payload.content)');assert.equal(result.ok,true);
+ const binding=result.file.structure.bindings.find(b=>b.path?.join('.')==='1.delta');assert.ok(binding);
+ const use=result.file.calls.find(c=>c.target.root==='use');assert.ok(use);
+ assert.equal(result.file.structure.flow.values.find(v=>v.kind==='member'&&v.member==='content').target.binding,binding.binding);
+});
+test('for-of projection retains nested destructured element bindings',()=>{
+ const result=analyzeCalls('entry.ts','for await(const {choices:[{delta}]} of stream){use(delta.content)}');assert.equal(result.ok,true);
+ const flow=JSON.parse(JSON.stringify(result.file.structure.flow));
+ assert.equal(flow.loops[0].binding,null);assert.deepEqual(flow.loops[0].bindings.map(b=>b.path),[['choices','0','delta']]);
+ assert.equal(flow.values.find(v=>v.member==='content').target.binding,flow.loops[0].bindings[0].binding);
+});

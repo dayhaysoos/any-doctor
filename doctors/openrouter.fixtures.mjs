@@ -10,7 +10,7 @@ export const fixtures = [
         "}",
       ].join("\n"),
     },
-    expected: [{ rule: "midstream-error-ignored", file: "src/stream-bad.ts", line: 4 }],
+    expected: [], // Revision 1 expected line 4; free stream is not connected to the response.
   },
   {
     name: "midstream: an error check before consumption silences it",
@@ -192,3 +192,13 @@ fixtures.push({name:'sse: two unfiltered parse occurrences',seed:{'src/framing.t
  '  JSON.parse(line.slice(6));',
  '}',
 ].join('\n')},expected:[{rule:'sse-comment-parse-crash',file:'src/framing.ts',line:7,column:2},{rule:'sse-comment-parse-crash',file:'src/framing.ts',line:8,column:2}]});
+
+fixtures.push({name:'midstream: two same-stream content consumers',seed:{'src/errors.ts':[
+ "import {OpenRouter} from '@openrouter/sdk';",
+ 'const client=new OpenRouter();const c=new AbortController();',
+ 'const stream=await client.chat.send({stream:true},{signal:c.signal});',
+ 'for await(const chunk of stream){',
+ '  out+=chunk.choices[0].delta.content;',
+ '  out+=chunk.choices[0].delta.content;',
+ '}',
+].join('\n')},expected:[{rule:'midstream-error-ignored',file:'src/errors.ts',line:5,column:7},{rule:'midstream-error-ignored',file:'src/errors.ts',line:6,column:7}]});

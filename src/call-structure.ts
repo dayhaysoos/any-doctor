@@ -77,6 +77,10 @@ export function callStructure(
       bindings.set(t.binding, { ...data, binding: t.binding, path, reassigned: data.reassigned || t.reassigned || false,
         types: declaredTypes(type),
       });
+    } else if (p.type === 'ArrayPattern') {
+      (p.elements as (Node|null)[]).forEach((element,index)=>{
+        if(element&&element.type!=='RestElement')pattern(element,data,[...path,String(index)]);
+      });
     } else if (p.type === 'ObjectPattern') {
       for (const prop of p.properties as Node[]) {
         if (prop.type !== 'Property' || prop.computed) continue;

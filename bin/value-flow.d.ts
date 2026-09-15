@@ -75,6 +75,10 @@ export interface ValueFlow {
         functionStart: number | null;
         iterable: number;
         binding: number | null;
+        bindings?: {
+            binding: number;
+            path: string[];
+        }[];
         await: boolean;
     })[];
 }

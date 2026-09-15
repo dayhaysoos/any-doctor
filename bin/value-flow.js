@@ -207,7 +207,27 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         }
         if (n.type === 'ForOfStatement') {
             const left = n.left, p = left.type === 'VariableDeclaration' ? left.declarations[0].id : left;
-            loops.push({ ...range(n.body), functionStart: functionStart(n), iterable: value(n.right), binding: p.type === 'Identifier' ? target(p).binding : null, await: !!n.await });
+            const loopBindings = [];
+            const patternBindings = (node, path = []) => {
+                if (node.type === 'Identifier') {
+                    const binding = target(node).binding;
+                    if (binding !== null)
+                        loopBindings.push({ binding, path });
+                }
+                else if (node.type === 'ObjectPattern')
+                    for (const item of node.properties) {
+                        if (item.type !== 'RestElement') {
+                            const name = key(item.key, item.computed);
+                            if (name !== null)
+                                patternBindings(item.value, [...path, name]);
+                        }
+                    }
+                else if (node.type === 'ArrayPattern')
+                    node.elements.forEach((item, index) => { if (item && item.type !== 'RestElement')
+                        patternBindings(item, [...path, String(index)]); });
+            };
+            patternBindings(p);
+            loops.push({ ...range(n.body), functionStart: functionStart(n), iterable: value(n.right), binding: p.type === 'Identifier' ? target(p).binding : null, ...(p.type !== 'Identifier' ? { bindings: loopBindings } : {}), await: !!n.await });
         }
     }
     return { values, bindings, uses, loops };

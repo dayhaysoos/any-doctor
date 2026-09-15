@@ -100,6 +100,12 @@ export function callStructure(nodes, parents, target, range, unwrap, functionSta
                 types: declaredTypes(type),
             });
         }
+        else if (p.type === 'ArrayPattern') {
+            p.elements.forEach((element, index) => {
+                if (element && element.type !== 'RestElement')
+                    pattern(element, data, [...path, String(index)]);
+            });
+        }
         else if (p.type === 'ObjectPattern') {
             for (const prop of p.properties) {
                 if (prop.type !== 'Property' || prop.computed)

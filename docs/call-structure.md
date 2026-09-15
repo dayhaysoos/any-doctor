@@ -65,3 +65,8 @@ boundaries stop inheritance. Late or unrelated-block guards do not dominate.
 `operation` retains operator spelling and operand IDs without evaluation. These
 are syntax facts, not a complete control-flow graph: doctors must not infer
 arbitrary predicate meaning, exceptional interprocedural flow or mutation safety.
+
+Binding paths include fixed array-destructuring slots (including holes) and nested
+object keys. Array rest and runtime expansion are not assigned a fixed slot path.
+For-of facts additionally retain fixed destructured element bindings and their
+paths. These relate lexical variables to an element, not to the iterable container.

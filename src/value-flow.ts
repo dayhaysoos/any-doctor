@@ -34,7 +34,7 @@ export interface ValueFlow {
   values: FlowValue[];
   bindings: { binding: number; initializer?: number; primitive?: "string"; array: boolean; parameter?: {functionStart:number;index:number}; rest?: boolean }[];
   uses: { value: number; kind: 'return' | 'yield' | 'await' | 'discard' | 'write'; functionStart: number | null; binding?: number; /** Flow ID of the assignment destination, including member writes. */ targetValue?: number; dead: boolean }[];
-  loops: (SourceRange & { functionStart: number | null; iterable: number; binding: number | null; await: boolean })[];
+  loops: (SourceRange & { functionStart: number | null; iterable: number; binding: number | null; bindings?: { binding: number; path: string[] }[]; await: boolean })[];
 }
 
 export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: Node) => CallTarget,
@@ -160,7 +160,14 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     }
     if(n.type==='ForOfStatement'){
       const left=n.left as Node,p=left.type==='VariableDeclaration'?((left.declarations as Node[])[0].id as Node):left;
-      loops.push({...range(n.body as Node),functionStart:functionStart(n),iterable:value(n.right as Node),binding:p.type==='Identifier'?target(p).binding:null,await:!!n.await});
+      const loopBindings:{binding:number;path:string[]}[]=[];
+      const patternBindings=(node:Node,path:string[]=[])=>{
+        if(node.type==='Identifier'){const binding=target(node).binding;if(binding!==null)loopBindings.push({binding,path});}
+        else if(node.type==='ObjectPattern')for(const item of node.properties as Node[]){if(item.type!=='RestElement'){const name=key(item.key as Node,item.computed);if(name!==null)patternBindings(item.value as Node,[...path,name]);}}
+        else if(node.type==='ArrayPattern')(node.elements as (Node|null)[]).forEach((item,index)=>{if(item&&item.type!=='RestElement')patternBindings(item,[...path,String(index)]);});
+      };
+      patternBindings(p);
+      loops.push({...range(n.body as Node),functionStart:functionStart(n),iterable:value(n.right as Node),binding:p.type==='Identifier'?target(p).binding:null,...(p.type!=='Identifier'?{bindings:loopBindings}:{}),await:!!n.await});
     }
   }
   return {values,bindings,uses,loops};
