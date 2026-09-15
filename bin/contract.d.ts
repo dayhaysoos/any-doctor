@@ -184,6 +184,10 @@ export interface CallInfo extends SourceRange {
     resultBinding?: number;
     /** Exclusive end offset of a call used as this call's receiver. */
     receiverCall?: number;
+    /** ID in structure.flow.values of the member call's receiver expression.
+     * Not a source offset, call-end ID, or binding ID. Transparent wrappers share
+     * their runtime value's identity; receiverCall remains available to older clients. */
+    receiverValue?: number;
     memberRange?: SourceRange;
     arguments: SourceRange[];
 }

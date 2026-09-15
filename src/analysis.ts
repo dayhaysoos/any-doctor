@@ -506,7 +506,15 @@ export function analyzeCalls(file: string, source: string): CallsResult {
         ...range(n), functionStart: functionStart(n), left: operand(n.left as Node), right: operand(n.right as Node),
       });
     }
-    return { ok: true, file: { file, calls, functions, differences, structure: callStructure(nodes, parents, target, range, unwrap, functionStart) } };
+    const structure = callStructure(nodes, parents, target, range, unwrap, functionStart);
+    const receiverValues = new Map(structure.flow?.values
+      .filter(value => value.kind === "call" && value.receiver !== undefined)
+      .map(value => [value.end, value.receiver]));
+    for (const call of calls) {
+      const receiverValue = receiverValues.get(call.end);
+      if (receiverValue !== undefined) call.receiverValue = receiverValue;
+    }
+    return { ok: true, file: { file, calls, functions, differences, structure } };
   } catch (e) {
     return { ok: false, error: `analysis failed for ${file}: ${e instanceof Error ? e.message : String(e)}` };
   }

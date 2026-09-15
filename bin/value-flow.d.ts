@@ -22,9 +22,11 @@ export interface FlowValue extends SourceRange {
     }[];
     value?: number;
     alternatives?: number[];
+    /** Source slot index preserves array holes; spread slots may expand at runtime. */
     elements?: {
         value: number;
         spread: boolean;
+        index?: number;
     }[];
     properties?: {
         name: string | null;
@@ -51,7 +53,8 @@ export interface ValueFlow {
         value: number;
         kind: 'return' | 'yield' | 'await' | 'discard' | 'write';
         functionStart: number | null;
-        binding?: number;
+        binding?: number; /** Flow ID of the assignment destination, including member writes. */
+        targetValue?: number;
         dead: boolean;
     }[];
     loops: (SourceRange & {

@@ -1,0 +1,11 @@
+import fs from 'node:fs';import path from 'node:path';import {spawnSync} from 'node:child_process';
+import {cases as controls} from './cases.mjs';
+const candidate=fs.realpathSync(process.argv[2]??'.'),output=path.resolve(process.argv[3]);fs.mkdirSync(output);const root=path.join(output,'seeds');fs.mkdirSync(root);
+for(const c of controls)fs.writeFileSync(path.join(root,c.name+'.ts'),c.source);
+const command=[path.join(candidate,'bin/cli.js'),'run',path.join(candidate,'doctors/convex.mjs'),root,'--format','json'];const run=spawnSync(process.execPath,command,{encoding:'utf8',timeout:20000,maxBuffer:10e6});
+fs.writeFileSync(path.join(output,'scan.json'),run.stdout);fs.writeFileSync(path.join(output,'stderr'),run.stderr);if(run.status!==0)throw Error(run.stderr);
+const scan=JSON.parse(run.stdout),group=scan.groups[0];if(!scan.analysisAvailable)throw Error('Controls require analysis');
+if(scan.score.score!==null||scan.score.grade!==null||!group.semantic.incomplete)throw Error('Uncertain receiver coverage must suppress score and grade');
+const sort=rows=>rows.sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
+const rows=controls.map(c=>{const file=c.name+'.ts',actual=group.checks.flatMap(k=>k.findings.filter(f=>f.file===file).map(f=>({rule:k.rule,line:f.line,column:f.column}))),narrowed=group.semantic.narrowed.flatMap(n=>n.files.filter(f=>f.file===file).map(f=>({check:n.check,reason:n.reason,occurrences:f.occurrences})));return {name:c.name,expected:c.expected,actual,narrowed,expectedNarrowed:c.narrowed,passed:JSON.stringify(sort(actual))===JSON.stringify(sort(c.expected))&&JSON.stringify(sort(narrowed))===JSON.stringify(sort(c.narrowed))};});
+const result={command:[process.execPath,...command],exit:run.status,passed:rows.filter(r=>r.passed).length,failed:rows.filter(r=>!r.passed).length,skipped:0,rows};fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(result,null,2));console.log(JSON.stringify({...result,rows:rows.filter(r=>!r.passed)}));process.exitCode=result.failed?1:0;

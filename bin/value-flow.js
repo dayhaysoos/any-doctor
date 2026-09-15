@@ -74,7 +74,7 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         }
         else if (n.type === 'ArrayExpression') {
             v.kind = 'array';
-            v.elements = n.elements.filter((e) => !!e).map(e => ({ value: value((e.type === 'SpreadElement' ? e.argument : e)), spread: e.type === 'SpreadElement' }));
+            v.elements = n.elements.flatMap((e, index) => e ? [{ value: value((e.type === 'SpreadElement' ? e.argument : e)), spread: e.type === 'SpreadElement', index }] : []);
         }
         else if (n.type === 'ObjectExpression') {
             v.kind = 'object';
@@ -108,8 +108,19 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         // Retain logical alternatives without claiming their runtime selection.
         // Existing flow consumers still see unknown; candidate recipes can rule out
         // identities only when neither alternative belongs to their target space.
-        else if (n.type === 'LogicalExpression') {
-            v.alternatives = [value(n.left), value(n.right)];
+        else if (n.type === 'SequenceExpression') {
+            v.kind = 'choice';
+            v.alternatives = [value(n.expressions.at(-1))];
+        }
+        else if (n.type === 'AssignmentExpression' && n.operator === '=') {
+            v.kind = 'choice';
+            v.alternatives = [value(n.right)];
+        }
+        else if (n.type === 'LogicalExpression' || n.type === 'AssignmentExpression' && ['??=', '||=', '&&='].includes(String(n.operator))) {
+            const left = unwrap(n.left), operator = String(n.operator).replace('=', '');
+            const known = left.type === 'Literal' && (left.value === null || ['boolean', 'string', 'number'].includes(typeof left.value));
+            const right = operator === '??' ? left.value === null : operator === '||' ? !left.value : !!left.value;
+            v.alternatives = known ? [value((right ? n.right : n.left))] : [value(n.left), value(n.right)];
         }
         else if (n.type === 'ConditionalExpression') {
             v.kind = 'choice';
@@ -148,7 +159,7 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         }
         if (n.type === 'AssignmentExpression') {
             const b = n.left.type === 'Identifier' ? target(n.left).binding : null;
-            uses.push({ value: value(n.right), kind: 'write', ...(b !== null ? { binding: b } : {}), functionStart: functionStart(n), dead: dead(n) });
+            uses.push({ value: value(n.right), targetValue: value(n.left), kind: 'write', ...(b !== null ? { binding: b } : {}), functionStart: functionStart(n), dead: dead(n) });
         }
         if (n.type === 'ForOfStatement') {
             const left = n.left, p = left.type === 'VariableDeclaration' ? left.declarations[0].id : left;

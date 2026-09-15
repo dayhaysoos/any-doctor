@@ -360,21 +360,24 @@ function model(facts,ctx,file) {
   function registration(t){return registrationOrigin(resolveTarget(t));}
   // Candidate provenance survives unsupported selection/reassignment. A local
   // ordinary function with no imported registration origin is still outside scope.
-  function possibleTargets(t,seen=new Set()) {
+  function possibleTargets(t,seen=new Set(),visited=new Set()) {
     if(!t || seen.has(t.binding))return [];
     if(t.source||t.binding===null)return [t];
+    const key=JSON.stringify(['binding',t.binding,t.members]);
+    if(visited.has(key))return [];visited.add(key);
     const b=bindings.get(t.binding);if(!b)return [];
     if(b.parameter&&b.initializer===undefined)return [t];
     seen=new Set(seen).add(t.binding);
     const suffix=[...(b.path??[]),...t.members];
-    return [...possibleValueTargets(b.initializer,seen,new Set(),suffix),...(b.writes??[]).flatMap(w=>possibleValueTargets(w.value,seen,new Set(),suffix))];
+    return [...possibleValueTargets(b.initializer,seen,visited,suffix),...(b.writes??[]).flatMap(w=>possibleValueTargets(w.value,seen,visited,suffix))];
   }
   function possibleValueTargets(id,seen=new Set(),visited=new Set(),suffix=[]){
-    if(visited.has(id))return [];visited=new Set(visited).add(id);
+    const key=JSON.stringify(['value',id,suffix]);
+    if(visited.has(key))return [];visited.add(key);
     const v=values.get(id);if(!v)return [];
     if(v.kind==='alias')return possibleValueTargets(v.value,seen,visited,suffix);
     if(v.kind==='choice')return v.alternatives.flatMap(id=>possibleValueTargets(id,seen,visited,suffix));
-    if(v.kind==='reference')return possibleTargets({...v.target,members:[...v.target.members,...suffix]},seen);
+    if(v.kind==='reference')return possibleTargets({...v.target,members:[...v.target.members,...suffix]},seen,visited);
     return [];
   }
   const registrations=[], handlers=new Map();
@@ -569,10 +572,53 @@ function checkPatch(ctx,file,call,c,m){
 // One memoized source graph per file; locations never identify semantic states.
 function createQuerySummarizer(facts,m){
   const origins=new Map(),ranges=new Map();
+  const flow=m.s.flow;
+  const values=new Map((flow?.values??[]).map(v=>[v.id,v]));
+  const bindings=new Map((flow?.bindings??[]).map(b=>[b.binding,b]));
+  const writes=new Map();
+  for(const use of flow?.uses??[]){
+    if(use.kind!=='write'||use.dead||use.binding===undefined)continue;
+    if(!writes.has(use.binding))writes.set(use.binding,[]);
+    writes.get(use.binding).push(use.value);
+  }
   const method=call=>call.target.members.at(-1);
   const edge=(kind,id)=>`${kind}:${id}`;
   const callById=m.calls;
+  const valuesByCall=new Map([...values.values()].filter(v=>v.kind==='call').map(v=>[v.end,v]));
   const join=(a,b)=>a===b?a:2; // 0=no, 1=yes, 2=unknown
+  function immutableValue(id,allowMutation=false){
+    const seen=new Set();
+    while(!seen.has(id)){
+      seen.add(id);const value=values.get(id);
+      if(value?.kind!=='reference'||value.target.members.length)return value;
+      const binding=m.bindings.get(value.target.binding);
+      if(!binding||binding.reassigned||!allowMutation&&binding.mutated||binding.escapes?.length)return value;
+      const initializer=bindings.get(binding.binding)?.initializer;
+      if(initializer===undefined)return value;
+      id=initializer;
+    }
+    return null;
+  }
+  // Unbound roots have no binding identity; never merge them under binding:null.
+  const containerKey=value=>value.kind!=='reference'?edge('flow',value.id)
+    :value.target.binding!==null?edge('binding',value.target.binding)
+    :`global:${JSON.stringify([value.target.root,value.target.members])}`;
+  const mutations=new Map(),returns=new Map();
+  for(const use of flow?.uses??[]){
+    if(use.dead)continue;
+    if(use.kind==='return'){
+      if(!returns.has(use.functionStart))returns.set(use.functionStart,[]);
+      returns.get(use.functionStart).push(use.value);
+    }
+    if(use.kind!=='write')continue;
+    const target=values.get(use.targetValue);
+    if(target?.kind!=='member')continue;
+    const receiver=immutableValue(target.receiver,true);
+    if(!receiver)continue;
+    const key=containerKey(receiver);
+    if(!mutations.has(key))mutations.set(key,[]);
+    mutations.get(key).push({member:target.member,value:use.value});
+  }
   function indexRange(index){
     if(ranges.has(index.end))return ranges.get(index.end);
   let ranged=false,unknown=false;
@@ -621,45 +667,93 @@ function createQuerySummarizer(facts,m){
     const colon=key.indexOf(':'),kind=key.slice(0,colon),id=Number(key.slice(colon+1));
     const result={edges:[],uncertain:false,convex:false};origins.set(key,result);
     if(kind==='binding'){
-      const b=m.bindings.get(id);
+      const b=m.bindings.get(id),initializer=bindings.get(id)?.initializer;
       if(b&&!b.path?.length){
-        result.uncertain=!!(b.reassigned||b.mutated);
-        result.edges=[...new Set([b.initializer,...(b.writes??[]).map(w=>w.value)].filter(v=>v!==undefined))].map(v=>edge('value',v));
+        result.uncertain=!!(b.reassigned||b.mutated||b.escapes?.length);
+        result.edges=[...new Set([initializer,...(writes.get(id)??[])].filter(v=>v!==undefined))].map(v=>edge('flow',v));
       }
-    }else if(kind==='value'){
-      const v=m.values.get(id);
-      if(v?.kind==='call')result.edges=[edge('call',v.value)];
-      if(v?.kind==='alias')result.edges=[edge('value',v.value)];
-      if(v?.kind==='choice')result.edges=v.alternatives.map(v=>edge('value',v));
-      if(v?.kind==='reference'&&!v.target.members.length&&v.target.binding!==null)result.edges=[edge('binding',v.target.binding)];
+    }else if(kind==='returns'){
+      const fn=values.get(id);result.uncertain=true;result.opaque=true;
+      if(fn?.kind==='function')result.edges=(returns.get(fn.start)??[]).map(id=>edge('flow',id));
+    }else if(kind==='flow'){
+      const v=values.get(id);
+      if(v?.kind==='call')result.edges=[edge('call',v.end)];
+      else if(v?.alternatives)result.edges=v.alternatives.map(v=>edge('flow',v));
+      else if(v?.kind==='reference'&&!v.target.members.length&&v.target.binding!==null)result.edges=[edge('binding',v.target.binding)];
+      else if(v?.kind==='object'||v?.kind==='array'){
+        result.uncertain=true;result.opaque=true;
+        result.edges=(v.properties??v.elements??[]).map(p=>edge(p.accessor?'returns':'flow',p.value));
+      }else if(v?.kind==='construct'){
+        result.uncertain=true;result.opaque=true;
+        result.edges=(v.arguments??[]).map(id=>edge('flow',id));
+      }else if(v?.kind!=='void'&&(v?.receiver!==undefined||v?.value!==undefined)){
+        // Preserve visible candidates through an unsupported value operation,
+        // without claiming that it returns its input unchanged.
+        result.uncertain=true;result.opaque=true;
+        result.edges=[edge('flow',v.receiver??v.value)];
+        const receiver=immutableValue(v.receiver,true);
+        if(v.kind==='member'&&v.member!==null&&receiver?.kind==='object'){
+          // A literal container's selected field is bounded independently of
+          // unrelated siblings. Spreads/computed keys remain possible writes.
+          let selected=[];
+          for(const p of receiver.properties){
+            if(p.spread||p.name===null)selected.push(edge('flow',p.value));
+            else if(p.name===v.member)selected=[edge(p.accessor?'returns':'flow',p.value)];
+          }
+          result.edges=selected;
+        }else if(v.kind==='member'&&receiver?.kind==='array'&&/^(0|[1-9][0-9]*)$/.test(v.member??'')&&!receiver.elements.some(e=>e.spread)){
+          const selected=receiver.elements.find((e,index)=>(e.index??index)===Number(v.member));
+          result.edges=selected?[edge('flow',selected.value)]:[];
+        }
+        if(v.kind==='member'&&receiver){
+          const key=containerKey(receiver);
+          if(receiver.kind==='reference'&&receiver.target.binding===null)result.edges=[];
+          result.edges.push(...(mutations.get(key)??[]).filter(w=>w.member===null||v.member===null||w.member===v.member).map(w=>edge('flow',w.value)));
+        }
+      }
     }else{
       const call=callById.get(id);result.call=call;
       if(call){
-        if(call.receiverCall!==undefined)result.edges=[edge('call',call.receiverCall)];
-        else{
-          // A named builder operation cannot itself be db.query. Resolve context
-          // only at query roots or bare aliases; other receivers use cached edges.
-          const c=method(call)==='query'||!call.target.members.length
-            ?m.context(call.target)??m.uncertainContext(call.target):null;
-          if(c?.members.join('.')==='db.query'){
-            result.convex=true;result.uncertain=!!uncertainFor(c,kind=>kind==='query'||kind==='mutation');
-          }else if(call.target.members.length===1&&m.bindings.has(call.target.binding)){
-            result.edges=[edge('binding',call.target.binding)];result.uncertain=!!call.target.reassigned;
+        const name=method(call);
+        const c=name==='query'||!call.target.members.length
+          ?m.context(call.target)??m.uncertainContext(call.target):null;
+        if(c?.members.join('.')==='db.query'){
+          result.convex=true;result.uncertain=!!uncertainFor(c,kind=>kind==='query'||kind==='mutation');
+        }else if(call.receiverValue!==undefined){
+          result.edges=[edge('flow',call.receiverValue)];
+          result.uncertain=!['withIndex','filter','order','withSearchIndex','collect','take','first','unique','paginate'].includes(name);
+          if(result.uncertain){
+            result.opaque=true;
+            result.edges.push(...(valuesByCall.get(call.end)?.arguments??[]).map(id=>edge('flow',id)));
           }
+        }else if(call.receiverCall!==undefined){
+          result.edges=[edge('call',call.receiverCall)];
+        }else{
+          // Unknown wrappers may return a visible input. Arguments establish
+          // candidate membership only, never supported result identity.
+          const v=valuesByCall.get(call.end);
+          result.edges=(v?.arguments??[]).map(id=>edge('flow',id));
+          result.uncertain=true;result.opaque=true;
         }
       }
+    }
+    const mutationKey=kind==='flow'&&values.get(id)?.kind==='reference'?containerKey(values.get(id)):key;
+    if(mutations.has(mutationKey)&&!(kind==='flow'&&values.get(id)?.kind==='call')){
+      result.uncertain=true;result.opaque=true;
+      result.edges.push(...mutations.get(mutationKey).map(w=>edge('flow',w.value)));
     }
     return result;
   }
   return function summarizeQueryExecution(execution){
-    // [index, filter, range, bounded, searchIndex, uncertain ownership]
-    const pending=[{key:edge('call',execution.end),state:[0,0,0,0,0,0]}],visited=new Set();
-    const locations={execution};let merged,foreign=false;
+    // [index, filter, range, bounded, searchIndex, uncertain ownership, opaque result]
+    const pending=[{key:edge('call',execution.end),state:[0,0,0,0,0,0,0]}],visited=new Set();
+    const locations={execution};let merged,decisions,foreign=false;
     const locate=(name,call)=>{if(!locations[name]||call.start<locations[name].start)locations[name]=call;};
     for(let cursor=0;cursor<pending.length;cursor++){
       const item=pending[cursor],node=origin(item.key),state=[...item.state],call=node.call;
       state[5] ||= Number(node.uncertain);
-      if(call){
+      state[6] ||= Number(!!node.opaque);
+      if(call&&!state[6]){
         const name=method(call);
         if(name==='withIndex'){const range=indexRange(call);state[2]=state[0]?join(state[2],range):range;state[0]=1;locate('index',call);}
         if(name==='filter'){state[1]=1;locate('filter',call);}
@@ -669,26 +763,34 @@ function createQuerySummarizer(facts,m){
       const key=item.key+':'+state.join('');
       if(visited.has(key))continue;visited.add(key);
       if(node.convex){
-        const result=[state[5]?2:1,...state.slice(0,5)];
+        const result=[state[5]?2:1,...state.slice(0,5).map(v=>state[6]&&v===0?2:v)];
+        const pathDecisions=queryDecisions(result,method(execution));
+        decisions=decisions?decisions.map((v,i)=>join(v,pathDecisions[i])):pathDecisions;
         merged=merged?merged.map((v,i)=>join(v,result[i])):result;
       }else if(node.edges.length){
         for(const key of node.edges)pending.push({key,state});
       }else foreign=true;
     }
     if(!merged)return {convexOrigin:0,locations,execution:method(execution)};
-    if(foreign)merged[0]=2;
+    if(foreign){merged[0]=2;decisions=decisions.map(v=>v===1?2:v);}
     const [convexOrigin,index,filter,range,bounded,searchIndex]=merged;
-    return {convexOrigin,index,filter,range,bounded,searchIndex,locations,execution:method(execution)};
+    return {convexOrigin,index,filter,range,bounded,searchIndex,decisions,locations,execution:method(execution)};
   };
+}
+// Join each check's decision after evaluating a complete supported path. Joining
+// independent fields first loses correlations (e.g. filter OR index, never both).
+function queryDecisions([convexOrigin,index,filter,range,bounded,searchIndex],execution){
+  const not=value=>value===2?2:1-value;
+  const and=(...values)=>values.includes(0)?0:values.includes(2)?2:1;
+  const base=and(convexOrigin,not(searchIndex));
+  return [and(base,filter,not(index)),and(base,index,not(range),not(bounded)),
+    and(base,index,filter),and(base,not(index),not(filter),not(bounded),Number(execution==='collect'))];
 }
 function checkQueryChains(ctx,file,facts,m){
   const summarizeQueryExecution=createQuerySummarizer(facts,m);
-  const not=value=>value===2?2:1-value;
-  const and=(...values)=>values.includes(0)?0:values.includes(2)?2:1;
   for(const execution of facts.calls){
     if(!['collect','take','first','unique','paginate'].includes(execution.target.members.at(-1)))continue;
     const s=summarizeQueryExecution(execution);if(s.convexOrigin===0)continue;
-    const base=and(s.convexOrigin,not(s.searchIndex));
     function evaluate(rule,result,location,reason='unresolved-identity'){
       if(result===0)return;
       if(result===2)m.narrow(rule,location??execution,reason);
@@ -696,9 +798,9 @@ function checkQueryChains(ctx,file,facts,m){
     }
     // The checks share facts, not a mutually exclusive winner. Eligibility for
     // whole-set collect is intentionally narrower than indexed/filter reviews.
-    evaluate('filter-table-scan',and(base,s.filter,not(s.index)),s.locations.filter);
-    evaluate('index-without-range',and(base,s.index,not(s.range),not(s.bounded)),s.locations.index,s.convexOrigin===1&&s.index===1&&s.range===2?'unsupported-expression':'unresolved-identity');
-    evaluate('index-filter-combo',and(base,s.index,s.filter),s.locations.filter);
-    evaluate('unbounded-collect',and(base,not(s.index),not(s.filter),not(s.bounded),Number(s.execution==='collect')),s.locations.execution);
+    evaluate('filter-table-scan',s.decisions[0],s.locations.filter);
+    evaluate('index-without-range',s.decisions[1],s.locations.index,s.convexOrigin===1&&s.index===1&&s.range===2?'unsupported-expression':'unresolved-identity');
+    evaluate('index-filter-combo',s.decisions[2],s.locations.filter);
+    evaluate('unbounded-collect',s.decisions[3],s.locations.execution);
   }
 }

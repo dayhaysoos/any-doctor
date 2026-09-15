@@ -20,14 +20,15 @@ export interface FlowValue extends SourceRange {
   argumentRoles?: { value: number; spread: boolean }[];
   value?: number;
   alternatives?: number[];
-  elements?: { value: number; spread: boolean }[];
+  /** Source slot index preserves array holes; spread slots may expand at runtime. */
+  elements?: { value: number; spread: boolean; index?: number }[];
   properties?: { name: string | null; value: number; spread: boolean; accessor: boolean }[];
   async?: boolean;
 }
 export interface ValueFlow {
   values: FlowValue[];
   bindings: { binding: number; initializer?: number; primitive?: "string"; array: boolean; parameter?: {functionStart:number;index:number}; rest?: boolean }[];
-  uses: { value: number; kind: 'return' | 'yield' | 'await' | 'discard' | 'write'; functionStart: number | null; binding?: number; dead: boolean }[];
+  uses: { value: number; kind: 'return' | 'yield' | 'await' | 'discard' | 'write'; functionStart: number | null; binding?: number; /** Flow ID of the assignment destination, including member writes. */ targetValue?: number; dead: boolean }[];
   loops: (SourceRange & { functionStart: number | null; iterable: number; binding: number | null; await: boolean })[];
 }
 
@@ -77,7 +78,7 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     else if (n.type === 'TemplateLiteral' && !(n.expressions as Node[]).length) { v.kind='literal';v.literal=String((((n.quasis as Node[])[0].value) as {cooked?:string}).cooked); }
     else if (n.type === 'TemplateLiteral') {v.primitive='string';}
     else if (n.type === 'MemberExpression') {v.kind='member';v.target=target(n);v.receiver=value(n.object as Node);v.member=key(n.property as Node,n.computed);}
-    else if (n.type === 'ArrayExpression') {v.kind='array';v.elements=(n.elements as (Node|null)[]).filter((e):e is Node=>!!e).map(e=>({value:value((e.type==='SpreadElement'?e.argument:e) as Node),spread:e.type==='SpreadElement'}));}
+    else if (n.type === 'ArrayExpression') {v.kind='array';v.elements=(n.elements as (Node|null)[]).flatMap((e,index)=>e?[{value:value((e.type==='SpreadElement'?e.argument:e) as Node),spread:e.type==='SpreadElement',index}]:[]);}
     else if (n.type === 'ObjectExpression') {v.kind='object';v.properties=(n.properties as Node[]).map(p=>({name:p.type==='SpreadElement'?null:key(p.key as Node,p.computed),spread:p.type==='SpreadElement',accessor:p.kind==='get'||p.kind==='set',value:value((p.type==='SpreadElement'?p.argument:p.value) as Node)}));}
     else if (n.type === 'CallExpression' || n.type === 'NewExpression') {
       v.kind=n.type==='CallExpression'?'call':'construct';v.target=target(n.callee as Node);v.callee=value(n.callee as Node);
@@ -90,7 +91,14 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     // Retain logical alternatives without claiming their runtime selection.
     // Existing flow consumers still see unknown; candidate recipes can rule out
     // identities only when neither alternative belongs to their target space.
-    else if (n.type==='LogicalExpression') {v.alternatives=[value(n.left as Node),value(n.right as Node)];}
+    else if (n.type==='SequenceExpression') {v.kind='choice';v.alternatives=[value((n.expressions as Node[]).at(-1)!)];}
+    else if (n.type==='AssignmentExpression'&&n.operator==='=') {v.kind='choice';v.alternatives=[value(n.right as Node)];}
+    else if (n.type==='LogicalExpression'||n.type==='AssignmentExpression'&&['??=','||=','&&='].includes(String(n.operator))) {
+      const left=unwrap(n.left as Node),operator=String(n.operator).replace('=','');
+      const known=left.type==='Literal'&&(left.value===null||['boolean','string','number'].includes(typeof left.value));
+      const right=operator==='??'?left.value===null:operator==='||'?!left.value:!!left.value;
+      v.alternatives=known?[value((right?n.right:n.left) as Node)]:[value(n.left as Node),value(n.right as Node)];
+    }
     else if (n.type==='ConditionalExpression') {v.kind='choice';const test=unwrap(n.test as Node);v.alternatives=test.type==='Literal'&&typeof test.value==='boolean'?[value((test.value?n.consequent:n.alternate) as Node)]:[value(n.consequent as Node),value(n.alternate as Node)];}
     return id;
   };
@@ -110,7 +118,7 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
       if(arg)uses.push({value:value(arg),kind:n.type==='ReturnStatement'?'return':n.type==='YieldExpression'?'yield':n.type==='AwaitExpression'?'await':'discard',functionStart:functionStart(n),dead:dead(n)});
     }
     if(n.type==='AssignmentExpression'){
-      const b=(n.left as Node).type==='Identifier'?target(n.left as Node).binding:null;uses.push({value:value(n.right as Node),kind:'write',...(b!==null?{binding:b}:{}),functionStart:functionStart(n),dead:dead(n)});
+      const b=(n.left as Node).type==='Identifier'?target(n.left as Node).binding:null;uses.push({value:value(n.right as Node),targetValue:value(n.left as Node),kind:'write',...(b!==null?{binding:b}:{}),functionStart:functionStart(n),dead:dead(n)});
     }
     if(n.type==='ForOfStatement'){
       const left=n.left as Node,p=left.type==='VariableDeclaration'?((left.declarations as Node[])[0].id as Node):left;

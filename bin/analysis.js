@@ -356,7 +356,7 @@ function lowerBound(sorted, value) {
 // Call relationships and receiver identities are language facts. The doctor
 // decides which imported factory and methods belong to its framework.
 export function analyzeCalls(file, source) {
-    var _a, _b;
+    var _a, _b, _c;
     const stack = loadStack();
     if (stack.error !== undefined)
         return { ok: false, error: stack.error };
@@ -502,7 +502,14 @@ export function analyzeCalls(file, source) {
                     ...range(n), functionStart: functionStart(n), left: operand(n.left), right: operand(n.right),
                 });
         }
-        return { ok: true, file: { file, calls, functions, differences, structure: callStructure(nodes, parents, target, range, unwrap, functionStart) } };
+        const structure = callStructure(nodes, parents, target, range, unwrap, functionStart);
+        const receiverValues = new Map((_c = structure.flow) === null || _c === void 0 ? void 0 : _c.values.filter(value => value.kind === "call" && value.receiver !== undefined).map(value => [value.end, value.receiver]));
+        for (const call of calls) {
+            const receiverValue = receiverValues.get(call.end);
+            if (receiverValue !== undefined)
+                call.receiverValue = receiverValue;
+        }
+        return { ok: true, file: { file, calls, functions, differences, structure } };
     }
     catch (e) {
         return { ok: false, error: `analysis failed for ${file}: ${e instanceof Error ? e.message : String(e)}` };
