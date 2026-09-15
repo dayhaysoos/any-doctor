@@ -35,3 +35,23 @@ test('Uncertain query reads alone remain unmeasured',()=>{
   }
  } finally {fs.rmSync(temp,{recursive:true,force:true});}
 });
+
+test('Repeated builder assignment converges without losing scoped coverage or its neighbor',()=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'convex-builder-flow-'));
+ try {
+  const before="import {query} from './_generated/server';query({args:{},handler:async ctx=>{let builder=ctx.db.query('rows');"+"builder=builder.filter(q=>q.eq(q.field('x'),1));".repeat(9)+"await builder.collect();return ctx.db.query('rows').";
+  fs.writeFileSync(path.join(temp,'entry.ts'),before+"filter(q=>q.eq(q.field('x'),1)).collect();}});");
+  const run=spawnSync(process.execPath,[path.join(candidate,'bin/cli.js'),'run',path.join(candidate,'doctors/convex.mjs'),temp,'--format','json'],{encoding:'utf8',timeout:20000,env:{...process.env,NODE_OPTIONS:'--max-old-space-size=128'}});
+  assert.equal(run.status,0,run.stdout+run.stderr);
+  const scan=JSON.parse(run.stdout),group=scan.groups[0];
+  assert.deepEqual(scan.crashed,[]);assert.equal(scan.score.score,null);
+  const findings=group.checks.filter(c=>c.rule==='filter-table-scan').flatMap(c=>c.findings);
+  assert.deepEqual(findings.map(({file,line,column})=>({file,line,column})),[{file:'entry.ts',line:1,column:before.length}]);
+  assert.deepEqual([...new Set(group.semantic.narrowed.map(n=>n.check))].sort(),['filter-table-scan','unbounded-collect']);
+  for(const narrowing of group.semantic.narrowed){
+   assert.equal(narrowing.reason,'unresolved-identity');assert.equal(narrowing.capability,'calls');
+   assert.equal(narrowing.files.length,1);assert.equal(narrowing.files[0].file,'entry.ts');
+   assert.ok(narrowing.occurrences>0);assert.equal(narrowing.files[0].occurrences,narrowing.occurrences);
+  }
+ }finally{fs.rmSync(temp,{recursive:true,force:true});}
+});

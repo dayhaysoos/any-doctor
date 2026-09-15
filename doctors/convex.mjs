@@ -569,12 +569,19 @@ function checkQueryChains(ctx,file,facts,m){
       }
       return [];
     }
-    const pending=[{step:terminal,steps:[],seen:new Set(),uncertain:false}],chains=[];
+    // Assignment edges may cycle or reconverge. Cache semantic chain states,
+    // not every path permutation: only these first operations, terminators and
+    // uncertainty affect the classification below. Repeated states add no proof.
+    const method=call=>call.target.members.at(-1);
+    const pending=[{step:terminal,steps:[],uncertain:false}],chains=[],visited=new Set();
     while(pending.length){
       const state=pending.pop(),{step}=state;
-      if(!step||state.seen.has(step.end))continue;
-      const steps=[step,...state.steps],seen=new Set(state.seen).add(step.end);
-      if(step.receiverCall!==undefined){pending.push({...state,step:byEnd.get(step.receiverCall),steps,seen});continue;}
+      if(!step)continue;
+      const steps=[step,...state.steps];
+      const first=name=>steps.find(call=>method(call)===name)?.end;
+      const key=JSON.stringify([step.end,state.uncertain,first('withIndex'),first('filter'),first('collect'),steps.find(call=>['withIndex','filter','collect'].includes(method(call)))?.end,steps.some(call=>['take','first','unique','paginate'].includes(method(call))),steps.some(call=>method(call)==='withSearchIndex')]);
+      if(visited.has(key))continue;visited.add(key);
+      if(step.receiverCall!==undefined){pending.push({...state,step:byEnd.get(step.receiverCall),steps});continue;}
       const binding=m.bindings.get(step.target.binding);
       if(step.target.members.length===1&&binding&&(binding.initializer!==undefined||binding.writes?.length)&&!binding.path?.length){
         const value=m.resolveValue(binding.initializer);
@@ -582,7 +589,7 @@ function checkQueryChains(ctx,file,facts,m){
         const known=stable&&value?.kind==='call'?byEnd.get(value.value):null;
         const origins=known?[known]:[binding.initializer,...(binding.writes??[]).map(w=>w.value)].flatMap(id=>possibleCalls(id));
         if(origins.length){
-          for(const origin of new Set(origins))pending.push({step:origin,steps,seen,uncertain:state.uncertain||!known});
+          for(const origin of new Set(origins))pending.push({step:origin,steps,uncertain:state.uncertain||!known});
           continue;
         }
       }
