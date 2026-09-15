@@ -1,0 +1,702 @@
+{
+  "reviewDate": "2026-09-14",
+  "versionContext": "Current official docs; retained Convex 1.32.0 semantics. Frozen package version separately recorded in summary. No claim of all-version support.",
+  "checks": [
+    {
+      "id": "filter-table-scan",
+      "claim": "A binding-resolved Convex database query uses filter without an index or search index.",
+      "impact": "Without an index restriction, finding matching results may read many table documents. Cost grows with the scanned candidate set, even when few results are returned.",
+      "severity": "warning",
+      "kind": "review candidate",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "chains with withIndex",
+        "unrelated database-shaped objects, array filters and shadowed bindings"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: filter-table-scan-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Executed filter without index; performance review, not proof of excessive reads. take limits returned results, not candidate reads.",
+      "officialSources": [
+        "https://docs.convex.dev/database/reading-data/indexes/"
+      ],
+      "slice": "A",
+      "sliceControls": {
+        "passed": 15,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "index-without-range",
+      "claim": "A resolved Convex indexed collect has no returned range restriction; unsupported callback flow is coverage uncertainty.",
+      "impact": "Selecting index order alone does not restrict the candidate set. Actual cardinality and returned-range uncertainty need review.",
+      "severity": "warning",
+      "kind": "review candidate",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "multi-line callbacks with real bounds",
+        "take/first/unique terminators"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: index-without-range-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Unrestricted indexed collect can read the whole index; unknown returned callback flow must narrow instead of producing a finding.",
+      "officialSources": [
+        "https://docs.convex.dev/database/reading-data/indexes/"
+      ],
+      "slice": "A",
+      "sliceControls": {
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "query-clock-reactivity",
+      "claim": "A global Date.now() call directly inside an import-resolved Convex query handler.",
+      "impact": "Time passing does not itself rerun a subscribed query; time-dependent results may become stale and cache reuse can suffer.",
+      "severity": "warning",
+      "kind": "review candidate",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "mutation expiry timestamps",
+        "action clocks",
+        "shadowed Date",
+        "nested or unresolved helper functions"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: query-clock-reactivity-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Direct query Date.now is allowed and fixed per execution; time passing alone does not invalidate subscriptions. Review cache/reactivity while preserving expiry and authorization checks.",
+      "officialSources": [
+        "https://docs.convex.dev/functions/runtimes",
+        "https://docs.convex.dev/understanding/best-practices/"
+      ],
+      "slice": "B",
+      "sliceControls": {
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "transaction-clock-duration",
+      "claim": "A subtraction of two global Date.now() calls, or immutable direct aliases, in the same import-resolved query/mutation handler.",
+      "impact": "The transaction clock is fixed at function start, so this calculation cannot measure work duration.",
+      "severity": "warning",
+      "kind": "bounded defect observation",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "historical timestamps or expiry cutoffs",
+        "action duration measurement",
+        "random branching",
+        "reassigned timestamps"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: transaction-clock-duration-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Subtracting transaction Date.now values cannot measure elapsed execution time. Stored historical timestamps are valid; performance.now differs in mutations and is outside this check.",
+      "officialSources": [
+        "https://docs.convex.dev/functions/runtimes"
+      ],
+      "slice": "B",
+      "sliceControls": {
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "unbounded-collect",
+      "claim": "A .collect() on a chain with no take, no paginate, and no bounding index range.",
+      "impact": "This collect may read a growing candidate set. Current size and latency are not measured, and an index range alone does not prove small cardinality.",
+      "severity": "warning",
+      "kind": "review candidate",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "collect bounded by an index range",
+        "collect bounded by take"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: unbounded-collect-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Whole-set collect is a growth review, not a defect for small bounded populations. Preserve full processing in migrations.",
+      "officialSources": [
+        "https://docs.convex.dev/database/reading-data",
+        "https://docs.convex.dev/database/reading-data/indexes/indexes-and-query-perf"
+      ],
+      "slice": "A",
+      "sliceControls": {
+        "passed": 18,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "index-filter-combo",
+      "claim": "A .withIndex() chain - range-narrowed or result-bounded - whose same chain also calls .filter().",
+      "impact": "If many candidates fail the filter, a suitable compound index may reduce reads. No bottleneck or result cardinality was measured.",
+      "severity": "info",
+      "kind": "review candidate",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "multi-field indexes serving both bounds"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: index-filter-combo-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Convex explicitly permits filters when a predicate is not expressible as an index range. No automatic compound-index rewrite.",
+      "officialSources": [
+        "https://docs.convex.dev/database/reading-data/indexes/"
+      ],
+      "slice": "A",
+      "sliceControls": {
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "presence-patch-on-shared-document",
+      "claim": "A binding-resolved Convex patch sets a canonical presence field, without an established dedicated presence-table target.",
+      "impact": "If this document is widely read and updated frequently, presence writes can cause subscription invalidation. Frequency and fanout are not established.",
+      "severity": "info",
+      "kind": "review candidate",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "presence segmented into its own table"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: presence-patch-on-shared-document-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Canonical presence field plus no established dedicated table is a heuristic. Actual update frequency, reader fanout and intended segmentation are not established.",
+      "officialSources": [
+        "https://docs.convex.dev/functions/query-functions",
+        "https://docs.convex.dev/database/writing-data"
+      ],
+      "slice": "D",
+      "sliceControls": {
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "missing-args-validator",
+      "claim": "An import-resolved Convex query, mutation or action registration has no args property in a resolved config, or uses the direct-handler form.",
+      "impact": "Public functions without runtime validators can receive unexpected client arguments. Internal functions are not client-callable and validators there are optional.",
+      "severity": "warning",
+      "kind": "review candidate",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "chrome.tabs.query and other namespaced APIs",
+        "explicit args: {}"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: missing-args-validator-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "Public production argument validation is recommended; runtime TypeScript types are insufficient. Internal validation is optional; current code correctly demotes that case to info.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Public production argument validation is recommended; runtime TypeScript types are insufficient. Internal validation is optional; current code correctly demotes that case to info.",
+      "officialSources": [
+        "https://docs.convex.dev/functions/validation",
+        "https://docs.convex.dev/functions/internal-functions"
+      ],
+      "slice": "C",
+      "sliceControls": {
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "public-api-in-server-call",
+      "claim": "A resolved Convex context run call references the generated public api namespace; unresolved identity is coverage uncertainty.",
+      "impact": "Public references may be intentionally shared with clients. This call does not establish accidental exposure or an authorization flaw.",
+      "severity": "info",
+      "kind": "review candidate",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "functions legitimately consumed by both client and server"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: public-api-in-server-call-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Server calls may use public references. Namespace does not prove server-only intent, client absence or missing authorization. Unbound api is unknown under the requested migration contract.",
+      "officialSources": [
+        "https://docs.convex.dev/functions/internal-functions"
+      ],
+      "slice": "C",
+      "sliceControls": {
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "write-in-query",
+      "claim": "A resolved query context invokes a database write, scheduler operation, runMutation or runAction.",
+      "impact": "Queries are read-only transactions - the write methods do not exist on a query's context, so the function fails on its first real call rather than at deploy time. ctx.runQuery IS allowed (same read snapshot); only mutations, actions, and scheduling are forbidden.",
+      "severity": "warning",
+      "kind": "bounded defect observation",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "ctx.runQuery inside queries"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: write-in-query-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Resolved query context is read-only; runQuery is supported. Writes, scheduling, runMutation and runAction are invalid on that context.",
+      "officialSources": [
+        "https://docs.convex.dev/api/interfaces/server.GenericQueryCtx"
+      ],
+      "slice": "C",
+      "sliceControls": {
+        "passed": 9,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "db-in-action",
+      "claim": "A resolved action context invokes a database method, although actions do not provide db.",
+      "impact": "Actions have no db on their context - the call throws at runtime, usually on the first request that reaches that path.",
+      "severity": "warning",
+      "kind": "bounded defect observation",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "ctx.runQuery/runMutation from actions"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: db-in-action-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Action context has no direct database reader/writer; use transaction calls. Arbitrary db-shaped objects are outside this claim.",
+      "officialSources": [
+        "https://docs.convex.dev/api/interfaces/server.GenericActionCtx"
+      ],
+      "slice": "C",
+      "sliceControls": {
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "unawaited-convex-call",
+      "claim": "A direct discarded call to a Promise-returning method available on the resolved Convex context; uncertain context identity narrows coverage.",
+      "impact": "Discarding the promise can lose errors or leave work unfinished when the function returns.",
+      "severity": "warning",
+      "kind": "bounded defect observation",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "returned callbacks",
+        "arguments to helpers",
+        "stored promises",
+        "query builders",
+        "shadowed context bindings"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: unawaited-convex-call-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "Discarded promise can lose work/errors; stored, transferred or returned values are not direct discards. Generic recipe requires async callback plus array receiver and does not model context producers.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Discarded promise can lose work/errors; stored, transferred or returned values are not direct discards. Generic recipe requires async callback plus array receiver and does not model context producers.",
+      "officialSources": [
+        "https://docs.convex.dev/functions/actions",
+        "https://docs.convex.dev/database/writing-data"
+      ],
+      "slice": "D",
+      "sliceControls": {
+        "passed": 10,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "node-runtime-transaction",
+      "claim": "An import-resolved query or mutation registration occurs in a file with a structural use node directive.",
+      "impact": "Deploy fails: queries and mutations must run in Convex's deterministic runtime, which is what makes their transaction guarantees replayable.",
+      "severity": "warning",
+      "kind": "bounded defect observation",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "actions in use-node files"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: node-runtime-transaction-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Node runtime supports actions; query/mutation declarations there are invalid. Directive identity and registration ownership are required.",
+      "officialSources": [
+        "https://docs.convex.dev/functions/runtimes"
+      ],
+      "slice": "B",
+      "sliceControls": {
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "sequential-run-in-loop",
+      "claim": "A resolved Convex context runQuery, runMutation or runAction call is directly awaited in a loop body in the same function.",
+      "impact": "Awaiting each iteration can serialize latency. Transaction and commit behavior depends on run method and calling context; queries can share a read snapshot.",
+      "severity": "info",
+      "kind": "review candidate",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "deliberate OCC retry loops with backoff"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: sequential-run-in-loop-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Awaited server calls in loops are review candidates; retries, pagination, ordering and intentional transaction boundaries may require serialization. Local database-write loops are valid.",
+      "officialSources": [
+        "https://docs.convex.dev/functions/actions",
+        "https://docs.convex.dev/database/writing-data"
+      ],
+      "slice": "D",
+      "sliceControls": {
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    },
+    {
+      "id": "spread-into-patch",
+      "claim": "A resolved Convex patch or replace receives an object with a top-level spread; nested object and array spreads are excluded.",
+      "impact": "The patch copies fields from another value. This is not evidence of arbitrary client-controlled writes: validators, selected server fields and deliberate state copies may already constrain them.",
+      "severity": "info",
+      "kind": "review candidate",
+      "reportingUnit": "occurrence",
+      "needs": [
+        "calls"
+      ],
+      "onUnknown": "skip",
+      "lookalikes": [
+        "validated server-built objects spread deliberately"
+      ],
+      "positive": "dev/convex-sdk-migration/guardrail-cases.mjs: spread-into-patch-positive",
+      "unsupported": "Candidate identity/reassignment and unsupported modeled configuration, range or value flow produce check/file-scoped narrowing. Unmodeled external wrappers and whole-program flow remain outside the bounded syntax model; no execution or workload proof.",
+      "recipe": "none",
+      "recipeDecision": "No maintained recipe models this framework/context/query/patch relationship.",
+      "customRequired": true,
+      "verdict": "acceptable with named coverage limits; custom implementation retained",
+      "calibration": "Patch merges top-level fields. Spreading an intentionally selected server object is valid; mass assignment and unsafe client ownership are not proven.",
+      "officialSources": [
+        "https://docs.convex.dev/database/writing-data",
+        "https://docs.convex.dev/functions/validation"
+      ],
+      "slice": "D",
+      "sliceControls": {
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      },
+      "guardrails": "Retained positive, ordinary lookalike, conditional identity with definite neighbor, and exact same-line duplicates pass unchanged.",
+      "blindSpots": [
+        "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+        "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+        "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+        "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+        "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+        "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+        "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+        "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+        "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+        "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+        "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+      ]
+    }
+  ]
+}

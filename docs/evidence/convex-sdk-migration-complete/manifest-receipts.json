@@ -1,0 +1,22 @@
+{
+  "manifest-after-packed": {
+    "entries": 1530,
+    "matched": 1530,
+    "mismatches": []
+  },
+  "manifest-before-packed": {
+    "entries": 1530,
+    "matched": 1530,
+    "mismatches": []
+  },
+  "manifest-before-local": {
+    "entries": 1530,
+    "matched": 1530,
+    "mismatches": []
+  },
+  "manifest-after-local": {
+    "entries": 1530,
+    "matched": 1530,
+    "mismatches": []
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "base": "0d69f9f0986e151ecd841872df0d705afbad9128",
+  "candidate": "5c1350de69c741fdbd6a4517c783436273338399",
+  "algorithm": "SHA-256",
+  "files": {
+    "bin/contract.d.ts": "710f1f7c0b35fa5bec70e83fd51a7f2a99290c13dadaadc66e75b802a5a8f9d4",
+    "bin/contract.js": "eb83534919c17c83d7175f9b27c17811bc06f9382aaaf9e28cfd9efb211b29c6",
+    "bin/sdk.js": "92255d9e83c8005a622ccb7ea7114db7a5669e26f6cdad444e790427c5bc67d0",
+    "dev/convex-analysis/coverage-expectations.mjs": "3655d0899fd13a05cf7db16e28635109cbe8699a44a260a2fb7f1d8b5ea0e902",
+    "dev/convex-analysis/run-cases.mjs": "03f820f8fddbbbd8a3be7b9357c0b2233726ecd83c7ab02fa1aa2cc27b59a82e",
+    "dev/convex-sdk-migration/run-slices.mjs": "fd4e38f64059ba095aa767c213ee4276882542d0ebceb06b6cf7a23f2e556549",
+    "dev/convex-sdk-migration/slice-cases.mjs": "70c5c7432d1683b8a16c77e7ce60d675d6655c08e6ce3f0b33e04bb79a5183cb",
+    "docs/doctor-sdk.md": "ef631030cb4175ef47df299501459bea6b5c23b3508f3974d14e89473b3f4f26",
+    "doctors/convex.fixtures.mjs": "17faf6859823ccfb38341a12b3e1e87430334be78b29b7bc90592ca1eba5b1a2",
+    "doctors/convex.mjs": "00ccf4d081a4c3f13c56f1ded618c1f1c75a34136c8ad886381a75996b96d085",
+    "src/contract.ts": "deafdf2542a52faead1d61f750706bba8273e4555b7752c9e303f3d0421f276c",
+    "src/sdk.ts": "2f24e29052c42585f64daaadf87fc190acbe5555c5dae7d495e6be270cfff1d1",
+    "test/convex-sdk-migration.test.mjs": "94efb2ee63f6d88e2e4229dc7b52efab5e794299405d8603c1dc58fff7535f69",
+    "test/sdk-custom-narrowing.test.mjs": "4dbaa11f1e12a178e7ea32881fe5dcaabd077a4ce32ec85ae067f56633b24adc"
+  }
+}

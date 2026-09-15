@@ -1,0 +1,731 @@
+{
+  "artifact": {
+    "commit": "5c1350de69c741fdbd6a4517c783436273338399",
+    "path": "/private/tmp/convex-sdk-continuation/candidate-3/package/any-doctor-0.1.2.tgz",
+    "sha256": "4552632c4dcfe99c7e7a9945dd79b4ae0dad96d867350aa3059177f914fd723f",
+    "bytes": 281040,
+    "files": 144
+  },
+  "files": [
+    {
+      "file": "bin/analysis-host.js",
+      "bytes": 11219,
+      "sha256": "0e34bfc0836967706264e6b72be40eec1721e87c19f1c4ca8ec6b111f7755c0f"
+    },
+    {
+      "file": "bin/analysis.js",
+      "bytes": 23193,
+      "sha256": "8293880de03b93648ceacbd80dd4aaa4691d588877eac1aad352a702fae12158"
+    },
+    {
+      "file": "bin/call-structure.js",
+      "bytes": 11830,
+      "sha256": "43348089d39cb8a1b08a8230a2ad8ffb6a42e5f4e13bb4a3adff089388f34208"
+    },
+    {
+      "file": "bin/capabilities.js",
+      "bytes": 4931,
+      "sha256": "ddc25cbd1f1c7cbb22c797284359e7d52133917161e7cdfa20c8d0d58e4364b9"
+    },
+    {
+      "file": "bin/certify.js",
+      "bytes": 24910,
+      "sha256": "351ef4b246bb4e9bc916d8c136e9c889db738d78e255f8cb926ad112fcdde9de"
+    },
+    {
+      "file": "bin/cli.js",
+      "bytes": 51879,
+      "sha256": "997bd31b90a8aa9bea7cd17e8b65f6655d9915485ebed1aa0b110f48c696c1ee"
+    },
+    {
+      "file": "bin/clipboard.js",
+      "bytes": 341,
+      "sha256": "3a03c480a4bdc09635e39374a7761b3b2411544e374271241bccf0a125b77386"
+    },
+    {
+      "file": "bin/cohort.js",
+      "bytes": 2210,
+      "sha256": "db87379e50513cae3a70dd41fc2da036eea109310c14ff629874056600c7504a"
+    },
+    {
+      "file": "bin/contract.js",
+      "bytes": 11064,
+      "sha256": "eb83534919c17c83d7175f9b27c17811bc06f9382aaaf9e28cfd9efb211b29c6"
+    },
+    {
+      "file": "bin/dashboard.js",
+      "bytes": 46105,
+      "sha256": "02b09b2ea1eb3060003ec075839fedbf21576fdf3e607c220f96b6ad67cf241c"
+    },
+    {
+      "file": "bin/diff.js",
+      "bytes": 7762,
+      "sha256": "971c4ab7de4a80b4bbdef2f72e57fc34815dd007e33ab5192569aaf282bbae4c"
+    },
+    {
+      "file": "bin/discover.js",
+      "bytes": 5827,
+      "sha256": "0efc51166b4e7032fec935f45e2fd8ce4b67205fc45129f96d182ca12c4977a7"
+    },
+    {
+      "file": "bin/doctor-sdk.js",
+      "bytes": 48341,
+      "sha256": "8a5fd4981febad2a21e9b09452c1d20aaa70180d5fd441d03a54250178a4e0a9"
+    },
+    {
+      "file": "bin/doctor-tree.js",
+      "bytes": 4804,
+      "sha256": "55e5ac8786eb330850c2348e4f6e3bcc2985d39e29761204b34a06aa036446fa"
+    },
+    {
+      "file": "bin/engine.js",
+      "bytes": 8739,
+      "sha256": "a8f48e4410fe4616b6c31e9bcb74a6285414e849fdd05cc66c0f2fd93077554a"
+    },
+    {
+      "file": "bin/file-scope.js",
+      "bytes": 3007,
+      "sha256": "a0b16ee752f3efe455c37beb8c1466466c89a80df154819b92928ea7f3536c85"
+    },
+    {
+      "file": "bin/finding-state.js",
+      "bytes": 9674,
+      "sha256": "5bdfd0b90d29442215e39c37351af9cce3972c88f3ac23ce03a483a9488e2ef7"
+    },
+    {
+      "file": "bin/function-structure.js",
+      "bytes": 3485,
+      "sha256": "589f61958410d150032522e0f6dd90f61d2ec594a971b9135fb89a95d82600dd"
+    },
+    {
+      "file": "bin/fuzzy.js",
+      "bytes": 910,
+      "sha256": "778895a0221843bde12733112ec05d8372d8194b33abb6eee5be1e849db08805"
+    },
+    {
+      "file": "bin/gate.js",
+      "bytes": 1404,
+      "sha256": "5a3a63e50468461beb0c94fbc74def8372609995a03cfc28b40218c4effa5a93"
+    },
+    {
+      "file": "bin/identity.js",
+      "bytes": 22901,
+      "sha256": "12a1c67b9a8ddef5d51e930431bdf1e58a018ca43201a9891e8508abb2e8ee20"
+    },
+    {
+      "file": "bin/keys.js",
+      "bytes": 2378,
+      "sha256": "e3801d12a00c9c1f74b21c15de4d86805f0c5d389aceecf2b91b14789bbfbbef"
+    },
+    {
+      "file": "bin/mask.js",
+      "bytes": 5424,
+      "sha256": "8d7a95d085c47a25a575f7e5737067a76b6513ab0297ac78d8ddb0d76e94093a"
+    },
+    {
+      "file": "bin/palette.js",
+      "bytes": 1484,
+      "sha256": "219f66beabbec81b675d923cbaff4c39f09d6c2e69cf3d54abea4e17772db33a"
+    },
+    {
+      "file": "bin/picker.js",
+      "bytes": 6479,
+      "sha256": "fae5a3852c270802519678f3d2bf54dbb2786d09a657daed8f0b4e9963cd880c"
+    },
+    {
+      "file": "bin/project-consumers.js",
+      "bytes": 54845,
+      "sha256": "e5d8c211ac0a600a774b00a37659f20a09d9f1ae0df05746bfc85f85aae19179"
+    },
+    {
+      "file": "bin/prompts.js",
+      "bytes": 4963,
+      "sha256": "38227a2909f720417474158afef2c7145ec7b11f0b6f8f2bb45a04b11343e20e"
+    },
+    {
+      "file": "bin/report.js",
+      "bytes": 17690,
+      "sha256": "584f796e2913fc587622853a4515e3fa89c2ecadfd70871fbf75716ec92a6642"
+    },
+    {
+      "file": "bin/review.js",
+      "bytes": 5927,
+      "sha256": "3498614d6063119ffde262c77aa78ddd9bb596f607944d9f7a4310f440c2042f"
+    },
+    {
+      "file": "bin/runner.js",
+      "bytes": 15695,
+      "sha256": "0b15436873b9dd3b128e89f41c0866f3ca76c3d2c04fefac450aaecff812b637"
+    },
+    {
+      "file": "bin/scan-capture.js",
+      "bytes": 3534,
+      "sha256": "525e53cf6c62bda93cb75500761a8036b36ed8f9599151605233dfd307b67a7d"
+    },
+    {
+      "file": "bin/score.js",
+      "bytes": 4394,
+      "sha256": "7568c1bc683ffebc374f253325009437f01596e504b0095f43311f450599bfdc"
+    },
+    {
+      "file": "bin/sdk.js",
+      "bytes": 33175,
+      "sha256": "92255d9e83c8005a622ccb7ea7114db7a5669e26f6cdad444e790427c5bc67d0"
+    },
+    {
+      "file": "bin/search-host.js",
+      "bytes": 3260,
+      "sha256": "4a0227ccad75f0b7613b57a70ac07e24058c509270ffe8090e633c5269ba1842"
+    },
+    {
+      "file": "bin/select.js",
+      "bytes": 2145,
+      "sha256": "b6581304918b86c7be9d3844a56802826ce58f52fb7d20b14dc4cfef6bafceae"
+    },
+    {
+      "file": "bin/spinner.js",
+      "bytes": 2915,
+      "sha256": "90abf1cd7d0416ceb33b289a7d6b6fece22ab675dde3227e7f8cda79a7b92253"
+    },
+    {
+      "file": "bin/summary.js",
+      "bytes": 6998,
+      "sha256": "4e5d26af5d3c266f25f5213dd8f13bc95d725bec6ccba03849cce540010c16ce"
+    },
+    {
+      "file": "bin/tty.js",
+      "bytes": 6351,
+      "sha256": "09d16b200da1dd8db308996b1a15f89abab4db460e0a239928996081ac1d6b82"
+    },
+    {
+      "file": "bin/value-flow.js",
+      "bytes": 9469,
+      "sha256": "64b497bb746428ed8092dbbdcb0ca09d2e6b4aba5dccfaeeac5553fd240f71e4"
+    },
+    {
+      "file": "fixtures/sensitivity/billing-triple/expect.json",
+      "bytes": 563,
+      "sha256": "5c90df069fcbc423607e77fe80647309a5ec6598fe637a659598f72955c2eb90"
+    },
+    {
+      "file": "fixtures/sensitivity/dead-prompt-builders/expect.json",
+      "bytes": 373,
+      "sha256": "5aedd93ed22145428e7fa2fa44c1c35ed2d8a06cc631aad44498886438bc1a14"
+    },
+    {
+      "file": "fixtures/sensitivity/discard-with-unrelated-combiner/expect.json",
+      "bytes": 319,
+      "sha256": "57a3c9c08f962674ff77678b41d3aafcc1c64e350e49290132a0e60b81e3cc91"
+    },
+    {
+      "file": "fixtures/sensitivity/ratelimiter-unbounded-collect/expect.json",
+      "bytes": 317,
+      "sha256": "a02590fc21bcc31803a5849e06d87078ff7ea53bb860b10b7f9b1b6622864637"
+    },
+    {
+      "file": "package.json",
+      "bytes": 1236,
+      "sha256": "4029afa4b7f19d8c0489d77da92fc1a3c29fc2f98f3c431fe35953b33243ec9d"
+    },
+    {
+      "file": "skill/agent-usage.md",
+      "bytes": 3936,
+      "sha256": "fadd63530e755063d1a582d3bd48bf2260489e21cf63e8261c4363478794ad90"
+    },
+    {
+      "file": "skill/any-doctor.skill.md",
+      "bytes": 24667,
+      "sha256": "5a0aeb99787efcf533468ca35ebaf3eb3f555a1fe70c97a787eabbe5511d58a1"
+    },
+    {
+      "file": "docs/call-structure.md",
+      "bytes": 3580,
+      "sha256": "6b9344f96c27c0f0c4101311fa9e7cf2e55a2724e35a5c704c1642134e8ea8d3"
+    },
+    {
+      "file": "CONTEXT.md",
+      "bytes": 21944,
+      "sha256": "69ad7d8102d92fea0c2b6dac5917f0b88ecdd1ec8c5ed93adae49bac5128ed3f"
+    },
+    {
+      "file": "docs/decisions.md",
+      "bytes": 69036,
+      "sha256": "5dc9b1ff19d264d5374f2f665692f88068166565b4d16cf02ec4802a646b6050"
+    },
+    {
+      "file": "docs/doctor-reliability.md",
+      "bytes": 7710,
+      "sha256": "df3db5b449e39b1698b45a532609e04d234bd86f59b2f804544ec2cd7f0a3979"
+    },
+    {
+      "file": "docs/doctor-sdk.md",
+      "bytes": 10279,
+      "sha256": "ef631030cb4175ef47df299501459bea6b5c23b3508f3974d14e89473b3f4f26"
+    },
+    {
+      "file": "docs/example-catalog.md",
+      "bytes": 5882,
+      "sha256": "1f5e3dd445a22e6c49104ae36d0b1fccaa008faf721325847a09d2bf796b17a3"
+    },
+    {
+      "file": "docs/features.md",
+      "bytes": 4001,
+      "sha256": "ce671b637767441ad6f4bd33107ac3d8c508b79e50f9cd3b8eff98dec2024c72"
+    },
+    {
+      "file": "docs/first-shot-results.md",
+      "bytes": 903,
+      "sha256": "07efb5a60cf9de9a004da40d6608f4de8971f8e30828ce7b86721ef97089e795"
+    },
+    {
+      "file": "docs/HANDOFF.md",
+      "bytes": 7013,
+      "sha256": "4f62a474207a03af583648cd60a30e834f679bd84849a5415d8960299b2f3fc3"
+    },
+    {
+      "file": "docs/intents.md",
+      "bytes": 1152,
+      "sha256": "bd93ae9ef5e1b8f6ac37d5cb1c6d716af154f11b6d2f4cc42326c89cba9ebef4"
+    },
+    {
+      "file": "docs/kill-test.md",
+      "bytes": 2172,
+      "sha256": "0155d94ebcdf2566032097a3647b102a78e91a7d076a2f295216f735633d7ce7"
+    },
+    {
+      "file": "docs/project-consumer-analysis.md",
+      "bytes": 12284,
+      "sha256": "3d21df560754c5597ee1185660bd546eb69c597e05d8b1266d7becedb0e627c6"
+    },
+    {
+      "file": "README.md",
+      "bytes": 7685,
+      "sha256": "a1acafb5cea06780d457bc2899e35522ca72b5d913e2fc2818ae0882c6dde1e8"
+    },
+    {
+      "file": "docs/repair-audit-007.md",
+      "bytes": 4312,
+      "sha256": "e773bb26487a294626536027a73de24d4e03f5c7007ade56029c774f5f27a371"
+    },
+    {
+      "file": "docs/REPAIR-LOG.md",
+      "bytes": 3337,
+      "sha256": "fcf33fa66461c4e8ee83b5bc47269f82820ad2595ad691567bd61904fd2b85b5"
+    },
+    {
+      "file": "docs/research-openrouter-patterns.md",
+      "bytes": 7533,
+      "sha256": "a5784a9d8a1571585e16585409138d71f317cf1c826e641e72e3eb3455d2ed89"
+    },
+    {
+      "file": "docs/research-shadcn-registry.md",
+      "bytes": 11995,
+      "sha256": "32030217e2ace6dc76f54860ae19c1816086424c53ae730f7e5c694d7f942927"
+    },
+    {
+      "file": "docs/research.md",
+      "bytes": 3414,
+      "sha256": "c4739dc4a9f246af50e145dab89e62fc863e3eb9fa607b286a08255ea41d7f91"
+    },
+    {
+      "file": "docs/RESULTS.md",
+      "bytes": 3533,
+      "sha256": "5c51ad9f3148290bab9d0a4873f8b2b195661ef9ecf75db4e9744f7a946ea574"
+    },
+    {
+      "file": "docs/vision.md",
+      "bytes": 5384,
+      "sha256": "fd245824fda58da6c971f0a1a3f1b972eab21440e075797c86be21c30d297f32"
+    },
+    {
+      "file": "doctors/async.fixtures.mjs",
+      "bytes": 14892,
+      "sha256": "33b7a63e8b564ee4d3e9d8a46e8ef2842927383cf8493968b07a1c9c54d2d89a"
+    },
+    {
+      "file": "doctors/async.mjs",
+      "bytes": 6903,
+      "sha256": "1f6ea407b4783bc1f886ca4b689ee6286c05123f6cfe354dee6f7b7ee6db60ca"
+    },
+    {
+      "file": "doctors/convex.fixtures.mjs",
+      "bytes": 45140,
+      "sha256": "17faf6859823ccfb38341a12b3e1e87430334be78b29b7bc90592ca1eba5b1a2"
+    },
+    {
+      "file": "doctors/convex.mjs",
+      "bytes": 41897,
+      "sha256": "00ccf4d081a4c3f13c56f1ded618c1f1c75a34136c8ad886381a75996b96d085"
+    },
+    {
+      "file": "bin/doctor-loader.mjs",
+      "bytes": 5179,
+      "sha256": "8c651d4c149ed7b7606fb690b3ca7821d72b170b125e6c541bbd9336c3b2a9f5"
+    },
+    {
+      "file": "fixtures/doctor-sdk-recipe-only.fixtures.mjs",
+      "bytes": 260,
+      "sha256": "a81d187e8fe204b2439285b4733c6035260db375aa3b0ccda0b709193c4de870"
+    },
+    {
+      "file": "fixtures/doctor-sdk-recipe-only.mjs",
+      "bytes": 833,
+      "sha256": "bf467ee03b5de9638c14fd6b6e59ad3badadb1078d5b7959bd0386a7160ed87e"
+    },
+    {
+      "file": "fixtures/doctor-sdk-reference.fixtures.mjs",
+      "bytes": 1050,
+      "sha256": "c3e717777a68605ba7f7e08b6e01cde23fd9320e0ceed3bd17f4f41020a2362e"
+    },
+    {
+      "file": "fixtures/doctor-sdk-reference.mjs",
+      "bytes": 3091,
+      "sha256": "deff50d4ef359a75067754cd3f0eb5f8a478885a98d7674c3b9c1f5e719b3a15"
+    },
+    {
+      "file": "doctors/effect-v4-kitlangton.fixtures.mjs",
+      "bytes": 11294,
+      "sha256": "83f492d70a3f1e0681370ca3b2c6081bfbe0821348613c3ad152b028b40532e3"
+    },
+    {
+      "file": "doctors/effect-v4-kitlangton.mjs",
+      "bytes": 22279,
+      "sha256": "10863beaf4dda02ef69f8c2fae5f6cfb38b680e8d03cb72a44c03fcc107d80b9"
+    },
+    {
+      "file": "bin/import-guard.mjs",
+      "bytes": 1592,
+      "sha256": "21173fd6f26a984ae3be8548623bcad08b9678c6adc9a56782ae302c1e5990cc"
+    },
+    {
+      "file": "doctors/openrouter.fixtures.mjs",
+      "bytes": 6152,
+      "sha256": "b32342e2fb76fbd8f7a7208dfbb269efab7f51594476e43d2b223a8c158fe9fd"
+    },
+    {
+      "file": "doctors/openrouter.mjs",
+      "bytes": 10379,
+      "sha256": "eb5cc87bc76e9f2ca10fccfc81c3ea823232363958547070afc20d002b1dc48f"
+    },
+    {
+      "file": "doctors/slop.fixtures.mjs",
+      "bytes": 20354,
+      "sha256": "946cfd82d1c528ee535028ab66d23fcff140fe208901e188e59d46679ce8672e"
+    },
+    {
+      "file": "doctors/slop.mjs",
+      "bytes": 21150,
+      "sha256": "362618f9fbf6e210f842525f1ee9e04dce8517dda72f0f62e816469a9cfa4504"
+    },
+    {
+      "file": "bin/doctor-loader.d.mts",
+      "bytes": 48,
+      "sha256": "5194dc660a5436350c96f1afd89bc209aeb52198bab6e8d7dae71c6d8431d234"
+    },
+    {
+      "file": "bin/analysis-host.d.ts",
+      "bytes": 1429,
+      "sha256": "5129618f4571aafaa28b01bf3e8b05ca86287250b505aef2b0b04a94cc421601"
+    },
+    {
+      "file": "bin/analysis.d.ts",
+      "bytes": 1566,
+      "sha256": "f55a189d891198406aee769f6db2a7a078b954c2f9d80952acdde0d8063dc532"
+    },
+    {
+      "file": "fixtures/sensitivity/billing-triple/billing.ts",
+      "bytes": 1179,
+      "sha256": "0f3e4c137cc8d6a9e25b8f1087368488c4ea3f23f675c814907cc75bf696722f"
+    },
+    {
+      "file": "bin/call-structure.d.ts",
+      "bytes": 449,
+      "sha256": "f53cd5e2c31f78cbd3e82cc3cc5322ebbb73b99c1fc2805f5d11c08caebe0ba1"
+    },
+    {
+      "file": "bin/capabilities.d.ts",
+      "bytes": 545,
+      "sha256": "910f155dd9cc2adb2c8545c904eb90968384630ee4cd1cbe9910cbd63eb9c420"
+    },
+    {
+      "file": "bin/certify.d.ts",
+      "bytes": 1008,
+      "sha256": "325128ee285d57c4d5cf0c8f6f482669a263ef1577cff4bb45161ff11dba0534"
+    },
+    {
+      "file": "fixtures/sample-app/src/services/chat.ts",
+      "bytes": 510,
+      "sha256": "099ce362e9ac973beb0eaaaea0959c7664890e07b3cf43be0bc3700935581467"
+    },
+    {
+      "file": "bin/cli.d.ts",
+      "bytes": 331,
+      "sha256": "ec9a8eb77abf1e6428bffb29b9882c94bc7d7a641e32ece090d2cc2c88743970"
+    },
+    {
+      "file": "fixtures/sample-app/src/lib/ai/client.ts",
+      "bytes": 151,
+      "sha256": "8d46d367d305e91bcfd8075b719a6df16cce5c099bf0786a61eb5c6f867a50ce"
+    },
+    {
+      "file": "bin/clipboard.d.ts",
+      "bytes": 64,
+      "sha256": "b01ae9202a8422b20b05a3219f844610af55951a6a4d29d41dbfbdf238c82bbb"
+    },
+    {
+      "file": "bin/cohort.d.ts",
+      "bytes": 595,
+      "sha256": "fb7a42b45088112322af8b8b2fe1d6b8dbe499806e8fa839c1a04160d5ca47b0"
+    },
+    {
+      "file": "bin/contract.d.ts",
+      "bytes": 20576,
+      "sha256": "710f1f7c0b35fa5bec70e83fd51a7f2a99290c13dadaadc66e75b802a5a8f9d4"
+    },
+    {
+      "file": "bin/dashboard.d.ts",
+      "bytes": 3394,
+      "sha256": "fabe5ad1e2ba6db82038f6c7649d7e0e066fe6430e639dd0b71c3c5cb609d84a"
+    },
+    {
+      "file": "bin/diff.d.ts",
+      "bytes": 940,
+      "sha256": "634fb5a10b628cc71db660672ccaa59fcbd9d1f359cc2ff057e1e92e78b86cd8"
+    },
+    {
+      "file": "bin/discover.d.ts",
+      "bytes": 1060,
+      "sha256": "4ecd3e786096282f4807d0e0200917ae3ecab9ce95124bc40e58d86c8329aff0"
+    },
+    {
+      "file": "bin/doctor-sdk.d.ts",
+      "bytes": 2848,
+      "sha256": "574b41b68f010afb536ac94984eaa284f39cd44406a0cfcb7403e6edb9f4cf5b"
+    },
+    {
+      "file": "bin/doctor-tree.d.ts",
+      "bytes": 1560,
+      "sha256": "d9eaa2163d899c7c226708940db5f988024fd15e765b8da564dbac5d01aa927e"
+    },
+    {
+      "file": "fixtures/innocent/dynamic-import.ts",
+      "bytes": 166,
+      "sha256": "c092ffa9aaf974fecd263c5909263f3ce821fdfeacd9359a09668a3aab600e16"
+    },
+    {
+      "file": "bin/engine.d.ts",
+      "bytes": 1161,
+      "sha256": "938fefdccf29b4893ddf74720b688c8b0d23d2706467497e5b70d26a99cd51e7"
+    },
+    {
+      "file": "bin/file-scope.d.ts",
+      "bytes": 637,
+      "sha256": "2b83d4a7383ac53402cc24c4ac25fc301d86d790ae0d93f356b74849328c3a27"
+    },
+    {
+      "file": "bin/finding-state.d.ts",
+      "bytes": 2460,
+      "sha256": "cdc88261884ea2167ca7ec9cfbad78222917a452eb8c5cb29be263f525c7719a"
+    },
+    {
+      "file": "bin/function-structure.d.ts",
+      "bytes": 398,
+      "sha256": "2aefae64f6faf94bf2805c12dceacdef2d5281e9701ac8327ec0b90139ba550e"
+    },
+    {
+      "file": "bin/fuzzy.d.ts",
+      "bytes": 174,
+      "sha256": "05e16571d64ca59668ebf09a73437d62954c85d649c57dc1e39c7a68b2779389"
+    },
+    {
+      "file": "bin/gate.d.ts",
+      "bytes": 566,
+      "sha256": "7b8cfa4e4383a41a538c7381835df073f1f962d60145c120b94fc7f0c0d68837"
+    },
+    {
+      "file": "bin/identity.d.ts",
+      "bytes": 2459,
+      "sha256": "c4e56f75eea6066b70234443bf700ff7c7dc7d01f6c3a0fb3eadc1667b06bd8f"
+    },
+    {
+      "file": "fixtures/innocent/index.ts",
+      "bytes": 563,
+      "sha256": "42d2f1d8256204b4418ec3cb2a3b4711f903dc7d80bf2a21f4966d624102c563"
+    },
+    {
+      "file": "bin/keys.d.ts",
+      "bytes": 140,
+      "sha256": "4f10f70efd0ad46081b2884336f38250351ae3bab42158fe8651cf1d4d782859"
+    },
+    {
+      "file": "bin/mask.d.ts",
+      "bytes": 61,
+      "sha256": "1282c43ae83a2298d2c18520e9b9eb7613b92ff786bb54715e21c1a47ea3ddd2"
+    },
+    {
+      "file": "fixtures/innocent/namespaced-api.ts",
+      "bytes": 395,
+      "sha256": "73fb1786256c3b7f03238df572f054041ed4a4026a3a8ab3584e7959b944bddb"
+    },
+    {
+      "file": "fixtures/innocent/normalize-dash.ts",
+      "bytes": 138,
+      "sha256": "3b2ce9c04c183ba9c65e6ef1331460a0c14f2738eb2b39f9546f8e3a95ffece9"
+    },
+    {
+      "file": "fixtures/innocent/normalize-underscore.ts",
+      "bytes": 138,
+      "sha256": "778fcb3a162cd0006c840d7bf9f9a464afad3227a1f46296f39ec20c95ba399a"
+    },
+    {
+      "file": "fixtures/sensitivity/discard-with-unrelated-combiner/convex/notes.ts",
+      "bytes": 318,
+      "sha256": "15087031a0ef5b33b5c33f26159ea474abb71dd746f500433c7e6f18caa2a238"
+    },
+    {
+      "file": "bin/palette.d.ts",
+      "bytes": 700,
+      "sha256": "4eb4bfd3f5c40a3ac2573d42b3b5fc44016f9e47d4fd17deda2ea55991d87b92"
+    },
+    {
+      "file": "bin/picker.d.ts",
+      "bytes": 803,
+      "sha256": "1f6350b85b36c113f982e9edad9b9715bd45c790fbc02ec0b71cb1a8f8b4f06e"
+    },
+    {
+      "file": "bin/project-consumers.d.ts",
+      "bytes": 839,
+      "sha256": "cc4a64ca383a714443b288e3aa666d04fc49a67ff556c8693509dc13326c4015"
+    },
+    {
+      "file": "fixtures/innocent/promise-batching.ts",
+      "bytes": 619,
+      "sha256": "c1fa347a75666e07c9a02dc75e300545a93a6cfc9e04cfcb5578d9081cb898da"
+    },
+    {
+      "file": "bin/prompts.d.ts",
+      "bytes": 402,
+      "sha256": "3e7cc4749359742b048881fdb599d9d1bce0bb3cfbbd03c9bf7a55ee70a29815"
+    },
+    {
+      "file": "fixtures/sensitivity/dead-prompt-builders/prompts.ts",
+      "bytes": 816,
+      "sha256": "820126904222bbaa8848aa34b918246c4e5ef794e4c8dde5a10a755d36d04446"
+    },
+    {
+      "file": "fixtures/innocent/qa-guard.ts",
+      "bytes": 246,
+      "sha256": "77c541768ece33ab1280feaa36bffa2f287837347af0f9924541990dd7bc4f42"
+    },
+    {
+      "file": "fixtures/sensitivity/ratelimiter-unbounded-collect/rateLimiter.ts",
+      "bytes": 607,
+      "sha256": "a9c528ee76c00b6ca017afbdd1ed1fc9e60b337934eaa66c1f2fcb15e6f43d72"
+    },
+    {
+      "file": "bin/report.d.ts",
+      "bytes": 1894,
+      "sha256": "e215d7ba057ec85d9671cdda1385fe065b26786584dfaaf120df65c651af40a4"
+    },
+    {
+      "file": "fixtures/innocent/rest-exclusion.ts",
+      "bytes": 171,
+      "sha256": "b7dd57f419f63265725bf102f22e322772ddbefe8595e35ccb1e49b940baffd0"
+    },
+    {
+      "file": "bin/review.d.ts",
+      "bytes": 1752,
+      "sha256": "cf7e6e28cc33bc212b55d7cd2197e0690af245617df12c762df56ee5a897b1a0"
+    },
+    {
+      "file": "bin/runner.d.ts",
+      "bytes": 3244,
+      "sha256": "8aa79926a9fdf2e6400949e560f92d6b3baa530a699275fe21482660ccbb2bc2"
+    },
+    {
+      "file": "bin/scan-capture.d.ts",
+      "bytes": 1001,
+      "sha256": "4836a34bfa2fcbbf07ea7f28a90646dcc2c8283dcdc5463376408e0ac21701d8"
+    },
+    {
+      "file": "bin/score.d.ts",
+      "bytes": 1142,
+      "sha256": "15baa41dc83b59778afe0e8ce528c051b682bd729c4d3c97a8fcf92107fce5a2"
+    },
+    {
+      "file": "bin/sdk.d.ts",
+      "bytes": 572,
+      "sha256": "ac34356fece0b631fd1d3353e7a1adf1b78ea14e59995e30a9aafbc32f31359d"
+    },
+    {
+      "file": "bin/search-host.d.ts",
+      "bytes": 222,
+      "sha256": "87ce7d6b9f4273f2b46e2f89de56d53c8f30f67477af4150a74063e0c6bc24ee"
+    },
+    {
+      "file": "bin/select.d.ts",
+      "bytes": 854,
+      "sha256": "8312d44d6d78557e97c2435239661e50b06e65aed8cc3d4d523325d633aa58ab"
+    },
+    {
+      "file": "bin/spinner.d.ts",
+      "bytes": 617,
+      "sha256": "a10ea20bda52368b4b260a274379898195e40480b7f0798b6cd97642fc64bbd8"
+    },
+    {
+      "file": "bin/summary.d.ts",
+      "bytes": 874,
+      "sha256": "032c00bcf5ff6528c89db435df7d5c84dfbde02bfa3e0a0dec8abfa4198527f6"
+    },
+    {
+      "file": "fixtures/sample-app/src/utils/sync.ts",
+      "bytes": 389,
+      "sha256": "207c9d74265c2a04cba6f0853cdd674d91839795a926025199ef3a07be97f7f9"
+    },
+    {
+      "file": "bin/tty.d.ts",
+      "bytes": 1296,
+      "sha256": "7011b880730e05e290ddf30d9bc6bb30e85a09ea34a04f73fb3fe51a61c54e87"
+    },
+    {
+      "file": "fixtures/innocent/type-semicolons.ts",
+      "bytes": 165,
+      "sha256": "ebab1ac63e5f2ae873395b198ebf92b3a8006fbc47d7c231c1ab4947a4245ff4"
+    },
+    {
+      "file": "fixtures/sample-app/src/hooks/useChat.ts",
+      "bytes": 351,
+      "sha256": "c4a68da0da3a91b18349d58edb0a51aebf1a89ae7f16254dbdba2f28a99c1fa7"
+    },
+    {
+      "file": "fixtures/sample-app/src/schemas/user.ts",
+      "bytes": 139,
+      "sha256": "2267a07dac9495d52f9865af2d3b32d52d96d27b56681e06c834b867aaf45052"
+    },
+    {
+      "file": "fixtures/sample-app/src/services/user.ts",
+      "bytes": 252,
+      "sha256": "41c21baf43c0f9b16bbdfec7218e55e9e192b4d26cb5e5fc8655b259b3137d98"
+    },
+    {
+      "file": "bin/value-flow.d.ts",
+      "bytes": 2065,
+      "sha256": "cb933cb16b99f74ed141b578553ad7d08a044949b6f04be212a47c8ccb6307c6"
+    },
+    {
+      "file": "fixtures/innocent/widget.ts",
+      "bytes": 50,
+      "sha256": "5e56b0847eeede06449cfe13186b129591ee3946e02e9830681b8ff34e9cd0a6"
+    },
+    {
+      "file": "fixtures/innocent/jsx-use.tsx",
+      "bytes": 387,
+      "sha256": "a14b3ec227f9c224c7e3ae6a0b1d79e351923196d76b84801f21fb5f2bb32724"
+    },
+    {
+      "file": "fixtures/innocent/parts.tsx",
+      "bytes": 105,
+      "sha256": "14166e8b1b30b53139ce6df3556fd4756266ce38f3ef00583893ff4a1e7ece4a"
+    }
+  ]
+}

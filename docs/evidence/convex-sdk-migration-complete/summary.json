@@ -1,0 +1,557 @@
+{
+  "branch": "feature/convex-doctor-sdk-migration",
+  "base": "0d69f9f0986e151ecd841872df0d705afbad9128",
+  "productionCandidate": "5c1350de69c741fdbd6a4517c783436273338399",
+  "releaseVerdict": "acceptable with named limitations",
+  "migrationComplete": true,
+  "publication": "not pushed or published",
+  "checkpoints": [
+    {
+      "commit": "3cc2d049151d6b603e1324492debb8139d580559",
+      "slice": "shared SDK",
+      "focusedPassed": 21,
+      "focusedFailed": 0,
+      "convexPassed": 106,
+      "convexFailed": 0,
+      "existingPassed": 83,
+      "existingFailed": 0,
+      "guardrailsPassed": 63,
+      "guardrailsFailed": 0
+    },
+    {
+      "commit": "77aebb05929a99ff45bc12d22587aba53b5485c4",
+      "slice": "A",
+      "focusedPassed": 32,
+      "focusedFailed": 0,
+      "convexPassed": 106,
+      "convexFailed": 0,
+      "existingPassed": 83,
+      "existingFailed": 0,
+      "guardrailsPassed": 63,
+      "guardrailsFailed": 0
+    },
+    {
+      "commit": "8ed86698b10cec1d7d1d25fb111b387ea195a44a",
+      "slice": "B",
+      "focusedPassed": 26,
+      "focusedFailed": 0,
+      "convexPassed": 106,
+      "convexFailed": 0,
+      "existingPassed": 83,
+      "existingFailed": 0,
+      "guardrailsPassed": 63,
+      "guardrailsFailed": 0
+    },
+    {
+      "commit": "543ccb9f4f1b23671755e840adcaf40f419c02b1",
+      "slice": "C",
+      "focusedPassed": 29,
+      "focusedFailed": 0,
+      "convexPassed": 106,
+      "convexFailed": 0,
+      "existingPassed": 83,
+      "existingFailed": 0,
+      "guardrailsPassed": 63,
+      "guardrailsFailed": 0
+    },
+    {
+      "commit": "ea3019df82417d1213426a5eb84a62907a42b830",
+      "slice": "D",
+      "focusedPassed": 31,
+      "focusedFailed": 0,
+      "convexPassed": 106,
+      "convexFailed": 0,
+      "existingPassed": 83,
+      "existingFailed": 0,
+      "guardrailsPassed": 63,
+      "guardrailsFailed": 0
+    },
+    {
+      "commit": "c023c64e782dea53d10da70199bd10bc227b6cde",
+      "slice": "review identity and typed-union repair",
+      "focusedPassed": 151,
+      "focusedFailed": 0,
+      "convexPassed": 106,
+      "convexFailed": 0,
+      "existingPassed": 83,
+      "existingFailed": 0,
+      "guardrailsPassed": 63,
+      "guardrailsFailed": 0
+    },
+    {
+      "commit": "5c1350de69c741fdbd6a4517c783436273338399",
+      "slice": "convergence repair",
+      "focusedPassed": 151,
+      "focusedFailed": 0,
+      "convexPassed": 106,
+      "convexFailed": 0,
+      "existingPassed": 83,
+      "existingFailed": 0,
+      "guardrailsPassed": 63,
+      "guardrailsFailed": 0
+    }
+  ],
+  "sharedCheckpointAutomated": {
+    "passed": 806,
+    "failed": 0,
+    "skipped": 0
+  },
+  "automated": {
+    "passed": 810,
+    "failed": 0,
+    "skipped": 0
+  },
+  "verifyAll": {
+    "passed": 267,
+    "failed": 0,
+    "skipped": 15
+  },
+  "localConvex": {
+    "passed": 106,
+    "failed": 0,
+    "skipped": 0
+  },
+  "packedConvex": {
+    "passed": 106,
+    "failed": 0,
+    "skipped": 0
+  },
+  "localExisting": {
+    "passed": 83,
+    "failed": 0,
+    "skipped": 0
+  },
+  "packedExisting": {
+    "passed": 83,
+    "failed": 0,
+    "skipped": 0
+  },
+  "localGuardrails": {
+    "passed": 63,
+    "failed": 0,
+    "skipped": 0
+  },
+  "packedGuardrails": {
+    "passed": 63,
+    "failed": 0,
+    "skipped": 0
+  },
+  "localSliceControls": {
+    "passed": 151,
+    "failed": 0,
+    "skipped": 0
+  },
+  "packedSliceControls": {
+    "passed": 151,
+    "failed": 0,
+    "skipped": 0
+  },
+  "finalSlices": {
+    "A": {
+      "passed": 61,
+      "failed": 0,
+      "skipped": 0
+    },
+    "B": {
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    "C": {
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0
+    },
+    "D": {
+      "passed": 34,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "localSharedContract": {
+    "passed": 21,
+    "failed": 0,
+    "skipped": 0
+  },
+  "packedSharedContract": {
+    "passed": 21,
+    "failed": 0,
+    "skipped": 0
+  },
+  "packedMigrationContract": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "recipeCompatibility": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "meaning": "both existing recipes correctly return unsupported; local and packed"
+  },
+  "unavailableMetadata": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "providerOmitted": {
+    "fixtures": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 101
+    },
+    "analysisAvailable": false,
+    "score": {
+      "score": null,
+      "grade": null,
+      "filesClean": 63,
+      "filesTotal": 63,
+      "emptyScan": false,
+      "narrowedScan": true
+    },
+    "findings": 0,
+    "incomplete": true,
+    "narrowedChecks": 15,
+    "human": "No findings established \u2014 semantic coverage narrowed; no Excellent grade"
+  },
+  "mutationControls": {
+    "passed": 2,
+    "failed": 0,
+    "rows": [
+      {
+        "mutation": "erase-narrowing",
+        "command": [
+          "node",
+          "dev/convex-sdk-migration/run-guardrails.mjs",
+          "/private/tmp/convex-sdk-continuation/candidate-3/consumer/node_modules/any-doctor-mutant-erase-narrowing",
+          "/private/tmp/convex-sdk-continuation/candidate-3/mutant-erase-narrowing"
+        ],
+        "exit": 1,
+        "passed": 45,
+        "failed": 18,
+        "skipped": 0,
+        "detected": true
+      },
+      {
+        "mutation": "erase-findings",
+        "command": [
+          "node",
+          "dev/convex-sdk-migration/run-guardrails.mjs",
+          "/private/tmp/convex-sdk-continuation/candidate-3/consumer/node_modules/any-doctor-mutant-erase-findings",
+          "/private/tmp/convex-sdk-continuation/candidate-3/mutant-erase-findings"
+        ],
+        "exit": 1,
+        "passed": 15,
+        "failed": 48,
+        "skipped": 0,
+        "detected": true
+      }
+    ]
+  },
+  "frozen": {
+    "eligibleFiles": 671,
+    "baselineFindings": 124,
+    "finalFindings": 124,
+    "findingDeltas": [],
+    "findingsByCheck": {
+      "public-api-in-server-call": 40,
+      "query-clock-reactivity": 21,
+      "sequential-run-in-loop": 18,
+      "spread-into-patch": 18,
+      "index-filter-combo": 8,
+      "unbounded-collect": 15,
+      "filter-table-scan": 1,
+      "index-without-range": 3
+    },
+    "sourceAdjudications": {
+      "confirmed defect": 0,
+      "actionable candidate": 0,
+      "informational review candidate": 124,
+      "false positive": 0,
+      "unknown because required evidence is unavailable": 0
+    },
+    "semantic": {
+      "protocolVersion": 1,
+      "provider": {
+        "id": "any-doctor/syntax-flow",
+        "version": "1",
+        "available": true,
+        "dependencies": [
+          {
+            "id": "oxc-parser",
+            "version": "0.149.0"
+          },
+          {
+            "id": "@typescript-eslint/scope-manager",
+            "version": "8.70.0"
+          }
+        ]
+      },
+      "capabilities": [
+        {
+          "name": "calls",
+          "available": true
+        }
+      ],
+      "recipes": [],
+      "narrowed": [
+        {
+          "check": "spread-into-patch",
+          "capability": "calls",
+          "reason": "unsupported-expression",
+          "occurrences": 24,
+          "files": [
+            {
+              "file": "convex/analysis/internal.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/devMembershipTools.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/evals/overrides.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/hiring/closureFeedback.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/hiringWork.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/jobs.ts",
+              "occurrences": 4
+            },
+            {
+              "file": "convex/lib/applicationResumeIdentityCoverage.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/lib/applicationWorkspaceIndexBackfill.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/lib/candidateIdentityAttach.ts",
+              "occurrences": 3
+            },
+            {
+              "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+              "occurrences": 2
+            },
+            {
+              "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/onboarding.ts",
+              "occurrences": 2
+            },
+            {
+              "file": "convex/orgs.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/priorFeedbackNotices.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/recruitingAttempts.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/userProfiles.ts",
+              "occurrences": 1
+            }
+          ]
+        },
+        {
+          "check": "presence-patch-on-shared-document",
+          "capability": "calls",
+          "reason": "unsupported-expression",
+          "occurrences": 24,
+          "files": [
+            {
+              "file": "convex/analysis/internal.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/devMembershipTools.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/evals/overrides.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/hiring/closureFeedback.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/hiringWork.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/jobs.ts",
+              "occurrences": 4
+            },
+            {
+              "file": "convex/lib/applicationResumeIdentityCoverage.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/lib/applicationWorkspaceIndexBackfill.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/lib/candidateIdentityAttach.ts",
+              "occurrences": 3
+            },
+            {
+              "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+              "occurrences": 2
+            },
+            {
+              "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/onboarding.ts",
+              "occurrences": 2
+            },
+            {
+              "file": "convex/orgs.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/priorFeedbackNotices.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/recruitingAttempts.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/userProfiles.ts",
+              "occurrences": 1
+            }
+          ]
+        },
+        {
+          "check": "missing-args-validator",
+          "capability": "calls",
+          "reason": "unsupported-expression",
+          "occurrences": 15,
+          "files": [
+            {
+              "file": "convex/devChatResultsWorkspaceQa.ts",
+              "occurrences": 1
+            },
+            {
+              "file": "convex/devHiringHomeQa.ts",
+              "occurrences": 8
+            },
+            {
+              "file": "convex/hiringApplication.ts",
+              "occurrences": 3
+            },
+            {
+              "file": "convex/hiringLifecycle.ts",
+              "occurrences": 3
+            }
+          ]
+        }
+      ],
+      "incomplete": true,
+      "execution": {
+        "semanticQueries": 0,
+        "modelRequests": 671,
+        "modelCacheHits": 0
+      }
+    },
+    "score": {
+      "score": null,
+      "grade": null,
+      "filesClean": 618,
+      "filesTotal": 671,
+      "emptyScan": false,
+      "narrowedScan": true
+    },
+    "manifestEntries": 1530,
+    "allFourManifestsMatched": 1530,
+    "localPackedGroupsEqual": true,
+    "localScanMs": 6172,
+    "packedScanMs": 6130
+  },
+  "artifact": {
+    "commit": "5c1350de69c741fdbd6a4517c783436273338399",
+    "path": "/private/tmp/convex-sdk-continuation/candidate-3/package/any-doctor-0.1.2.tgz",
+    "sha256": "4552632c4dcfe99c7e7a9945dd79b4ae0dad96d867350aa3059177f914fd723f",
+    "bytes": 281040,
+    "files": 144,
+    "installedCLI": "/private/tmp/convex-sdk-continuation/candidate-3/consumer/node_modules/any-doctor/bin/cli.js",
+    "installedDoctor": "/private/tmp/convex-sdk-continuation/candidate-3/consumer/node_modules/any-doctor/doctors/convex.mjs"
+  },
+  "review": {
+    "standardsRemaining": 0,
+    "specRemaining": 0,
+    "convergenceIndependent20Assignments": "passed in464ms at128MB"
+  },
+  "inheritedFailures": [],
+  "inheritedSkips": "15 location-coverage cases in Effect/OpenRouter lack declared reporting units; retained unchanged",
+  "remainingLimits": [
+    "All checks require shared calls and structural value facts; without analysis they abstain. Parse or adapter failures remain loud.",
+    "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
+    "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
+    "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
+    "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+    "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+    "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
+    "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
+    "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
+    "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
+    "Diagnostic files are .ts/.tsx/.js/.jsx/.mjs under normal authored/test/generated scope; .mts/.cts/.cjs exports remain outside diagnostics. Fixture-named target files are skipped."
+  ],
+  "retainedOracles": [
+    {
+      "file": "dev/convex-sdk-migration/guardrail-cases.mjs",
+      "sha256": "2f01347ce221362e4f421493958acd26e865ca05ed42fcfaea5aa057afb826de",
+      "unchanged": true
+    },
+    {
+      "file": "dev/convex-sdk-migration/run-guardrails.mjs",
+      "sha256": "97e769745660989b9d74253ce29704b9786e7cb64b7eed639873eb26eefaf81b",
+      "unchanged": true
+    },
+    {
+      "file": "dev/convex-sdk-migration/assess-case.mjs",
+      "sha256": "3fbe5ec346748b3cd07b446d508643e28dfe8f886e2a26832caa2056281d5ea8",
+      "unchanged": true
+    },
+    {
+      "file": "dev/convex-sdk-migration/repro-unavailable.mjs",
+      "sha256": "245b39e23c965a2a6ac6675fcda0e65f5c96e9c84e1faa3b49eb145a5df23d6f",
+      "unchanged": true
+    },
+    {
+      "file": "dev/convex-sdk-migration/probe-recipes.mjs",
+      "sha256": "e0b2b3a3ee8c382e734a89a55a3c932d711656a8eb7e029b003c225680bf65d0",
+      "unchanged": true
+    },
+    {
+      "file": "dev/convex-analysis/cases.mjs",
+      "sha256": "2610cf882876ee78054f55cf4e1deba62aaa8d9b6dbc6b1c7aa6781307601f3a",
+      "unchanged": true
+    }
+  ]
+}
