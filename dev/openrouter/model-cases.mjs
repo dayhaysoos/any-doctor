@@ -2,6 +2,8 @@ const u='https://openrouter.ai/api/v1/chat/completions';
 const raw=body=>`fetch('${u}',{signal:null,body:JSON.stringify(${body})})`;
 const setup=`import {OpenRouter as Client} from '@openrouter/sdk'; const client=new Client();`;
 export const cases=[
+ ['conditional-factory',`import {createOpenRouter} from '@openrouter/ai-sdk-provider';const p=flag?createOpenRouter():external;p('openai/gpt-4.1')`,0,1],
+ ['reassigned-factory',`import {createOpenRouter} from '@openrouter/ai-sdk-provider';let p=createOpenRouter();p=external;p('openai/gpt-4.1')`,0,1],
  ['request',raw("{model:'openai/gpt-4.1'}"),1,0],
  ['multiline',`${setup}\nclient.chat.send(\n{model:\n'openai/gpt-4.1'}\n)`,1,0],
  ['model-alias',`${setup}const pin='openai/gpt-4.1';const config={model:pin};client.chat.send(config)`,1,0],

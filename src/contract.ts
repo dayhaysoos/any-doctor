@@ -311,7 +311,7 @@ export interface CallStructure {
   values: ValueFact[];
   bindings: ValueBinding[];
   functions: { start: number; returns: number[]; unknownReturn: boolean }[];
-  loops: (SourceRange & { functionStart: number | null })[];
+  loops: (SourceRange & { functionStart: number | null; tailExit?: 'return' | 'throw' | 'continue' | 'break' })[];
   directives: string[];
 }
 export interface AnalysisCalls {

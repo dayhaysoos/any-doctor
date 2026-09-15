@@ -1,0 +1,27 @@
+const request=`const response=await fetch('https://openrouter.ai/api/v1/chat/completions',{signal:null});`;
+const loop=extra=>`async function ask(){for(let n=0;n<3;n++){${request}${extra}}}`;
+export const cases=[
+ ['retry-statuses',loop('if(response.status===429||response.status===503)continue;return response;'),1,0],
+ ['always-return',loop('if(response.ok)return response;return response;'),0,0],
+ ['always-throw',loop('if(response.ok)return response;throw new Error();'),0,0],
+ ['direct',loop('if(response.ok)return response;'),1,0],
+ ['failure-continue',loop('if(response.status===429)continue;return response;'),1,0],
+ ['header',loop(`const wait=response.headers.get('Retry-After');if(response.ok)return response;await delay(wait);`),0,0],
+ ['header-alias',loop(`const r=response;const h=r.headers;const wait=h['get']('retry-after');if(response.ok)return response;await delay(wait);`),0,0],
+ ['wrong-response',loop(`const other=await fetch('https://example.org');other.headers.get('Retry-After');if(response.ok)return response;`),1,0],
+ ['success-only-header',loop(`if(response.status===429)continue;response.headers.get('Retry-After');return response;`),1,0],
+ ['conditional-header',loop(`if(flag)response.headers.get('Retry-After');if(response.ok)return response;`),0,1],
+ ['multiline',loop('if(\nresponse\n.ok)\nreturn response;'),1,0],
+ ['url-alias',loop('if(response.ok)return response;').replace("'https://openrouter.ai/api/v1/chat/completions'",'url').replace('async function','const url="https://openrouter.ai/api/v1/chat/completions";async function'),1,0],
+ ['batch-loop',loop('consume(response);'),0,0],
+ ['unrelated-catch',`try{${request}}catch(e){console.log('retry',e)}`,0,0],
+ ['shadow',`async function ask(fetch){for(let n=0;n<3;n++){${request}if(response.ok)return response;}}`,0,0],
+ ['other-provider',loop('if(response.ok)return response;').replace('openrouter.ai','example.org'),0,0],
+ ['opaque-wrapper',`retry(async()=>{${request}return response;});`,0,1],
+ ['unknown-neighbor',`retry(async()=>{${request}return response;});${loop('if(response.ok)return response;')}`,1,1],
+ ['two',loop(`if(response.ok)return response;`)+loop(`if(response.ok)return response;`).replace('function ask','function second'),2,0],
+ ['sdk-managed',`import {OpenRouter} from '@openrouter/sdk';const c=new OpenRouter();for(let n=0;n<3;n++){const response=await c.chat.send({});if(response.ok)break;}`,0,0],
+ ['unknown-endpoint',loop('if(response.ok)return response;').replace("'https://openrouter.ai/api/v1/chat/completions'",'endpoint'),0,1],
+ ['reassigned-response',loop('let r=response;r=other;if(r.ok)return r;'),0,1],
+ ['computed',loop(`if(response['ok'])return response;`),1,0],
+].map(([name,source,count,unknown])=>({name,source,count,unknown}));

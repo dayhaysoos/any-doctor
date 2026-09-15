@@ -1,4 +1,4 @@
-import { valueFlow } from './value-flow.js';
+import { valueFlow, terminalExit } from './value-flow.js';
 import type { Node } from './analysis.js';
 import type { CallStructure, CallTarget, SourceRange, ValueFact, ValueBinding } from './contract.js';
 
@@ -130,7 +130,7 @@ export function callStructure(
       flows.push({ start: id(n), returns: r.returns, unknownReturn: r.unknownReturn || r.fallsThrough });
     }
     if (['ForStatement','ForOfStatement','ForInStatement','WhileStatement','DoWhileStatement'].includes(n.type))
-      loops.push({ ...range(n.body as Node), functionStart: functionStart(n) });
+      loops.push({ ...range(n.body as Node), functionStart: functionStart(n), ...(terminalExit(n.body as Node)?{tailExit:terminalExit(n.body as Node)}:{}) });
   }
   for (const n of nodes) {
     if (n.type !== 'AssignmentExpression' && n.type !== 'UpdateExpression') continue;

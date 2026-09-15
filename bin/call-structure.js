@@ -1,4 +1,4 @@
-import { valueFlow } from './value-flow.js';
+import { valueFlow, terminalExit } from './value-flow.js';
 /** Generic value relationships, never framework policy or executable target code. */
 export function callStructure(nodes, parents, target, range, unwrap, functionStart) {
     var _a, _b, _c, _d, _e, _f;
@@ -169,7 +169,7 @@ export function callStructure(nodes, parents, target, range, unwrap, functionSta
             flows.push({ start: id(n), returns: r.returns, unknownReturn: r.unknownReturn || r.fallsThrough });
         }
         if (['ForStatement', 'ForOfStatement', 'ForInStatement', 'WhileStatement', 'DoWhileStatement'].includes(n.type))
-            loops.push({ ...range(n.body), functionStart: functionStart(n) });
+            loops.push({ ...range(n.body), functionStart: functionStart(n), ...(terminalExit(n.body) ? { tailExit: terminalExit(n.body) } : {}) });
     }
     for (const n of nodes) {
         if (n.type !== 'AssignmentExpression' && n.type !== 'UpdateExpression')

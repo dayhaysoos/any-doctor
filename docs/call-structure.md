@@ -70,3 +70,9 @@ Binding paths include fixed array-destructuring slots (including holes) and nest
 object keys. Array rest and runtime expansion are not assigned a fixed slot path.
 For-of facts additionally retain fixed destructured element bindings and their
 paths. These relate lexical variables to an element, not to the iterable container.
+
+`flow.branches` associates an if test with its true/false branch ranges and direct
+terminal transfers. General loop ranges expose a direct `tailExit`. These facts
+do not prove arbitrary loop counts or exception handling; continue/break remain
+distinct from returning or throwing. Expressions after unconditional loop transfers
+in the same block are marked dead.

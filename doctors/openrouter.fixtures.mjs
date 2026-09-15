@@ -108,7 +108,7 @@ export const fixtures = [
         "}",
       ].join("\n"),
     },
-    expected: [{ rule: "retry-after-ignored", file: "src/retry-bad.ts", line: 6 }],
+    expected: [], // Revision 1 expected catch line 6; no response-dependent HTTP retry is established.
   },
   {
     name: "retry: Retry-After read before waiting",
@@ -202,3 +202,20 @@ fixtures.push({name:'midstream: two same-stream content consumers',seed:{'src/er
  '  out+=chunk.choices[0].delta.content;',
  '}',
 ].join('\n')},expected:[{rule:'midstream-error-ignored',file:'src/errors.ts',line:5,column:7},{rule:'midstream-error-ignored',file:'src/errors.ts',line:6,column:7}]});
+
+fixtures.push({name:'retry: two response-dependent retry requests',seed:{'src/repeats.ts':[
+ 'async function first(){for(let i=0;i<3;i++){',
+ '  const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{signal:null});',
+ '  if(res.ok)return res;',
+ '}}',
+ 'async function second(){for(let i=0;i<3;i++){',
+ '  const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{signal:null});',
+ '  if(res.ok)return res;',
+ '}}',
+].join('\n')},expected:[
+ {rule:'retry-after-ignored',file:'src/repeats.ts',line:2,column:18},
+ {rule:'retry-after-ignored',file:'src/repeats.ts',line:6,column:18},
+ {rule:'missing-abort-signal',file:'src/repeats.ts',line:2,column:18},
+ {rule:'missing-abort-signal',file:'src/repeats.ts',line:6,column:18},
+]});
+fixtures.push({name:'all checks abstain with provider omitted',analysis:'off',seed:{'src/off.ts':'fetch("https://openrouter.ai/api/v1/chat/completions");'},expected:[]});

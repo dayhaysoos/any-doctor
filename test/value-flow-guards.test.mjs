@@ -28,3 +28,10 @@ test('for-of projection retains nested destructured element bindings',()=>{
  assert.equal(flow.loops[0].binding,null);assert.deepEqual(flow.loops[0].bindings.map(b=>b.path),[['choices','0','delta']]);
  assert.equal(flow.values.find(v=>v.member==='content').target.binding,flow.loops[0].bindings[0].binding);
 });
+test('branch exits and loop tails distinguish stopping from a retry backedge',()=>{
+ const result=analyzeCalls('entry.ts','function ask(){for(;;){if(response.ok)return response;throw new Error()}}');assert.equal(result.ok,true);
+ assert.equal(result.file.structure.loops[0].tailExit,'throw');
+ assert.equal(result.file.structure.flow.branches[0].whenTrue.exit,'return');
+ const dead=analyzeCalls('entry.ts','for(;;){continue;response.headers.get("Retry-After")}');assert.equal(dead.ok,true);
+ assert.equal(dead.file.structure.flow.values.find(v=>v.kind==='call').dead,true);
+});

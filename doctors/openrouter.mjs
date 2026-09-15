@@ -1,14 +1,16 @@
 export const meta = {
   id: "openrouter",
-  description: "OpenRouter discipline: stream errors surfaced, keep-alives skipped, cancellations that stop billing.",
+  description: "Review OpenRouter request lifetimes, model pins, stream parsing and retry policy.",
   severity: "warning",
   category: "openrouter",
   blindSpots: [
-    "OpenRouter context is detected by the file mentioning it anywhere (URL, import, baseURL); files that route through an unmarked wrapper are not covered.",
-    "Stream-error and keep-alive checks reason per file: an error check that lives in a different file from the consumption loop is not seen, and midstream-error-ignored reports the first consumption loop per file (later loops in the same file are not separately counted).",
-    "Abort and retry checks pair the OpenRouter marker with the call on the same line: a multi-line fetch whose URL lands on the following line is not recognized; framework-level interceptors and SDK-managed backoff are not recognized.",
-    "Cost/token accounting (usage.cost) is deliberately not checked: file-level absence reasoning false-positives on apps whose wrapper logs usage elsewhere.",
-    "Fixture-named files (*.fixtures.mjs) in the target are skipped: they are doctor test data, not target source.",
+    'All checks require calls analysis; omitted providers abstain with explicit narrowing and null score/grade.',
+    'Local lexical aliases, fixed properties and bounded templates are supported. Mutation, opaque transfers and unresolved choices retain check-specific uncertainty.',
+    'SDK imports and explicit configuration establish declared provenance, not a proof of installed SDK behavior or runtime environment overrides.',
+    'Stream checks cover chat-completion shapes and supported raw reader transformations. Cross-module handlers and custom parsers are not executed.',
+    'Retry checks cover response-dependent loops; arbitrary callbacks are opaque. Header consultation does not prove backoff correctness.',
+    'Default diagnostic extension and generated/test exclusions remain; .mts, .cts and .cjs are outside default scope. Fixture-named files are skipped.',
+
   ],
   checks: [
     {
@@ -44,15 +46,14 @@ export const meta = {
       blindSpots: ['Unknown inputs, reassignment and opaque options abstain. SDK cancellation contracts are checked separately from native RequestInit.'],
     },
     {
-      id: "retry-after-ignored",
-      description: "A retry loop around an OpenRouter call never reads the Retry-After header",
-      severity: "warning",
-      revision: 1,
-      impact: "429 and 503 responses carry Retry-After, and raw fetch gets no SDK backoff — immediate retries thundering-herd into the same limit and can exhaust the daily caps on :free variants (20 RPM / 50–1000 RPD).",
-      why: "The official SDKs honor Retry-After automatically; hand-rolled catch-and-retry loops don't. The header is the only backoff signal a raw fetch client receives.",
-      fix: "Read the header and wait: `const wait = Number(res.headers.get(\"retry-after\") ?? 1); await sleep(wait * 1000);` before retrying.",
-      claim: "A retry loop around an OpenRouter call that never reads Retry-After.",
-      lookalikes: ["SDK-managed backoff"],
+      id: 'retry-after-ignored', revision: 2, reportingUnit: 'occurrence', needs: ['calls'], onUnknown: 'narrow', severity: 'info',
+      description: 'Review a raw OpenRouter retry path with no corresponding Retry-After consultation.',
+      claim: 'A native OpenRouter request in a response-dependent retry loop has no supported corresponding response-header read on the failure path.',
+      impact: 'A retry policy may ignore server-provided delay guidance and repeat requests too quickly.',
+      why: 'Retry-After can be present on retryable responses; an unrelated header read does not consult this response.',
+      fix: 'Review retry eligibility and backoff for this response, honoring a valid Retry-After when provided while preserving budgets and cancellation.',
+      lookalikes: ['SDK-managed retries','Batch loops','Unrelated catch blocks','Corresponding failure-path header reads'],
+      blindSpots: ['Opaque callbacks, unresolved response identity and conditional header consultation narrow; reading a header is not proof of correct waiting.'],
     },
     {
       id: 'hardcoded-dated-model-slug', revision: 2, reportingUnit: 'occurrence', needs: ['calls'], onUnknown: 'narrow', severity: 'info',
@@ -68,40 +69,10 @@ export const meta = {
 };
 
 export async function doctor(ctx) {
-  const files = await ctx.files.list([".ts", ".tsx", ".js", ".jsx", ".mjs"]);
-  for (const file of files) {
-    // Fixture sandboxes are doctor test data, not target source.
-    if (/\.fixtures\.mjs$/.test(file)) continue;
-    const raw = await ctx.files.read(file);
-    if (ctx.analysis.available) checkRequests(ctx, file);
-    if (!/openrouter/i.test(raw)) continue;
-    const rawLines = raw.split("\n");
-    const masked = ctx.files.readMasked(file);
-    const lines = masked.split("\n");
-
-
-
-
-    checkRetryAfter(ctx, file, rawLines, lines);
-
-  }
-}
-
-// Retry evidence around an openrouter call, with no Retry-After handling
-// anywhere in the file. The call test is masked (code shape) paired with
-// the raw line for openrouter context — strings alone must not count.
-function checkRetryAfter(ctx, file, rawLines, lines) {
-  const raw = rawLines.join("\n");
-  const callsOpenRouter = rawLines.some((l, i) => /openrouter/i.test(l) && /\bfetch\s*\(/.test(lines[i]));
-  if (!callsOpenRouter) return;
-  const retries = /\b(?:retry|retries|attempt|maxAttempts|backoff)\b/i.test(raw);
-  if (!retries) return;
-  if (/retry-after/i.test(raw)) return;
-  for (let i = 0; i < lines.length; i++) {
-    if (/\bcatch\b/.test(lines[i])) {
-      ctx.report.finding({ rule: "retry-after-ignored", file, line: i + 1 });
-      return;
-    }
+  if(!ctx.analysis.available)return;
+  for(const file of ctx.files.list()){
+    if(file.endsWith('.fixtures.mjs'))continue;
+    checkRequests(ctx,file);
   }
 }
 
@@ -179,23 +150,20 @@ function requestFacts(ctx, file) {
     const text=literal(v.id);if(text===UNKNOWN)return UNKNOWN;
     return typeof text==='string' && /^https:\/\/openrouter\.ai(?::443)?\/api\/v1(?:\/|$)/i.test(text);
   }
-  function native(call) {
-    const n=name(call.callee);if(FETCH_NAMES.includes(n))return true;
-    if(n===UNKNOWN){const v=values.get(call.callee), t=v?.target;
-      if(t?.root==='fetch'||t?.members?.at(-1)==='fetch')return UNKNOWN;
-      const init=bindings.get(t?.binding)?.initializer;
-      if(init!==undefined&&FETCH_NAMES.includes(name(init)))return UNKNOWN;
-    }
-    return false;
-  }
-  function clientOrigin(id,seen=new Set()) {
+  function originMatches(id,accept,seen=new Set()) {
     if(id===undefined||seen.has(id))return false;seen=new Set(seen).add(id);
     const v=values.get(id);if(!v)return false;
-    if(v.target?.source==='@openrouter/sdk'||v.target?.source==='openai')return true;
-    const init=bindings.get(v.target?.binding)?.initializer;
-    return (init!==undefined&&clientOrigin(init,seen)) ||
-      [v.receiver,v.callee,v.value,...(v.alternatives??[])].some(x=>clientOrigin(x,seen));
+    if(accept(v))return true;
+    const state=states.get(v.target?.binding),init=bindings.get(v.target?.binding)?.initializer;
+    return [init,...(state?.writes??[]).map(w=>byStart.get(w.value)?.id),v.receiver,v.callee,v.value,...(v.alternatives??[])].some(x=>originMatches(x,accept,seen));
   }
+  function native(call) {
+    const n=name(call.callee);if(FETCH_NAMES.includes(n))return true;
+    if(n===UNKNOWN&&originMatches(call.callee,v=>v.target?.binding===null&&FETCH_NAMES.includes([v.target.root,...v.target.members].join('.'))))return UNKNOWN;
+    return false;
+  }
+  const clientOrigin=id=>originMatches(id,v=>['@openrouter/sdk','openai'].includes(v.target?.source));
+  const modelOrigin=id=>originMatches(id,v=>v.target?.source==='@openrouter/ai-sdk-provider'&&['createOpenRouter','openrouter'].includes(v.target.importedName));
   function clientCall(call) {
     let v=resolve(call.callee), members=[];
     while(v?.kind==='member'){members.unshift(v.member);v=resolve(v.receiver);}
@@ -212,12 +180,13 @@ function requestFacts(ctx, file) {
     const ep=base===UNKNOWN||custom!==undefined?UNKNOWN:base===undefined?official:endpoint(base.id);
     return {endpoint:ep,official,config,body:call.arguments?.[0]};
   }
-  return {facts,flow,values,bindings,states,byStart,stable,resolve,property,propertyValue,literal,name,endpoint,native,clientCall};
+  return {facts,flow,values,bindings,states,byStart,stable,resolve,property,propertyValue,literal,name,endpoint,native,clientCall,modelOrigin};
 }
 function checkRequests(ctx,file) {
   const m=requestFacts(ctx,file);
   checkSse(ctx,file,m);
   checkStreamErrors(ctx,file,m);
+  checkRetries(ctx,file,m);
   for(const call of m.flow.values.filter(v=>v.kind==='call'&&!v.dead)) {
     checkModel(ctx,file,m,call);
     const native=m.native(call);
@@ -242,7 +211,8 @@ function checkModel(ctx,file,m,call) {
   const narrow=()=>ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});
   let model, candidate=false, endpoint=true;
   const fn=m.resolve(call.callee), factory=fn?.kind==='call'?m.name(fn.callee):undefined;
-  if(m.name(call.callee)==='@openrouter/ai-sdk-provider:openrouter'||factory==='@openrouter/ai-sdk-provider:createOpenRouter'){
+  if(fn===UNKNOWN&&m.modelOrigin(call.callee)){candidate=true;model=UNKNOWN;}
+  else if(m.name(call.callee)==='@openrouter/ai-sdk-provider:openrouter'||factory==='@openrouter/ai-sdk-provider:createOpenRouter'){
     candidate=true;model=m.resolve(call.arguments?.[0]);
     if(factory){const base=m.property(fn.arguments?.[0],'baseURL');if(base!==undefined)endpoint=base===UNKNOWN?UNKNOWN:m.endpoint(base.id);}
   } else {
@@ -394,5 +364,69 @@ function checkStreamErrors(ctx,file,m) {
         }
       }
     }
+  }
+}
+
+function checkRetries(ctx,file,m) {
+  const rule='retry-after-ignored',{provenance}=streamFacts(m),calls=m.flow.values.filter(v=>v.kind==='call'&&!v.dead);
+  const inside=(value,range)=>value.start>=range.start&&value.end<=range.end;
+  const narrow=()=>ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});
+  function failureTest(id,request,seen=new Set()){
+    if(seen.has(id))return undefined;seen=new Set(seen).add(id);
+    const v=m.resolve(id);if(!v||v===UNKNOWN)return undefined;
+    if(v.operation?.operator==='!'){const result=failureTest(v.operation.operands[0],request,seen);return typeof result==='boolean'?!result:result;}
+    if(v.operation&&['||','&&'].includes(v.operation.operator)){
+      const parts=v.operation.operands.map(x=>failureTest(x,request,seen));
+      if(parts.every(x=>typeof x==='boolean'&&x===parts[0]))return parts[0];
+      if(parts.some(x=>x!==undefined))return UNKNOWN;
+    }
+    if(v.kind==='member'&&v.member==='ok'&&provenance(v.receiver)?.origin===request.id)return m.resolve(v.receiver)===UNKNOWN?UNKNOWN:false;
+    if(v.operation&&['===','==','!==','!='].includes(v.operation.operator)){
+      const [left,right]=v.operation.operands,a=m.resolve(left),b=m.resolve(right);
+      const member=a?.member==='status'?a:b?.member==='status'?b:undefined;
+      const status=member===a?m.literal(right):m.literal(left);
+      if(member&&provenance(member.receiver)?.origin===request.id&&[429,503].includes(status))return m.resolve(member.receiver)===UNKNOWN?UNKNOWN:['===','=='].includes(v.operation.operator);
+    }
+    return undefined;
+  }
+  function containsFunction(id,start,seen=new Set()){
+    if(id===undefined||seen.has(id))return false;seen=new Set(seen).add(id);
+    const v=m.resolve(id);if(!v||v===UNKNOWN)return false;
+    if(v.kind==='function')return v.start===start;
+    return [...(v.properties??[]),...(v.elements??[])].some(p=>containsFunction(p.value,start,seen));
+  }
+  for(const request of calls){
+    const native=m.native(request);if(!native)continue;
+    const endpoint=m.endpoint(request.arguments?.[0]);if(endpoint===false)continue;
+    const loops=m.facts.structure.loops.filter(l=>l.functionStart===request.functionStart&&inside(request,l));
+    let retry,uncertain=false;
+    for(const loop of loops){
+      for(const branch of m.flow.branches??[]){
+        if(branch.functionStart!==request.functionStart||branch.whenTrue.start<request.end||!inside(branch.whenTrue,loop))continue;
+        const failure=failureTest(branch.test,request);if(failure===undefined)continue;
+        if(failure===UNKNOWN){uncertain=true;continue;}
+        const failed=failure?branch.whenTrue:branch.whenFalse,success=failure?branch.whenFalse:branch.whenTrue;
+        if(failed?.exit==='continue'||['return','break'].includes(success?.exit)&&!['return','throw','break'].includes(loop.tailExit))retry={loop,branch,failure};
+        else if(failed?.exit==='throw')uncertain=true;
+      }
+    }
+    if(!retry){
+      const callback=request.functionStart!==null&&calls.some(c=>(c.arguments??[]).some(id=>containsFunction(id,request.functionStart)));
+      if(uncertain||callback)narrow();
+      continue;
+    }
+    if(native===UNKNOWN||endpoint===UNKNOWN){narrow();continue;}
+    let reads=false,unknown=false;
+    for(const call of calls){
+      if(call.functionStart!==request.functionStart||!inside(call,retry.loop)||call.start<request.end||call.member!=='get'||typeof m.literal(call.arguments?.[0])!=='string'||m.literal(call.arguments[0]).toLowerCase()!=='retry-after')continue;
+      const headers=m.resolve(call.receiver),response=headers?.kind==='member'&&headers.member==='headers'?m.resolve(headers.receiver):undefined;
+      if(response===UNKNOWN||headers===UNKNOWN){unknown=true;continue;}
+      if(response?.id!==request.id)continue;
+      const guards=call.guards??[];
+      if(guards.some(g=>g.test===retry.branch.test&&g.truthy!==retry.failure))continue;
+      if(guards.some(g=>g.test!==retry.branch.test)){unknown=true;continue;}
+      reads=true;
+    }
+    if(!reads){if(unknown)narrow();else ctx.report.finding({rule,file,line:request.line,column:request.column});}
   }
 }

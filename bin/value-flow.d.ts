@@ -51,6 +51,16 @@ export interface FlowValue extends SourceRange {
     async?: boolean;
 }
 export interface ValueFlow {
+    branches: {
+        test: number;
+        functionStart: number | null;
+        whenTrue: SourceRange & {
+            exit?: string;
+        };
+        whenFalse?: SourceRange & {
+            exit?: string;
+        };
+    }[];
     values: FlowValue[];
     bindings: {
         binding: number;
@@ -82,4 +92,6 @@ export interface ValueFlow {
         await: boolean;
     })[];
 }
+/** Direct terminal transfer only; nested conditions/loops are not flattened. */
+export declare function terminalExit(node: Node | undefined): 'return' | 'throw' | 'continue' | 'break' | undefined;
 export declare function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: Node) => CallTarget, range: (n: Node) => SourceRange, unwrap: (n: Node) => Node, functionStart: (n: Node) => number | null): ValueFlow;

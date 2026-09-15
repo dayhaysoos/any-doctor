@@ -249,6 +249,7 @@ export interface CallStructure {
     }[];
     loops: (SourceRange & {
         functionStart: number | null;
+        tailExit?: 'return' | 'throw' | 'continue' | 'break';
     })[];
     directives: string[];
 }

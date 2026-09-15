@@ -1,6 +1,16 @@
+/** Direct terminal transfer only; nested conditions/loops are not flattened. */
+export function terminalExit(node) {
+    if (!node)
+        return undefined;
+    if (node.type === 'BlockStatement')
+        return terminalExit(node.body.at(-1));
+    if (node.label)
+        return undefined;
+    return { ReturnStatement: 'return', ThrowStatement: 'throw', ContinueStatement: 'continue', BreakStatement: 'break' }[node.type];
+}
 export function valueFlow(nodes, parents, target, range, unwrap, functionStart) {
     var _a, _b;
-    const ids = new Map(), values = [], uses = [], bindings = [], loops = [];
+    const ids = new Map(), values = [], uses = [], bindings = [], loops = [], branches = [];
     const functions = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression']);
     const dead = (n) => {
         let child = n, p = parents.get(child);
@@ -12,7 +22,7 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
             }
             if (p.type === 'BlockStatement') {
                 const body = p.body, index = body.indexOf(child);
-                if (index >= 0 && body.slice(0, index).some(s => s.type === 'ReturnStatement' || s.type === 'ThrowStatement'))
+                if (index >= 0 && body.slice(0, index).some(s => ['ReturnStatement', 'ThrowStatement', 'ContinueStatement', 'BreakStatement'].includes(s.type)))
                     return true;
             }
             child = p;
@@ -41,13 +51,7 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
             : n.type === 'Literal' && ['string', 'number'].includes(typeof n.value) ? String(n.value) : null;
     };
     const precedingExits = new Map();
-    const exits = (node) => {
-        if (!node)
-            return false;
-        if (node.type === 'BlockStatement')
-            return exits(node.body.at(-1));
-        return ['ThrowStatement', 'ReturnStatement', 'ContinueStatement', 'BreakStatement'].includes(node.type) && !node.label;
-    };
+    const exits = (node) => terminalExit(node) !== undefined;
     // Build block-prefix facts once. Independent statements do not rescan all
     // earlier siblings for every nested expression.
     for (const block of nodes.filter(n => n.type === 'BlockStatement')) {
@@ -205,6 +209,13 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
             const b = n.left.type === 'Identifier' ? target(n.left).binding : null;
             uses.push({ value: value(n.right), targetValue: value(n.left), kind: 'write', ...(b !== null ? { binding: b } : {}), functionStart: functionStart(n), dead: dead(n) });
         }
+        if (n.type === 'IfStatement') {
+            const branch = (node) => {
+                const exit = terminalExit(node);
+                return { ...range(node), ...(exit ? { exit } : {}) };
+            };
+            branches.push({ test: value(n.test), functionStart: functionStart(n), whenTrue: branch(n.consequent), ...(n.alternate ? { whenFalse: branch(n.alternate) } : {}) });
+        }
         if (n.type === 'ForOfStatement') {
             const left = n.left, p = left.type === 'VariableDeclaration' ? left.declarations[0].id : left;
             const loopBindings = [];
@@ -230,5 +241,5 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
             loops.push({ ...range(n.body), functionStart: functionStart(n), iterable: value(n.right), binding: p.type === 'Identifier' ? target(p).binding : null, ...(p.type !== 'Identifier' ? { bindings: loopBindings } : {}), await: !!n.await });
         }
     }
-    return { values, bindings, uses, loops };
+    return { values, bindings, uses, loops, branches };
 }

@@ -31,15 +31,24 @@ export interface FlowValue extends SourceRange {
   async?: boolean;
 }
 export interface ValueFlow {
+  branches: { test: number; functionStart: number | null; whenTrue: SourceRange & { exit?: string }; whenFalse?: SourceRange & { exit?: string } }[];
   values: FlowValue[];
   bindings: { binding: number; initializer?: number; primitive?: "string"; array: boolean; parameter?: {functionStart:number;index:number}; rest?: boolean }[];
   uses: { value: number; kind: 'return' | 'yield' | 'await' | 'discard' | 'write'; functionStart: number | null; binding?: number; /** Flow ID of the assignment destination, including member writes. */ targetValue?: number; dead: boolean }[];
   loops: (SourceRange & { functionStart: number | null; iterable: number; binding: number | null; bindings?: { binding: number; path: string[] }[]; await: boolean })[];
 }
 
+/** Direct terminal transfer only; nested conditions/loops are not flattened. */
+export function terminalExit(node: Node | undefined): 'return' | 'throw' | 'continue' | 'break' | undefined {
+  if(!node)return undefined;
+  if(node.type==='BlockStatement')return terminalExit((node.body as Node[]).at(-1));
+  if(node.label)return undefined;
+  return ({ReturnStatement:'return',ThrowStatement:'throw',ContinueStatement:'continue',BreakStatement:'break'} as const)[node.type as 'ReturnStatement'];
+}
+
 export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: Node) => CallTarget,
   range: (n: Node) => SourceRange, unwrap: (n: Node) => Node, functionStart: (n: Node) => number | null): ValueFlow {
-  const ids = new Map<Node,number>(), values: FlowValue[] = [], uses: ValueFlow['uses'] = [], bindings: ValueFlow['bindings'] = [], loops: ValueFlow['loops'] = [];
+  const ids = new Map<Node,number>(), values: FlowValue[] = [], uses: ValueFlow['uses'] = [], bindings: ValueFlow['bindings'] = [], loops: ValueFlow['loops'] = [], branches: ValueFlow['branches'] = [];
   const functions = new Set(['FunctionDeclaration','FunctionExpression','ArrowFunctionExpression']);
   const dead = (n: Node): boolean => {
     let child = n, p = parents.get(child);
@@ -50,7 +59,7 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
       }
       if (p.type === 'BlockStatement') {
         const body = p.body as Node[], index = body.indexOf(child);
-        if (index >= 0 && body.slice(0,index).some(s => s.type === 'ReturnStatement' || s.type === 'ThrowStatement')) return true;
+        if (index >= 0 && body.slice(0,index).some(s => ['ReturnStatement','ThrowStatement','ContinueStatement','BreakStatement'].includes(s.type))) return true;
       }
       child = p; p = parents.get(p);
     }
@@ -74,11 +83,7 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
       : n.type === 'Literal' && ['string','number'].includes(typeof n.value) ? String(n.value) : null;
   };
   const precedingExits = new Map<Node, {test:Node;truthy:boolean}[]>();
-  const exits = (node:Node|undefined):boolean => {
-    if(!node)return false;
-    if(node.type==='BlockStatement')return exits((node.body as Node[]).at(-1));
-    return ['ThrowStatement','ReturnStatement','ContinueStatement','BreakStatement'].includes(node.type)&&!node.label;
-  };
+  const exits = (node:Node|undefined):boolean => terminalExit(node)!==undefined;
   // Build block-prefix facts once. Independent statements do not rescan all
   // earlier siblings for every nested expression.
   for(const block of nodes.filter(n=>n.type==='BlockStatement')){
@@ -158,6 +163,13 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     if(n.type==='AssignmentExpression'){
       const b=(n.left as Node).type==='Identifier'?target(n.left as Node).binding:null;uses.push({value:value(n.right as Node),targetValue:value(n.left as Node),kind:'write',...(b!==null?{binding:b}:{}),functionStart:functionStart(n),dead:dead(n)});
     }
+    if(n.type==='IfStatement'){
+      const branch=(node:Node):SourceRange & {exit?:string}=>{
+        const exit=terminalExit(node);
+        return {...range(node),...(exit?{exit}:{})};
+      };
+      branches.push({test:value(n.test as Node),functionStart:functionStart(n),whenTrue:branch(n.consequent as Node),...(n.alternate?{whenFalse:branch(n.alternate as Node)}:{})});
+    }
     if(n.type==='ForOfStatement'){
       const left=n.left as Node,p=left.type==='VariableDeclaration'?((left.declarations as Node[])[0].id as Node):left;
       const loopBindings:{binding:number;path:string[]}[]=[];
@@ -170,5 +182,5 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
       loops.push({...range(n.body as Node),functionStart:functionStart(n),iterable:value(n.right as Node),binding:p.type==='Identifier'?target(p).binding:null,...(p.type!=='Identifier'?{bindings:loopBindings}:{}),await:!!n.await});
     }
   }
-  return {values,bindings,uses,loops};
+  return {values,bindings,uses,loops,branches};
 }

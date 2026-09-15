@@ -1,6 +1,7 @@
 const url='https://openrouter.ai/api/v1/chat/completions';
 const request=`fetch('${url}')`;
 export const cases=[
+ ['conditional-callee',`const send=flag?fetch:other;send('${url}')`,0,1],
  ['sdk',`import {OpenRouter as Router} from '@openrouter/sdk';const client=new Router();client.chat.send({messages:[]})`,1,0],
  ['sdk-signal',`import {OpenRouter} from '@openrouter/sdk';const client=new OpenRouter();const c=new AbortController();client.chat.send({}, {fetchOptions:{signal:c.signal}})`,0,0],
  ['other-sdk',`import OpenAI from 'openai';const client=new OpenAI();client.chat.completions.create({})`,0,0],
