@@ -19,3 +19,5 @@ Foundation `0ace1b694077c04eb9e7d958d40cbdaf50d42883` produces:
 The 63 guardrails cover each check's positive, local registration lookalike, conditional registration beside a positive, and same-line occurrences, plus opaque config/range/API cases. Locations come from source anchors, not scanner output. Each unknown requires exactly one check/file/reason occurrence. These controls are not the full requested adversarial matrix. Existing Convex fixtures and `dev/convex-analysis` seeds remain unchanged.
 
 All production files remain at the foundation. See `docs/evidence/convex-sdk-migration/report.md` for the blocked verdict, baseline source adjudications and limitations. Do not change expectations to make the counterexamples green.
+
+`node dev/convex-sdk-migration/check-harness.mjs` runs six oracle self-tests, including valid cross-file uncertainty aggregation. This tests the evaluator, not production semantics or complete migration certification.
