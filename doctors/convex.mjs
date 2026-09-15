@@ -403,7 +403,7 @@ function model(facts,ctx,file) {
       return names[name]?{kind:names[name],members:[...(/Database/.test(name)?['db']:[]),...(b.path??[]),...t.members],typed:true}:null;
     });
     if(declared.length && declared.every(d=>d && d.members.join('.')===declared[0].members.join('.')))
-      return {...declared[0],kind:declared.every(d=>d.kind===declared[0].kind)?declared[0].kind:'mixed'};
+      return {...declared[0],kinds:[...new Set(declared.map(d=>d.kind))],kind:declared.every(d=>d.kind===declared[0].kind)?declared[0].kind:'mixed'};
     if(b.parameter){
       const incoming=facts.calls.filter(call=>{
         const t=resolveTarget(call.target),local=t && bindings.get(t.binding);
@@ -454,6 +454,8 @@ function promiseMethod(owner,member){
     ||hasKind(owner,'mutation')&&mutation.test(member)
     ||(hasKind(owner,'action')||hasKind(owner,'httpaction'))&&action.test(member);
 }
+// Union context types prove a method only when every alternative supports it.
+const uncertainFor=(owner,supports)=>owner.uncertain||owner.typed&&(owner.kinds??[owner.kind]).some(kind=>!supports(kind));
 export async function doctor(ctx){
   if(!ctx.analysis.available)return;
   for(const file of ctx.files.list(['.ts','.tsx','.js','.jsx','.mjs'])){
@@ -472,9 +474,9 @@ export async function doctor(ctx){
     for(const call of facts.calls){
       const c=m.context(call.target)??m.uncertainContext(call.target),member=c?.members.join('.');
       if(c){
-        if(call.usage==='discarded' && promiseMethod(c,member))m.emit('unawaited-convex-call',call,{},c.uncertain);
-        if(hasKind(c,'query') && /^(?:db\.(?:insert|patch|replace|delete)|scheduler\.[^.]+|runMutation|runAction)$/.test(member))m.emit('write-in-query',call,{},c.uncertain);
-        if(hasKind(c,'action') && /^db\.[^.]+$/.test(member))m.emit('db-in-action',call,{},c.uncertain);
+        if(call.usage==='discarded' && promiseMethod(c,member))m.emit('unawaited-convex-call',call,{},uncertainFor(c,kind=>promiseMethod({kind},member)));
+        if(hasKind(c,'query') && /^(?:db\.(?:insert|patch|replace|delete)|scheduler\.[^.]+|runMutation|runAction)$/.test(member))m.emit('write-in-query',call,{},uncertainFor(c,kind=>kind==='query'));
+        if(hasKind(c,'action') && /^db\.[^.]+$/.test(member))m.emit('db-in-action',call,{},uncertainFor(c,kind=>kind==='action'));
         if(/^run(Query|Mutation|Action)$/.test(member)){
           const arg=call.arguments[0] && m.resolveValue(call.arguments[0].start),t=arg?.kind==='reference'?m.resolveTarget(arg.target):null;
           const imported=t && /(?:^|\/)_generated\/api(?:\.[cm]?[jt]s)?$/.test(t.source??'') && ((t.importedName==='api' && t.members.length>0)||(t.importedName==='*' && t.members[0]==='api'));
@@ -483,7 +485,7 @@ export async function doctor(ctx){
           const possiblePublic=possible.some(t=>/(?:^|\/)_generated\/api(?:\.[cm]?[jt]s)?$/.test(t.source??'')&&(t.importedName==='api'||t.importedName==='*'&&t.members[0]==='api'));
           if(unresolved||!imported&&possiblePublic)m.narrow('public-api-in-server-call',call,'unresolved-identity');
           if(imported)m.emit('public-api-in-server-call',call,{message:'Generated public API reference in a server call; preserve required client access and review authorization and intended callers.'},c.uncertain);
-          if(call.usage==='awaited' && promiseMethod(c,member) && m.s.loops.some(l=>l.functionStart===call.functionStart && l.start<=call.start && call.end<=l.end))m.emit('sequential-run-in-loop',call,{},c.uncertain);
+          if(call.usage==='awaited' && promiseMethod(c,member) && m.s.loops.some(l=>l.functionStart===call.functionStart && l.start<=call.start && call.end<=l.end))m.emit('sequential-run-in-loop',call,{},uncertainFor(c,kind=>promiseMethod({kind},member)));
         }
         if(member==='db.patch'||member==='db.replace')checkPatch(ctx,file,call,c,m);
       }
@@ -513,6 +515,7 @@ export async function doctor(ctx){
 }
 function checkPatch(ctx,file,call,c,m){
   if(!hasKind(c,'mutation'))return;
+  c={...c,uncertain:uncertainFor(c,kind=>kind==='mutation')};
   const patchArg=call.arguments.length===3?call.arguments[2]:call.arguments[1];
   const patch=patchArg && m.resolveValue(patchArg.start);
   if(patch?.kind!=='object'){
@@ -550,64 +553,91 @@ function checkQueryChains(ctx,file,facts,m){
   const byEnd=m.calls, receivers=new Set(facts.calls.map(c=>c.receiverCall).filter(x=>x!==undefined));
   for(const terminal of facts.calls){
     if(receivers.has(terminal.end))continue;
-    const steps=[],seen=new Set();let step=terminal,uncertainChain=false;
-    while(step&&!seen.has(step.end)){
-      seen.add(step.end);steps.unshift(step);
-      if(step.receiverCall!==undefined){step=byEnd.get(step.receiverCall);continue;}
-      const binding=m.bindings.get(step.target.binding);
-      if(step.target.members.length!==1||binding?.initializer===undefined)break;
-      const value=m.resolveValue(binding.initializer);
-      uncertainChain ||= !!(binding.reassigned||binding.mutated||step.target.reassigned);
-      step=value?.kind==='call'?byEnd.get(value.value):null;
+    // A stored builder may have several proven call origins plus unknown ones.
+    // Traverse all modeled alternatives, retaining uncertainty instead of choosing
+    // one branch or treating an unsupported initializer as an ordinary receiver.
+    function possibleCalls(id,seen=new Set()){
+      if(seen.has(id))return [];seen=new Set(seen).add(id);
+      const value=m.values.get(id);if(!value)return [];
+      if(value.kind==='call')return [byEnd.get(value.value)].filter(Boolean);
+      if(value.kind==='alias')return possibleCalls(value.value,seen);
+      if(value.kind==='choice')return value.alternatives.flatMap(id=>possibleCalls(id,seen));
+      if(value.kind==='reference'&&!value.target.members.length){
+        const binding=m.bindings.get(value.target.binding);
+        if(binding?.path?.length)return [];
+        return [binding?.initializer,...(binding?.writes??[]).map(w=>w.value)].flatMap(id=>possibleCalls(id,seen));
+      }
+      return [];
     }
-    const c=m.context(steps[0].target);if(c?.members.join('.')!=='db.query')continue;
-    const method=c=>c.target.members.at(-1),index=steps.find(c=>method(c)==='withIndex'),filter=steps.find(c=>method(c)==='filter');
-    if(steps.some(c=>method(c)==='withSearchIndex'))continue;
-    const collect=steps.find(c=>method(c)==='collect'),bounded=steps.some(c=>['take','first','unique','paginate'].includes(method(c)));
-    if(!collect&&!bounded)continue;
-    let ranged=false,unknown=false;
-    if(index && index.arguments.length>1){
-      const fn=m.resolveValue(index.arguments[1].start),flow=fn?.kind==='function'?m.s.functions.find(f=>f.start===fn.value):null;
-      const param=fn?.kind==='function'?facts.functions.find(f=>f.start===fn.value)?.parameters[0]:null;
-      function bound(id,seen=new Set()){
-        const v=m.resolveValue(id);if(!v||seen.has(v.start))return 'unknown';seen=new Set(seen).add(v.start);
-        if(v.kind==='choice'){const rs=v.alternatives.map(id=>bound(id,seen));return rs.every(r=>r==='yes')?'yes':rs.every(r=>r==='no')?'no':'unknown';}
-        if(v.kind==='reference'){
-          const t=m.resolveTarget(v.target);
-          if(t?.binding===param && !t.members.length)return 'no';
-          const b=m.bindings.get(v.target.binding);
-          if(!v.target.members.length && b?.initializer!==undefined && b.writes?.length && bound(b.initializer,seen)==='yes'){
-            // Every modeled reassignment extends the same already-constrained range.
-            const extendsRange=write=>{
-              if(write.functionStart!==fn.value || write.value===undefined)return false;
-              const w=m.resolveValue(write.value);let call=w?.kind==='call'?m.calls.get(w.value):null;
-              if(!call)return false;
-              while(call){
-                if(!['eq','gt','gte','lt','lte'].includes(method(call)))return false;
-                if(call.receiverCall===undefined)return call.target.binding===b.binding && call.target.members.length===1;
-                call=m.calls.get(call.receiverCall);
-              }
-              return false;
-            };
-            if(b.writes.every(extendsRange))return 'yes';
+    const pending=[{step:terminal,steps:[],seen:new Set(),uncertain:false}],chains=[];
+    while(pending.length){
+      const state=pending.pop(),{step}=state;
+      if(!step||state.seen.has(step.end))continue;
+      const steps=[step,...state.steps],seen=new Set(state.seen).add(step.end);
+      if(step.receiverCall!==undefined){pending.push({...state,step:byEnd.get(step.receiverCall),steps,seen});continue;}
+      const binding=m.bindings.get(step.target.binding);
+      if(step.target.members.length===1&&binding&&(binding.initializer!==undefined||binding.writes?.length)&&!binding.path?.length){
+        const value=m.resolveValue(binding.initializer);
+        const stable=!binding.reassigned&&!binding.mutated&&!step.target.reassigned;
+        const known=stable&&value?.kind==='call'?byEnd.get(value.value):null;
+        const origins=known?[known]:[binding.initializer,...(binding.writes??[]).map(w=>w.value)].flatMap(id=>possibleCalls(id));
+        if(origins.length){
+          for(const origin of new Set(origins))pending.push({step:origin,steps,seen,uncertain:state.uncertain||!known});
+          continue;
+        }
+      }
+      chains.push({steps,uncertain:state.uncertain});
+    }
+    for(const {steps,uncertain:uncertainChain} of chains){
+      const c=m.context(steps[0].target)??m.uncertainContext(steps[0].target);if(c?.members.join('.')!=='db.query')continue;
+      const method=c=>c.target.members.at(-1),index=steps.find(c=>method(c)==='withIndex'),filter=steps.find(c=>method(c)==='filter');
+      if(steps.some(c=>method(c)==='withSearchIndex'))continue;
+      const collect=steps.find(c=>method(c)==='collect'),bounded=steps.some(c=>['take','first','unique','paginate'].includes(method(c)));
+      if(!collect&&!bounded)continue;
+      let ranged=false,unknown=false;
+      if(index && index.arguments.length>1){
+        const fn=m.resolveValue(index.arguments[1].start),flow=fn?.kind==='function'?m.s.functions.find(f=>f.start===fn.value):null;
+        const param=fn?.kind==='function'?facts.functions.find(f=>f.start===fn.value)?.parameters[0]:null;
+        function bound(id,seen=new Set()){
+          const v=m.resolveValue(id);if(!v||seen.has(v.start))return 'unknown';seen=new Set(seen).add(v.start);
+          if(v.kind==='choice'){const rs=v.alternatives.map(id=>bound(id,seen));return rs.every(r=>r==='yes')?'yes':rs.every(r=>r==='no')?'no':'unknown';}
+          if(v.kind==='reference'){
+            const t=m.resolveTarget(v.target);
+            if(t?.binding===param && !t.members.length)return 'no';
+            const b=m.bindings.get(v.target.binding);
+            if(!v.target.members.length && b?.initializer!==undefined && b.writes?.length && bound(b.initializer,seen)==='yes'){
+              // Every modeled reassignment extends the same already-constrained range.
+              const extendsRange=write=>{
+                if(write.functionStart!==fn.value || write.value===undefined)return false;
+                const w=m.resolveValue(write.value);let call=w?.kind==='call'?m.calls.get(w.value):null;
+                if(!call)return false;
+                while(call){
+                  if(!['eq','gt','gte','lt','lte'].includes(method(call)))return false;
+                  if(call.receiverCall===undefined)return call.target.binding===b.binding && call.target.members.length===1;
+                  call=m.calls.get(call.receiverCall);
+                }
+                return false;
+              };
+              if(b.writes.every(extendsRange))return 'yes';
+            }
+            return 'unknown';
+          }
+          if(v.kind==='call'){
+            let call=m.calls.get(v.value);let saw=false;
+            while(call){if(['eq','gt','gte','lt','lte'].includes(method(call)))saw=true;else return 'unknown';if(call.receiverCall===undefined){const t=m.resolveTarget(call.target);return t?.binding===param && saw?'yes':'unknown';}call=m.calls.get(call.receiverCall);}
           }
           return 'unknown';
         }
-        if(v.kind==='call'){
-          let call=m.calls.get(v.value);let saw=false;
-          while(call){if(['eq','gt','gte','lt','lte'].includes(method(call)))saw=true;else return 'unknown';if(call.receiverCall===undefined){const t=m.resolveTarget(call.target);return t?.binding===param && saw?'yes':'unknown';}call=m.calls.get(call.receiverCall);}
-        }
-        return 'unknown';
+        if(!flow||param===null||param===undefined)unknown=true;
+        else {const results=flow.returns.map(id=>bound(id));ranged=!flow.unknownReturn&&results.length>0&&results.every(r=>r==='yes');unknown=flow.unknownReturn||!results.length||results.some(r=>r==='unknown')||(!ranged&&results.some(r=>r==='yes'));}
       }
-      if(!flow||param===null||param===undefined)unknown=true;
-      else {const results=flow.returns.map(id=>bound(id));ranged=!flow.unknownReturn&&results.length>0&&results.every(r=>r==='yes');unknown=flow.unknownReturn||!results.length||results.some(r=>r==='unknown')||(!ranged&&results.some(r=>r==='yes'));}
+      let rule;
+      if(filter&&!index)rule='filter-table-scan';else if(index&&!ranged&&!bounded)rule='index-without-range';else if(index&&filter)rule='index-filter-combo';else if(collect&&!bounded&&!ranged)rule='unbounded-collect';
+      if(!rule)continue;
+      const trigger=rule==='index-filter-combo'?filter:steps.find(c=>['withIndex','filter','collect'].includes(method(c)));
+      if(uncertainChain||uncertainFor(c,kind=>kind==='query'||kind==='mutation'))m.narrow(rule,trigger,'unresolved-identity');
+      else if(unknown && rule==='index-without-range')m.narrow(rule,trigger);
+      else m.emit(rule,trigger.memberRange??trigger);
     }
-    let rule;
-    if(filter&&!index)rule='filter-table-scan';else if(index&&!ranged&&!bounded)rule='index-without-range';else if(index&&filter)rule='index-filter-combo';else if(collect&&!bounded&&!ranged)rule='unbounded-collect';
-    if(!rule)continue;
-    const trigger=rule==='index-filter-combo'?filter:steps.find(c=>['withIndex','filter','collect'].includes(method(c)));
-    if(uncertainChain)m.narrow(rule,trigger,'unresolved-identity');
-    else if(unknown && rule==='index-without-range')m.narrow(rule,trigger);
-    else m.emit(rule,trigger.memberRange??trigger);
   }
 }

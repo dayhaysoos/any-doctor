@@ -7,7 +7,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const repo=fileURLToPath(new URL('../',import.meta.url));
 const candidate=process.env.DOCTOR_CANDIDATE_ROOT??repo;
-for(const [script,count] of [['run-guardrails.mjs',63],['run-slices.mjs',118]])test(`Convex ${script} preserves findings, exact locations and scoped uncertainty`,()=>{
+for(const [script,count] of [['run-guardrails.mjs',63],['run-slices.mjs',151]])test(`Convex ${script} preserves findings, exact locations and scoped uncertainty`,()=>{
  const temp=fs.mkdtempSync(path.join(os.tmpdir(),'convex-sdk-suite-'));
  try {
   const output=path.join(temp,'result');
@@ -15,5 +15,23 @@ for(const [script,count] of [['run-guardrails.mjs',63],['run-slices.mjs',118]])t
   assert.equal(run.status,0,run.stdout+run.stderr);
   const result=JSON.parse(fs.readFileSync(path.join(output,'results.json'),'utf8'));
   assert.equal(result.passed,count);assert.equal(result.failed,0);assert.equal(result.skipped,0);
+ } finally {fs.rmSync(temp,{recursive:true,force:true});}
+});
+
+test('Uncertain query reads alone remain unmeasured',()=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'convex-unmeasured-'));
+ try {
+  for(const expression of ["const alias=flag?ctx:external;return alias.db.query('rows').collect();","const builder=flag?ctx.db.query('rows'):external;return builder.collect();"]){
+   fs.writeFileSync(path.join(temp,'entry.ts'),`import {query} from './_generated/server';query({args:{},handler:async ctx=>{${expression}}});`);
+   const run=spawnSync(process.execPath,[path.join(candidate,'bin/cli.js'),'run',path.join(candidate,'doctors/convex.mjs'),temp,'--format','json'],{encoding:'utf8'});
+   assert.equal(run.status,0,run.stderr);
+   const scan=JSON.parse(run.stdout);
+   assert.equal(scan.counts.total,0);assert.equal(scan.score.score,null);
+   assert.equal(scan.groups[0].semantic.incomplete,true);
+   const narrowed=scan.groups[0].semantic.narrowed;
+   assert.equal(narrowed.length,1);assert.equal(narrowed[0].check,'unbounded-collect');
+   assert.equal(narrowed[0].reason,'unresolved-identity');assert.equal(narrowed[0].occurrences,1);
+   assert.deepEqual(narrowed[0].files,[{file:'entry.ts',occurrences:1}]);
+  }
  } finally {fs.rmSync(temp,{recursive:true,force:true});}
 });

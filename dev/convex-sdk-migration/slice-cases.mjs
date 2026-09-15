@@ -57,3 +57,27 @@ for(const [rule,body,positive] of [
 ])add('D',`${rule}-reassigned-context-neighbor`,rule,`import {mutation} from './_generated/server';import {internal} from './_generated/api';mutation({args:{},handler:async ctx=>{let alias=ctx;alias=external;${body}${positive}}});`,'unresolved-identity');
 for(const rule of ['presence-patch-on-shared-document','spread-into-patch'])add('D',`${rule}-opaque-patch-neighbor`,rule,`import {mutation} from './_generated/server';mutation({args:{},handler:async ctx=>{await ctx.db.patch('id',makeFields());await ${marker}ctx.db.patch('id',{${rule.startsWith('presence')?'lastSeen:1':'...fields'}});}});`,'unsupported-expression');
 add('D','invalid-query-method-is-not-promise','unawaited-convex-call',`import {query} from './_generated/server';query({args:{},handler:ctx=>{ctx.db.patch('id',{});}});`);
+// Independent review: candidate context and stored-builder origins must not vanish.
+for(const [rule,chain,anchor] of [
+ ['unbounded-collect','.collect()','collect'],
+ ['filter-table-scan','.filter(q=>q.eq(q.field("x"),1)).collect()','filter'],
+ ['index-without-range','.withIndex("by_x").collect()','withIndex'],
+ ['index-filter-combo','.withIndex("by_x",q=>q.eq("x",1)).filter(q=>q.eq(q.field("y"),2)).collect()','filter'],
+]){
+ const neighbor=`return ctx.db.query('rows')${chain.replace(`.${anchor}`,`.${marker}${anchor}`)};`;
+ for(const [form,setup,receiver] of [
+  ['conditional-context','const alias=flag?ctx:external;',"alias.db.query('rows')"],
+  ['reassigned-context','let alias=ctx;alias=external;',"alias.db.query('rows')"],
+  ['conditional-builder',"const builder=flag?ctx.db.query('rows'):external;",'builder'],
+  ['reassigned-builder',"let builder=external;builder=ctx.db.query('rows');",'builder'],
+  ['assigned-builder',"let builder;builder=ctx.db.query('rows');",'builder'],
+ ])add('A',`${rule}-${form}-review`,rule,`import {query} from './_generated/server';query({args:{},handler:async ctx=>{${setup}await ${receiver}${chain};${neighbor}}});`,'unresolved-identity');
+ add('A',`${rule}-mixed-helper-review`,rule,`import {query} from './_generated/server';async function helper(ctx){return ctx.db.query('rows')${chain};}query({args:{},handler:async ctx=>helper(ctx)});helper(external);`,'unresolved-identity');
+ add('A',`${rule}-ordinary-choice-review`,rule,`const ctx={db:{query:()=>external}};const builder=flag?ctx.db.query('rows'):external;builder${chain};`);
+}
+add('A','conditional-builder-alternatives-review','filter-table-scan',`import {query} from './_generated/server';query({args:{},handler:async ctx=>{const builder=flag?ctx.db.query('rows').withIndex('by_x',q=>q.eq('x',1)):ctx.db.query('rows').filter(q=>q.eq(q.field('x'),1));return builder.collect();}});`,'unresolved-identity');
+
+add('D','typed-union-sequential-review','sequential-run-in-loop',`import type {QueryCtx,MutationCtx} from './_generated/server';async function helper(ctx:QueryCtx|MutationCtx){for(const id of ids){await ${marker}ctx.runQuery(external,{id});}}`);
+add('D','typed-union-unawaited-review','unawaited-convex-call',`import type {QueryCtx,MutationCtx} from './_generated/server';function helper(ctx:QueryCtx|MutationCtx){${marker}ctx.runQuery(external,{});}`);
+add('C','typed-union-write-review','write-in-query',`import type {QueryCtx,MutationCtx} from './_generated/server';async function helper(ctx:QueryCtx|MutationCtx){await ctx.db.patch('id',{});}`,'unresolved-identity');
+add('D','typed-union-possible-promise-review','unawaited-convex-call',`import type {QueryCtx,MutationCtx} from './_generated/server';function helper(ctx:QueryCtx|MutationCtx){ctx.db.patch('id',{});}`,'unresolved-identity');

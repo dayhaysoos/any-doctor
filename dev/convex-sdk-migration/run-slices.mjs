@@ -5,6 +5,7 @@ import {cases} from './slice-cases.mjs';
 import {assessCase} from './assess-case.mjs';
 const candidate=fs.realpathSync(process.argv[2]??'.'),output=path.resolve(process.argv[3]);
 const selected=cases.filter(c=>!process.argv[4]||c.slice===process.argv[4]);
+if(!selected.length)throw Error('No slice cases selected');
 fs.mkdirSync(output,{recursive:false});const root=path.join(output,'seeds');fs.mkdirSync(root);
 for(const c of selected)fs.writeFileSync(path.join(root,`${c.name}.ts`),c.source);
 const command=[path.join(candidate,'bin/cli.js'),'run',path.join(candidate,'doctors/convex.mjs'),root,'--format','json'];
@@ -12,6 +13,7 @@ const run=spawnSync(process.execPath,command,{encoding:'utf8',maxBuffer:20e6});
 fs.writeFileSync(path.join(output,'scan.json'),run.stdout);fs.writeFileSync(path.join(output,'stderr'),run.stderr);
 if(run.status!==0)throw Error(run.stderr);
 const scan=JSON.parse(run.stdout),group=scan.groups[0];
+if(!scan.analysisAvailable)throw Error('Slice controls require the analysis provider');
 const rows=selected.map(c=>{
  const file=`${c.name}.ts`,actual=group.checks.filter(k=>k.rule===c.rule).flatMap(k=>k.findings).filter(f=>f.file===file);
  const narrowed=group.semantic.narrowed.filter(n=>n.check===c.rule&&n.files.some(f=>f.file===file));
