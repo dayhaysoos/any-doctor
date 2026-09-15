@@ -1,0 +1,28 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {cases} from './guardrail-cases.mjs';
+const candidate=fs.realpathSync(process.argv[2]??process.cwd());
+if(!process.argv[3])throw Error('Usage: node run-guardrails.mjs <candidate-root> <new-output-directory>');
+const output=path.resolve(process.argv[3]);
+fs.mkdirSync(output,{recursive:false});
+const root=path.join(output,'seeds');fs.mkdirSync(root);
+for(const c of cases)fs.writeFileSync(path.join(root,`${c.name}.ts`),c.source);
+const command=[path.join(candidate,'bin/cli.js'),'run',path.join(candidate,'doctors/convex.mjs'),root,'--format','json'];
+const run=spawnSync(process.execPath,command,{cwd:candidate,encoding:'utf8',maxBuffer:20e6});
+fs.writeFileSync(path.join(output,'scan.json'),run.stdout);fs.writeFileSync(path.join(output,'scan.stderr'),run.stderr);
+if(run.status!==0)throw Error(`scan exit ${run.status}: ${run.stderr}`);
+const scan=JSON.parse(run.stdout),group=scan.groups[0];
+const rows=cases.map(c=>{
+ const file=`${c.name}.ts`,actual=group.checks.filter(k=>k.rule===c.rule).flatMap(k=>k.findings).filter(f=>f.file===file);
+ const narrowed=group.semantic?.narrowed.filter(n=>n.check===c.rule&&n.files.some(f=>f.file===file))??[];
+ const findingsPass=actual.length===c.expected;
+ const coveragePass=c.narrowed?narrowed.length===1&&narrowed[0].reason===c.reason&&narrowed[0].occurrences===1&&narrowed[0].files.length===1&&narrowed[0].files[0].occurrences===1:narrowed.length===0;
+ const locationsPass=JSON.stringify(actual.map(({line,column})=>({line,column})))===JSON.stringify(c.expectedLocations);
+ return {...c,file,actual,narrowed,findingsPass,coveragePass,locationsPass,passed:findingsPass&&coveragePass&&locationsPass};
+});
+const result={candidate,command:[process.execPath,...command],exit:run.status,analysisAvailable:scan.analysisAvailable,crashed:scan.crashed,score:scan.score,passed:rows.filter(r=>r.passed).length,failed:rows.filter(r=>!r.passed).length,skipped:0,rows};
+if(!scan.analysisAvailable||scan.crashed.length)throw Error('Required analysis unavailable or crashed');
+fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(result,null,2));
+console.log(JSON.stringify({passed:result.passed,failed:result.failed,skipped:0,failures:rows.filter(r=>!r.passed).map(r=>({name:r.name,findingsPass:r.findingsPass,coveragePass:r.coveragePass}))},null,2));
+process.exitCode=result.failed?1:0;
