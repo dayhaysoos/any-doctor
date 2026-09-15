@@ -230,3 +230,5 @@ state as recipe needs. Declaration-level unavailability has zero occurrences and
 no files because the population was not measured. Both `onUnknown: "skip"` and
 `"narrow"` retain that coverage receipt; neither can earn a confident score for an
 unmeasured scan. Provider-independent checks continue to run.
+
+A check that submits custom narrowing must declare at least one semantic `needs` capability or a recipe-implied need, including when it omits `capability` from the report. A supplied capability must match one of those needs. Violations fail with `invalid custom narrowing` before serialization.

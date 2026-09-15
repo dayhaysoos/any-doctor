@@ -319,8 +319,11 @@ export function buildCtx(root, opts = {}) {
                 const check = checks.find(check => check.id === id);
                 if (!check)
                     throw new Error(`invalid custom narrowing: undeclared check ${id}`);
+                const needs = checkAnalysisNeeds(check);
+                if (!needs.length)
+                    throw new Error(`invalid custom narrowing: check ${id} must declare semantic needs`);
                 for (const capability of capabilities)
-                    if (!checkAnalysisNeeds(check).includes(capability)) {
+                    if (!needs.includes(capability)) {
                         throw new Error(`invalid custom narrowing: undeclared capability ${capability} for ${id}`);
                     }
             }

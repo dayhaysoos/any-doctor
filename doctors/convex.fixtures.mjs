@@ -442,6 +442,12 @@ export const fixtures = [
         "rule": "index-without-range",
         "file": "convex/rate.ts",
         "line": 7
+      },
+      {
+        "rule": "index-filter-combo",
+        "file": "convex/rate.ts",
+        "line": 8,
+        "column": 7
       }
     ]
   },

@@ -274,7 +274,9 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
     for (const [id, capabilities] of customChecks) {
       const check = checks.find(check => check.id === id);
       if (!check) throw new Error(`invalid custom narrowing: undeclared check ${id}`);
-      for (const capability of capabilities) if (!checkAnalysisNeeds(check).includes(capability)) {
+      const needs = checkAnalysisNeeds(check);
+      if (!needs.length) throw new Error(`invalid custom narrowing: check ${id} must declare semantic needs`);
+      for (const capability of capabilities) if (!needs.includes(capability)) {
         throw new Error(`invalid custom narrowing: undeclared capability ${capability} for ${id}`);
       }
     }

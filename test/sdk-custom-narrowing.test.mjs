@@ -77,3 +77,14 @@ test('an unavailable named capability is unmeasured even when the provider is in
  assert.equal(semantic.incomplete,true);assert.deepEqual(semantic.narrowed.map(n=>n.check),['custom-check']);
  assert.equal(json.counts.total,1);assert.equal(json.score.score,null);
 }));
+test('custom narrowing without a capability still requires declared semantic needs',()=>sandbox(async root=>{
+ const plain={...meta,checks:[{id:'plain',description:'Plain check'}]};
+ await assert.rejects(runOnce(root,{meta:plain,doctor:async ctx=>ctx.report.narrowing({check:'plain',file:'a.ts',reason:'unresolved-identity'})},{includeTests:false}),/invalid custom narrowing.*needs/);
+}));
+test('custom narrowing accepts a recipe-implied need when explicit needs are absent',()=>sandbox(async root=>{
+ const recipe={name:'unhandled-value',query:{producer:{member:'map',asyncArgument:0,receiver:'array'},consumers:['Promise.all']}};
+ const declared={...meta,checks:[{id:'plain',description:'Recipe check',recipe}]};
+ const result=await runOnce(root,{meta:declared,doctor:async ctx=>ctx.report.narrowing({check:'plain',file:'a.ts',reason:'unresolved-identity'})},{includeTests:false});
+ assert.equal(result.semantic.incomplete,true);assert.ok(result.semantic.capabilities.length>0);
+ assert.equal(result.semantic.narrowed[0].check,'plain');
+}));
