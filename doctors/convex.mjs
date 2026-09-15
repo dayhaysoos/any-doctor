@@ -229,13 +229,13 @@ export const meta = {
       "id": "unawaited-convex-call",
       "description": "A known Promise-returning Convex context call is discarded as a standalone expression.",
       "severity": "warning",
-      "revision": 2,
+      "revision": 3,
       "needs": [
         "calls"
       ],
       "onUnknown": "skip",
       "reportingUnit": "occurrence",
-      "claim": "A direct discarded Promise-returning call on a resolved Convex context, including supported aliases and helper context contracts.",
+      "claim": "A direct discarded call to a Promise-returning method available on the resolved Convex context; uncertain context identity narrows coverage.",
       "lookalikes": [
         "returned callbacks",
         "arguments to helpers",
@@ -444,6 +444,16 @@ function model(facts,ctx,file) {
   return {s,values,bindings,calls,resolveValue,resolveTarget,possibleTargets,possibleValueTargets,property,registrations,handlers,context,uncertainContext,narrow,emit};
 }
 const hasKind=(owner,kind)=>(owner?.kinds??[owner?.kind]).includes(kind);
+// Promise producers must exist on the resolved execution context. Invalid
+// query/action database operations belong to the context checks, not async policy.
+function promiseMethod(owner,member){
+  const transactionRead=/^(?:db\.get|runQuery|storage\.getUrl)$/;
+  const mutation=/^(?:db\.(?:insert|patch|replace|delete)|runMutation|scheduler\.(?:runAfter|runAt|cancel)|storage\.(?:delete|generateUploadUrl))$/;
+  const action=/^(?:run(?:Query|Mutation|Action)|scheduler\.(?:runAfter|runAt|cancel)|storage\.(?:get|store|delete|generateUploadUrl|getUrl))$/;
+  return (hasKind(owner,'query')||hasKind(owner,'mutation'))&&transactionRead.test(member)
+    ||hasKind(owner,'mutation')&&mutation.test(member)
+    ||(hasKind(owner,'action')||hasKind(owner,'httpaction'))&&action.test(member);
+}
 export async function doctor(ctx){
   if(!ctx.analysis.available)return;
   for(const file of ctx.files.list(['.ts','.tsx','.js','.jsx','.mjs'])){
@@ -462,7 +472,7 @@ export async function doctor(ctx){
     for(const call of facts.calls){
       const c=m.context(call.target)??m.uncertainContext(call.target),member=c?.members.join('.');
       if(c){
-        if(call.usage==='discarded' && /^(?:db\.(?:insert|patch|replace|delete|get)|scheduler\.(?:runAfter|runAt|cancel)|run(?:Query|Mutation|Action)|storage\.(?:get|store|delete|generateUploadUrl|getUrl))$/.test(member))m.emit('unawaited-convex-call',call,{},c.uncertain);
+        if(call.usage==='discarded' && promiseMethod(c,member))m.emit('unawaited-convex-call',call,{},c.uncertain);
         if(hasKind(c,'query') && /^(?:db\.(?:insert|patch|replace|delete)|scheduler\.[^.]+|runMutation|runAction)$/.test(member))m.emit('write-in-query',call,{},c.uncertain);
         if(hasKind(c,'action') && /^db\.[^.]+$/.test(member))m.emit('db-in-action',call,{},c.uncertain);
         if(/^run(Query|Mutation|Action)$/.test(member)){
@@ -473,7 +483,7 @@ export async function doctor(ctx){
           const possiblePublic=possible.some(t=>/(?:^|\/)_generated\/api(?:\.[cm]?[jt]s)?$/.test(t.source??'')&&(t.importedName==='api'||t.importedName==='*'&&t.members[0]==='api'));
           if(unresolved||!imported&&possiblePublic)m.narrow('public-api-in-server-call',call,'unresolved-identity');
           if(imported)m.emit('public-api-in-server-call',call,{message:'Generated public API reference in a server call; preserve required client access and review authorization and intended callers.'},c.uncertain);
-          if(call.usage==='awaited' && m.s.loops.some(l=>l.functionStart===call.functionStart && l.start<=call.start && call.end<=l.end))m.emit('sequential-run-in-loop',call,{},c.uncertain);
+          if(call.usage==='awaited' && promiseMethod(c,member) && m.s.loops.some(l=>l.functionStart===call.functionStart && l.start<=call.start && call.end<=l.end))m.emit('sequential-run-in-loop',call,{},c.uncertain);
         }
         if(member==='db.patch'||member==='db.replace')checkPatch(ctx,file,call,c,m);
       }
@@ -502,8 +512,17 @@ export async function doctor(ctx){
   }
 }
 function checkPatch(ctx,file,call,c,m){
+  if(!hasKind(c,'mutation'))return;
   const patchArg=call.arguments.length===3?call.arguments[2]:call.arguments[1];
-  const patch=patchArg && m.resolveValue(patchArg.start);if(patch?.kind!=='object')return;
+  const patch=patchArg && m.resolveValue(patchArg.start);
+  if(patch?.kind!=='object'){
+    // A computed or escaped patch cannot establish either field-copy convention.
+    if(!patch||!['literal','array','function'].includes(patch.kind)){
+      m.narrow('spread-into-patch',call,c.uncertain?'unresolved-identity':'unsupported-expression');
+      m.narrow('presence-patch-on-shared-document',call,c.uncertain?'unresolved-identity':'unsupported-expression');
+    }
+    return;
+  }
   const spreads=patch.properties.filter(p=>p.spread);
   if(spreads.length){
     const selected=spreads.every(p=>{const v=m.resolveValue(p.value);return v?.kind==='object' && v.properties.every(p=>p.name!==null && !p.spread);});

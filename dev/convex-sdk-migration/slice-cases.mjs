@@ -49,3 +49,11 @@ add('C','reassigned-query-context-positive-neighbor','write-in-query',`import {q
 add('C','reassigned-action-context-positive-neighbor','db-in-action',`import {action} from './_generated/server';action({args:{},handler:async ctx=>{let alias=ctx;alias=external;await alias.db.get('id');return ${marker}ctx.db.get('id');}});`,'unresolved-identity');
 add('C','shared-handler-known-query','write-in-query',`import {query} from './_generated/server';const handler=async ctx=>{await ${marker}ctx.db.patch('id',{});};query({args:{},handler});const selected=flag?query:external;selected({args:{},handler});`);
 add('C','inline-conditional-api-positive-neighbor','public-api-in-server-call',`import {action} from './_generated/server';import {api} from './_generated/api';action({args:{},handler:async ctx=>{await ctx.runQuery((flag?api.rows.list:external) as any,{});return ${marker}ctx.runQuery(api.rows.list,{});}});`,'unresolved-identity');
+for(const [rule,body,positive] of [
+ ['unawaited-convex-call',"alias.db.patch('id',{});",`${marker}ctx.db.patch('id',{});`],
+ ['presence-patch-on-shared-document',"await alias.db.patch('id',{lastSeen:1});",`await ${marker}ctx.db.patch('id',{lastSeen:1});`],
+ ['spread-into-patch',"await alias.db.patch('id',{...fields});",`await ${marker}ctx.db.patch('id',{...fields});`],
+ ['sequential-run-in-loop',"for(const id of ids){await alias.runMutation(internal.rows.save,{id});}",`for(const id of ids){await ${marker}ctx.runMutation(internal.rows.save,{id});}`],
+])add('D',`${rule}-reassigned-context-neighbor`,rule,`import {mutation} from './_generated/server';import {internal} from './_generated/api';mutation({args:{},handler:async ctx=>{let alias=ctx;alias=external;${body}${positive}}});`,'unresolved-identity');
+for(const rule of ['presence-patch-on-shared-document','spread-into-patch'])add('D',`${rule}-opaque-patch-neighbor`,rule,`import {mutation} from './_generated/server';mutation({args:{},handler:async ctx=>{await ctx.db.patch('id',makeFields());await ${marker}ctx.db.patch('id',{${rule.startsWith('presence')?'lastSeen:1':'...fields'}});}});`,'unsupported-expression');
+add('D','invalid-query-method-is-not-promise','unawaited-convex-call',`import {query} from './_generated/server';query({args:{},handler:ctx=>{ctx.db.patch('id',{});}});`);
