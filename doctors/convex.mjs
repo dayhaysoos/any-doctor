@@ -360,9 +360,9 @@ function model(facts,ctx,file) {
   function registration(t){return registrationOrigin(resolveTarget(t));}
   // Candidate provenance survives unsupported selection/reassignment. A local
   // ordinary function with no imported registration origin is still outside scope.
-  function possibleRegistrations(t,seen=new Set()) {
+  function possibleTargets(t,seen=new Set()) {
     if(!t || seen.has(t.binding))return [];
-    const direct=registrationOrigin(t);if(direct)return [direct];
+    if(t.source||t.binding===null)return [t];
     const b=bindings.get(t.binding);if(!b)return [];
     seen=new Set(seen).add(t.binding);
     function fromValue(id,visited=new Set()){
@@ -370,14 +370,14 @@ function model(facts,ctx,file) {
       const v=values.get(id);if(!v)return [];
       if(v.kind==='alias')return fromValue(v.value,visited);
       if(v.kind==='choice')return v.alternatives.flatMap(id=>fromValue(id,visited));
-      if(v.kind==='reference')return possibleRegistrations({...v.target,members:[...v.target.members,...(b.path??[]),...t.members]},seen);
+      if(v.kind==='reference')return possibleTargets({...v.target,members:[...v.target.members,...(b.path??[]),...t.members]},seen);
       return [];
     }
     return [...fromValue(b.initializer),...(b.writes??[]).flatMap(w=>fromValue(w.value))];
   }
   const registrations=[], handlers=new Map();
   for(const call of facts.calls){
-    const known=registration(call.target),possible=known?[known]:possibleRegistrations(call.target);
+    const known=registration(call.target),possible=known?[known]:possibleTargets(call.target).map(registrationOrigin).filter(Boolean);
     if(!possible.length)continue;
     const reg={...possible[0],kinds:[...new Set(possible.map(p=>p.kind))],uncertain:!known};
     const config=call.arguments[0] && resolveValue(call.arguments[0].start);
@@ -433,8 +433,9 @@ function model(facts,ctx,file) {
     }
     ctx.report.finding({rule,file,line:location.line,column:location.column,...extra});
   }
-  return {s,values,bindings,calls,resolveValue,resolveTarget,property,registrations,handlers,context,narrow,emit};
+  return {s,values,bindings,calls,resolveValue,resolveTarget,possibleTargets,property,registrations,handlers,context,narrow,emit};
 }
+const hasKind=(owner,kind)=>(owner?.kinds??[owner?.kind]).includes(kind);
 export async function doctor(ctx){
   if(!ctx.analysis.available)return;
   for(const file of ctx.files.list(['.ts','.tsx','.js','.jsx','.mjs'])){
@@ -442,20 +443,20 @@ export async function doctor(ctx){
     const facts=ctx.analysis.calls(file);if(!facts.structure)throw Error('Convex doctor requires structural call facts from the current Any Doctor host');
     const m=model(facts,ctx,file);
     for(const reg of m.registrations){
-      if(reg.kind==='httpaction')continue;
+      if(reg.kinds.every(kind=>kind==='httpaction'))continue;
       const config=reg.config;
       const absent=config?.kind==='function' || (config?.kind==='object' && !config.properties.some(p=>p.spread || p.name===null || p.name==='args'));
       if(!absent && !reg.args && config?.kind!=='function')m.narrow('missing-args-validator',reg.call);
       if(absent)m.emit('missing-args-validator',reg.call,reg.internal?{severity:'info',message:'Internal function omits args validators; optional contract review, not client exposure.'}:{});
-      if(m.s.directives.includes('use node') && ['query','mutation'].includes(reg.kind))m.emit('node-runtime-transaction',reg.call);
+      if(m.s.directives.includes('use node') && (hasKind(reg,'query')||hasKind(reg,'mutation')))m.emit('node-runtime-transaction',reg.call);
     }
     const clocks=new Map(),clockBindings=new Map();
     for(const call of facts.calls){
       const c=m.context(call.target),member=c?.members.join('.');
       if(c){
         if(call.usage==='discarded' && /^(?:db\.(?:insert|patch|replace|delete|get)|scheduler\.(?:runAfter|runAt|cancel)|run(?:Query|Mutation|Action)|storage\.(?:get|store|delete|generateUploadUrl|getUrl))$/.test(member))m.emit('unawaited-convex-call',call);
-        if(c.kind==='query' && /^(?:db\.(?:insert|patch|replace|delete)|scheduler\.[^.]+|runMutation|runAction)$/.test(member))m.emit('write-in-query',call);
-        if(c.kind==='action' && /^db\.[^.]+$/.test(member))m.emit('db-in-action',call);
+        if(hasKind(c,'query') && /^(?:db\.(?:insert|patch|replace|delete)|scheduler\.[^.]+|runMutation|runAction)$/.test(member))m.emit('write-in-query',call);
+        if(hasKind(c,'action') && /^db\.[^.]+$/.test(member))m.emit('db-in-action',call);
         if(/^run(Query|Mutation|Action)$/.test(member)){
           const arg=call.arguments[0] && m.resolveValue(call.arguments[0].start),t=arg?.kind==='reference'?m.resolveTarget(arg.target):null;
           const imported=t && /(?:^|\/)_generated\/api(?:\.[cm]?[jt]s)?$/.test(t.source??'') && ((t.importedName==='api' && t.members.length>0)||(t.importedName==='*' && t.members[0]==='api'));
@@ -466,18 +467,26 @@ export async function doctor(ctx){
         }
         if(member==='db.patch'||member==='db.replace')checkPatch(ctx,file,call,c,m);
       }
-      const t=call.target;
-      if(t.root==='Date' && t.binding===null && t.members.join('.')==='now'){
-        const kind=m.handlers.get(call.functionStart)?.kind;
-        if(kind==='query'||kind==='mutation'){
-          clocks.set(call.start,call);if(call.resultBinding!==undefined)clockBindings.set(call.resultBinding,call);
-          if(kind==='query')m.emit('query-clock-reactivity',call);
+      const t=m.resolveTarget(call.target),isClock=t=>t?.root==='Date'&&t.binding===null&&t.members.join('.')==='now';
+      const clockUncertain=!isClock(t)&&m.possibleTargets(call.target).some(isClock);
+      if(isClock(t)||clockUncertain){
+        const owner=m.handlers.get(call.functionStart);
+        if(hasKind(owner,'query')||hasKind(owner,'mutation')){
+          const clock={...call,uncertain:clockUncertain};
+          clocks.set(call.start,clock);if(call.resultBinding!==undefined)clockBindings.set(call.resultBinding,clock);
+          if(hasKind(owner,'query')){
+            if(clockUncertain)m.narrow('query-clock-reactivity',call,'unresolved-identity');
+            else m.emit('query-clock-reactivity',call);
+          }
         }
       }
     }
     for(const diff of facts.differences){
       const get=o=>o.call!==undefined?clocks.get(o.call):clockBindings.get(o.binding),a=get(diff.left),b=get(diff.right);
-      if(a&&b&&a.functionStart===diff.functionStart&&b.functionStart===diff.functionStart)m.emit('transaction-clock-duration',diff);
+      if(a&&b&&a.functionStart===diff.functionStart&&b.functionStart===diff.functionStart){
+        if(a.uncertain||b.uncertain)m.narrow('transaction-clock-duration',diff,'unresolved-identity');
+        else m.emit('transaction-clock-duration',diff);
+      }
     }
     checkQueryChains(ctx,file,facts,m);
   }
