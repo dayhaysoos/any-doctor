@@ -8,7 +8,7 @@ export const meta = {
     "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
     "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
     "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
-    "Query chains follow single expression receiver links; split builder statements, search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges produce an explicitly uncertain review candidate only for that chain.",
+    "Query chains follow single expression receiver links; split builder statements, search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
     "Clock rules cover direct registered handlers, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
     "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references are explicitly unresolved; no client-caller absence inference is made.",
     "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
@@ -43,13 +43,13 @@ export const meta = {
       ],
       "onUnknown": "skip",
       "reportingUnit": "occurrence",
-      "description": "An indexed collect without an established returned range restriction.",
+      "description": "An indexed collect with a proven absence of a returned range restriction.",
       "severity": "warning",
-      "revision": 2,
+      "revision": 3,
       "impact": "Selecting index order alone does not restrict the candidate set. Actual cardinality and returned-range uncertainty need review.",
       "why": "Only supported returned range relationships count; an unrelated or unreachable range call is not a bound.",
       "fix": "Review the returned range and move suitable predicates into it. Preserve complete processing; use pagination or resumable batches when all records are required.",
-      "claim": "A Convex indexed collect has no returned range restriction established by supported callback flow.",
+      "claim": "A resolved Convex indexed collect has no returned range restriction; unsupported callback flow is coverage uncertainty.",
       "lookalikes": [
         "multi-line callbacks with real bounds",
         "take/first/unique terminators"
@@ -424,7 +424,11 @@ function model(facts,ctx,file) {
     ctx.report.narrowing({check:rule,file,reason,capability:'calls'});
   }
   function emit(rule,location,extra={}){
-    if(registrations.some(r=>r.uncertain&&r.call.start<=location.start&&location.end<=r.call.end)){
+    const uncertainHandler=[...handlers].some(([start,owner])=>{
+      const fn=facts.functions.find(fn=>fn.start===start);
+      return owner.uncertain&&fn&&fn.start<=location.start&&location.end<=fn.end;
+    });
+    if(uncertainHandler||registrations.some(r=>r.uncertain&&r.call.start<=location.start&&location.end<=r.call.end)){
       narrow(rule,location,'unresolved-identity');return;
     }
     ctx.report.finding({rule,file,line:location.line,column:location.column,...extra});
@@ -508,7 +512,16 @@ function checkQueryChains(ctx,file,facts,m){
   const byEnd=m.calls, receivers=new Set(facts.calls.map(c=>c.receiverCall).filter(x=>x!==undefined));
   for(const terminal of facts.calls){
     if(receivers.has(terminal.end))continue;
-    const steps=[];let step=terminal;while(step){steps.unshift(step);step=byEnd.get(step.receiverCall);}
+    const steps=[],seen=new Set();let step=terminal,uncertainChain=false;
+    while(step&&!seen.has(step.end)){
+      seen.add(step.end);steps.unshift(step);
+      if(step.receiverCall!==undefined){step=byEnd.get(step.receiverCall);continue;}
+      const binding=m.bindings.get(step.target.binding);
+      if(step.target.members.length!==1||binding?.initializer===undefined)break;
+      const value=m.resolveValue(binding.initializer);
+      uncertainChain ||= !!(binding.reassigned||binding.mutated||step.target.reassigned);
+      step=value?.kind==='call'?byEnd.get(value.value):null;
+    }
     const c=m.context(steps[0].target);if(c?.members.join('.')!=='db.query')continue;
     const method=c=>c.target.members.at(-1),index=steps.find(c=>method(c)==='withIndex'),filter=steps.find(c=>method(c)==='filter');
     if(steps.some(c=>method(c)==='withSearchIndex'))continue;
@@ -555,7 +568,8 @@ function checkQueryChains(ctx,file,facts,m){
     if(filter&&!index)rule='filter-table-scan';else if(index&&!ranged&&!bounded)rule='index-without-range';else if(index&&filter)rule='index-filter-combo';else if(collect&&!bounded&&!ranged)rule='unbounded-collect';
     if(!rule)continue;
     const trigger=rule==='index-filter-combo'?filter:steps.find(c=>['withIndex','filter','collect'].includes(method(c)));
-    if(unknown && rule==='index-without-range')m.narrow(rule,trigger);
+    if(uncertainChain)m.narrow(rule,trigger,'unresolved-identity');
+    else if(unknown && rule==='index-without-range')m.narrow(rule,trigger);
     else m.emit(rule,trigger.memberRange??trigger);
   }
 }
