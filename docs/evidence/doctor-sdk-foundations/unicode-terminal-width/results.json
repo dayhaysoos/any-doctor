@@ -1,0 +1,307 @@
+{
+  "branch": "feature/doctor-sdk-foundations",
+  "reviewedStart": "d469c162f09e33c1fc69b9319f2569a8f8ad3871",
+  "sourceCandidate": "60f0419d096b3aec6013b8248efa480d0bdf7617",
+  "sourceWorkingTreeStatus": "clean",
+  "finalHeadReceipt": "/private/tmp/any-doctor-unicode-width/acceptance/final-head-verification.json",
+  "artifact": {
+    "path": "/private/tmp/any-doctor-unicode-width/acceptance/package/any-doctor-0.1.2.tgz",
+    "bytes": 277030,
+    "files": 144,
+    "sha256": "3e7fe2597e23505a6041284baaae659a1d3a91c9e754ed5ee0ad2399305369f5"
+  },
+  "dependency": {
+    "name": "get-east-asian-width",
+    "version": "1.6.0",
+    "license": "MIT",
+    "engines": ">=18",
+    "runtimeDependencies": 0,
+    "directProductionDependency": true,
+    "packageJsonExactPin": true,
+    "lockfileIntegrity": "sha512-QRbvDIbx6YklUe6RxeTeleMR0yv3cYH6PsPZHcnVn7xv7zO1BHN8r0XETu8n6Ye3Q+ahtSarc3WgtNWmehIBfA==",
+    "tarballBytes": 5310,
+    "installedFileBytes": 14592,
+    "files": 8,
+    "sha256": "4451f58e2f5a4ef27ae8b4ba25b64be97d3a8413dc8614a4321a10d418eee6d7",
+    "policy": "Wide/Fullwidth=2, ambiguous=1; Node ICU graphemes and Unicode properties classify zero-width marks/formatters and common complete emoji sequences."
+  },
+  "packageDeltaBytes": 1004,
+  "counts": {
+    "fullAutomated": {
+      "passed": 785,
+      "failed": 0,
+      "skipped": 0
+    },
+    "local": {
+      "bundled": {
+        "passed": 265,
+        "failed": 0,
+        "skipped": 15
+      },
+      "focused": {
+        "passed": 192,
+        "failed": 0,
+        "skipped": 0
+      },
+      "unicode": {
+        "passed": 53,
+        "failed": 0,
+        "skipped": 0
+      },
+      "mutations": {
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "packed": {
+      "bundled": {
+        "passed": 265,
+        "failed": 0,
+        "skipped": 15
+      },
+      "focused": {
+        "passed": 192,
+        "failed": 0,
+        "skipped": 0
+      },
+      "unicode": {
+        "passed": 53,
+        "failed": 0,
+        "skipped": 0
+      },
+      "mutations": {
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "optionalDashboardAndUnicode": {
+      "passed": 181,
+      "failed": 0,
+      "skipped": 0
+    },
+    "optionalRecipeOnly": {
+      "passed": 2,
+      "failed": 0,
+      "skipped": 7
+    },
+    "optionalAsync": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 59
+    },
+    "node18LocalUnicode": {
+      "passed": 53,
+      "failed": 0,
+      "skipped": 0
+    },
+    "node18PackedUnicode": {
+      "passed": 53,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "baseline": {
+    "passed": 135,
+    "failed": 34,
+    "skipped": 0,
+    "candidate": "d469c162f09e33c1fc69b9319f2569a8f8ad3871",
+    "testSnapshot": "1ad2e6a6777d0c131efc9f1a98fa8988f6a2e708",
+    "cjk": [
+      {
+        "label": "CJK reproduction",
+        "cols": 20,
+        "rows": 8,
+        "useColor": false,
+        "logicalLines": 7,
+        "maximumVisibleWidth": 35,
+        "physicalRows": 11
+      },
+      {
+        "label": "CJK reproduction",
+        "cols": 20,
+        "rows": 8,
+        "useColor": true,
+        "logicalLines": 7,
+        "maximumVisibleWidth": 35,
+        "physicalRows": 11
+      }
+    ]
+  },
+  "reviewRed": {
+    "passed": 42,
+    "failed": 8,
+    "skipped": 0
+  },
+  "colonSgrRed": {
+    "passed": 49,
+    "failed": 4,
+    "skipped": 0
+  },
+  "finalUnicodeMatrix": [
+    {
+      "label": "Unicode matrix",
+      "cols": 20,
+      "rows": 8,
+      "useColor": false,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 20,
+      "physicalRows": 7
+    },
+    {
+      "label": "Unicode matrix",
+      "cols": 20,
+      "rows": 8,
+      "useColor": true,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 20,
+      "physicalRows": 7
+    },
+    {
+      "label": "Unicode matrix",
+      "cols": 40,
+      "rows": 8,
+      "useColor": false,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 40,
+      "physicalRows": 7
+    },
+    {
+      "label": "Unicode matrix",
+      "cols": 40,
+      "rows": 8,
+      "useColor": true,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 40,
+      "physicalRows": 7
+    },
+    {
+      "label": "Unicode matrix",
+      "cols": 80,
+      "rows": 3,
+      "useColor": false,
+      "logicalLines": 2,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 2
+    },
+    {
+      "label": "Unicode matrix",
+      "cols": 80,
+      "rows": 3,
+      "useColor": true,
+      "logicalLines": 2,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 2
+    },
+    {
+      "label": "Unicode matrix",
+      "cols": 80,
+      "rows": 8,
+      "useColor": false,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 7
+    },
+    {
+      "label": "Unicode matrix",
+      "cols": 80,
+      "rows": 8,
+      "useColor": true,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 7
+    },
+    {
+      "label": "Unicode matrix",
+      "cols": 80,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "Unicode matrix",
+      "cols": 80,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 80,
+      "physicalRows": 33
+    },
+    {
+      "label": "Unicode matrix",
+      "cols": 140,
+      "rows": 34,
+      "useColor": false,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 140,
+      "physicalRows": 33
+    },
+    {
+      "label": "Unicode matrix",
+      "cols": 140,
+      "rows": 34,
+      "useColor": true,
+      "logicalLines": 33,
+      "maximumVisibleWidth": 140,
+      "physicalRows": 33
+    }
+  ],
+  "finalCjk": [
+    {
+      "label": "CJK reproduction",
+      "cols": 20,
+      "rows": 8,
+      "useColor": false,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 20,
+      "physicalRows": 7
+    },
+    {
+      "label": "CJK reproduction",
+      "cols": 20,
+      "rows": 8,
+      "useColor": true,
+      "logicalLines": 7,
+      "maximumVisibleWidth": 20,
+      "physicalRows": 7
+    }
+  ],
+  "measuredFrames": 164,
+  "localPackedOptionalFramesIdentical": true,
+  "review": {
+    "base": "d469c162f09e33c1fc69b9319f2569a8f8ad3871",
+    "candidate": "60f0419d096b3aec6013b8248efa480d0bdf7617",
+    "standards": {
+      "initialFindings": 2,
+      "remainingFindings": 0,
+      "disposition": "Keycap mark classification and the unused incorrect lightning-token width were corrected. Full cumulative diff has no documented-standard violations or actionable baseline smells. TTY ownership and the dashboard boundary remain intact; SGR grammar is shared consistently. Independent Unicode rerun 53/0/0; fixed-diff whitespace check passed."
+    },
+    "spec": {
+      "initialFindings": 3,
+      "remainingFindings": 0,
+      "disposition": "Corrected combining-only keycaps, trailing ZWJ on text-default symbols, and lightning oracle width. Independent probes retain complete woman-technologist, skin-tone, rainbow-flag, heart and keycap clusters. Six SGR forms including colon RGB, semicolon RGB and indexed colors passed; fitting bytes and grapheme boundaries preserved. Unicode suite 53/0/0. No scope creep."
+    },
+    "additionalSelfReview": "Colon SGR was mishandled by the platform VT stripper; red 49/4/0 then green53/0/0. Measurement now removes precisely the grammar accepted by safeLine. Both reviewers re-reviewed this final correction."
+  },
+  "scope": {
+    "sourceCandidate": "60f0419d096b3aec6013b8248efa480d0bdf7617",
+    "changedFiles": [
+      "bin/tty.js",
+      "package-lock.json",
+      "package.json",
+      "src/tty.ts",
+      "test/dashboard.test.mjs",
+      "test/support/terminal-cells.mjs",
+      "test/tty-unicode.test.mjs"
+    ],
+    "protectedSystemsUnchanged": true,
+    "dashboardBoundaryUnchanged": true,
+    "frozenEvidenceUnchanged": true,
+    "frozenScanRerun": false,
+    "version": "0.1.2"
+  },
+  "verdict": "Conventional terminal-cell-width guarantee satisfied under documented policy."
+}

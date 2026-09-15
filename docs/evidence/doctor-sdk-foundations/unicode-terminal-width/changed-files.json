@@ -1,0 +1,60 @@
+[
+  {
+    "path": "src/tty.ts",
+    "reason": "Use Unicode width data and whole graphemes; normalize content controls and consistent SGR grammar; bound ellipsis and zero-width behavior.",
+    "sha256": "f8262f34f5fff0a7fdf4f123378f0e2d35e13bdc00a6f9151621ffcd6c68161a",
+    "bytes": 7562
+  },
+  {
+    "path": "bin/tty.js",
+    "reason": "Regenerate the shared TTY runtime from TypeScript.",
+    "sha256": "09d16b200da1dd8db308996b1a15f89abab4db460e0a239928996081ac1d6b82",
+    "bytes": 6351
+  },
+  {
+    "path": "package.json",
+    "reason": "Add exact direct production dependency get-east-asian-width1.6.0; package version remains0.1.2.",
+    "sha256": "4029afa4b7f19d8c0489d77da92fc1a3c29fc2f98f3c431fe35953b33243ec9d",
+    "bytes": 1236
+  },
+  {
+    "path": "package-lock.json",
+    "reason": "Pin the dependency tarball integrity without changing existing resolutions.",
+    "sha256": "b84235eb35c2194acb86cbe9172abc9034c68532024c5b5b38eded4a256a96e2",
+    "bytes": 30335
+  },
+  {
+    "path": "test/tty-unicode.test.mjs",
+    "reason": "Hardcoded independent width, complete-cluster, controls and ANSI corpus with candidate-root support.",
+    "sha256": "124e7c60beaa2a00abb3799225d574d998d36ce5ae2ec13da6cd0957484ccfa4",
+    "bytes": 3217
+  },
+  {
+    "path": "test/support/terminal-cells.mjs",
+    "reason": "Closed reviewed corpus oracle independent of production width, tables and grapheme segmentation.",
+    "sha256": "64b47c8c8ce4f5a44b5889e1917efcb3767f378aac77f0bc554bc8e021cdcc40",
+    "bytes": 1374
+  },
+  {
+    "path": "test/dashboard.test.mjs",
+    "reason": "Replace circular oracle; test requested Unicode matrix, CJK reproduction, color parity and repaint/navigation.",
+    "sha256": "78c38c1d5002c558e4dec78183afa4c995248bbaa862b5f41f16714d4384dfd9",
+    "bytes": 55956
+  },
+  {
+    "path": "docs/evidence/doctor-sdk-foundations/unicode-terminal-width/verification-report.md",
+    "reason": "New bounded Unicode-width report; supersedes only the previous UTF-16 limitation."
+  },
+  {
+    "path": "docs/evidence/doctor-sdk-foundations/unicode-terminal-width/results.json",
+    "reason": "Exact counts, package/dependency provenance, review and matrix values."
+  },
+  {
+    "path": "docs/evidence/doctor-sdk-foundations/unicode-terminal-width/evidence.tar.gz",
+    "reason": "Compressed raw red/acceptance evidence, commands, manifests and review."
+  },
+  {
+    "path": "docs/evidence/doctor-sdk-foundations/unicode-terminal-width/changed-files.json",
+    "reason": "Complete changed-file ledger and working implementation digests."
+  }
+]
