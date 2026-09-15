@@ -1,0 +1,159 @@
+{
+  "baseCommit": "0ace1b694077c04eb9e7d958d40cbdaf50d42883",
+  "branch": "feature/convex-doctor-sdk-migration",
+  "productionChanged": false,
+  "migrationComplete": false,
+  "automated": {
+    "passed": 785,
+    "failed": 0,
+    "skipped": 0
+  },
+  "localFixtures": {
+    "passed": 104,
+    "failed": 0,
+    "skipped": 0
+  },
+  "packedFixtures": {
+    "passed": 104,
+    "failed": 0,
+    "skipped": 0
+  },
+  "existingAdversarial": {
+    "passed": 83,
+    "failed": 0,
+    "skipped": 0,
+    "failures": []
+  },
+  "guardrailsLocal": {
+    "passed": 45,
+    "failed": 18,
+    "skipped": 0
+  },
+  "guardrailsPacked": {
+    "passed": 45,
+    "failed": 18,
+    "skipped": 0
+  },
+  "recipeCompatibility": {
+    "passed": 2,
+    "failed": 0,
+    "meaning": "confirm unsupported recipe models"
+  },
+  "metadataOffCounterexamples": {
+    "passed": 0,
+    "failed": 2,
+    "skipped": 0
+  },
+  "optionalFixtures": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 99
+  },
+  "optionalBehavior": {
+    "analysisAvailable": false,
+    "findings": 0,
+    "score": 100,
+    "grade": "Excellent",
+    "semanticIncomplete": false,
+    "semanticNarrowed": [],
+    "verdict": "FAIL: unavailable custom analysis still receives a confident score"
+  },
+  "frozen": {
+    "eligibleFiles": 671,
+    "baselineFindings": 124,
+    "lastPackedFindings": 124,
+    "findingsByCheck": {
+      "public-api-in-server-call": 40,
+      "query-clock-reactivity": 21,
+      "sequential-run-in-loop": 18,
+      "spread-into-patch": 18,
+      "index-filter-combo": 8,
+      "unbounded-collect": 15,
+      "filter-table-scan": 1,
+      "index-without-range": 3
+    },
+    "localPackedGroupsEqual": true,
+    "findingDeltas": [],
+    "sourceAdjudications": {
+      "review candidate": 124,
+      "confirmed cleanup": 0,
+      "false positive": 0,
+      "unknown because required evidence is unavailable": 0
+    },
+    "score": {
+      "score": 97,
+      "grade": "Excellent",
+      "filesClean": 618,
+      "filesTotal": 671,
+      "emptyScan": false
+    },
+    "semantic": {
+      "protocolVersion": 1,
+      "provider": {
+        "id": "any-doctor/syntax-flow",
+        "version": "1",
+        "available": true,
+        "dependencies": [
+          {
+            "id": "oxc-parser",
+            "version": "0.149.0"
+          },
+          {
+            "id": "@typescript-eslint/scope-manager",
+            "version": "8.70.0"
+          }
+        ]
+      },
+      "capabilities": [
+        {
+          "name": "calls",
+          "available": true
+        }
+      ],
+      "recipes": [],
+      "narrowed": [],
+      "incomplete": false,
+      "execution": {
+        "semanticQueries": 0,
+        "modelRequests": 671,
+        "modelCacheHits": 0
+      }
+    },
+    "manifestEntries": 1530,
+    "finalGroupsEqualBaseline": true,
+    "finalManifestMatched": 1530
+  },
+  "package": {
+    "base": "0ace1b694077c04eb9e7d958d40cbdaf50d42883",
+    "path": "/private/tmp/any-doctor-convex-sdk-migration/baseline/package/any-doctor-0.1.2.tgz",
+    "sha256": "3e7fe2597e23505a6041284baaae659a1d3a91c9e754ed5ee0ad2399305369f5",
+    "bytes": 277030,
+    "files": 144
+  },
+  "frozenConvexDependency": "1.32.0",
+  "verifyAll": {
+    "exit": 0,
+    "passed": 265,
+    "failed": 0,
+    "skipped": 15
+  },
+  "evaluationCommit": "a09b0393b1f3496bc0b6cb4fe8735c81d180f7b0",
+  "finalPackage": {
+    "base": "0ace1b694077c04eb9e7d958d40cbdaf50d42883",
+    "path": "/private/tmp/any-doctor-convex-sdk-migration/final/package/any-doctor-0.1.2.tgz",
+    "sha256": "3e7fe2597e23505a6041284baaae659a1d3a91c9e754ed5ee0ad2399305369f5",
+    "bytes": 277030,
+    "files": 144
+  },
+  "oracleControls": {
+    "passed": 6,
+    "failed": 0,
+    "productionMutationCertification": false
+  },
+  "review": {
+    "standardsRemaining": 0,
+    "specRemaining": 0,
+    "specResolved": 1
+  },
+  "reviewedLocalPackedRowsEqual": true
+}

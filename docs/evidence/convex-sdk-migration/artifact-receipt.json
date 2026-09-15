@@ -1,0 +1,10 @@
+{
+  "file": "evidence.tar.gz",
+  "sha256": "7c8145c3d4ef2c906217b89b8c7aa3900037ec4a665e6e01f6278686efc6e123",
+  "bytes": 673770,
+  "entries": 752,
+  "packageSha256": "3e7fe2597e23505a6041284baaae659a1d3a91c9e754ed5ee0ad2399305369f5",
+  "packageBytes": 277030,
+  "packageFiles": 144,
+  "payloadMatchesAfterFinalRebuild": true
+}

@@ -1,0 +1,55 @@
+{
+  "canonicalManifest": "docs/evidence/consumer-analysis/sift-manifest.json",
+  "receipts": {
+    "baseline/manifest-after-local.json": {
+      "files": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "baseline/manifest-after-packed.json": {
+      "files": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "baseline/manifest-before-local.json": {
+      "files": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "baseline/manifest-before-packed.json": {
+      "files": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "baseline/manifest-before.json": {
+      "files": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "final/manifest-after-local.json": {
+      "files": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "final/manifest-after-packed.json": {
+      "files": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "final/manifest-before-local.json": {
+      "files": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "final/manifest-before-packed.json": {
+      "files": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "manifest-final.json": {
+      "files": 1530,
+      "matched": 1530,
+      "mismatches": []
+    }
+  }
+}

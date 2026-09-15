@@ -1,0 +1,11 @@
+{
+  "base": "0ace1b694077c04eb9e7d958d40cbdaf50d42883",
+  "reviewedCommit": "bcf0ed39536ba523160721194de11435aa7ee86e",
+  "additionalScope": "Untracked report, summary and inventory; working-tree oracle correction rechecked by Spec reviewer",
+  "standards": {"findings": 0, "remaining": 0},
+  "spec": {"findings": 1, "remaining": 0, "resolved": "P2: accept cross-file host narrowing aggregation while checking exact target-file occurrence and reason"},
+  "oracleControls": {"passed": 6, "failed": 0, "productionMutationCertification": false},
+  "blockerConfirmed": true,
+  "migrationAccepted": false,
+  "limitations": "Review did not independently rerun all suites or certify the subsequently assembled evidence archive. No production migration was made."
+}
