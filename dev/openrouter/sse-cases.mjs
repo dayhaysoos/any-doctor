@@ -2,6 +2,7 @@ const head=`const c=new AbortController();const response=await fetch('https://op
 const parse=`const chunk=JSON.parse(line.slice(6));`;
 const loop=body=>`${head}for(const line of text.split('\n')){${body}}`.replace("split('\n')","split('\\n')");
 export const cases=[
+ ['compound-guard',loop(`if(line.startsWith(':')||line==='')continue;${parse}`),0,0],
  ['opaque-guard',loop(`if(skipLine(line))continue;${parse}`),0,2],
  ['computed',loop(`const chunk=JSON['parse'](line['slice'](6));`),1,0],
  ['wrapped',loop(`const chunk=JSON.parse((line as string)!.slice(6));`),1,0],

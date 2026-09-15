@@ -2,6 +2,7 @@ const setup=`import {OpenRouter} from '@openrouter/sdk';const client=new OpenRou
 const content='out += chunk.choices[0].delta.content;';
 const loop=body=>`${setup}for await(const chunk of stream){${body}}`;
 export const cases=[
+ ['compound-guard',loop(`if(chunk.error||chunk.choices[0].finish_reason==='error')throw 0;${content}`),0,0],
  ['loop-destructuring',`${setup}for await(const {choices:[{delta}]} of stream){out+=delta.content}`,1,0],
  ['direct',loop(content),1,0],
  ['early-error',loop(`if(chunk.error)throw new Error('failed');${content}`),0,0],

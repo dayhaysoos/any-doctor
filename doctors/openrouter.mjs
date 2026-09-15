@@ -115,6 +115,15 @@ function requestFacts(ctx, file) {
     }
     return v;
   }
+  function predicate(id,seen=new Set()) {
+    if(id===undefined||seen.has(id))return UNKNOWN;seen=new Set(seen).add(id);
+    const v=values.get(id);if(!v)return UNKNOWN;
+    if(v.kind==='reference'&&v.target?.binding!=null&&stable(v.target.binding)){
+      const init=bindings.get(v.target.binding)?.initializer;
+      if(init!==undefined)return predicate(init,seen);
+    }
+    return v.operation?v:resolve(id);
+  }
   function propertyValue(v,name,seen=new Set()) {
     if(v===undefined || v?.kind==='literal'&&v.literal===null)return undefined;
     if(v===UNKNOWN || v?.kind!=='object' || name===null)return UNKNOWN;
@@ -180,7 +189,7 @@ function requestFacts(ctx, file) {
     const ep=base===UNKNOWN||custom!==undefined?UNKNOWN:base===undefined?official:endpoint(base.id);
     return {endpoint:ep,official,config,body:call.arguments?.[0]};
   }
-  return {facts,flow,values,bindings,states,byStart,stable,resolve,property,propertyValue,literal,name,endpoint,native,clientCall,modelOrigin};
+  return {facts,flow,values,bindings,states,byStart,stable,resolve,predicate,property,propertyValue,literal,name,endpoint,native,clientCall,modelOrigin};
 }
 function checkRequests(ctx,file) {
   const m=requestFacts(ctx,file);
@@ -292,7 +301,7 @@ function checkSse(ctx,file,m) {
   const rule='sse-comment-parse-crash',{provenance}=streamFacts(m);
   function excludes(id,truthy,line,seen=new Set()) {
     if(seen.has(id))return false;seen=new Set(seen).add(id);
-    const v=m.resolve(id);if(!v||v===UNKNOWN)return false;
+    const v=m.predicate(id);if(!v||v===UNKNOWN)return false;
     if(v.operation?.operator==='!')return excludes(v.operation.operands[0],!truthy,line,seen);
     if(v.operation && (v.operation.operator==='&&'&&truthy || v.operation.operator==='||'&&!truthy)){const parts=v.operation.operands.map(x=>excludes(x,truthy,line,seen));return parts.includes(true)?true:parts.includes(UNKNOWN)?UNKNOWN:false;}
     if(v.kind!=='call'||v.member!=='startsWith'){
@@ -328,7 +337,7 @@ function checkStreamErrors(ctx,file,m) {
   const same=(a,b)=>a&&b&&a.origin===b.origin&&(a.chunk??a.lineBinding)===(b.chunk??b.lineBinding);
   function excludes(id,truthy,chunk,seen=new Set()) {
     if(seen.has(id))return UNKNOWN;seen=new Set(seen).add(id);
-    const v=m.resolve(id);if(!v||v===UNKNOWN)return same(provenance(id),chunk)?UNKNOWN:false;
+    const v=m.predicate(id);if(!v||v===UNKNOWN)return same(provenance(id),chunk)?UNKNOWN:false;
     const p=provenance(id),path=p?.members?.join('.');
     if(same(p,chunk)&&!p.unknown&&path==='error')return !truthy;
     const op=v.operation;
@@ -373,7 +382,7 @@ function checkRetries(ctx,file,m) {
   const narrow=()=>ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});
   function failureTest(id,request,seen=new Set()){
     if(seen.has(id))return undefined;seen=new Set(seen).add(id);
-    const v=m.resolve(id);if(!v||v===UNKNOWN)return undefined;
+    const v=m.predicate(id);if(!v||v===UNKNOWN)return undefined;
     if(v.operation?.operator==='!'){const result=failureTest(v.operation.operands[0],request,seen);return typeof result==='boolean'?!result:result;}
     if(v.operation&&['||','&&'].includes(v.operation.operator)){
       const parts=v.operation.operands.map(x=>failureTest(x,request,seen));
