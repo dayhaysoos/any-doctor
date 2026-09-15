@@ -172,14 +172,14 @@ function requestFacts(ctx, file) {
     return false;
   }
   const clientOrigin=id=>originMatches(id,v=>['@openrouter/sdk','openai'].includes(v.target?.source));
-  const modelOrigin=id=>originMatches(id,v=>v.target?.source==='@openrouter/ai-sdk-provider'&&['createOpenRouter','openrouter'].includes(v.target.importedName));
+  const modelOrigin=id=>originMatches(id,v=>v.target?.source==='@openrouter/ai-sdk-provider'&&['createOpenRouter','openrouter','*'].includes(v.target.importedName));
   function clientCall(call) {
     let v=resolve(call.callee), members=[];
     while(v?.kind==='member'){members.unshift(v.member);v=resolve(v.receiver);}
-    if(v===UNKNOWN && ['send','create'].includes(call.member)&&clientOrigin(call.callee))return {endpoint:UNKNOWN};
+    if(v===UNKNOWN&&clientOrigin(call.callee))return {endpoint:UNKNOWN};
     if(v?.kind!=='construct')return undefined;
     const ctor=name(v.callee), method=members.join('.');
-    const official=ctor==='@openrouter/sdk:OpenRouter' && method==='chat.send';
+    const official=['@openrouter/sdk:OpenRouter','@openrouter/sdk:*.OpenRouter'].includes(ctor) && method==='chat.send';
     const openai=['openai:default','openai:OpenAI'].includes(ctor)&&method==='chat.completions.create';
     if(!official&&!openai)return undefined;
     const config=v.arguments?.[0], key=official?'serverURL':'baseURL';
@@ -221,7 +221,7 @@ function checkModel(ctx,file,m,call) {
   let model, candidate=false, endpoint=true;
   const fn=m.resolve(call.callee), factory=fn?.kind==='call'?m.name(fn.callee):undefined;
   if(fn===UNKNOWN&&m.modelOrigin(call.callee)){candidate=true;model=UNKNOWN;}
-  else if(m.name(call.callee)==='@openrouter/ai-sdk-provider:openrouter'||factory==='@openrouter/ai-sdk-provider:createOpenRouter'){
+  else if(['@openrouter/ai-sdk-provider:openrouter','@openrouter/ai-sdk-provider:*.openrouter'].includes(m.name(call.callee))||['@openrouter/ai-sdk-provider:createOpenRouter','@openrouter/ai-sdk-provider:*.createOpenRouter'].includes(factory)){
     candidate=true;model=m.resolve(call.arguments?.[0]);
     if(factory){const base=m.property(fn.arguments?.[0],'baseURL');if(base!==undefined)endpoint=base===UNKNOWN?UNKNOWN:m.endpoint(base.id);}
   } else {
@@ -290,7 +290,7 @@ function streamFacts(m) {
         else if(v.member==='split'&&receiver?.stage==='text'&&m.literal(v.arguments?.[0])==='\n')p={...receiver,stage:'lines'};
         else if(v.member==='slice'&&receiver?.stage==='line'&&[0,5,6].includes(m.literal(v.arguments?.[0])))p={...receiver,stage:'payload'};
         else if(m.name(v.callee)==='JSON.parse'&&args[0]&&['line','payload'].includes(args[0].stage))p={...args[0],stage:'chunk',chunk:v.id};
-        else if(receiver||args.some(Boolean))p={...(receiver??args.find(Boolean)),unknown:true};
+        else if(receiver||args.some(Boolean)){const source=receiver??args.find(Boolean);p={...source,...(source.stage==='content'?{stage:'opaque'}:{}),unknown:true};}
       }
     }
     cache.set(id,p);return p;
@@ -326,7 +326,7 @@ function checkSse(ctx,file,m) {
       // Predicates inspect a line without transferring parser ownership.
       if(['startsWith','endsWith'].includes(call.member))continue;
       if(call.member==='feed'&&parserReceivers.has(receiver?.id))continue;
-      if(own?.unknown && (call.arguments??[]).some(id=>{const p=provenance(id);return p&&!p.unknown&&['body','reader','bytes','text','lines','line','payload'].includes(p.stage)}))
+      if(own?.unknown && [call.receiver,...(call.arguments??[])].some(id=>{const p=provenance(id);return p&&!p.unknown&&['response','body','reader','bytes','text','lines','line','payload'].includes(p.stage)}))
         ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});
     }
   }
@@ -367,8 +367,8 @@ function checkStreamErrors(ctx,file,m) {
   for(const call of m.flow.values.filter(v=>v.kind==='call'&&!v.dead)){
     for(const arg of call.arguments??[])consume(arg,true);
     if(provenance(call.id)?.unknown&&!['startsWith','endsWith'].includes(call.member)){
-      for(const id of call.arguments??[]){const p=provenance(id);
-        if(p&&!p.unknown&&['response','body','reader','bytes','text','lines','line','payload'].includes(p.stage)&&!reported.has(id)){
+      for(const id of [call.receiver,...(call.arguments??[])]){const p=provenance(id);
+        if(p&&!p.unknown&&['response','body','reader','bytes','text','lines','line','payload','chunks'].includes(p.stage)&&!reported.has(id)){
           reported.add(id);ctx.report.narrowing({check:rule,file,reason:'unsupported-expression',capability:'calls'});
         }
       }
