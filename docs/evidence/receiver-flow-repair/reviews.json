@@ -1,0 +1,23 @@
+{
+  "spec": {
+    "finalActionableFindings": 0,
+    "independentSharedContract": 26,
+    "independentMatrix": 56,
+    "resolved": [
+      "container/getter candidate loss",
+      "sequence result loss",
+      "member-write provenance loss"
+    ],
+    "evidence": "/tmp/receiver-spec-final-matrix/results.json"
+  },
+  "standards": {
+    "finalActionableFindings": 0,
+    "independentMatrix": 59,
+    "resolved": [
+      "unbound terminal candidate collision",
+      "unbound mutation-container collision",
+      "unrelated property taint"
+    ],
+    "evidence": "/private/tmp/receiver-standards-mutation-final/results.json"
+  }
+}

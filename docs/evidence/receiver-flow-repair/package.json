@@ -1,0 +1,11 @@
+{
+  "startingHead": "26be42bf1ef7b5cb28fc8fb9f04c984ad2d5e44d",
+  "path": "/private/tmp/any-doctor-receiver-repair/package/any-doctor-0.1.2.tgz",
+  "sha256": "7040985e7e4d71c06195997f76414b4cd81dfb1601ae9fe25880de7be46770a8",
+  "bytes": 283777,
+  "files": 144,
+  "productionCommit": "9cccabb957f96f3ce8edb06cf214877633929b05",
+  "installedCLI": "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+  "installedDoctor": "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+  "sourcePayload": "Every packed file was byte-compared to the working implementation and checked again after the production commit."
+}

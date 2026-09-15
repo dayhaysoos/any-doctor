@@ -1,0 +1,67 @@
+[
+  {
+    "file": "bin/analysis.js",
+    "sha256": "0982f1903936881c875364d2b6f6b5bdd4a7ec3ff4150ae49e523b8fcdbf7498",
+    "bytes": 23653
+  },
+  {
+    "file": "bin/contract.d.ts",
+    "sha256": "a70006946dd316e1a2cfe3b188fa95bee2f6054a8b9e88a996e8d2778e0c9922",
+    "bytes": 20856
+  },
+  {
+    "file": "bin/value-flow.d.ts",
+    "sha256": "d23cabbcbf6584517d2e67361083c3f9f03bf76c6796ed5400601d76e56f400c",
+    "bytes": 2278
+  },
+  {
+    "file": "bin/value-flow.js",
+    "sha256": "3d80f07728ab48dbe6a52e27990805759c159f07918886e5af21dd373d86e379",
+    "bytes": 10305
+  },
+  {
+    "file": "dev/receiver-flow/cases.mjs",
+    "sha256": "d30484b2f0a9996f583587be1cdfac5f19c0c77515c7e6d353efb44c6ec2b4eb",
+    "bytes": 6483
+  },
+  {
+    "file": "dev/receiver-flow/run-cases.mjs",
+    "sha256": "fbdb60b4ba9042ab227934a5952bd86e16db3850d2de09859c83d2b8d3989582",
+    "bytes": 2032
+  },
+  {
+    "file": "dev/receiver-flow/run-depths.mjs",
+    "sha256": "d09360644fb1f5ea38a11f020413268de98e8f7925d8f8d7d7b5b1da84f0be54",
+    "bytes": 3500
+  },
+  {
+    "file": "doctors/convex.mjs",
+    "sha256": "b800a7cc5e7af1f7d7c067816eeba6541f20a5794f422373c8ef363001ad972c",
+    "bytes": 49469
+  },
+  {
+    "file": "src/analysis.ts",
+    "sha256": "a604be7264330b922c7fc020390b57299dbaa6d07c499653a47e2bf4a519a4a9",
+    "bytes": 24976
+  },
+  {
+    "file": "src/contract.ts",
+    "sha256": "a5da36a35307bbed4e6963756388e6d1d5e221d5d1245392718ec8627556a8cc",
+    "bytes": 32243
+  },
+  {
+    "file": "src/value-flow.ts",
+    "sha256": "67120217b5bacd4cdbc51229113319d642b23ec964d40d058f4fbd25c9dd35bb",
+    "bytes": 10847
+  },
+  {
+    "file": "test/convex-receiver-flow.test.mjs",
+    "sha256": "d96f8de620f6e0e5fb01dc04abf07361dd65d0422ae4c2326f27f8d3ec1bc0ef",
+    "bytes": 2358
+  },
+  {
+    "file": "test/receiver-flow.test.mjs",
+    "sha256": "d751ff9b4ea25da0adef22366dfa0b8e092bea5cfacc3211c2be8c09addf6617",
+    "bytes": 5715
+  }
+]

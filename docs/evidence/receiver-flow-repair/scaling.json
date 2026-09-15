@@ -1,0 +1,1548 @@
+{
+  "timing-local-assignment": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "rows": [
+      {
+        "assignments": 20,
+        "sourceBytes": 1123,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-assignment/20",
+          "--format",
+          "json"
+        ],
+        "wallMs": 714,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 80,
+        "sourceBytes": 4063,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-assignment/80",
+          "--format",
+          "json"
+        ],
+        "wallMs": 499,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 160,
+        "sourceBytes": 7983,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-assignment/160",
+          "--format",
+          "json"
+        ],
+        "wallMs": 535,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 320,
+        "sourceBytes": 15823,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-assignment/320",
+          "--format",
+          "json"
+        ],
+        "wallMs": 679,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 1000,
+        "sourceBytes": 49143,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-assignment/1000",
+          "--format",
+          "json"
+        ],
+        "wallMs": 1954,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      }
+    ]
+  },
+  "timing-packed-assignment": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "rows": [
+      {
+        "assignments": 20,
+        "sourceBytes": 1123,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-assignment/20",
+          "--format",
+          "json"
+        ],
+        "wallMs": 557,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 80,
+        "sourceBytes": 4063,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-assignment/80",
+          "--format",
+          "json"
+        ],
+        "wallMs": 605,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 160,
+        "sourceBytes": 7983,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-assignment/160",
+          "--format",
+          "json"
+        ],
+        "wallMs": 554,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 320,
+        "sourceBytes": 15823,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-assignment/320",
+          "--format",
+          "json"
+        ],
+        "wallMs": 682,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      },
+      {
+        "assignments": 1000,
+        "sourceBytes": 49143,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-assignment/1000",
+          "--format",
+          "json"
+        ],
+        "wallMs": 1762,
+        "exit": 0,
+        "signal": null,
+        "findings": {
+          "error": 0,
+          "warning": 0,
+          "info": 0,
+          "total": 0,
+          "hiddenDuplicates": 0
+        },
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 1,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "narrowed": [
+          {
+            "check": "filter-table-scan",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "unbounded-collect",
+            "reason": "unresolved-identity",
+            "capability": "calls",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "passed": true
+      }
+    ]
+  },
+  "timing-local-depth": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "rows": [
+      {
+        "shape": "aliases",
+        "depth": 10,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-depth/aliases-10",
+          "--format",
+          "json"
+        ],
+        "wallMs": 554,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 113,
+        "actual": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "expected": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "narrowed": [],
+        "score": {
+          "score": 50,
+          "grade": "Fair",
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false
+        },
+        "passed": true
+      },
+      {
+        "shape": "aliases",
+        "depth": 20,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-depth/aliases-20",
+          "--format",
+          "json"
+        ],
+        "wallMs": 513,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 183,
+        "actual": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "expected": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "narrowed": [],
+        "score": {
+          "score": 50,
+          "grade": "Fair",
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false
+        },
+        "passed": true
+      },
+      {
+        "shape": "aliases",
+        "depth": 40,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-depth/aliases-40",
+          "--format",
+          "json"
+        ],
+        "wallMs": 485,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 323,
+        "actual": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "expected": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "narrowed": [],
+        "score": {
+          "score": 50,
+          "grade": "Fair",
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false
+        },
+        "passed": true
+      },
+      {
+        "shape": "aliases",
+        "depth": 80,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-depth/aliases-80",
+          "--format",
+          "json"
+        ],
+        "wallMs": 589,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 603,
+        "actual": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "expected": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "narrowed": [],
+        "score": {
+          "score": 50,
+          "grade": "Fair",
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false
+        },
+        "passed": true
+      },
+      {
+        "shape": "nested",
+        "depth": 10,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-depth/nested-10",
+          "--format",
+          "json"
+        ],
+        "wallMs": 565,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 102,
+        "actual": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "expected": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "narrowed": [
+          {
+            "check": "index-filter-combo",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "index-without-range",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "passed": true
+      },
+      {
+        "shape": "nested",
+        "depth": 20,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-depth/nested-20",
+          "--format",
+          "json"
+        ],
+        "wallMs": 499,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 152,
+        "actual": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "expected": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "narrowed": [
+          {
+            "check": "index-filter-combo",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "index-without-range",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "passed": true
+      },
+      {
+        "shape": "nested",
+        "depth": 40,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-depth/nested-40",
+          "--format",
+          "json"
+        ],
+        "wallMs": 521,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 252,
+        "actual": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "expected": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "narrowed": [
+          {
+            "check": "index-filter-combo",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "index-without-range",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "passed": true
+      },
+      {
+        "shape": "nested",
+        "depth": 80,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+          "run",
+          "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-local-depth/nested-80",
+          "--format",
+          "json"
+        ],
+        "wallMs": 520,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 452,
+        "actual": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "expected": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "narrowed": [
+          {
+            "check": "index-filter-combo",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "index-without-range",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "passed": true
+      }
+    ]
+  },
+  "timing-packed-depth": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "rows": [
+      {
+        "shape": "aliases",
+        "depth": 10,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-depth/aliases-10",
+          "--format",
+          "json"
+        ],
+        "wallMs": 470,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 113,
+        "actual": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "expected": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "narrowed": [],
+        "score": {
+          "score": 50,
+          "grade": "Fair",
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false
+        },
+        "passed": true
+      },
+      {
+        "shape": "aliases",
+        "depth": 20,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-depth/aliases-20",
+          "--format",
+          "json"
+        ],
+        "wallMs": 476,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 183,
+        "actual": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "expected": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "narrowed": [],
+        "score": {
+          "score": 50,
+          "grade": "Fair",
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false
+        },
+        "passed": true
+      },
+      {
+        "shape": "aliases",
+        "depth": 40,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-depth/aliases-40",
+          "--format",
+          "json"
+        ],
+        "wallMs": 453,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 323,
+        "actual": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "expected": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "narrowed": [],
+        "score": {
+          "score": 50,
+          "grade": "Fair",
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false
+        },
+        "passed": true
+      },
+      {
+        "shape": "aliases",
+        "depth": 80,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-depth/aliases-80",
+          "--format",
+          "json"
+        ],
+        "wallMs": 492,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 603,
+        "actual": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "expected": [
+          {
+            "rule": "index-filter-combo",
+            "line": 3,
+            "column": 48
+          },
+          {
+            "rule": "index-without-range",
+            "line": 3,
+            "column": 30
+          }
+        ],
+        "narrowed": [],
+        "score": {
+          "score": 50,
+          "grade": "Fair",
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false
+        },
+        "passed": true
+      },
+      {
+        "shape": "nested",
+        "depth": 10,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-depth/nested-10",
+          "--format",
+          "json"
+        ],
+        "wallMs": 460,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 102,
+        "actual": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "expected": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "narrowed": [
+          {
+            "check": "index-filter-combo",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "index-without-range",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "passed": true
+      },
+      {
+        "shape": "nested",
+        "depth": 20,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-depth/nested-20",
+          "--format",
+          "json"
+        ],
+        "wallMs": 459,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 152,
+        "actual": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "expected": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "narrowed": [
+          {
+            "check": "index-filter-combo",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "index-without-range",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "passed": true
+      },
+      {
+        "shape": "nested",
+        "depth": 40,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-depth/nested-40",
+          "--format",
+          "json"
+        ],
+        "wallMs": 536,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 252,
+        "actual": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "expected": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "narrowed": [
+          {
+            "check": "index-filter-combo",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "index-without-range",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "passed": true
+      },
+      {
+        "shape": "nested",
+        "depth": 80,
+        "heapMB": 128,
+        "command": [
+          "/Users/nickdejesus/.nvm/versions/node/v26.5.0/bin/node",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+          "run",
+          "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+          "/private/tmp/any-doctor-receiver-repair/timing-packed-depth/nested-80",
+          "--format",
+          "json"
+        ],
+        "wallMs": 482,
+        "exit": 0,
+        "signal": null,
+        "flowValues": 452,
+        "actual": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "expected": [
+          {
+            "rule": "unbounded-collect",
+            "line": 4,
+            "column": 32
+          }
+        ],
+        "narrowed": [
+          {
+            "check": "index-filter-combo",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "check": "index-without-range",
+            "reason": "unresolved-identity",
+            "occurrences": 1,
+            "files": [
+              {
+                "file": "entry.ts",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "score": {
+          "score": null,
+          "grade": null,
+          "filesClean": 0,
+          "filesTotal": 1,
+          "emptyScan": false,
+          "narrowedScan": true
+        },
+        "passed": true
+      }
+    ]
+  }
+}

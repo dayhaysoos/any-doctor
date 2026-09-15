@@ -1,0 +1,180 @@
+{
+  "beforeLocal": {
+    "findings": {
+      "error": 0,
+      "warning": 0,
+      "info": 0,
+      "total": 0,
+      "hiddenDuplicates": 0
+    },
+    "score": {
+      "score": 100,
+      "grade": "Excellent",
+      "filesClean": 1,
+      "filesTotal": 1,
+      "emptyScan": false
+    },
+    "narrowed": [],
+    "command": {
+      "command": [
+        "node",
+        "bin/cli.js",
+        "run",
+        "doctors/convex.mjs",
+        "/private/tmp/any-doctor-receiver-repair/before/seed",
+        "--format",
+        "json"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "gitBinary": "/Library/Developer/CommandLineTools/usr/bin/git",
+      "exit": 0,
+      "wallMs": 727
+    }
+  },
+  "beforeRetainedPackage": {
+    "findings": {
+      "error": 0,
+      "warning": 0,
+      "info": 0,
+      "total": 0,
+      "hiddenDuplicates": 0
+    },
+    "score": {
+      "score": 100,
+      "grade": "Excellent",
+      "filesClean": 1,
+      "filesTotal": 1,
+      "emptyScan": false
+    },
+    "narrowed": [],
+    "command": {
+      "command": [
+        "node",
+        "/private/tmp/any-doctor-receiver-repair/before/consumer/node_modules/any-doctor/bin/cli.js",
+        "run",
+        "/private/tmp/any-doctor-receiver-repair/before/consumer/node_modules/any-doctor/doctors/convex.mjs",
+        "/private/tmp/any-doctor-receiver-repair/before/seed",
+        "--format",
+        "json"
+      ],
+      "cwd": "/Users/nickdejesus/Code/any-doctor",
+      "gitBinary": "/Library/Developer/CommandLineTools/usr/bin/git",
+      "exit": 0,
+      "wallMs": 897
+    }
+  },
+  "afterLocal": {
+    "findings": {
+      "error": 0,
+      "warning": 0,
+      "info": 0,
+      "total": 0,
+      "hiddenDuplicates": 0
+    },
+    "score": {
+      "score": null,
+      "grade": null,
+      "filesClean": 1,
+      "filesTotal": 1,
+      "emptyScan": false,
+      "narrowedScan": true
+    },
+    "narrowed": [
+      {
+        "check": "index-without-range",
+        "capability": "calls",
+        "reason": "unresolved-identity",
+        "occurrences": 1,
+        "files": [
+          {
+            "file": "entry.ts",
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "check": "index-filter-combo",
+        "capability": "calls",
+        "reason": "unresolved-identity",
+        "occurrences": 1,
+        "files": [
+          {
+            "file": "entry.ts",
+            "occurrences": 1
+          }
+        ]
+      }
+    ],
+    "command": {
+      "command": [
+        "node",
+        "/Users/nickdejesus/Code/any-doctor/bin/cli.js",
+        "run",
+        "/Users/nickdejesus/Code/any-doctor/doctors/convex.mjs",
+        "/private/tmp/any-doctor-receiver-repair/before/seed",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "wallMs": 622,
+      "cwd": "/Users/nickdejesus/Code/any-doctor"
+    }
+  },
+  "afterPacked": {
+    "findings": {
+      "error": 0,
+      "warning": 0,
+      "info": 0,
+      "total": 0,
+      "hiddenDuplicates": 0
+    },
+    "score": {
+      "score": null,
+      "grade": null,
+      "filesClean": 1,
+      "filesTotal": 1,
+      "emptyScan": false,
+      "narrowedScan": true
+    },
+    "narrowed": [
+      {
+        "check": "index-without-range",
+        "capability": "calls",
+        "reason": "unresolved-identity",
+        "occurrences": 1,
+        "files": [
+          {
+            "file": "entry.ts",
+            "occurrences": 1
+          }
+        ]
+      },
+      {
+        "check": "index-filter-combo",
+        "capability": "calls",
+        "reason": "unresolved-identity",
+        "occurrences": 1,
+        "files": [
+          {
+            "file": "entry.ts",
+            "occurrences": 1
+          }
+        ]
+      }
+    ],
+    "command": {
+      "command": [
+        "node",
+        "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/bin/cli.js",
+        "run",
+        "/private/tmp/any-doctor-receiver-repair/package/normal/node_modules/any-doctor/doctors/convex.mjs",
+        "/private/tmp/any-doctor-receiver-repair/before/seed",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "wallMs": 947,
+      "cwd": "/Users/nickdejesus/Code/any-doctor"
+    }
+  }
+}

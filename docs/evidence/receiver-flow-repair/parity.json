@@ -1,0 +1,15 @@
+{
+  "inlineGroupsEqual": true,
+  "siftGroupsEqual": true,
+  "bundledVerificationEqual": true,
+  "allSuiteCountsEqual": true,
+  "receiverRowsEqual": true,
+  "scalingSemanticsEqual": true,
+  "allPackedPayloadBytesMatchWorkingFiles": true,
+  "frozenManifests": {
+    "localBefore": 1530,
+    "localAfter": 1530,
+    "packedBefore": 1530,
+    "packedAfter": 1530
+  }
+}

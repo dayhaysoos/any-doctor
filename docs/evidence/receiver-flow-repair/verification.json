@@ -1,0 +1,146 @@
+{
+  "startingBranch": "feature/convex-doctor-sdk-migration",
+  "startingHead": "26be42bf1ef7b5cb28fc8fb9f04c984ad2d5e44d",
+  "productionCommit": "9cccabb957f96f3ce8edb06cf214877633929b05",
+  "productionFiles": [
+    "bin/analysis.js",
+    "bin/contract.d.ts",
+    "bin/value-flow.d.ts",
+    "bin/value-flow.js",
+    "dev/receiver-flow/cases.mjs",
+    "dev/receiver-flow/run-cases.mjs",
+    "dev/receiver-flow/run-depths.mjs",
+    "doctors/convex.mjs",
+    "src/analysis.ts",
+    "src/contract.ts",
+    "src/value-flow.ts",
+    "test/convex-receiver-flow.test.mjs",
+    "test/receiver-flow.test.mjs"
+  ],
+  "npmTest": {
+    "passed": 843,
+    "failed": 0,
+    "skipped": 0
+  },
+  "local": {
+    "verify-all": {
+      "passed": 267,
+      "failed": 0,
+      "skipped": 15
+    },
+    "convex": {
+      "passed": 106,
+      "failed": 0,
+      "skipped": 0
+    },
+    "existing": {
+      "passed": 83,
+      "failed": 0,
+      "skipped": 0
+    },
+    "guardrails": {
+      "passed": 63,
+      "failed": 0,
+      "skipped": 0
+    },
+    "slices": {
+      "passed": 151,
+      "failed": 0,
+      "skipped": 0
+    },
+    "repair": {
+      "passed": 25,
+      "failed": 0,
+      "skipped": 0
+    },
+    "receivers": {
+      "passed": 59,
+      "failed": 0,
+      "skipped": 0
+    },
+    "scaling": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "depths": {
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0
+    },
+    "sharedContract": {
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    "sdkIntegration": {
+      "passed": 58,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "packed": {
+    "verify-all": {
+      "passed": 267,
+      "failed": 0,
+      "skipped": 15
+    },
+    "convex": {
+      "passed": 106,
+      "failed": 0,
+      "skipped": 0
+    },
+    "existing": {
+      "passed": 83,
+      "failed": 0,
+      "skipped": 0
+    },
+    "guardrails": {
+      "passed": 63,
+      "failed": 0,
+      "skipped": 0
+    },
+    "slices": {
+      "passed": 151,
+      "failed": 0,
+      "skipped": 0
+    },
+    "repair": {
+      "passed": 25,
+      "failed": 0,
+      "skipped": 0
+    },
+    "receivers": {
+      "passed": 59,
+      "failed": 0,
+      "skipped": 0
+    },
+    "scaling": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "depths": {
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0
+    },
+    "sharedContract": {
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    "sdkIntegration": {
+      "passed": 58,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "providerOmitted": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 101
+  },
+  "inheritedFailures": [],
+  "inheritedSkips": "15 location-coverage cases without a declared reporting unit; provider-omitted verification separately skips 101 analysis-required cases."
+}

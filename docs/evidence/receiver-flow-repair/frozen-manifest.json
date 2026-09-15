@@ -1,0 +1,26 @@
+{
+  "manifestFile": "docs/evidence/consumer-analysis/sift-manifest.json",
+  "manifestSha256": "ccc1e683bd0a971f550eb3bcc0a6b9c57712310942c6ac8287052519b733e141",
+  "receipts": {
+    "accepted-local-before": {
+      "entries": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "accepted-local-after": {
+      "entries": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "accepted-packed-before": {
+      "entries": 1530,
+      "matched": 1530,
+      "mismatches": []
+    },
+    "accepted-packed-after": {
+      "entries": 1530,
+      "matched": 1530,
+      "mismatches": []
+    }
+  }
+}

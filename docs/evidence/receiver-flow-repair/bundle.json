@@ -1,0 +1,6 @@
+{
+  "file": "executable-evidence.tar.gz",
+  "sha256": "372f401ab42220fae26bb970ddbbcb522bfdb2f5acb953e143cd23b9af72ea19",
+  "bytes": 1386080,
+  "contents": "Fresh executable seeds, full JSON and test logs, commands/exit statuses, independent review reproductions, scripts, payload digests and the exact tested tarball; no node_modules or installed consumers."
+}

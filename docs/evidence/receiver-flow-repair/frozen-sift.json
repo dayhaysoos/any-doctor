@@ -1,0 +1,502 @@
+{
+  "baselineFindings": 127,
+  "currentFindings": 128,
+  "unchangedFindings": 127,
+  "removed": [],
+  "added": [
+    {
+      "rule": "index-filter-combo",
+      "file": "convex/applications.ts",
+      "line": 1481,
+      "column": 7,
+      "message": null,
+      "classification": "informational review candidate",
+      "explanation": "Both onlyActive alternatives derive from jobQuery, whose by_orgId indexed query always filters out drafts. The shared receiver edge now reaches both branches through order(). The index-plus-filter fact is definite; the finding does not establish inefficient production cardinality or authorize changing Sift.",
+      "source": "1477:     // Get all active/closed jobs for the org (exclude drafts)\n1478:     const jobQuery = ctx.db\n1479:       .query(\"jobs\")\n1480:       .withIndex(\"by_orgId\", (q) => q.eq(\"orgId\", args.orgId))\n1481:       .filter((q) => q.neq(q.field(\"status\"), \"draft\"));\n1482: \n1483:     const jobs = await (\n1484:       args.onlyActive\n1485:         ? jobQuery.filter((q) => q.eq(q.field(\"status\"), \"active\"))\n1486:         : jobQuery\n1487:     )\n1488:       .order(\"desc\")\n1489:       .collect();"
+    }
+  ],
+  "narrowingBefore": [
+    {
+      "check": "spread-into-patch",
+      "capability": "calls",
+      "reason": "unsupported-expression",
+      "occurrences": 24,
+      "files": [
+        {
+          "file": "convex/analysis/internal.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/devMembershipTools.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/evals/overrides.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/hiring/closureFeedback.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/hiringWork.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/jobs.ts",
+          "occurrences": 4
+        },
+        {
+          "file": "convex/lib/applicationResumeIdentityCoverage.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/lib/applicationWorkspaceIndexBackfill.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/lib/candidateIdentityAttach.ts",
+          "occurrences": 3
+        },
+        {
+          "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/onboarding.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/orgs.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/priorFeedbackNotices.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/recruitingAttempts.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/userProfiles.ts",
+          "occurrences": 1
+        }
+      ]
+    },
+    {
+      "check": "presence-patch-on-shared-document",
+      "capability": "calls",
+      "reason": "unsupported-expression",
+      "occurrences": 41,
+      "files": [
+        {
+          "file": "convex/analysis/internal.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/applicationFileRetention.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/chat.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/chatConversationState.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/devMembershipTools.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/devRecruiterChatQa.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/evals/overrides.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/hiring/closureFeedback.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/hiringLifecycle.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/hiringWork.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/interviewFeedback.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/jobs.ts",
+          "occurrences": 4
+        },
+        {
+          "file": "convex/lib/applicationResumeIdentityCoverage.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/lib/applicationWorkspaceIndexBackfill.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/lib/candidateIdentityAttach.ts",
+          "occurrences": 3
+        },
+        {
+          "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/onboarding.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/orgJobDefaults.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/orgs.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/priorFeedbackNotices.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/qaBrowserAccounts.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/recruiterChatMessages.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/recruitingAttempts.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/shareLinks.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/stageSummaries.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/teamInvites.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/userProfiles.ts",
+          "occurrences": 1
+        }
+      ]
+    },
+    {
+      "check": "missing-args-validator",
+      "capability": "calls",
+      "reason": "unsupported-expression",
+      "occurrences": 15,
+      "files": [
+        {
+          "file": "convex/devChatResultsWorkspaceQa.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/devHiringHomeQa.ts",
+          "occurrences": 8
+        },
+        {
+          "file": "convex/hiringApplication.ts",
+          "occurrences": 3
+        },
+        {
+          "file": "convex/hiringLifecycle.ts",
+          "occurrences": 3
+        }
+      ]
+    }
+  ],
+  "narrowingAfter": [
+    {
+      "check": "spread-into-patch",
+      "capability": "calls",
+      "reason": "unsupported-expression",
+      "occurrences": 24,
+      "files": [
+        {
+          "file": "convex/analysis/internal.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/devMembershipTools.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/evals/overrides.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/hiring/closureFeedback.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/hiringWork.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/jobs.ts",
+          "occurrences": 4
+        },
+        {
+          "file": "convex/lib/applicationResumeIdentityCoverage.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/lib/applicationWorkspaceIndexBackfill.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/lib/candidateIdentityAttach.ts",
+          "occurrences": 3
+        },
+        {
+          "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/onboarding.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/orgs.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/priorFeedbackNotices.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/recruitingAttempts.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/userProfiles.ts",
+          "occurrences": 1
+        }
+      ]
+    },
+    {
+      "check": "presence-patch-on-shared-document",
+      "capability": "calls",
+      "reason": "unsupported-expression",
+      "occurrences": 41,
+      "files": [
+        {
+          "file": "convex/analysis/internal.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/applicationFileRetention.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/chat.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/chatConversationState.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/devMembershipTools.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/devRecruiterChatQa.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/evals/overrides.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/hiring/closureFeedback.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/hiringLifecycle.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/hiringWork.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/interviewFeedback.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/jobs.ts",
+          "occurrences": 4
+        },
+        {
+          "file": "convex/lib/applicationResumeIdentityCoverage.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/lib/applicationWorkspaceIndexBackfill.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/lib/candidateIdentityAttach.ts",
+          "occurrences": 3
+        },
+        {
+          "file": "convex/lib/recruiterCandidateRetrievalOutcome.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/migrations/backfillLegacyAnalysisUsageToBillingLedger.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/migrations/sanitizeLegacyLinkedInVerification.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/onboarding.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/orgJobDefaults.ts",
+          "occurrences": 2
+        },
+        {
+          "file": "convex/orgs.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/priorFeedbackNotices.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/qaBrowserAccounts.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/recruiterChatMessages.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/recruitingAttempts.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/shareLinks.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/stageSummaries.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/teamInvites.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/userProfiles.ts",
+          "occurrences": 1
+        }
+      ]
+    },
+    {
+      "check": "index-filter-combo",
+      "capability": "calls",
+      "reason": "unresolved-identity",
+      "occurrences": 2,
+      "files": [
+        {
+          "file": "convex/applications.ts",
+          "occurrences": 2
+        }
+      ]
+    },
+    {
+      "check": "missing-args-validator",
+      "capability": "calls",
+      "reason": "unsupported-expression",
+      "occurrences": 15,
+      "files": [
+        {
+          "file": "convex/devChatResultsWorkspaceQa.ts",
+          "occurrences": 1
+        },
+        {
+          "file": "convex/devHiringHomeQa.ts",
+          "occurrences": 8
+        },
+        {
+          "file": "convex/hiringApplication.ts",
+          "occurrences": 3
+        },
+        {
+          "file": "convex/hiringLifecycle.ts",
+          "occurrences": 3
+        }
+      ]
+    }
+  ],
+  "narrowingAdjudications": [
+    {
+      "check": "index-filter-combo",
+      "file": "convex/applications.ts",
+      "operationLine": 1683,
+      "classification": "unknown",
+      "explanation": "The onlyActive condition selects an indexed/filter builder or the indexed builder without a filter. The predicate differs across supported paths, so coverage is incomplete for this occurrence. No definite finding is invented.",
+      "source": "1673:     const jobQuery = ctx.db\n1674:       .query(\"jobs\")\n1675:       .withIndex(\"by_orgId\", (q) => q.eq(\"orgId\", orgId));\n1676: \n1677:     let jobMap: Map<Id<\"jobs\">, Doc<\"jobs\">>;\n1678:     let scopedJobIds: Id<\"jobs\">[];\n1679: \n1680:     if (jobId) {\n1681:       const jobs = await (\n1682:         onlyActive\n1683:           ? jobQuery.filter((q) => q.eq(q.field(\"status\"), \"active\"))\n1684:           : jobQuery\n1685:       ).collect();"
+    },
+    {
+      "check": "index-filter-combo",
+      "file": "convex/applications.ts",
+      "operationLine": 1710,
+      "classification": "unknown",
+      "explanation": "The onlyActive condition selects an indexed/filter builder or the indexed builder without a filter. The predicate differs across supported paths, so coverage is incomplete for this occurrence. No definite finding is invented.",
+      "source": "1707:     } else {\n1708:       const jobs = await (\n1709:         onlyActive\n1710:           ? jobQuery.filter((q) => q.eq(q.field(\"status\"), \"active\"))\n1711:           : jobQuery\n1712:       ).collect();"
+    }
+  ],
+  "previousAdjudications": "../convex-query-summary-repair/finding-adjudications.jsonl",
+  "previousAdjudicationsSha256": "81d1075a4a7d7337fc62edefb13bee9410873ed46afdd5d501ab5717890495ad"
+}
