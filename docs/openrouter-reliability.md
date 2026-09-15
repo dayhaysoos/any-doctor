@@ -37,5 +37,39 @@ The shared projection remains serializable and framework-neutral.
 - A retry label/catch or header read on an out-of-scope response is insufficient
   to establish retry behavior or handling. Original seeds remain visible.
 
-The migration is performed in ordered green slices. This document records the
-intended contracts; completion evidence must establish which are implemented.
+## Verified boundary
+
+Revision 2 uses explicit unknown values separate from absent properties and
+proven local lookalikes. Ordered properties, stable lexical aliases and bounded
+stream transformations share the same expression facts. Object escapes include
+contained aliases; graph searches visit finite states rather than assignment paths.
+
+The independent review regressions cover nested and unresolved SDK stream flags,
+SSE prefix offsets and sliced payloads, invalid SDK signals, conditional transport
+identity, opaque object/client transfers, cycles and repeated assignment graphs.
+The durable independent runner is `node dev/openrouter/challenge.mjs <candidate>`;
+`node dev/openrouter/scaling.mjs <candidate>` checks growing independent sites.
+Both accept an installed package directory and invoke its explicit CLI and doctor.
+
+The frozen Sift comparison changes 57 historical reports to 15 informational
+review candidates (nine request lifetime, six actual model pins). The false SSE
+warning parsed a completed `stream: false` response. Nine conditional/external
+pin selections become scoped uncertainty; five client handles passed to opaque
+helpers also abstain on cancellation advice; three exported policy pins and 16 UI
+choices require cross-file flow and are outside this local check. The 23 original
+false positives are removed. Six legitimate pins move from declarations to their
+actual selection calls. Unknown paths retain definite neighboring findings and
+make score/grade null. Detailed row-by-row source adjudication stays outside Git.
+
+Known limits remain: runtime client hooks/environment overrides and installed SDK
+behavior are not proved; arbitrary cross-function stream transformations narrow;
+SDK signal factories other than established AbortController signals can narrow;
+retry analysis recognizes structural response-dependent loops, not execution counts
+or actual waiting. Unknown raw endpoints may narrow even when a human can establish
+a non-OpenRouter destination from external configuration. Mutation facts are
+conservative across the whole lexical binding lifetime. Default file exclusions,
+including `.mts`, `.cts`, `.cjs`, remain separate coverage limits.
+
+The final verification report in the evidence directory records the exact commit,
+package hash, local/installed counts, review resolutions and frozen manifests.
+A green suite establishes this bounded contract, not universal absence of bugs.

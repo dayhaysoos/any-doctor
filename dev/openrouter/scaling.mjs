@@ -8,7 +8,8 @@ const {analyzeCalls}=await import(pathToFileURL(path.join(candidate,'bin/analysi
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'openrouter-scaling-')),results=[];
 const url='https://openrouter.ai/api/v1/chat/completions';
 try{for(const sites of [8,32,128]){
- const source=`import {OpenRouter} from '@openrouter/sdk';const client=new OpenRouter();\n`+Array.from({length:sites},(_,n)=>`async function site${n}(){
+ const repeatedWrites=`let innocent=externalText;${'innocent=innocent.replace(pattern,replacement);'.repeat(sites)}innocent.match(pattern);\n`;
+ const source=repeatedWrites+`import {OpenRouter} from '@openrouter/sdk';const client=new OpenRouter();\n`+Array.from({length:sites},(_,n)=>`async function site${n}(){
  const controller=new AbortController();
  fetch('${url}',{body:JSON.stringify({model:'openai/gpt-4.1'})});
  fetch(externalUrl);

@@ -14,6 +14,22 @@ const sdk=`import {OpenRouter as Gateway} from '@openrouter/sdk';const aborter=n
 const streaming=`${sdk}const events=await service.chat.send({stream:true},{signal:aborter.signal});`;
 const reader=`const aborter=new AbortController();const incoming=await fetch('${U}',{body:JSON.stringify({stream:true}),signal:aborter.signal});const channel=incoming.body.getReader();const packet=await channel.read();const decoded=new TextDecoder().decode(packet.value);`;
 const cases=[
+ ['escaped-client-neighbor',`${sdk}mutate(service);service.chat.send({model:'google/gemini-2.5-flash'},{signal:aborter.signal});`+neighbor,{A:1,B:1}],
+ ['repeated-write-graph-neighbor',`let text=source;${'text=text.replace(pattern,replacement);'.repeat(32)}text.match(pattern);`+neighbor],
+ ['nested-escape-neighbor',`const body={model:'google/gemini-2.5-flash'};const wrapper={body};mutate(wrapper);fetch('${U}',{signal:new AbortController().signal,body:JSON.stringify(body)});`+neighbor,{B:1}],
+ ['nested-sdk-stream',`${sdk}const events=await service.chat.send({chatRequest:{stream:true}},{signal:aborter.signal});for await(const item of events){emit(/*D*/item.choices[0].delta.content)}`],
+ ['unknown-sdk-stream-neighbor',`${sdk}const events=await service.chat.send({stream:enabled},{signal:aborter.signal});for await(const item of events){emit(item.choices[0].delta.content)}`+neighbor,{D:1}],
+ ['conditional-sdk-stream-neighbor',`${sdk}const events=await service.chat.send({stream:enabled?true:false},{signal:aborter.signal});for await(const item of events){emit(item.choices[0].delta.content)}`+neighbor,{D:1}],
+ ['payload-comment-guard',`${reader}for(const row of decoded.split('\\n')){const payload=row.slice(6);if(payload.startsWith(':'))continue;/*C*/JSON.parse(payload)}`],
+ ['offset-comment-guard',`${reader}for(const row of decoded.split('\\n')){if(row.startsWith(':',6))continue;/*C*/JSON.parse(row.slice(6))}`],
+ ['zero-offset-comment-guard',`${reader}for(const row of decoded.split('\\n')){if(row.startsWith(':',0))continue;JSON.parse(row.slice(6))}`],
+ ['identity-slice-comment-guard',`${reader}for(const row of decoded.split('\\n')){if(row.slice(0).startsWith(':'))continue;JSON.parse(row.slice(6))}`],
+ ['conditional-native-model-neighbor',`const send=enabled?fetch:external;send('${U}',{body:JSON.stringify({model:'google/gemini-2.5-flash'})});`+neighbor,{A:1,B:1}],
+ ['invalid-sdk-signal-neighbor',`${sdk}service.chat.send({}, {signal:42});`+neighbor,{A:1}],
+ ['cyclic-member-neighbor',`const transport=transport.next;transport();`+neighbor],
+ ['cyclic-spread-neighbor',`import {OpenRouter} from '@openrouter/sdk';const config={...config};const client=new OpenRouter(config);client.chat.send({});`+neighbor,{A:1,B:1}],
+ ['escaped-object-neighbor',`const body={model:'google/gemini-2.5-flash'};mutate(body);fetch('${U}',{signal:new AbortController().signal,body:JSON.stringify(body)});`+neighbor,{B:1}],
+
  ['conditional-client-method',`${sdk}const invoke=enabled?service.chat.send:external;invoke({model:'google/gemini-2.5-flash'});`+neighbor,{A:1,B:1}],
  ['namespace-sdk',`import * as sdk from '@openrouter/sdk';const ac=new AbortController();const c=new sdk.OpenRouter();/*B*/c.chat.send({model:'google/gemini-2.5-flash'},{signal:ac.signal});`],
  ['namespace-provider',`import * as providers from '@openrouter/ai-sdk-provider';const choose=providers.createOpenRouter();/*B*/choose('google/gemini-2.5-flash');`],

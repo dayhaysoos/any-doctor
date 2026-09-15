@@ -87,11 +87,30 @@ function requestFacts(ctx, file) {
   const states = new Map(facts.structure.bindings.map(b => [b.binding,b]));
   const byStart = new Map(flow.values.map(v => [v.start,v]));
   const stable = b => !states.get(b)?.reassigned && !states.get(b)?.mutated;
+  // Inspect escaped object identity, not primitive uses: passing a URL or a
+  // content string does not allow the callee to mutate that value.
+  const escapedValues=new Set();
+  function markEscaped(id) {
+    if(id===undefined||escapedValues.has(id))return;
+    escapedValues.add(id);const v=values.get(id);if(!v)return;
+    // An opaque owner can mutate any contained object, including stable aliases.
+    for(const child of [v.kind==='reference'?bindings.get(v.target?.binding)?.initializer:undefined,v.value,
+      ...(v.alternatives??[]),...(v.properties??[]).map(p=>p.value),
+      ...(v.elements??[]).map(p=>p.value)])markEscaped(child);
+  }
+  for(const b of bindings.values())if((states.get(b.binding)?.escapes??[]).some(t=>{
+    const n=[t.root,...t.members].join('.');
+    if(t.binding===null&&['JSON.stringify',...FETCH_NAMES].includes(n))return false;
+    if(t.binding!==null&&['chat.send','chat.completions.create'].includes(t.members.join('.')) &&
+      originMatches(bindings.get(t.binding)?.initializer,x=>['@openrouter/sdk','openai'].includes(x.target?.source)))return false;
+    return true;
+  }))markEscaped(b.initializer);
   function resolve(id, seen = new Set()) {
     if (id === undefined) return undefined;
     if (id === UNKNOWN || seen.has(id)) return UNKNOWN;
     const v = values.get(id); if (!v) return UNKNOWN;
     seen = new Set(seen).add(id);
+    if (['object','array','construct'].includes(v.kind)&&escapedValues.has(v.id))return UNKNOWN;
     if (v.kind === 'await') return resolve(v.value,seen);
     if (v.kind === 'reference' && v.target?.binding != null) {
       const b=v.target.binding, state=states.get(b);
@@ -127,6 +146,9 @@ function requestFacts(ctx, file) {
   function propertyValue(v,name,seen=new Set()) {
     if(v===undefined || v?.kind==='literal'&&v.literal===null)return undefined;
     if(v===UNKNOWN || v?.kind!=='object' || name===null)return UNKNOWN;
+    const state='property:'+v.id+':'+name;
+    if(seen.has(state))return UNKNOWN;
+    seen=new Set(seen).add(state);
     let result;
     for(const p of v.properties??[]) {
       if(p.spread){const nested=propertyValue(resolve(p.value,seen),name,seen);if(nested!==undefined)result=nested;}
@@ -144,9 +166,10 @@ function requestFacts(ctx, file) {
       for(let i=0;i<v.template.expressions.length;i++){const part=literal(v.template.expressions[i],seen);if(part===UNKNOWN||v.template.quasis[i+1]===null)return UNKNOWN;result+=String(part)+v.template.quasis[i+1];}return result;}
     return UNKNOWN;
   }
-  function name(id) {
-    const v=resolve(id);if(!v||v===UNKNOWN)return UNKNOWN;
-    if(v.kind==='member'){const base=name(v.receiver);return base===UNKNOWN||v.member===null?UNKNOWN:base+'.'+v.member;}
+  function name(id,seen=new Set()) {
+    const v=resolve(id);if(!v||v===UNKNOWN||seen.has(v.id))return UNKNOWN;
+    seen=new Set(seen).add(v.id);
+    if(v.kind==='member'){const base=name(v.receiver,seen);return base===UNKNOWN||v.member===null?UNKNOWN:base+'.'+v.member;}
     if(v.kind==='function'||v.kind==='object')return undefined;
     const t=v.target;if(!t)return UNKNOWN;
     if(t.source)return t.source+':'+t.importedName+(t.members.length?'.'+t.members.join('.'):'');
@@ -160,7 +183,7 @@ function requestFacts(ctx, file) {
     return typeof text==='string' && /^https:\/\/openrouter\.ai(?::443)?\/api\/v1(?:\/|$)/i.test(text);
   }
   function originMatches(id,accept,seen=new Set()) {
-    if(id===undefined||seen.has(id))return false;seen=new Set(seen).add(id);
+    if(id===undefined||seen.has(id))return false;seen.add(id);
     const v=values.get(id);if(!v)return false;
     if(accept(v))return true;
     const state=states.get(v.target?.binding),init=bindings.get(v.target?.binding)?.initializer;
@@ -174,8 +197,8 @@ function requestFacts(ctx, file) {
   const clientOrigin=id=>originMatches(id,v=>['@openrouter/sdk','openai'].includes(v.target?.source));
   const modelOrigin=id=>originMatches(id,v=>v.target?.source==='@openrouter/ai-sdk-provider'&&['createOpenRouter','openrouter','*'].includes(v.target.importedName));
   function clientCall(call) {
-    let v=resolve(call.callee), members=[];
-    while(v?.kind==='member'){members.unshift(v.member);v=resolve(v.receiver);}
+    let v=resolve(call.callee), members=[];const seen=new Set();
+    while(v?.kind==='member'){if(seen.has(v.id)){v=UNKNOWN;break;}seen.add(v.id);members.unshift(v.member);v=resolve(v.receiver);}
     if(v===UNKNOWN&&clientOrigin(call.callee))return {endpoint:UNKNOWN};
     if(v?.kind!=='construct')return undefined;
     const ctor=name(v.callee), method=members.join('.');
@@ -204,7 +227,7 @@ function checkRequests(ctx,file) {
       const options=call.arguments?.[1];
       const direct=m.property(options,'signal');
       const signal=direct??(client.official?m.propertyValue(m.property(options,'fetchOptions'),'signal'):undefined);
-      if(client.endpoint===UNKNOWN||signal===UNKNOWN || signal!==undefined&&signal?.kind!=='literal'&&!(signal?.kind==='member'&&signal.member==='signal'&&m.name(m.resolve(signal.receiver)?.callee)==='AbortController')){
+      if(client.endpoint===UNKNOWN||signal===UNKNOWN || signal!==undefined&&signal?.literal!==null&&!(signal?.kind==='member'&&signal.member==='signal'&&m.name(m.resolve(signal.receiver)?.callee)==='AbortController')){
         ctx.report.narrowing({check:'missing-abort-signal',file,reason:'unsupported-expression',capability:'calls'});
       }else if(signal===undefined||signal?.literal===null)ctx.report.finding({rule:'missing-abort-signal',file,line:call.line,column:call.column});
       continue;
@@ -227,7 +250,7 @@ function checkModel(ctx,file,m,call) {
   } else {
     const native=m.native(call), client=m.clientCall(call);
     if(native){
-      endpoint=m.endpoint(call.arguments?.[0]);
+      endpoint=native===UNKNOWN?UNKNOWN:m.endpoint(call.arguments?.[0]);
       let body=m.property(call.arguments?.[1],'body');
       const input=m.resolve(call.arguments?.[0]);
       if(body===undefined&&input?.kind==='construct'&&m.name(input.callee)==='Request')body=m.property(input.arguments?.[1],'body');
@@ -281,14 +304,20 @@ function streamFacts(m) {
         const config=body?.kind==='call'&&m.name(body.callee)==='JSON.stringify'?body.arguments?.[0]:undefined;
         const stream=m.property(config,'stream');
         if(stream?.literal!==false)p={origin:v.id,stage:'response',unknown:native===UNKNOWN||m.endpoint(v.arguments?.[0])===UNKNOWN||stream?.literal!==true};
-      }else if(client&&client.endpoint!==false&&m.property(v.arguments?.[0],'stream')?.literal===true)p={origin:v.id,stage:'chunks',unknown:client.endpoint===UNKNOWN};
+      }else if(client&&client.endpoint!==false){
+        const nested=m.property(v.arguments?.[0],'chatRequest');
+        const stream=nested===UNKNOWN?UNKNOWN:m.property(nested?.id??v.arguments?.[0],'stream');
+        // An explicit unresolved flag may produce a stream. Missing/false flags
+        // use the SDK non-stream default and establish no chunk provenance.
+        if(stream!==undefined&&stream?.literal!==false)p={origin:v.id,stage:'chunks',unknown:client.endpoint===UNKNOWN||stream?.literal!==true};
+      }
       if(!p){
         const receiver=provenance(v.receiver,seen),args=(v.arguments??[]).map(x=>provenance(x,seen));
         if(v.member==='getReader'&&receiver?.stage==='body')p={...receiver,stage:'reader'};
         else if(v.member==='read'&&receiver?.stage==='reader')p={...receiver,stage:'read'};
         else if(v.member==='decode'&&m.name(m.resolve(v.receiver)?.callee)==='TextDecoder'&&args[0])p={...args[0],stage:'text',unknown:args[0].unknown||args[0].stage!=='bytes'};
         else if(v.member==='split'&&receiver?.stage==='text'&&m.literal(v.arguments?.[0])==='\n')p={...receiver,stage:'lines'};
-        else if(v.member==='slice'&&receiver?.stage==='line'&&[0,5,6].includes(m.literal(v.arguments?.[0])))p={...receiver,stage:'payload'};
+        else if(v.member==='slice'&&receiver?.stage==='line'&&[0,5,6].includes(m.literal(v.arguments?.[0])))p={...receiver,stage:m.literal(v.arguments?.[0])===0?'line':'payload'};
         else if(m.name(v.callee)==='JSON.parse'&&args[0]&&['line','payload'].includes(args[0].stage))p={...args[0],stage:'chunk',chunk:v.id};
         else if(receiver||args.some(Boolean)){const source=receiver??args.find(Boolean);p={...source,...(source.stage==='content'?{stage:'opaque'}:{}),unknown:true};}
       }
@@ -309,6 +338,10 @@ function checkSse(ctx,file,m) {
       return related?UNKNOWN:false;
     }
     const p=provenance(v.receiver);if(!p||p.unknown||p.lineBinding!==line.lineBinding||p.origin!==line.origin)return false;
+    // Only an original line prefix at offset zero excludes SSE comments.
+    if(p.stage!=='line')return false;
+    const offset=v.arguments?.[1]===undefined?0:m.literal(v.arguments[1]);
+    if(offset===UNKNOWN)return UNKNOWN;if(offset!==0)return false;
     const prefix=m.literal(v.arguments?.[0]);if(prefix===UNKNOWN)return UNKNOWN;return truthy&&typeof prefix==='string'&&prefix.startsWith('data:')||!truthy&&prefix===':';
   }
   const parserReceivers=new Set(m.flow.values.filter(v=>v.kind==='call'&&['eventsource-parser:createParser'].includes(m.name(v.callee))).map(v=>v.id));
