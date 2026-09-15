@@ -586,16 +586,35 @@ function createQuerySummarizer(facts,m){
   const callById=m.calls;
   const valuesByCall=new Map([...values.values()].filter(v=>v.kind==='call').map(v=>[v.end,v]));
   const join=(a,b)=>a===b?a:2; // 0=no, 1=yes, 2=unknown
-  function immutableValue(id,allowMutation=false){
-    const seen=new Set();
+  function immutableValue(id,checkWrites=true){
+    const seen=new Set(),members=[];
     while(!seen.has(id)){
       seen.add(id);const value=values.get(id);
-      if(value?.kind!=='reference'||value.target.members.length)return value;
-      const binding=m.bindings.get(value.target.binding);
-      if(!binding||binding.reassigned||!allowMutation&&binding.mutated||binding.escapes?.length)return value;
-      const initializer=bindings.get(binding.binding)?.initializer;
-      if(initializer===undefined)return value;
-      id=initializer;
+      if(value?.kind==='member'&&value.member!==null){
+        members.push(value.member);id=value.receiver;continue;
+      }
+      if(value?.kind==='reference'&&!value.target.members.length){
+        const binding=m.bindings.get(value.target.binding);
+        if(binding&&!binding.reassigned&&!binding.escapes?.length){
+          const initializer=bindings.get(binding.binding)?.initializer;
+          if(initializer!==undefined){id=initializer;continue;}
+        }
+      }
+      if(!members.length)return value;
+      const member=members.pop();let selected;
+      // Index writes against their syntactic containers first. At read sites,
+      // a replaced intermediate property requires the conservative graph walk.
+      if(checkWrites&&value&&mutations.get(containerKey(value))?.some(write=>write.member===null||write.member===member))return null;
+      if(value?.kind==='object'){
+        for(const property of value.properties){
+          if(property.spread||property.name===null)selected=undefined;
+          else if(property.name===member)selected=property.accessor?undefined:property.value;
+        }
+      }else if(value?.kind==='array'&&/^(0|[1-9][0-9]*)$/.test(member)&&!value.elements.some(e=>e.spread)){
+        selected=value.elements.find((e,index)=>(e.index??index)===Number(member))?.value;
+      }
+      if(selected===undefined)return null;
+      id=selected;
     }
     return null;
   }
@@ -613,7 +632,7 @@ function createQuerySummarizer(facts,m){
     if(use.kind!=='write')continue;
     const target=values.get(use.targetValue);
     if(target?.kind!=='member')continue;
-    const receiver=immutableValue(target.receiver,true);
+    const receiver=immutableValue(target.receiver,false);
     if(!receiver)continue;
     const key=containerKey(receiver);
     if(!mutations.has(key))mutations.set(key,[]);
@@ -662,10 +681,11 @@ function createQuerySummarizer(facts,m){
   }
   // Cache direct origin edges instead of repeatedly flattening initializer/write
   // histories. Binding and value identity are distinct graph-node namespaces.
-  function origin(key){
-    if(origins.has(key))return origins.get(key);
+  function origin(key,inspectContents){
+    const cacheKey=key+':'+Number(inspectContents);
+    if(origins.has(cacheKey))return origins.get(cacheKey);
     const colon=key.indexOf(':'),kind=key.slice(0,colon),id=Number(key.slice(colon+1));
-    const result={edges:[],uncertain:false,convex:false};origins.set(key,result);
+    const result={edges:[],uncertain:false,convex:false};origins.set(cacheKey,result);
     if(kind==='binding'){
       const b=m.bindings.get(id),initializer=bindings.get(id)?.initializer;
       if(b&&!b.path?.length){
@@ -681,27 +701,33 @@ function createQuerySummarizer(facts,m){
       else if(v?.alternatives)result.edges=v.alternatives.map(v=>edge('flow',v));
       else if(v?.kind==='reference'&&!v.target.members.length&&v.target.binding!==null)result.edges=[edge('binding',v.target.binding)];
       else if(v?.kind==='object'||v?.kind==='array'){
-        result.uncertain=true;result.opaque=true;
-        result.edges=(v.properties??v.elements??[]).map(p=>edge(p.accessor?'returns':'flow',p.value));
+        // A container is not its payload. Only an opaque transformation or
+        // unresolved projection may make its contents receiver candidates.
+        if(inspectContents){
+          result.uncertain=true;result.opaque=true;
+          result.edges=(v.properties??v.elements??[]).map(p=>edge(p.accessor?'returns':'flow',p.value));
+        }
       }else if(v?.kind==='construct'){
-        result.uncertain=true;result.opaque=true;
+        result.uncertain=true;result.opaque=true;result.inspectContents=true;
         result.edges=(v.arguments??[]).map(id=>edge('flow',id));
       }else if(v?.kind!=='void'&&(v?.receiver!==undefined||v?.value!==undefined)){
         // Preserve visible candidates through an unsupported value operation,
         // without claiming that it returns its input unchanged.
         result.uncertain=true;result.opaque=true;
         result.edges=[edge('flow',v.receiver??v.value)];
-        const receiver=immutableValue(v.receiver,true);
+        const receiver=immutableValue(v.receiver);
+        result.inspectContents=v.kind==='member';
         if(v.kind==='member'&&v.member!==null&&receiver?.kind==='object'){
           // A literal container's selected field is bounded independently of
           // unrelated siblings. Spreads/computed keys remain possible writes.
-          let selected=[];
+          let selected=[];result.inspectContents=false;
           for(const p of receiver.properties){
-            if(p.spread||p.name===null)selected.push(edge('flow',p.value));
-            else if(p.name===v.member)selected=[edge(p.accessor?'returns':'flow',p.value)];
+            if(p.spread||p.name===null){selected.push(edge('flow',p.value));result.inspectContents=true;}
+            else if(p.name===v.member){selected=[edge(p.accessor?'returns':'flow',p.value)];result.inspectContents=false;}
           }
           result.edges=selected;
         }else if(v.kind==='member'&&receiver?.kind==='array'&&/^(0|[1-9][0-9]*)$/.test(v.member??'')&&!receiver.elements.some(e=>e.spread)){
+          result.inspectContents=false;
           const selected=receiver.elements.find((e,index)=>(e.index??index)===Number(v.member));
           result.edges=selected?[edge('flow',selected.value)]:[];
         }
@@ -723,7 +749,7 @@ function createQuerySummarizer(facts,m){
           result.edges=[edge('flow',call.receiverValue)];
           result.uncertain=!['withIndex','filter','order','withSearchIndex','collect','take','first','unique','paginate'].includes(name);
           if(result.uncertain){
-            result.opaque=true;
+            result.opaque=true;result.inspectContents=true;
             result.edges.push(...(valuesByCall.get(call.end)?.arguments??[]).map(id=>edge('flow',id)));
           }
         }else if(call.receiverCall!==undefined){
@@ -733,26 +759,27 @@ function createQuerySummarizer(facts,m){
           // candidate membership only, never supported result identity.
           const v=valuesByCall.get(call.end);
           result.edges=(v?.arguments??[]).map(id=>edge('flow',id));
-          result.uncertain=true;result.opaque=true;
+          result.uncertain=true;result.opaque=true;result.inspectContents=true;
         }
       }
     }
     const mutationKey=kind==='flow'&&values.get(id)?.kind==='reference'?containerKey(values.get(id)):key;
-    if(mutations.has(mutationKey)&&!(kind==='flow'&&values.get(id)?.kind==='call')){
+    if(inspectContents&&mutations.has(mutationKey)&&!(kind==='flow'&&values.get(id)?.kind==='call')){
       result.uncertain=true;result.opaque=true;
       result.edges.push(...mutations.get(mutationKey).map(w=>edge('flow',w.value)));
     }
     return result;
   }
   return function summarizeQueryExecution(execution){
-    // [index, filter, range, bounded, searchIndex, uncertain ownership, opaque result]
-    const pending=[{key:edge('call',execution.end),state:[0,0,0,0,0,0,0]}],visited=new Set();
+    // [index, filter, range, bounded, searchIndex, uncertain ownership, opaque result, inspect contents]
+    const pending=[{key:edge('call',execution.end),state:[0,0,0,0,0,0,0,0]}],visited=new Set();
     const locations={execution};let merged,decisions,foreign=false;
     const locate=(name,call)=>{if(!locations[name]||call.start<locations[name].start)locations[name]=call;};
     for(let cursor=0;cursor<pending.length;cursor++){
-      const item=pending[cursor],node=origin(item.key),state=[...item.state],call=node.call;
+      const item=pending[cursor],node=origin(item.key,!!item.state[7]),state=[...item.state],call=node.call;
       state[5] ||= Number(node.uncertain);
       state[6] ||= Number(!!node.opaque);
+      state[7] ||= Number(!!node.inspectContents);
       if(call&&!state[6]){
         const name=method(call);
         if(name==='withIndex'){const range=indexRange(call);state[2]=state[0]?join(state[2],range):range;state[0]=1;locate('index',call);}

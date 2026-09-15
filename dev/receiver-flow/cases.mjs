@@ -72,3 +72,37 @@ add('void-result',`return (void ${plain}).collect();`);
 add('global-member-write',`external.rows=${plain};await external.rows.collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
 add('unrelated-global-member',`external.rows=${plain};return unrelated.rows.collect();`);
 add('unrelated-global-property',`external.other=${plain};return external.rows.collect();`);
+
+// A container is not the query value stored in an unrelated sibling field.
+for(const terminal of ['collect','take','first','unique','paginate']){
+ add(`container-local-${terminal}`,`const holder={rows:${plain},${terminal}(){return [];}};return holder.${terminal}();`);
+ add(`container-array-${terminal}`,`const holder=[${plain}];return holder.${terminal}();`);
+}
+add('container-direct-method',`return ({rows:${plain},collect(){return [];}}).collect();`);
+add('container-method-first',`const holder={collect(){return [];},rows:${plain}};return holder.collect();`);
+add('container-arrow-method',`const holder={rows:${plain},collect:()=>[]};return holder.collect();`);
+add('container-function-method',`const holder={rows:${plain},collect:function(){return [];}};return holder.collect();`);
+add('container-method-returns-builder',`const holder={collect(){return ${plain};}};return holder.collect();`);
+add('container-method-mentions-builder',`const holder={collect(){const ignored=${plain};return [];}};return holder.collect();`);
+add('container-selected-stored',`const holder={entries:${plain}};await holder.entries.collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
+add('container-selected-direct',`await ({entries:${plain}}).entries.collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
+add('container-selected-array',`await [${plain}][0].collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
+add('container-wrapper',`await wrap({entries:${plain}}).collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
+add('container-local-neighbor',`const holder={entries:${plain},collect(){return [];}};await holder.collect();${neighbor}`);
+add('container-mutated-sibling',`const holder={collect(){return [];}};holder.entries=${plain};return holder.collect();`);
+add('container-computed-projection',`await ({entries:${plain}})[args.field].collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
+add('container-spread-projection',`const holder={...{entries:${plain}}};await holder.entries.collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
+// Both directions exercise the per-file origin cache in distinct traversal modes.
+add('container-local-then-wrapper',`const holder={entries:${plain},collect(){return [];}};await holder.collect();await wrap(holder).collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
+add('container-wrapper-then-local',`const holder={entries:${plain},collect(){return [];}};await wrap(holder).collect();await holder.collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
+add('container-selected-local-container',`const holder={nested:{rows:${plain},collect(){return [];}}};return holder.nested.collect();`);
+add('container-array-local-container',`return [{rows:${plain},collect(){return [];}}][0].collect();`);
+const localContainer=`{rows:${plain},collect(){return [];}}`;
+add('container-nested-static-object',`const holder={nested:{leaf:${localContainer}}};return holder.nested.leaf.collect();`);
+add('container-nested-static-array',`const holder=[[${localContainer}]];return holder[0][0].collect();`);
+add('container-nested-mixed',`const holder={nested:[${localContainer}]};const alias=holder;return alias.nested[0].collect();`);
+add('container-nested-neighbor',`const holder={nested:{leaf:${localContainer}}};await holder.nested.leaf.collect();${neighbor}`);
+add('container-nested-wrapper',`const holder={nested:{leaf:${localContainer}}};await wrap(holder.nested.leaf).collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
+add('container-nested-replacement',`const holder={nested:{leaf:external}};holder.nested={leaf:${plain}};await holder.nested.leaf.collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
+add('container-nested-alias-replacement',`const holder={nested:{leaf:external}};const alias=holder;alias.nested={leaf:${plain}};await holder.nested.leaf.collect();${neighbor}`,[...uncertainty,'filter-table-scan','unbounded-collect']);
+add('container-nested-unrelated-write',`const holder={nested:{leaf:${localContainer}}};holder.other=external;return holder.nested.leaf.collect();`);
