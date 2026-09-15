@@ -8,9 +8,9 @@ export const meta = {
     "Convex policy follows current 1.x registration/context contracts, checked against official documentation and retained Convex 1.32.0 evidence. Custom registration wrappers, cross-file implementations and arbitrary type aliases are unresolved; future major APIs need re-evaluation.",
     "Registrations resolve named/namespace imports, immutable aliases, direct functions and local handler/config bindings. Reassigned bindings and dynamic configuration properties cannot establish absence of validators.",
     "Database identity comes from registered context parameters, aliases/destructuring, or imported Convex context/database type annotations on helpers, including local aliases and Pick projections. Type annotations state a contract, not runtime type proof. Untyped cross-file helpers are not inferred.",
-    "Query chains follow single expression receiver links; split builder statements, search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
-    "Clock rules cover direct registered handlers, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
-    "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references are explicitly unresolved; no client-caller absence inference is made.",
+    "Query chains follow single expression receiver links; search-index ranges, schema validity, data size and measured cost are not modeled. Unknown returned ranges narrow only the affected check; they are not findings. Immutable stored builders retain their chain; reassignment narrows the affected read.",
+    "Clock rules cover direct registered handlers and immutable clock aliases, not nested or delegated helper clocks. Discard checks establish immediate discarded results, not eventual settlement of returned, passed or stored promises.",
+    "Public API candidates do not establish intended audience or authorization. Unbound api-shaped references and unresolved expressions carrying generated API provenance narrow coverage; no client-caller absence inference is made.",
     "Presence fields and known dedicated table names are bounded conventions, not measurements of update rate or fanout. Other segmentation schemes remain review candidates.",
     "Spread findings concern top-level field copying, not mass assignment. Validation and server-selection evidence is described when available; arbitrary field ownership is not proven.",
     "Loop observations require a direct await and same-function loop ancestry; stored-then-awaited calls and interprocedural execution are not followed. Retry/backoff and cursor dependencies must be preserved.",
@@ -176,11 +176,11 @@ export const meta = {
       "reportingUnit": "occurrence",
       "description": "A server-side run call referencing the public api namespace - a review candidate; namespace alone does not establish an authorization flaw.",
       "severity": "info",
-      "revision": 2,
+      "revision": 3,
       "impact": "Public references may be intentionally shared with clients. This call does not establish accidental exposure or an authorization flaw.",
-      "why": "Server use does not establish server-only intent. An unresolved global api reference is a namespace-shaped candidate, not proof of public registration.",
+      "why": "Server use does not establish server-only intent. An unresolved global api reference narrows coverage and is not a finding.",
       "fix": "Review intended callers and authorization. Preserve required frontend/public access; use an internal endpoint only when server-only intent is established. Absence of discovered client calls does not establish that intent.",
-      "claim": "A resolved Convex context run call references the generated public api namespace, or an unresolved global api-shaped reference.",
+      "claim": "A resolved Convex context run call references the generated public api namespace; unresolved identity is coverage uncertainty.",
       "lookalikes": [
         "functions legitimately consumed by both client and server"
       ],
@@ -364,16 +364,18 @@ function model(facts,ctx,file) {
     if(!t || seen.has(t.binding))return [];
     if(t.source||t.binding===null)return [t];
     const b=bindings.get(t.binding);if(!b)return [];
+    if(b.parameter&&b.initializer===undefined)return [t];
     seen=new Set(seen).add(t.binding);
-    function fromValue(id,visited=new Set()){
-      if(visited.has(id))return [];visited=new Set(visited).add(id);
-      const v=values.get(id);if(!v)return [];
-      if(v.kind==='alias')return fromValue(v.value,visited);
-      if(v.kind==='choice')return v.alternatives.flatMap(id=>fromValue(id,visited));
-      if(v.kind==='reference')return possibleTargets({...v.target,members:[...v.target.members,...(b.path??[]),...t.members]},seen);
-      return [];
-    }
-    return [...fromValue(b.initializer),...(b.writes??[]).flatMap(w=>fromValue(w.value))];
+    const suffix=[...(b.path??[]),...t.members];
+    return [...possibleValueTargets(b.initializer,seen,new Set(),suffix),...(b.writes??[]).flatMap(w=>possibleValueTargets(w.value,seen,new Set(),suffix))];
+  }
+  function possibleValueTargets(id,seen=new Set(),visited=new Set(),suffix=[]){
+    if(visited.has(id))return [];visited=new Set(visited).add(id);
+    const v=values.get(id);if(!v)return [];
+    if(v.kind==='alias')return possibleValueTargets(v.value,seen,visited,suffix);
+    if(v.kind==='choice')return v.alternatives.flatMap(id=>possibleValueTargets(id,seen,visited,suffix));
+    if(v.kind==='reference')return possibleTargets({...v.target,members:[...v.target.members,...suffix]},seen);
+    return [];
   }
   const registrations=[], handlers=new Map();
   for(const call of facts.calls){
@@ -385,15 +387,15 @@ function model(facts,ctx,file) {
     const entry={...reg,call,config,handler,args:property(config,'args')};registrations.push(entry);
     if(handler?.kind==='function'){
       const old=handlers.get(handler.value);
-      handlers.set(handler.value,old && old.kind!==entry.kind?{...entry,kinds:[...new Set([...old.kinds,...entry.kinds])],uncertain:true}:entry);
+      handlers.set(handler.value,old?{...entry,kinds:[...new Set([...old.kinds,...entry.kinds])],uncertain:old.kind!==entry.kind||old.uncertain&&entry.uncertain}:entry);
     }
   }
-  function context(t,seen=new Set()){
-    t=resolveTarget(t);if(!t || t.binding===null)return null;
-    const b=bindings.get(t.binding);if(!b || b.reassigned || seen.has(t.binding))return null;
+  function context(t,seen=new Set(),uncertain=false){
+    t=resolveTarget(t)??(uncertain?t:null);if(!t || t.binding===null)return null;
+    const b=bindings.get(t.binding);if(!b || b.reassigned&&!uncertain || seen.has(t.binding))return null;
     seen=new Set(seen).add(t.binding);
     const h=b.parameter?.index===0?handlers.get(b.parameter.functionStart):null;
-    if(h && h.kind!=='unknown')return {...h,members:[...(b.path??[]),...t.members]};
+    if(h && h.kind!=='unknown')return {...h,uncertain:uncertain||h.uncertain,members:[...(b.path??[]),...t.members]};
     const declared=(b.types??[]).map(({target:type,members})=>{
       if(!framework(type) || type.reassigned || (members && !members.includes(t.members[0])))return null;
       const name=type.importedName==='*'?type.members[0]:type.importedName;
@@ -412,10 +414,16 @@ function model(facts,ctx,file) {
         const arg=call.arguments[b.parameter.index],v=arg && resolveValue(arg.start);
         return v?.kind==='reference'?context(v.target,seen):null;
       });
-      if(origins.length && origins.every(o=>o && o.kind===origins[0].kind && o.members.join('.')===origins[0].members.join('.')))
-        return {...origins[0],members:[...origins[0].members,...(b.path??[]),...t.members]};
+      const known=origins.filter(Boolean);
+      if(known.length && known.every(o=>o.members.join('.')===known[0].members.join('.')))
+        return {...known[0],kinds:[...new Set(known.flatMap(o=>o.kinds??[o.kind]))],uncertain:uncertain||known.length!==origins.length||known.some(o=>o.uncertain||o.kind!==known[0].kind),members:[...known[0].members,...(b.path??[]),...t.members]};
     }
     return null;
+  }
+  function uncertainContext(t){
+    const owners=possibleTargets(t).map(t=>context(t,new Set(),true)).filter(Boolean);
+    if(!owners.length||!owners.every(o=>o.members.join('.')===owners[0].members.join('.')))return null;
+    return {...owners[0],kinds:[...new Set(owners.flatMap(o=>o.kinds??[o.kind]))],uncertain:true};
   }
   const reported=new Set();
   function narrow(rule,location,reason='unsupported-expression'){
@@ -423,17 +431,17 @@ function model(facts,ctx,file) {
     if(reported.has(key))return;reported.add(key);
     ctx.report.narrowing({check:rule,file,reason,capability:'calls'});
   }
-  function emit(rule,location,extra={}){
+  function emit(rule,location,extra={},uncertain=false){
     const uncertainHandler=[...handlers].some(([start,owner])=>{
       const fn=facts.functions.find(fn=>fn.start===start);
       return owner.uncertain&&fn&&fn.start<=location.start&&location.end<=fn.end;
     });
-    if(uncertainHandler||registrations.some(r=>r.uncertain&&r.call.start<=location.start&&location.end<=r.call.end)){
+    if(uncertain||uncertainHandler||registrations.some(r=>r.uncertain&&r.call.start<=location.start&&location.end<=r.call.end)){
       narrow(rule,location,'unresolved-identity');return;
     }
     ctx.report.finding({rule,file,line:location.line,column:location.column,...extra});
   }
-  return {s,values,bindings,calls,resolveValue,resolveTarget,possibleTargets,property,registrations,handlers,context,narrow,emit};
+  return {s,values,bindings,calls,resolveValue,resolveTarget,possibleTargets,possibleValueTargets,property,registrations,handlers,context,uncertainContext,narrow,emit};
 }
 const hasKind=(owner,kind)=>(owner?.kinds??[owner?.kind]).includes(kind);
 export async function doctor(ctx){
@@ -452,18 +460,20 @@ export async function doctor(ctx){
     }
     const clocks=new Map(),clockBindings=new Map();
     for(const call of facts.calls){
-      const c=m.context(call.target),member=c?.members.join('.');
+      const c=m.context(call.target)??m.uncertainContext(call.target),member=c?.members.join('.');
       if(c){
-        if(call.usage==='discarded' && /^(?:db\.(?:insert|patch|replace|delete|get)|scheduler\.(?:runAfter|runAt|cancel)|run(?:Query|Mutation|Action)|storage\.(?:get|store|delete|generateUploadUrl|getUrl))$/.test(member))m.emit('unawaited-convex-call',call);
-        if(hasKind(c,'query') && /^(?:db\.(?:insert|patch|replace|delete)|scheduler\.[^.]+|runMutation|runAction)$/.test(member))m.emit('write-in-query',call);
-        if(hasKind(c,'action') && /^db\.[^.]+$/.test(member))m.emit('db-in-action',call);
+        if(call.usage==='discarded' && /^(?:db\.(?:insert|patch|replace|delete|get)|scheduler\.(?:runAfter|runAt|cancel)|run(?:Query|Mutation|Action)|storage\.(?:get|store|delete|generateUploadUrl|getUrl))$/.test(member))m.emit('unawaited-convex-call',call,{},c.uncertain);
+        if(hasKind(c,'query') && /^(?:db\.(?:insert|patch|replace|delete)|scheduler\.[^.]+|runMutation|runAction)$/.test(member))m.emit('write-in-query',call,{},c.uncertain);
+        if(hasKind(c,'action') && /^db\.[^.]+$/.test(member))m.emit('db-in-action',call,{},c.uncertain);
         if(/^run(Query|Mutation|Action)$/.test(member)){
           const arg=call.arguments[0] && m.resolveValue(call.arguments[0].start),t=arg?.kind==='reference'?m.resolveTarget(arg.target):null;
           const imported=t && /(?:^|\/)_generated\/api(?:\.[cm]?[jt]s)?$/.test(t.source??'') && ((t.importedName==='api' && t.members.length>0)||(t.importedName==='*' && t.members[0]==='api'));
           const unresolved=t?.binding===null && t.root==='api' && t.members.length>0;
-          if(unresolved)m.narrow('public-api-in-server-call',call,'unresolved-identity');
-          if(imported)m.emit('public-api-in-server-call',call,{message:'Generated public API reference in a server call; preserve required client access and review authorization and intended callers.'});
-          if(call.usage==='awaited' && m.s.loops.some(l=>l.functionStart===call.functionStart && l.start<=call.start && call.end<=l.end))m.emit('sequential-run-in-loop',call);
+          const possible=m.possibleValueTargets(call.arguments[0]?.start);
+          const possiblePublic=possible.some(t=>/(?:^|\/)_generated\/api(?:\.[cm]?[jt]s)?$/.test(t.source??'')&&(t.importedName==='api'||t.importedName==='*'&&t.members[0]==='api'));
+          if(unresolved||!imported&&possiblePublic)m.narrow('public-api-in-server-call',call,'unresolved-identity');
+          if(imported)m.emit('public-api-in-server-call',call,{message:'Generated public API reference in a server call; preserve required client access and review authorization and intended callers.'},c.uncertain);
+          if(call.usage==='awaited' && m.s.loops.some(l=>l.functionStart===call.functionStart && l.start<=call.start && call.end<=l.end))m.emit('sequential-run-in-loop',call,{},c.uncertain);
         }
         if(member==='db.patch'||member==='db.replace')checkPatch(ctx,file,call,c,m);
       }
@@ -497,7 +507,7 @@ function checkPatch(ctx,file,call,c,m){
   const spreads=patch.properties.filter(p=>p.spread);
   if(spreads.length){
     const selected=spreads.every(p=>{const v=m.resolveValue(p.value);return v?.kind==='object' && v.properties.every(p=>p.name!==null && !p.spread);});
-    m.emit('spread-into-patch',call,{message:selected?'Patch copies explicitly named fields from local server-built objects; review intent, not an arbitrary-client-fields finding.':'Patch copies top-level object fields. Runtime validators, deliberate state copying and server field selection may make this correct; field ownership is not established.'});
+    m.emit('spread-into-patch',call,{message:selected?'Patch copies explicitly named fields from local server-built objects; review intent, not an arbitrary-client-fields finding.':'Patch copies top-level object fields. Runtime validators, deliberate state copying and server field selection may make this correct; field ownership is not established.'},c.uncertain);
   }
   if(!patch.properties.some(p=>/^(lastSeen|lastPing|lastActive|lastHeartbeat|heartbeat|pingAt|lastOnline)$/.test(p.name??'')))return;
   const explicitTable=call.arguments.length===3?m.resolveValue(call.arguments[0].start):null;
@@ -515,7 +525,7 @@ function checkPatch(ctx,file,call,c,m){
       }
     }
   }
-  if(!segmented)m.emit('presence-patch-on-shared-document',call);
+  if(!segmented)m.emit('presence-patch-on-shared-document',call,{},c.uncertain);
 }
 function checkQueryChains(ctx,file,facts,m){
   const byEnd=m.calls, receivers=new Set(facts.calls.map(c=>c.receiverCall).filter(x=>x!==undefined));
