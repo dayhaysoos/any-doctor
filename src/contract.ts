@@ -76,6 +76,11 @@ export interface ReportGroup {
 // this list changes.
 export const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 
+// Scaffolds deliberately contain this marker until an author replaces every
+// placeholder. The Runner refuses marked programs and fixtures, so an empty
+// starting point can never be mistaken for a completed doctor.
+export const SCAFFOLD_TODO = "__ANY_DOCTOR_TODO__";
+
 // One doctor whose run crashed: a crash is data. The id is the
 // discovery id (or the program's file name without .mjs when selected
 // by path); the detail is the full describeRunnerError rendering,
@@ -325,6 +330,8 @@ export interface AnalysisCalls {
 /** Doctor SDK semantic results are versioned, JSON-safe answers tied to the
  * exact source snapshot analyzed. Unknown is never absence. */
 export const SEMANTIC_RESULT_VERSION = 1 as const;
+export const ANALYSIS_CAPABILITY_NAMES = ["bindings", "spans", "calls", "identity", "value-disposition", "resource-lifetime", "option-presence", "consumers", "structures"] as const;
+export type AnalysisCapabilityName = typeof ANALYSIS_CAPABILITY_NAMES[number];
 export const UNKNOWN_REASONS = ["analysis-unavailable", "provider-failure", "unsupported-expression", "outside-owner", "unresolved-identity", "source-changed"] as const;
 export type UnknownReason = typeof UNKNOWN_REASONS[number];
 /** One observed custom-check uncertainty; counts are owned by the host. */
@@ -378,11 +385,24 @@ export interface RequiredOptionRecipeQuery {
   option: OptionPresenceQuery;
   reportUnknown?: UnknownReason[];
 }
-export type RecipeName = "unhandled-value" | "resource-without-release" | "required-or-recommended-option";
+export interface ForbiddenCallRecipeQuery {
+  target: IdentityQuery;
+  scope?: {
+    /** Relative directories whose descendants are in scope, for example ["src"]. */
+    under?: string[];
+    /** Exact suffixes including the dot, for example [".ts", ".tsx"]. */
+    extensions?: string[];
+    /** Exact normalized relative paths that are exempt. */
+    exclude?: string[];
+  };
+  reportUnknown?: UnknownReason[];
+}
+export type RecipeName = "unhandled-value" | "resource-without-release" | "required-or-recommended-option" | "forbidden-call";
 export type RecipeProfileDeclaration =
   | { name: "unhandled-value"; query: UnhandledValueRecipeQuery }
   | { name: "resource-without-release"; query: ResourceWithoutReleaseRecipeQuery }
-  | { name: "required-or-recommended-option"; query: RequiredOptionRecipeQuery };
+  | { name: "required-or-recommended-option"; query: RequiredOptionRecipeQuery }
+  | { name: "forbidden-call"; query: ForbiddenCallRecipeQuery };
 
 export interface SemanticProviderProvenance {
   id: string;
@@ -460,6 +480,9 @@ export interface DoctorCtx {
     /** Resolve one captured expression through immutable aliases. Local and
      * shadowed lookalikes are known non-matches; unresolved targets are unknown. */
     identity(file: string, expression: ExpressionRef, query: IdentityQuery): SemanticResult<IdentityValue>;
+    /** Whole-call identity with shared candidate classification. Known nonmatches
+     * do not narrow; unsupported possible matches remain unknown. Needs identity. */
+    callIdentity(file: string, expression: ExpressionRef, query: IdentityQuery): SemanticResult<{ matches: boolean }>;
     /** Classify what supported local flow establishes for one exact value.
      * Awaiting an ordinary array does not consume the promises it contains. */
     valueDisposition(file: string, expression: ExpressionRef, query: ValueDispositionQuery): SemanticResult<ValueDisposition>;
@@ -478,6 +501,7 @@ export interface DoctorCtx {
     unhandledValue(file: string, producer: ExpressionRef, query: UnhandledValueRecipeQuery, finding: RecipeFinding): SemanticResult<RecipeDecision>;
     resourceWithoutRelease(file: string, acquisition: ExpressionRef, query: ResourceWithoutReleaseRecipeQuery, finding: RecipeFinding): SemanticResult<RecipeDecision>;
     requiredOrRecommendedOption(file: string, call: ExpressionRef, query: RequiredOptionRecipeQuery, finding: RecipeFinding): SemanticResult<RecipeDecision>;
+    forbiddenCall(file: string, call: ExpressionRef, query: ForbiddenCallRecipeQuery, finding: RecipeFinding): SemanticResult<RecipeDecision>;
   };
   report: {
     finding(f: Finding): void;
@@ -711,10 +735,14 @@ export function compareFindings(expected: ExpectedFinding[], actual: Finding[]):
 // it renders "narrowed", and the predicate verify uses to decide whether
 // analysis-on fixtures apply.
 /** Recipes imply their host capabilities; explicit needs may add requirements. */
+export function recipeAnalysisNeeds(name: RecipeName): string[] {
+  return name === "unhandled-value" ? ["calls", "value-disposition"]
+    : name === "required-or-recommended-option" ? ["calls", "identity", "option-presence"]
+    : name === "resource-without-release" ? ["calls", "identity", "resource-lifetime"]
+    : name === "forbidden-call" ? ["calls", "identity"] : [];
+}
 export function checkAnalysisNeeds(check: Pick<CheckMeta, "needs" | "recipe">): string[] {
-  const implied = check.recipe?.name === "unhandled-value" ? ["calls", "value-disposition"]
-    : check.recipe?.name === "required-or-recommended-option" ? ["calls", "identity", "option-presence"]
-    : check.recipe?.name === "resource-without-release" ? ["calls", "identity", "resource-lifetime"] : [];
+  const implied = check.recipe ? recipeAnalysisNeeds(check.recipe.name) : [];
   return [...new Set([...(check.needs ?? []), ...implied])];
 }
 export function narrowedCheckIds(meta: DoctorMeta): string[] {

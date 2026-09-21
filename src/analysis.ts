@@ -100,7 +100,12 @@ type ParsedProgram = { ok: true; program: Node } | { ok: false; error: string };
 function parseProgram(stack: LoadedStack, file: string, source: string): ParsedProgram {
   if (stack.error !== undefined) return { ok: false, error: stack.error };
   try {
-    const parsed = stack.parseSync(file, source, { sourceType: "module" }) as { program: unknown; errors?: { message: string }[] };
+    const lang = /\.tsx$/i.test(file) ? "tsx"
+      : /\.(?:jsx?|mjs|cjs)$/i.test(file) ? "jsx"
+      : /\.d\.ts$/i.test(file) ? "dts"
+      : /\.(?:ts|mts|cts)$/i.test(file) ? "ts"
+      : "js";
+    const parsed = stack.parseSync(file, source, { sourceType: "module", lang }) as { program: unknown; errors?: { message: string }[] };
     if (parsed.errors !== undefined && parsed.errors.length > 0) {
       return { ok: false, error: `analysis failed to parse ${file}: ${parsed.errors[0].message}` };
     }
@@ -440,12 +445,15 @@ export function analyzeCalls(file: string, source: string): CallsResult {
     const target = (expr: Node): CallTarget => {
       let n = unwrap(expr);
       const members: string[] = [];
-      while (n.type === "MemberExpression" && (!n.computed || unwrap(n.property as Node).type === "Literal") && isNode(n.object) && isNode(n.property)) {
+      while ((n.type === "MemberExpression" || n.type === "JSXMemberExpression") && (!n.computed || unwrap(n.property as Node).type === "Literal") && isNode(n.object) && isNode(n.property)) {
         const name = n.computed ? propertyName(unwrap(n.property as Node)) : idName(n.property);
         if (!name) break;
         members.unshift(name); n = unwrap(n.object);
       }
-      if (n.type !== "Identifier") return { root: null, members, binding: null };
+      if (n.type === "MetaProperty") {
+        return { root: `${idName(n.meta as Node)}.${idName(n.property as Node)}`, members, binding: null };
+      }
+      if (n.type !== "Identifier" && n.type !== "JSXIdentifier") return { root: null, members, binding: null };
       const identity = identities.get(n);
       return { root: idName(n), members, binding: identity?.binding ?? null,
         ...(identity?.written ? { reassigned: true } : {}),

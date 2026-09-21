@@ -2,6 +2,20 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {analyzeCalls} from '../bin/analysis.js';
 function flow(source){const r=analyzeCalls('sample.ts',source);assert.equal(r.ok,true);assert.ok(r.file.structure.flow);return r.file.structure.flow;}
+test('value flow exposes imported JSX elements and prop values',()=>{
+ const r=analyzeCalls('App.tsx',[
+  'import { AgentProvider } from "@deepgram/ui";',
+  'const key = import.meta.env.VITE_DEEPGRAM_API_KEY;',
+  'export const App = () => <AgentProvider config={{ auth: { apiKey: key } }} />;',
+ ].join('\n'));
+ assert.equal(r.ok,true,r.error);
+ const element=r.file.structure.flow.jsxElements?.[0];
+ assert.equal(element?.target.source,'@deepgram/ui');
+ assert.equal(element?.target.importedName,'AgentProvider');
+ assert.equal(element?.attributes[0]?.name,'config');
+ const config=r.file.structure.flow.values.find(value=>value.id===element?.attributes[0]?.value);
+ assert.equal(config?.kind,'object');
+});
 test('value flow distinguishes nested expressions sharing a source start',()=>{
  const f=flow('[1].filter(Boolean).map(async x=>x);');
  const calls=f.values.filter(v=>v.kind==='call');const map=calls.find(v=>v.target.members.at(-1)==='map');

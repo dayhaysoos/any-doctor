@@ -1,0 +1,37 @@
+---
+title: deepgram
+description: Proven Deepgram endpoint, transport, request-shape, host, and browser credential mistakes.
+sidebar:
+  order: 10
+---
+
+The Deepgram doctor checks JavaScript and TypeScript that uses native `fetch`,
+native or `ws` WebSockets, `@deepgram/sdk`, or Deepgram's browser-agent packages. It
+reports only when both Deepgram provenance and the incompatible static
+configuration are established.
+
+| Severity | Check | Catches |
+| -------- | ----- | ------- |
+| warning | `endpoint-model-mismatch` | Streaming Flux, Nova, Aura, or Voice Agent provider versions paired with the wrong endpoint or model family, including omitted provider versions that default to v1 and statically known malformed provider fields. Prerecorded Flux through the v1 SDK media API remains valid. |
+| warning | `unsupported-streaming-option` | Options that a proven Deepgram WebSocket transport rejects or ignores, including listen-version language conflicts |
+| warning | `invalid-read-request` | Fully known `/v1/read` requests with an invalid method, query, feature set, or text body |
+| warning | `wrong-deepgram-host` | Official global or regional Deepgram hosts paired with an API path they do not serve |
+| error | `browser-api-key-exposure` | Literal or public browser-environment API keys passed through a proven Deepgram browser package call, constructor, or `AgentProvider` JSX configuration |
+
+Raw identity analysis begins only after a statically known official Deepgram URL
+establishes relevance. Dynamic URLs, unrelated services, custom proxies, and
+self-hosted URLs are outside that candidate set. Once Deepgram provenance is
+established, dynamic models, options, credentials, and opaque or mutated request
+objects narrow the affected check and withhold the numeric score and grade.
+Voice Agent Settings sent through a stable same-file
+`client.agent.v1.createConnection()` are covered; opaque or escaped connection
+ownership narrows that check.
+Dedicated hosts remain outside the raw-URL checks. JSX configurations imported
+directly or through a namespace from Deepgram browser packages are covered,
+including ordered local prop spreads and `VITE_*` or `NEXT_PUBLIC_*`
+credentials followed through stable same-file aliases. Opaque prop spreads
+narrow the affected checks instead of producing a clean score.
+
+The doctor does not make product-choice recommendations or inspect audio bytes,
+pricing, access, callback ordering, retry timing, keepalive schedules, or
+self-hosted sizing.

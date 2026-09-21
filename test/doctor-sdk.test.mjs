@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {analyzeCalls} from '../bin/analysis.js';
-import {identityResult,optionPresenceResult,resourceLifetimeResult,valueDispositionResult} from '../bin/doctor-sdk.js';
+import {forbiddenCallRecipeResult,identityResult,optionPresenceResult,resourceLifetimeResult,resourceWithoutReleaseRecipeResult,valueDispositionResult} from '../bin/doctor-sdk.js';
 import {challengeProfileFixtures} from '../bin/certify.js';
 
 function identities(source){
@@ -34,6 +34,16 @@ test('Doctor SDK identity rejects stale or invented expression references',()=>{
   const source='fetch("/")',parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
   const result=identityResult('example.ts',source,parsed.file,{id:999,start:0,end:1},{globals:['fetch']});
   assert.deepEqual(result,{version:1,status:'unknown',reason:'unsupported-expression'});
+});
+
+test('Doctor SDK identity resolves a stable CommonJS require binding',()=>{
+  const source='const WebSocket = require("ws"); new WebSocket("wss://example.com");';
+  const parsed=analyzeCalls('example.js',source);assert.equal(parsed.ok,true);
+  const construct=parsed.file.structure.flow.values.find(value=>value.kind==='construct');
+  const result=identityResult('example.js',source,parsed.file,ref(parsed.file,construct.callee),{imports:[{source:'ws',names:['default']}]});
+  assert.equal(result.status,'known');
+  assert.equal(result.value.matches,true);
+  assert.deepEqual(result.value.origin,{kind:'import',source:'ws',name:'default'});
 });
 
 function disposition(source){
@@ -84,6 +94,55 @@ test('Doctor SDK matches exact resource handles through cleanup helpers and fact
   ])assert.equal(lifetime(body).status,'unknown',body);
 });
 
+test('resource recipe clears unrelated calls before identity uncertainty',()=>{
+  const source=`
+    import {useEffect} from 'react';
+    useEffect(() => {
+      const handle = setInterval(() => console.log('tick'), 1000);
+      return () => clearInterval(handle);
+    }, []);
+  `;
+  const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
+  const calls=parsed.file.structure.flow.values.filter(value=>value.kind==='call'&&!value.dead);
+  const query={
+    acquisition:{globals:['setInterval','window.setInterval']},
+    owner:{identity:{imports:[{source:'react',names:['useEffect']}]},argument:0},
+    release:['clearInterval','window.clearInterval'],
+  };
+  const results=calls.map(call=>({call,result:resourceWithoutReleaseRecipeResult('example.ts',source,parsed.file,{id:call.id,start:call.start,end:call.end},query)}));
+  assert.ok(results.length>=4);
+  assert.ok(results.every(({result})=>result.status==='known'),JSON.stringify(results.map(({call,result})=>({line:call.line,member:call.member,target:call.target,result})),null,2));
+  assert.ok(results.every(({result})=>result.value==='clear'));
+});
+
+test('forbidden-call recipe normalizes harmless syntax wrappers and preserves lexical identity',()=>{
+  const source=`
+    process.exit(1);
+    (process).exit(2);
+    (process as NodeJS.Process).exit(3);
+    process!.exit(4);
+    (process.exit)(5);
+    const stop = process.exit; stop(6);
+    function local(process) { process.exit(7); }
+    console.log('safe');
+  `;
+  const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
+  const calls=parsed.file.structure.flow.values.filter(value=>value.kind==='call'&&!value.dead);
+  const results=calls.map(call=>({call,result:forbiddenCallRecipeResult('example.ts',source,parsed.file,{id:call.id,start:call.start,end:call.end},{target:{globals:['process.exit']}})}));
+  const reports=results.filter(({result})=>result.status==='known'&&result.value==='report');
+  assert.equal(reports.length,6,JSON.stringify(results,null,2));
+  assert.ok(results.every(({result})=>result.status==='known'),JSON.stringify(results,null,2));
+  assert.equal(results.filter(({result})=>result.value==='clear').length,2);
+});
+
+test('forbidden-call recipe narrows a mutable callable that can become the forbidden target',()=>{
+  const source='let stop=console.log; stop=process.exit; stop(1); process.exit(2);';
+  const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
+  const calls=parsed.file.structure.flow.values.filter(value=>value.kind==='call'&&!value.dead);
+  const results=calls.map(call=>forbiddenCallRecipeResult('example.ts',source,parsed.file,{id:call.id,start:call.start,end:call.end},{target:{globals:['process.exit']}}));
+  assert.deepEqual(results.map(result=>result.status==='known'?result.value:result.reason),['unresolved-identity','report']);
+});
+
 function option(source){
   const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);const values=parsed.file.structure.flow.values;
   const call=values.find(value=>value.kind==='call'&&value.target?.root==='fetch');assert.ok(call);
@@ -117,21 +176,26 @@ test('a confined reference doctor reuses all recipes with different APIs and cop
   assert.equal(run.status,0,run.stdout+run.stderr);
   assert.match(run.stdout,/three reusable recipes/);
   assert.match(run.stdout,/challenge profile: unhandled-value/);
+  assert.match(run.stdout,/challenge profile: forbidden-call/);
 });
 
 test('declared recipe profiles are named in JSON including unavailable paths',()=>{
   const repo=fileURLToPath(new URL('../',import.meta.url));
   const run=spawnSync(process.execPath,[`${repo}bin/cli.js`,'verify',`${repo}fixtures/doctor-sdk-reference.mjs`,'--format','json'],{cwd:repo,encoding:'utf8',timeout:30000});
   assert.equal(run.status,0,run.stdout+run.stderr);const result=JSON.parse(run.stdout),profiles=result.results.filter(item=>item.name.startsWith('challenge profile:'));
-  assert.equal(profiles.length,21);assert.equal(profiles.filter(item=>!item.ok).length,0);assert.equal(profiles.filter(item=>item.skipped).length,0);assert.equal(profiles.filter(item=>item.name.endsWith('/ analysis unavailable')&&item.ok).length,3);
+  assert.equal(profiles.length,29);assert.equal(profiles.filter(item=>!item.ok).length,0);assert.equal(profiles.filter(item=>item.skipped).length,0);assert.equal(profiles.filter(item=>item.name.endsWith('/ analysis unavailable')&&item.ok).length,4);
 });
 
 test('valid import and global identity recipe declarations always receive profiles',()=>{
   const base={claim:'x',lookalikes:['x'],reportingUnit:'occurrence',onUnknown:'skip'};
   const option={...base,id:'import-option',recipe:{name:'required-or-recommended-option',query:{call:{imports:[{source:'client',names:['request']}]},option:{option:'signal',sources:['RequestInit']}}}};
   const resource={...base,id:'mixed-resource',recipe:{name:'resource-without-release',query:{acquisition:{imports:[{source:'timers',names:['start']}]},owner:{identity:{globals:['register']},argument:0},release:['stop']}}};
+  const forbidden={...base,id:'forbidden-call',recipe:{name:'forbidden-call',query:{target:{globals:['process.exit']},scope:{under:['src'],extensions:['.tsx'],exclude:['src/recipe-profile.tsx']}}}};
   assert.ok(challengeProfileFixtures(option).length>0);
   assert.ok(challengeProfileFixtures(resource).length>0);
+  const forbiddenProfiles=challengeProfileFixtures(forbidden);
+  assert.ok(forbiddenProfiles.some(item=>item.name==='equivalent syntax variants'));
+  assert.ok(forbiddenProfiles.every(item=>Object.keys(item.seed)[0]==='src/recipe-profile-2.tsx'));
   assert.throws(()=>challengeProfileFixtures({...base,id:'unsupported',recipe:{name:'required-or-recommended-option',query:{call:{},option:{option:'signal',sources:['RequestInit']}}}}),/cannot generate a challenge target/);
 });
 

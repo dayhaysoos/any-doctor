@@ -5,10 +5,10 @@ import type { ProjectConsumers } from "./project-consumers.js";
 import type { FunctionStructure } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
-import { checkAnalysisNeeds, AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, DoctorMeta, ExpressionRef, Finding, IdentityQuery, IdentityValue, isTestPath, Match, NamedRuleQuery, OptionPresence, OptionPresenceQuery, RecipeDecision, RecipeFinding, RecipeName, RequiredOptionRecipeQuery, ResourceLifetime, ResourceLifetimeQuery, ResourceWithoutReleaseRecipeQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, SemanticNarrowing, SemanticProviderProvenance, SemanticResult, SemanticRunReport, SEMANTIC_RESULT_VERSION, UnhandledValueRecipeQuery, UnknownReason, ValueDisposition, ValueDispositionQuery, withinDir } from "./contract.js";
+import { ANALYSIS_CAPABILITY_NAMES, checkAnalysisNeeds, AnalysisFile, AnalysisSpans, AnalysisCalls, Capture, DEFAULT_EXTS, DoctorCtx, DoctorMeta, ExpressionRef, Finding, ForbiddenCallRecipeQuery, IdentityQuery, IdentityValue, isTestPath, Match, NamedRuleQuery, OptionPresence, OptionPresenceQuery, RecipeDecision, RecipeFinding, RecipeName, RequiredOptionRecipeQuery, ResourceLifetime, ResourceLifetimeQuery, ResourceWithoutReleaseRecipeQuery, RuleQuery, SEARCH_REQUEST, SEARCH_RESULT, SemanticNarrowing, SemanticProviderProvenance, SemanticResult, SemanticRunReport, SEMANTIC_RESULT_VERSION, UnhandledValueRecipeQuery, UnknownReason, ValueDisposition, ValueDispositionQuery, withinDir } from "./contract.js";
 import { maskNonCode } from "./mask.js";
 import { EngineQuery, RawSgCapture, RawSgMatch } from "./engine.js";
-import { identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
+import { callIdentityResult, forbiddenCallRecipeResult, identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
 import { UNKNOWN_REASONS, type CustomNarrowing } from "./contract.js";
 
 // The verify harness forces the degraded path per fixture (fixture
@@ -82,7 +82,20 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
     }
     execution.modelRequests++;
     const r = runAnalysis({ kind, file, sourceDigest: digest(readSource(file)) }, root);
-    if (r.file === undefined || !(kind in r.file)) throw new Error(r.error ?? "ctx.analysis failed");
+    if (r.file === undefined || !(kind in r.file)) {
+      if (r.error?.startsWith("analysis failed")) {
+        recordUnknown({version:SEMANTIC_RESULT_VERSION,status:"unknown",reason:"provider-failure"},file,{capability:kind});
+        const empty = kind === "bindings" ? {file,bindings:[]}
+          : kind === "spans" ? {file,spans:[]}
+          : {file,calls:[],functions:[],differences:[],structure:{
+            flow:{values:[],bindings:[],uses:[],loops:[],branches:[],jsxElements:[]},
+            values:[],bindings:[],functions:[],loops:[],directives:[],
+          }};
+        analysisFiles.set(`${kind}:${file}`,empty as AnalysisFile|AnalysisSpans|AnalysisCalls);
+        return empty as unknown as T extends "bindings" ? AnalysisFile : T extends "spans" ? AnalysisSpans : AnalysisCalls;
+      }
+      throw new Error(r.error ?? "ctx.analysis failed");
+    }
     analysisFiles.set(`${kind}:${file}`,r.file);
     return r.file as T extends "bindings" ? AnalysisFile : T extends "spans" ? AnalysisSpans : AnalysisCalls;
   };
@@ -184,6 +197,14 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
       calls(file: string): AnalysisCalls {
         return cachedAnalysisFile("calls", file);
       },
+      callIdentity(file: string, expression: ExpressionRef, query: IdentityQuery): SemanticResult<{matches:boolean}> {
+        execution.semanticQueries++;
+        const unavailable:SemanticResult<{matches:boolean}>={version:SEMANTIC_RESULT_VERSION,status:"unknown",reason:"analysis-unavailable"};
+        if(analysisForcedOff||!ctx.analysis.available)return recordUnknown(unavailable,file,{capability:"identity"});
+        if(sourceChanged(file))return recordUnknown({version:SEMANTIC_RESULT_VERSION,status:"unknown",reason:"source-changed"},file,{capability:"identity"});
+        try{return recordUnknown(callIdentityResult(file,readSource(file),cachedAnalysisFile("calls",file),expression,query),file,{capability:"identity"});}
+        catch{return recordUnknown({version:SEMANTIC_RESULT_VERSION,status:"unknown",reason:"provider-failure"},file,{capability:"identity"});}
+      },
       identity(file: string, expression: ExpressionRef, query: IdentityQuery): SemanticResult<IdentityValue> {
         execution.semanticQueries++;
         const unavailable:SemanticResult<IdentityValue>={version:SEMANTIC_RESULT_VERSION,status:"unknown",reason:"analysis-unavailable"};
@@ -217,6 +238,7 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
       unhandledValue(file:string,producer:ExpressionRef,query:UnhandledValueRecipeQuery,finding:RecipeFinding):SemanticResult<RecipeDecision>{return recipe('recipe-unhandled-value',file,producer,query,finding);},
       resourceWithoutRelease(file:string,acquisition:ExpressionRef,query:ResourceWithoutReleaseRecipeQuery,finding:RecipeFinding):SemanticResult<RecipeDecision>{return recipe('recipe-resource-without-release',file,acquisition,query,finding);},
       requiredOrRecommendedOption(file:string,call:ExpressionRef,query:RequiredOptionRecipeQuery,finding:RecipeFinding):SemanticResult<RecipeDecision>{return recipe('recipe-required-option',file,call,query,finding);},
+      forbiddenCall(file:string,call:ExpressionRef,query:ForbiddenCallRecipeQuery,finding:RecipeFinding):SemanticResult<RecipeDecision>{return recipe('recipe-forbidden-call',file,call,query,finding);},
     },
 
     report: {
@@ -245,14 +267,14 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
     },
   };
 
-  function recipe(kind:'recipe-unhandled-value'|'recipe-resource-without-release'|'recipe-required-option',file:string,expression:ExpressionRef,query:UnhandledValueRecipeQuery|ResourceWithoutReleaseRecipeQuery|RequiredOptionRecipeQuery,finding:RecipeFinding):SemanticResult<RecipeDecision>{
+  function recipe(kind:'recipe-unhandled-value'|'recipe-resource-without-release'|'recipe-required-option'|'recipe-forbidden-call',file:string,expression:ExpressionRef,query:UnhandledValueRecipeQuery|ResourceWithoutReleaseRecipeQuery|RequiredOptionRecipeQuery|ForbiddenCallRecipeQuery,finding:RecipeFinding):SemanticResult<RecipeDecision>{
     execution.semanticQueries++;
-    const recipeName:RecipeName=kind==='recipe-unhandled-value'?'unhandled-value':kind==='recipe-resource-without-release'?'resource-without-release':'required-or-recommended-option';
+    const recipeName:RecipeName=kind==='recipe-unhandled-value'?'unhandled-value':kind==='recipe-resource-without-release'?'resource-without-release':kind==='recipe-required-option'?'required-or-recommended-option':'forbidden-call';
     const context={check:finding.rule,recipe:recipeName};
     if(analysisForcedOff||!ctx.analysis.available)return recordUnknown({version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'analysis-unavailable'},file,context);
     if(sourceChanged(file))return recordUnknown({version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'source-changed'},file,context);
     let result:SemanticResult<RecipeDecision>;
-    try{const facts=cachedAnalysisFile('calls',file),source=readSource(file);result=kind==='recipe-unhandled-value'?unhandledValueRecipeResult(file,source,facts,expression,query as UnhandledValueRecipeQuery):kind==='recipe-resource-without-release'?resourceWithoutReleaseRecipeResult(file,source,facts,expression,query as ResourceWithoutReleaseRecipeQuery):requiredOptionRecipeResult(file,source,facts,expression,query as RequiredOptionRecipeQuery);}catch{return recordUnknown({version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'provider-failure'},file,context);}
+    try{const facts=cachedAnalysisFile('calls',file),source=readSource(file);result=kind==='recipe-unhandled-value'?unhandledValueRecipeResult(file,source,facts,expression,query as UnhandledValueRecipeQuery):kind==='recipe-resource-without-release'?resourceWithoutReleaseRecipeResult(file,source,facts,expression,query as ResourceWithoutReleaseRecipeQuery):kind==='recipe-required-option'?requiredOptionRecipeResult(file,source,facts,expression,query as RequiredOptionRecipeQuery):forbiddenCallRecipeResult(file,source,facts,expression,query as ForbiddenCallRecipeQuery);}catch{return recordUnknown({version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'provider-failure'},file,context);}
     if(result.status==='known'&&result.value==='report'||result.status==='unknown'&&query.reportUnknown?.includes(result.reason)){
       const value=cachedAnalysisFile('calls',file).structure.flow.values.find(item=>item.id===expression.id&&item.start===expression.start&&item.end===expression.end)??cachedAnalysisFile('calls',file).structure.flow.values.find(item=>item.start===expression.start&&item.end===expression.end);
       if(!value)return recordUnknown({version:SEMANTIC_RESULT_VERSION,status:'unknown',reason:'source-changed'},file,context);
@@ -288,7 +310,7 @@ export function buildCtx(root: string, opts: { includeTests?: boolean } = {}): {
     const available=ctx.analysis.available;
     // This provider implements these public analysis methods. Unknown capability
     // names must not inherit the provider's overall availability by accident.
-    const supported = new Set(["bindings", "spans", "calls", "identity", "value-disposition", "resource-lifetime", "option-presence", "consumers", "structures"]);
+    const supported = new Set<string>(ANALYSIS_CAPABILITY_NAMES);
     const capabilityAvailable = (name: string) => available && supported.has(name);
     const unavailableReason=providerCache?.reason??"analysis engine unavailable";
     const provider=providerCache??{id:"any-doctor/syntax-flow",version:"1",available, ...(!available?{reason:unavailableReason}:{}),dependencies:[]};
@@ -469,7 +491,7 @@ interface AnalysisResponse {
   error?: string;
 }
 
-function runAnalysis(body: { kind: "project" } | { kind: "structures"; file: string; sourceDigest?: string } | { kind: "available" } | { kind: "bindings"; file: string; sourceDigest?: string } | { kind: "spans"; file: string; sourceDigest?: string } | { kind: "calls"; file: string; sourceDigest?: string } | { kind: "identity"; file: string; expression: ExpressionRef; query: IdentityQuery; sourceDigest?: string } | {kind:"value-disposition";file:string;expression:ExpressionRef;query:ValueDispositionQuery;sourceDigest?:string}|{kind:'resource-lifetime';file:string;expression:ExpressionRef;query:ResourceLifetimeQuery;sourceDigest?:string}|{kind:'option-presence';file:string;expression:ExpressionRef;query:OptionPresenceQuery;sourceDigest?:string}|{kind:'recipe-unhandled-value'|'recipe-resource-without-release'|'recipe-required-option';file:string;expression:ExpressionRef;query:UnhandledValueRecipeQuery|ResourceWithoutReleaseRecipeQuery|RequiredOptionRecipeQuery;sourceDigest?:string}, root: string): AnalysisResponse {
+function runAnalysis(body: { kind: "project" } | { kind: "structures"; file: string; sourceDigest?: string } | { kind: "available" } | { kind: "bindings"; file: string; sourceDigest?: string } | { kind: "spans"; file: string; sourceDigest?: string } | { kind: "calls"; file: string; sourceDigest?: string } | { kind: "identity"; file: string; expression: ExpressionRef; query: IdentityQuery; sourceDigest?: string } | {kind:"value-disposition";file:string;expression:ExpressionRef;query:ValueDispositionQuery;sourceDigest?:string}|{kind:'resource-lifetime';file:string;expression:ExpressionRef;query:ResourceLifetimeQuery;sourceDigest?:string}|{kind:'option-presence';file:string;expression:ExpressionRef;query:OptionPresenceQuery;sourceDigest?:string}|{kind:'recipe-unhandled-value'|'recipe-resource-without-release'|'recipe-required-option'|'recipe-forbidden-call';file:string;expression:ExpressionRef;query:UnhandledValueRecipeQuery|ResourceWithoutReleaseRecipeQuery|RequiredOptionRecipeQuery|ForbiddenCallRecipeQuery;sourceDigest?:string}, root: string): AnalysisResponse {
   let response: AnalysisResponse;
   try {
     fs.writeSync(3, SEARCH_REQUEST + JSON.stringify({ op: "analysis", ...body, root }) + "\n");

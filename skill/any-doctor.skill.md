@@ -15,6 +15,23 @@ are valid doctor intents; phrase them accurately instead of calling every findin
 a proven bug. Planned review decisions and history belong to the CLI, not to
 doctor implementations. Doctors continue to emit raw findings through this contract.
 
+## Start with discovery
+
+For a new intent, inspect the target repository before writing doctor files. Return
+four things to the user: confirmed examples, safe lookalikes, unclear examples, and
+one plain-English proposed rule boundary. Stop there until the user accepts that
+boundary.
+
+After acceptance, map every required fact to a documented `ctx` capability or recipe.
+If an essential fact is unavailable, report the missing Any Doctor capability instead
+of implementing a private parser or resolver inside the doctor. For custom checks, follow the bundled SDK reference's **Custom checks** and
+**Capability-gap report** sections before scaffolding. Classify a blocker as an
+authoring error, reusable SDK gap, project-policy decision or runtime-dynamic
+limit, backed by an executable seed and expected/actual evidence. Use whole-call
+`ctx.analysis.callIdentity` instead of a private source-name or alias filter.
+Dependency in one conditional arm does not prove the required path uses that value.
+When the supported facts cover the accepted boundary, continue below.
+
 ## The contract
 
 Two files, exactly:
@@ -100,8 +117,11 @@ export const fixtures = [
   bindings: declare `needs: ["spans"]`, narrow without the engine.
 - `ctx.analysis.calls(file)` → generic AST facts: calls with immediate usage
   (`discarded`, `awaited`, `returned`, `stored`, `passed`, `unknown`), receiver
-  binding identity, inline callback registration, linked query-call extents,
-  and subtraction operands. See the exported `AnalysisCalls` contract.
+  binding identity, inline callback registration, JSX elements and prop value
+  IDs, linked query-call extents, and subtraction operands. See the exported
+  `AnalysisCalls` contract. JavaScript files may contain JSX. If one file still
+  cannot be parsed, the scan records uncertainty for that file and continues
+  through neighboring files.
   Declare `needs: ["calls"]` and a degraded policy. Stored/passed/returned
   is not proof that a promise eventually settles; a nearby combiner is not
   evidence about a particular promise.
@@ -294,7 +314,15 @@ own `severity` only for exceptions.
    Reason every expectation from the intent and explicit project conventions — never from what your
    doctor currently reports (that is the self-grading trap). Verify again
    and iterate until the attack wave is green too.
-5. Report: id, what it detects, declared blind spots, fixture count.
+5. Run the doctor on real projects that use the technology. Prefer official
+   examples, starter apps, SDK demos and established open-source applications.
+   Review every result, crash and incomplete scan against source. Copy a few
+   representative examples, intentionally introduce each promised problem, and
+   prove that the unchanged example stays quiet while the broken copy is found.
+   Record exact project commits so the run can be repeated. Any Doctor does not
+   choose or enforce these projects; this is part of authoring and review.
+6. Report: id, what it detects, declared blind spots, fixture count, and the real
+   projects reviewed.
 
 ## The claim contract (verify refuses without it)
 
@@ -461,5 +489,11 @@ out of scope for a doctor: say so in your final report instead.
 - Don't touch any file other than the two contract files.
 - Don't add dependencies — and don't import anything at all, not even
   `node:` builtins; every import is refused at runtime.
-- Don't scan a target repository to "tune" the doctor against its code.
+- Inspect the target repository to establish the rule boundary before implementation.
+  After implementation starts, improve the general claim and its fixtures rather than
+  tuning detection merely to make that repository's current report look clean.
 - Don't mark a fixture green by weakening the expectation — strengthen the doctor.
+
+Consumer agents use public facts and recipes. Do not patch an installed Any Doctor package or build a private parser/resolver to force a result. When public facts are insufficient, narrow the affected check and produce a capability-gap report. Any Doctor maintainers may extend the shared provider only with a framework-neutral change and definite-positive, negative, uncertain, and mixed-neighbor regressions. A capability-gap report is evidence for future product work, not permission to guess or claim a clean result.
+
+Capability-gap acceptanceCases must name currentFailure, definitePositive, negativeControl and uncertainControl. Each includes a runnable seed or fixturePath, exact findings, narrowing state/reasons and score/grade presence. Validate with the authoring catalog’s validateCapabilityGapReport, then execute the stakes; ordinary doctor verify does not consume these reports. Keep a definite positive visible beside an uncertain neighbor.

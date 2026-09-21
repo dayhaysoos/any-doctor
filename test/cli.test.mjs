@@ -133,6 +133,106 @@ test("main: help exits 0; unknown command exits 1", async (t) => {
   assert.equal(await cli.main(["bogus"]), 1);
 });
 
+test("author surface: help author prints the command-led workflow", async (t) => {
+  const logs = silentConsole(t);
+  assert.equal(await cli.main(["help", "author"]), 0);
+  const printed = logs.mock.calls.map(c => c.arguments.join(" ")).join("\n");
+  assert.match(printed, /generate "<one-line intent>" --stdout/);
+  assert.match(printed, /capabilities --format json/);
+  assert.match(printed, /scaffold <slug>/);
+  assert.match(printed, /verify doctors\/<slug>\.mjs/);
+  assert.ok(printed.includes(path.join(REPO, "docs", "doctor-sdk.md")));
+});
+
+test("scaffold: creates two incomplete files, prints pinned commands, and cannot verify", async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-scaffold-"));
+  const cwd = process.cwd();
+  process.chdir(root);
+  try {
+    const logs = silentConsole(t);
+    assert.equal(await cli.main(["scaffold", "discarded-background-jobs"]), 0);
+    const doctor = path.join(root, "doctors", "discarded-background-jobs.mjs");
+    const fixtures = path.join(root, "doctors", "discarded-background-jobs.fixtures.mjs");
+    assert.ok(fs.readFileSync(doctor, "utf8").includes("__ANY_DOCTOR_TODO__"));
+    assert.ok(fs.readFileSync(fixtures, "utf8").includes("__ANY_DOCTOR_TODO__"));
+    const printed = logs.mock.calls.map(c => c.arguments.map(String).join(" ")).join("\n");
+    const exactCli = `node "${path.join(REPO, "bin", "cli.js")}"`;
+    assert.ok(printed.includes(`${exactCli} capabilities --format json`));
+    assert.ok(printed.includes(`${exactCli} verify doctors/discarded-background-jobs.mjs`));
+    assert.doesNotMatch(printed, /npx/, "a local or packed candidate never switches to a published package");
+    assert.equal(await cli.main(["verify", doctor]), 1, "an untouched scaffold never verifies cleanly");
+  } finally {
+    process.chdir(cwd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("scaffold: validates slugs and never overwrites either output", async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-scaffold-refuse-"));
+  const cwd = process.cwd();
+  process.chdir(root);
+  try {
+    silentConsole(t);
+    assert.equal(await cli.main(["scaffold", "Not Valid"]), 1);
+    assert.equal(await cli.main(["scaffold", "stable-check"]), 0);
+    const doctor = path.join(root, "doctors", "stable-check.mjs");
+    fs.writeFileSync(doctor, "owned bytes\n");
+    assert.equal(await cli.main(["scaffold", "stable-check"]), 1);
+    assert.equal(fs.readFileSync(doctor, "utf8"), "owned bytes\n");
+  } finally {
+    process.chdir(cwd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("author surface: capabilities JSON describes runtime-backed facts and recipe requirements", async (t) => {
+  const logs = silentConsole(t);
+  assert.equal(await cli.main(["capabilities", "--format", "json"]), 0);
+  const result = JSON.parse(logs.mock.calls.map(c => c.arguments.join(" ")).join(""));
+  assert.equal(result.schema, 1);
+  assert.equal(result.command, "capabilities");
+  assert.deepEqual(result.capabilities.map(x => x.name), [
+    "bindings", "spans", "calls", "identity", "value-disposition", "resource-lifetime", "option-presence", "consumers", "structures",
+  ]);
+  assert.deepEqual(Object.fromEntries(result.recipes.map(x => [x.name, x.requires])), {
+    "forbidden-call": ["calls", "identity"],
+    "unhandled-value": ["calls", "value-disposition"],
+    "resource-without-release": ["calls", "identity", "resource-lifetime"],
+    "required-or-recommended-option": ["calls", "identity", "option-presence"],
+  });
+  assert.ok(result.documentationPath.endsWith("/docs/doctor-sdk.md"));
+  for (const recipe of result.recipes) {
+    assert.equal(recipe.inputSchema.type, "object");
+    assert.deepEqual(recipe.inputSchema.required, ["file", "expression", "query", "finding"]);
+    assert.match(recipe.example, new RegExp(recipe.api.slice(0, recipe.api.indexOf("("))));
+  }
+  assert.match(result.rule, /product gap/);
+});
+
+test("author surface: capabilities has readable and targeted help and refuses unknown names", async (t) => {
+  const logs = silentConsole(t);
+  assert.equal(await cli.main(["capabilities"]), 0);
+  let printed = logs.mock.calls.map(c => c.arguments.join(" ")).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+  assert.match(printed, /Shared semantic facts/);
+  assert.match(printed, /unhandled-value/);
+  assert.equal(await cli.main(["capabilities", "resource-without-release"]), 0);
+  printed = logs.mock.calls.map(c => c.arguments.join(" ")).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+  assert.match(printed, /Input schema:/);
+  assert.match(printed, /setInterval/);
+  assert.match(printed, /clearInterval/);
+  assert.match(printed, /\*\.useEffect/);
+  assert.match(printed, /namespace import member/);
+  assert.equal(await cli.main(["capabilities", "resource-without-release", "--format", "json"]), 0);
+  const targeted = JSON.parse(logs.mock.calls.at(-1).arguments.join(" "));
+  assert.equal(targeted.selected, "resource-without-release");
+  assert.deepEqual(targeted.capabilities, []);
+  assert.deepEqual(targeted.recipes.map(x => x.name), ["resource-without-release"]);
+  assert.equal(await cli.main(["capabilities", "--help"]), 0);
+  assert.equal(await cli.main(["help", "capabilities"]), 0);
+  assert.equal(await cli.main(["capabilities", "not-real"]), 1);
+  assert.equal(await cli.main(["capabilities", "--wat"]), 1);
+});
+
 test("main: no arguments runs every discovered doctor (D15 cold start), not usage", async (t) => {
   const { globalDoctorsDir } = await import("../bin/discover.js");
   const global = globalDoctorsDir();
@@ -196,6 +296,82 @@ test("main: --global is a generate-only flag", async (t) => {
   silentConsole(t);
   assert.equal(await cli.main(["run", "--global"]), 1);
   assert.equal(await cli.main(["verify", "--global"]), 1);
+});
+
+test("generate: stdout mode teaches the current agent discovery before implementation", async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-generate-stdout-"));
+  const cwd = process.cwd();
+  process.chdir(root);
+  try {
+    const logs = silentConsole(t);
+    const code = await cli.main(["generate", "Find discarded async map promises", "--stdout"]);
+    assert.equal(code, 0);
+    const printed = logs.mock.calls.map(c => c.arguments.map(String).join(" ")).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    const instructions = path.join(root, "doctors", "AGENTS.md");
+    assert.match(printed, /Step 1 only — discovery/);
+    assert.match(printed, /Do not write the doctor yet/);
+    assert.ok(printed.includes(instructions), "the current agent receives the exact instructions path");
+    assert.ok(fs.readFileSync(instructions, "utf8").includes("## Start with discovery"));
+    assert.doesNotMatch(printed, /prompt also copied to clipboard/, "stdout mode has no clipboard side effect");
+  } finally {
+    process.chdir(cwd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("generate: JSON is one machine-readable discovery handoff", async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-generate-json-"));
+  const cwd = process.cwd();
+  process.chdir(root);
+  try {
+    const logs = silentConsole(t);
+    const code = await cli.main(["generate", "Find discarded async map promises", "--format", "json"]);
+    assert.equal(code, 0);
+    const printed = logs.mock.calls.map(c => c.arguments.join(" ")).join("");
+    const result = JSON.parse(printed);
+    assert.equal(result.schema, 1);
+    assert.equal(result.tool, "any-doctor");
+    assert.equal(result.phase, "discovery");
+    assert.equal(result.slug, "discarded-async-map-promises");
+    const canonicalRoot = fs.realpathSync(root);
+    assert.equal(result.targetRoot, canonicalRoot);
+    assert.equal(result.agentInstructionsPath, path.join(canonicalRoot, "doctors", "AGENTS.md"));
+    assert.match(result.prompt, /Stop after that report/);
+    assert.match(result.prompt, /help author/);
+    assert.match(result.prompt, /capabilities --format json/);
+    assert.match(result.prompt, /scaffold/);
+    assert.match(result.authorHelpCommand, /help author$/);
+    assert.match(result.capabilitiesCommand, /capabilities --format json$/);
+    assert.match(result.scaffoldCommand, /scaffold "discarded-async-map-promises"$/);
+    assert.match(result.verifyCommand, / verify /);
+    assert.equal(result.sdkReferencePath, path.join(REPO, "docs", "doctor-sdk.md"));
+    assert.ok(result.prompt.includes(result.sdkReferencePath));
+  } finally {
+    process.chdir(cwd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("generate: an owned AGENTS file is preserved and never mislabeled as the bundled guide", async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "any-doctor-generate-owned-agents-"));
+  const cwd = process.cwd();
+  process.chdir(root);
+  try {
+    fs.mkdirSync(path.join(root, "doctors"));
+    const owned = path.join(root, "doctors", "AGENTS.md");
+    fs.writeFileSync(owned, "our existing instructions\n");
+    const logs = silentConsole(t);
+    const code = await cli.main(["generate", "Find discarded async map promises", "--format", "json"]);
+    assert.equal(code, 0);
+    const result = JSON.parse(logs.mock.calls.map(c => c.arguments.join(" ")).join(""));
+    assert.equal(fs.readFileSync(owned, "utf8"), "our existing instructions\n");
+    assert.notEqual(result.agentInstructionsPath, fs.realpathSync(owned));
+    assert.match(result.agentInstructionsPath, /skill\/any-doctor\.skill\.md$/);
+    assert.equal(result.skillPlant, "left-user-copy");
+  } finally {
+    process.chdir(cwd);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("main: bare run partitions the cohort — healthy run, unsafe skipped and noted, broken named", async (t) => {
@@ -955,7 +1131,7 @@ test("agent surface: all-broken discovery still emits structured JSON", async (t
   try {
     fs.mkdirSync(path.join(dir, "doctors"), { recursive: true });
     // Break every discoverable slug by shadowing the bundled names.
-    for (const slug of ["async", "convex", "effect-v4-kitlangton", "openrouter", "slop"]) {
+    for (const slug of ["async", "convex", "deepgram", "effect-v4-kitlangton", "openrouter", "slop"]) {
       fs.writeFileSync(path.join(dir, "doctors", slug + ".mjs"), "not a doctor\n");
     }
     fs.writeFileSync(path.join(dir, "a.ts"), "const x = 1;\n");
@@ -970,7 +1146,7 @@ test("agent surface: all-broken discovery still emits structured JSON", async (t
     assert.equal(code, 1, "all-broken fails");
     const text = log.mock.calls.map(c => c.arguments.join(" ")).join("");
     const j = JSON.parse(text); // stdout is still one parseable object
-    assert.equal(j.broken.length, 5, "every broken doctor is structured data");
+    assert.equal(j.broken.length, 6, "every broken doctor is structured data");
     assert.equal(j.groups.length, 0);
     err.mock.restore();
   } finally {

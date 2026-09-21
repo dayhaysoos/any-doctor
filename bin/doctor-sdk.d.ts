@@ -1,4 +1,4 @@
-import type { AnalysisCalls, ExpressionRef, IdentityQuery, IdentityValue, SemanticResult, ValueDisposition, ValueDispositionQuery, ResourceLifetime, ResourceLifetimeQuery, OptionPresence, OptionPresenceQuery, RecipeDecision, RequiredOptionRecipeQuery, ResourceWithoutReleaseRecipeQuery, UnhandledValueRecipeQuery } from "./contract.js";
+import type { AnalysisCalls, ExpressionRef, IdentityQuery, IdentityValue, SemanticResult, ValueDisposition, ValueDispositionQuery, ResourceLifetime, ResourceLifetimeQuery, OptionPresence, OptionPresenceQuery, ForbiddenCallRecipeQuery, RecipeDecision, RequiredOptionRecipeQuery, ResourceWithoutReleaseRecipeQuery, UnhandledValueRecipeQuery } from "./contract.js";
 /** Host-owned lexical identity. The doctor supplies accepted technology names;
  * parsing, alias resolution, shadowing and evidence stay behind this seam. */
 export declare function identityResult(file: string, source: string, facts: AnalysisCalls, expression: ExpressionRef, query: IdentityQuery): SemanticResult<IdentityValue>;
@@ -16,6 +16,15 @@ export declare function optionPresenceResult(file: string, source: string, facts
 /** Recipe: resolve a configured producer and report only when its exact value is
  * established as discarded. Array identity is owned here, not by consumers. */
 export declare function unhandledValueRecipeResult(file: string, source: string, facts: AnalysisCalls, expression: ExpressionRef, query: UnhandledValueRecipeQuery): SemanticResult<RecipeDecision>;
+/** Candidate-aware call identity for custom checks. Reuse the recipe's
+ * membership rules without emitting a policy finding or private name filters. */
+export declare function callIdentityResult(file: string, source: string, facts: AnalysisCalls, expression: ExpressionRef, query: IdentityQuery): SemanticResult<{
+    matches: boolean;
+}>;
+/** Recipe: report a call only when its callee resolves to the configured
+ * global or import identity. Transparent JavaScript and TypeScript wrappers
+ * are normalized by the shared call model before this recipe sees them. */
+export declare function forbiddenCallRecipeResult(file: string, source: string, facts: AnalysisCalls, expression: ExpressionRef, query: ForbiddenCallRecipeQuery): SemanticResult<RecipeDecision>;
 /** Recipe: combine configured call identity with structured option presence. */
 export declare function requiredOptionRecipeResult(file: string, source: string, facts: AnalysisCalls, expression: ExpressionRef, query: RequiredOptionRecipeQuery): SemanticResult<RecipeDecision>;
 /** Recipe: find a configured owner, validate acquisition identity and classify

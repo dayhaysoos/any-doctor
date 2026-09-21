@@ -20,6 +20,8 @@ export interface FlowValue extends SourceRange {
   argumentRoles?: { value: number; spread: boolean }[];
   value?: number;
   alternatives?: number[];
+  /** Ternary selection edges, including the test. No predicate evaluation. */
+  selection?: { test: number; whenTrue: number; whenFalse: number };
   /** Source slot index preserves array holes; spread slots may expand at runtime. */
   elements?: { value: number; spread: boolean; index?: number }[];
   properties?: { name: string | null; value: number; spread: boolean; accessor: boolean }[];
@@ -36,6 +38,7 @@ export interface ValueFlow {
   bindings: { binding: number; initializer?: number; primitive?: "string"; array: boolean; parameter?: {functionStart:number;index:number}; rest?: boolean }[];
   uses: { value: number; kind: 'return' | 'yield' | 'await' | 'discard' | 'write'; functionStart: number | null; binding?: number; /** Flow ID of the assignment destination, including member writes. */ targetValue?: number; dead: boolean }[];
   loops: (SourceRange & { functionStart: number | null; iterable: number; binding: number | null; bindings?: { binding: number; path: string[] }[]; await: boolean })[];
+  jsxElements: (SourceRange & { target: CallTarget; attributes: { name: string | null; value?: number; spread: boolean }[] })[];
 }
 
 /** Direct terminal transfer only; nested conditions/loops are not flattened. */
@@ -48,7 +51,7 @@ export function terminalExit(node: Node | undefined): 'return' | 'throw' | 'cont
 
 export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: Node) => CallTarget,
   range: (n: Node) => SourceRange, unwrap: (n: Node) => Node, functionStart: (n: Node) => number | null): ValueFlow {
-  const ids = new Map<Node,number>(), values: FlowValue[] = [], uses: ValueFlow['uses'] = [], bindings: ValueFlow['bindings'] = [], loops: ValueFlow['loops'] = [], branches: ValueFlow['branches'] = [];
+  const ids = new Map<Node,number>(), values: FlowValue[] = [], uses: ValueFlow['uses'] = [], bindings: ValueFlow['bindings'] = [], loops: ValueFlow['loops'] = [], branches: ValueFlow['branches'] = [], jsxElements: ValueFlow['jsxElements'] = [];
   const functions = new Set(['FunctionDeclaration','FunctionExpression','ArrowFunctionExpression']);
   const dead = (n: Node): boolean => {
     let child = n, p = parents.get(child);
@@ -82,6 +85,7 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     return !computed && n.type === 'Identifier' ? String(n.name)
       : n.type === 'Literal' && ['string','number'].includes(typeof n.value) ? String(n.value) : null;
   };
+  const jsxName = (n: Node): string | null => typeof n.name === 'string' ? n.name : null;
   const precedingExits = new Map<Node, {test:Node;truthy:boolean}[]>();
   const exits = (node:Node|undefined):boolean => terminalExit(node)!==undefined;
   // Build block-prefix facts once. Independent statements do not rescan all
@@ -101,7 +105,7 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
     const id = values.length, v: FlowValue = { id, ...range(n), kind:'unknown', functionStart:functionStart(n), dead:dead(n), ...(conditional(n)?{conditional:true}:{}) };
     ids.set(n,id); values.push(v);
     if (n.type === 'Super') {v.kind='super';}
-    else if (n.type === 'Identifier') { v.kind='reference';v.target=target(n); }
+    else if (n.type === 'Identifier' || n.type === 'MetaProperty') { v.kind='reference';v.target=target(n); }
     else if (n.type === 'Literal' && (n.value === null || ['string','number','boolean'].includes(typeof n.value))) { v.kind='literal';v.literal=n.value as FlowValue['literal']; }
     else if (n.type === 'TemplateLiteral' && !(n.expressions as Node[]).length) { v.kind='literal';v.literal=String((((n.quasis as Node[])[0].value) as {cooked?:string}).cooked); }
     else if (n.type === 'TemplateLiteral') {v.primitive='string';v.template={quasis:(n.quasis as Node[]).map(q=>((q.value as {cooked?:string|null}).cooked??null)),expressions:(n.expressions as Node[]).map(value)};}
@@ -127,7 +131,7 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
       const right=operator==='??'?left.value===null:operator==='||'?!left.value:!!left.value;
       v.alternatives=known?[value((right?n.right:n.left) as Node)]:[value(n.left as Node),value(n.right as Node)];
     }
-    else if (n.type==='ConditionalExpression') {v.kind='choice';const test=unwrap(n.test as Node);v.alternatives=test.type==='Literal'&&typeof test.value==='boolean'?[value((test.value?n.consequent:n.alternate) as Node)]:[value(n.consequent as Node),value(n.alternate as Node)];}
+    else if (n.type==='ConditionalExpression') {v.kind='choice';v.selection={test:value(n.test as Node),whenTrue:value(n.consequent as Node),whenFalse:value(n.alternate as Node)};const test=unwrap(n.test as Node);v.alternatives=test.type==='Literal'&&typeof test.value==='boolean'?[value((test.value?n.consequent:n.alternate) as Node)]:[value(n.consequent as Node),value(n.alternate as Node)];}
     if (['BinaryExpression','LogicalExpression','UnaryExpression'].includes(n.type))
       v.operation={operator:String(n.operator),operands:(n.type==='UnaryExpression'?[n.argument]:[n.left,n.right]).map(x=>value(x as Node))};
     const guards: NonNullable<FlowValue['guards']> = [];
@@ -147,7 +151,7 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
   };
   const arrayType=(n:Node|undefined):boolean=>!!n&&(n.type==='TSArrayType'||n.type==='TSTupleType'||n.type==='TSTypeOperator'&&arrayType(n.typeAnnotation as Node)||n.type==='TSTypeReference'&&['Array','ReadonlyArray'].includes(target(n.typeName as Node).root??'')&&target(n.typeName as Node).binding===null);
   for(const n of nodes){
-    if (['Identifier','MemberExpression','Literal','TemplateLiteral','ArrayExpression','ObjectExpression','CallExpression','NewExpression','AwaitExpression','ConditionalExpression'].includes(n.type)||functions.has(n.type)||n.type==='UnaryExpression'&&n.operator==='void') value(n);
+    if (['Identifier','MetaProperty','MemberExpression','Literal','TemplateLiteral','ArrayExpression','ObjectExpression','CallExpression','NewExpression','AwaitExpression','ConditionalExpression'].includes(n.type)||functions.has(n.type)||n.type==='UnaryExpression'&&n.operator==='void') value(n);
     if(n.type==='VariableDeclarator'&& (n.id as Node).type==='Identifier'){
       const b=target(n.id as Node).binding;if(b!==null)bindings.push({binding:b,...(n.init?{initializer:value(n.init as Node)}:{}),...(((n.id as Node).typeAnnotation as Node|undefined)?.typeAnnotation && (((n.id as Node).typeAnnotation as Node).typeAnnotation as Node).type==='TSStringKeyword'?{primitive:'string' as const}:{}),array:arrayType(((n.id as Node).typeAnnotation as Node|undefined)?.typeAnnotation as Node|undefined)});
     }
@@ -181,6 +185,18 @@ export function valueFlow(nodes: Node[], parents: Map<Node, Node>, target: (n: N
       patternBindings(p);
       loops.push({...range(n.body as Node),functionStart:functionStart(n),iterable:value(n.right as Node),binding:p.type==='Identifier'?target(p).binding:null,...(p.type!=='Identifier'?{bindings:loopBindings}:{}),await:!!n.await});
     }
+    if(n.type==='JSXOpeningElement'){
+      const attributes=(n.attributes as Node[]).map(attribute=>{
+        if(attribute.type==='JSXSpreadAttribute')return {name:null,value:value(attribute.argument as Node),spread:true};
+        const raw=attribute.value as Node|null|undefined;
+        if(!raw)return {name:jsxName(attribute.name as Node),spread:false};
+        const expression=raw.type==='JSXExpressionContainer' ? raw.expression as Node : raw;
+        return expression?.type==='JSXEmptyExpression'
+          ? {name:jsxName(attribute.name as Node),spread:false}
+          : {name:jsxName(attribute.name as Node),value:value(expression),spread:false};
+      });
+      jsxElements.push({...range(n),target:target(n.name as Node),attributes});
+    }
   }
-  return {values,bindings,uses,loops,branches};
+  return {values,bindings,uses,loops,branches,jsxElements};
 }

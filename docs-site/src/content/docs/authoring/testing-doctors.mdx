@@ -1,9 +1,8 @@
 ---
 title: Testing and evaluating doctors
 description: Challenge false positives, preserve useful findings, and verify the artifact people will run.
-audience: human
 sidebar:
-  order: 14
+  order: 15
 ---
 
 A fixture suite answers whether a doctor behaves as specified on its cases.
@@ -20,7 +19,7 @@ use the same Any Doctor installation throughout an evaluation.
 | 1 | Define expectations and counterexamples | A specification that does not depend on current detector output |
 | 2 | Verify fixtures and inspect every result | Agreement on the exercised cases, plus explicit failures and skips |
 | 3 | Run independently labeled cases | Evidence beyond the examples used to tune the detector |
-| 4 | Scan fixed real code and review changes | Source-grounded judgments about findings and recommendations |
+| 4 | Run the doctor on real projects and review every result | Evidence that valid code stays quiet outside your own examples |
 | 5 | Test the files or package you distribute | Evidence about the artifact recipients will actually run |
 | 6 | Make an acceptance decision | A bounded statement of what is ready and what remains unresolved |
 
@@ -185,7 +184,21 @@ with difficult counterexamples measures those boundaries, not the frequency of
 errors in customer repositories. Report its composition and limits alongside
 any pass percentage.
 
-## 4. Scan fixed real code and review changes
+## 4. Run it on real projects
+
+Choose real projects that use the technology: official examples, starter apps,
+SDK demos, and established open-source applications. Start with their unchanged
+code. Review every finding, crash, and incomplete result instead of treating an
+empty report as proof that the doctor works.
+
+Next, copy a few representative examples and intentionally introduce each
+problem the doctor promises to catch. The unchanged examples should remain
+quiet. The broken copies should produce the expected findings. This checks both
+sides of the promise using code that was not invented for the detector.
+
+Any Doctor does not download projects or enforce this review. Authors choose the
+projects, establish the expected behavior from the technology's contract, and
+record the results.
 
 Use a fixed target checkout or snapshot so before/after results are comparable.
 Keep its content and scan options unchanged. Record target revision and dirty

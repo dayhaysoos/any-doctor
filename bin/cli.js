@@ -2,7 +2,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-import { DOCTOR_FILE_RE } from "./contract.js";
+import { DOCTOR_FILE_RE, SCAFFOLD_TODO } from "./contract.js";
 import { renderJson, renderReport, renderVerifyResult, reportDiffOf, unsafeSkipLine } from "./report.js";
 import { readKeyFor, resolveFinding } from "./contract.js";
 import { runCohort } from "./cohort.js";
@@ -22,6 +22,7 @@ import { selectDoctor } from "./select.js";
 import { pickItemsOn } from "./picker.js";
 import { formatMs, startSpinner } from "./spinner.js";
 import { canRunTui, processTtyEnv } from "./tty.js";
+import { AUTHORING_BOUNDARY, authoringCatalog } from "./authoring.js";
 import { BOLD, CYAN, DIM, GREEN, RED, RESET, YELLOW } from "./palette.js";
 function fail(msg) {
     console.error(RED + msg + RESET);
@@ -46,12 +47,30 @@ function skillText() {
         return null;
     }
 }
+function cliPath() {
+    return fileURLToPath(new URL("cli.js", import.meta.url));
+}
+function cliInvocation() {
+    return 'node "' + cliPath() + '"';
+}
+function doctorSdkDocPath() {
+    return fileURLToPath(new URL("../docs/doctor-sdk.md", import.meta.url));
+}
 // The agent usage doc — the machine-facing interface, printable on demand
 // (`any-doctor help agents`) so npx-only users need no installation to
 // discover it. Shipped in the package; always in sync with the version
 // that printed it.
 function agentUsageText() {
     const p = fileURLToPath(new URL("../skill/agent-usage.md", import.meta.url));
+    try {
+        return fs.readFileSync(p, "utf8");
+    }
+    catch {
+        return null;
+    }
+}
+function authorWorkflowText() {
+    const p = fileURLToPath(new URL("../skill/author-workflow.md", import.meta.url));
     try {
         return fs.readFileSync(p, "utf8");
     }
@@ -666,14 +685,31 @@ export function plantSkill(scopeDir, skill) {
 async function cmdGenerate(args) {
     let intent;
     let global = false;
+    let format = "text";
+    let stdoutOnly = false;
     for (let i = 0; i < args.length; i++) {
         if (args[i] === "--global")
             global = true;
+        else if (args[i] === "--stdout")
+            stdoutOnly = true;
+        else if (args[i] === "--format") {
+            const value = args[i + 1];
+            if (value !== "text" && value !== "json") {
+                fail("--format needs text or json");
+                return 1;
+            }
+            format = value;
+            i += 1;
+        }
+        else if (args[i].startsWith("--")) {
+            fail("unknown generate option: " + args[i]);
+            return 1;
+        }
         else if (intent === undefined)
             intent = args[i];
     }
     if (!intent) {
-        fail('usage: any-doctor generate "<one-line intent>" [--global]');
+        fail('usage: any-doctor generate "<one-line intent>" [--global] [--stdout | --format json]');
         return 1;
     }
     const skill = skillText();
@@ -690,41 +726,260 @@ async function cmdGenerate(args) {
     if (planted === "left-user-copy") {
         warn("AGENTS.md exists with edits of your own — left untouched (delete it to re-plant)");
     }
-    const cliJs = fileURLToPath(new URL("cli.js", import.meta.url));
+    const cliJs = cliPath();
     const doctorAbs = path.join(scopeDir, slug + ".mjs");
+    const agentsPath = path.join(scopeDir, "AGENTS.md");
+    const bundledInstructionsPath = fileURLToPath(new URL("../skill/any-doctor.skill.md", import.meta.url));
+    const agentInstructionsPath = planted === "left-user-copy" ? bundledInstructionsPath : agentsPath;
+    const targetRoot = process.cwd();
+    const verifyCommand = 'node "' + cliJs + '" verify "' + doctorAbs + '"';
+    const authorHelpCommand = 'node "' + cliJs + '" help author';
+    const capabilitiesCommand = 'node "' + cliJs + '" capabilities --format json';
+    const scaffoldCommand = 'node "' + cliJs + '" scaffold "' + slug + '"';
+    const sdkReferencePath = doctorSdkDocPath();
     const prompt = [
-        skill,
-        "",
-        "## Your task",
-        "",
-        "INTENT (the entire specification):",
+        "You are authoring an Any Doctor check for this intent:",
         "  " + intent,
         "",
-        "Working directory is the doctor pack root. Write exactly two files:",
-        "  " + slug + ".mjs",
-        "  " + slug + ".fixtures.mjs",
+        "Read the bundled authoring instructions first:",
+        "  " + agentInstructionsPath,
         "",
-        "Then verify with exactly this command and iterate until every fixture passes:",
-        '  node "' + cliJs + '" verify "' + doctorAbs + '"',
-        "Then run the skill's adversarial pass (Hard workflow, step 4): attack",
-        "your own doctor with a counter-fixture wave — lookalikes, same-line",
-        "variants, semantic traps — and verify again until it survives.",
-        "Then stop and report.",
+        "Step 1 only — discovery. Inspect the target repository:",
+        "  " + targetRoot,
+        "",
+        "Return:",
+        "- confirmed examples of the unwanted pattern",
+        "- safe lookalikes that must remain quiet",
+        "- unclear examples where source alone cannot decide",
+        "- one plain-English proposed rule boundary",
+        "",
+        "Stop after that report. Do not write the doctor yet. After the user accepts",
+        "the boundary, follow those instructions to check shared Any Doctor capabilities, then",
+        "implement and verify the two doctor files.",
+        "",
+        AUTHORING_BOUNDARY,
+        "",
+        "Authoring commands available after approval:",
+        "  " + authorHelpCommand,
+        "  " + capabilitiesCommand,
+        "  " + scaffoldCommand,
+        "  " + verifyCommand,
+        "",
+        "Bundled SDK reference with recipe examples:",
+        "  " + sdkReferencePath,
     ].join("\n");
+    if (format === "json") {
+        console.log(JSON.stringify({
+            schema: 1,
+            tool: "any-doctor",
+            command: "generate",
+            phase: "discovery",
+            intent,
+            slug,
+            scope: global ? "global" : "repository",
+            targetRoot,
+            scopeDir,
+            agentInstructionsPath,
+            doctorPath: doctorAbs,
+            fixturesPath: path.join(scopeDir, slug + ".fixtures.mjs"),
+            authorHelpCommand,
+            capabilitiesCommand,
+            scaffoldCommand,
+            verifyCommand,
+            sdkReferencePath,
+            prompt,
+            skillPlant: planted,
+        }, null, 2));
+        return 0;
+    }
     console.log(BOLD + "doctor prompt ready: " + CYAN + slug + RESET + dim(global ? " (global scope)" : ""));
     console.log("");
-    if (copyToClipboard(prompt)) {
-        ok("prompt copied to clipboard — paste it into your own agent session");
-        console.log(dim("run the agent with this as its working directory: " + scopeDir));
-        console.log(dim("(the skill is planted there as AGENTS.md — most agents load it automatically)"));
-    }
-    else {
-        console.log(prompt);
-        warn("clipboard unavailable — copy the prompt above");
-    }
+    console.log(prompt);
     console.log("");
-    console.log(dim("once your agent has written both files, gate it:"));
-    console.log(dim('  node "' + cliJs + '" verify "' + doctorAbs + '"'));
+    if (!stdoutOnly) {
+        if (copyToClipboard(prompt))
+            ok("prompt also copied to clipboard");
+        else
+            warn("clipboard unavailable — use the prompt printed above");
+    }
+    console.log(dim("after discovery is accepted and implementation is complete, verify with:"));
+    console.log(dim("  " + verifyCommand));
+    return 0;
+}
+async function cmdCapabilities(args) {
+    var _a, _b;
+    let format = "text";
+    let selected;
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--help" || args[i] === "-h") {
+            console.log("usage: any-doctor capabilities [capability-or-recipe] [--format text|json]");
+            console.log("       omit the name to list every supported fact and recipe");
+            return 0;
+        }
+        else if (args[i] === "--format") {
+            const value = args[i + 1];
+            if (value !== "text" && value !== "json") {
+                fail("--format needs text or json");
+                return 1;
+            }
+            format = value;
+            i += 1;
+        }
+        else if (!args[i].startsWith("--") && selected === undefined) {
+            selected = args[i];
+        }
+        else {
+            fail("unknown capabilities option: " + args[i]);
+            return 1;
+        }
+    }
+    const all = authoringCatalog();
+    const matchingCapabilities = selected === undefined ? all.capabilities : all.capabilities.filter(item => item.name === selected);
+    const matchingRecipes = selected === undefined ? all.recipes : all.recipes.filter(item => item.name === selected);
+    if (selected !== undefined && matchingCapabilities.length === 0 && matchingRecipes.length === 0) {
+        fail("unknown capability or recipe: " + selected + " — known names: "
+            + [...all.capabilities.map(item => item.name), ...all.recipes.map(item => item.name)].join(", "));
+        return 1;
+    }
+    const catalog = {
+        ...all,
+        documentationPath: doctorSdkDocPath(),
+        ...(selected !== undefined ? { selected } : {}),
+        capabilities: matchingCapabilities,
+        recipes: matchingRecipes,
+    };
+    if (format === "json") {
+        console.log(JSON.stringify(catalog, null, 2));
+        return 0;
+    }
+    console.log(BOLD + "Any Doctor authoring capabilities" + RESET);
+    console.log("");
+    if (catalog.capabilities.length > 0) {
+        console.log(selected === undefined ? "Shared semantic facts:" : "Semantic fact:");
+        for (const capability of catalog.capabilities) {
+            console.log("  " + capability.name.padEnd(20) + capability.purpose);
+            console.log(dim("    " + capability.api));
+            if ((_a = capability.outcomes) === null || _a === void 0 ? void 0 : _a.length)
+                console.log(dim("    outcomes: " + capability.outcomes.join(", ")));
+            if ((_b = capability.limits) === null || _b === void 0 ? void 0 : _b.length)
+                console.log(dim("    limits: " + capability.limits.join("; ")));
+        }
+        console.log("");
+    }
+    if (catalog.recipes.length > 0) {
+        console.log(selected === undefined ? "Shared recipes:" : "Recipe:");
+        for (const recipe of catalog.recipes) {
+            console.log("  " + recipe.name.padEnd(32) + recipe.purpose);
+            console.log(dim("    " + recipe.api));
+            console.log(dim("    requires: " + recipe.requires.join(", ")));
+            if (selected !== undefined) {
+                console.log("");
+                console.log("Input schema:");
+                console.log(JSON.stringify(recipe.inputSchema, null, 2));
+                console.log("");
+                console.log("Copyable example:");
+                console.log(recipe.example);
+            }
+        }
+        console.log("");
+    }
+    console.log("Custom checks: map required facts, test equivalent syntax, and report missing proof.");
+    console.log(all.customChecks.boundary);
+    console.log(dim("  capability-gap report: " + catalog.documentationPath + "#capability-gap-report"));
+    console.log(dim("bundled SDK reference: " + catalog.documentationPath));
+    console.log(dim("machine-readable: any-doctor capabilities"
+        + (selected ? " " + selected : "") + " --format json"));
+    return 0;
+}
+function validScaffoldSlug(slug) {
+    return slug.length <= 60 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
+}
+function doctorScaffold(slug) {
+    return `export const meta = {
+  id: ${JSON.stringify(slug)},
+  description: ${JSON.stringify(SCAFFOLD_TODO + ": describe what this doctor finds")},
+  severity: "warning",
+  checks: [
+    {
+      id: ${JSON.stringify(slug)},
+      description: ${JSON.stringify(SCAFFOLD_TODO + ": describe this check")},
+      claim: ${JSON.stringify(SCAFFOLD_TODO + ": state the observable condition this check proves")},
+      lookalikes: [${JSON.stringify(SCAFFOLD_TODO + ": name a similar safe shape that must stay quiet")}],
+      reportingUnit: "occurrence",
+      needs: [],
+    },
+  ],
+};
+
+export async function doctor(ctx) {
+  void ctx;
+  // ${SCAFFOLD_TODO}: use ctx.analysis or ctx.recipes, then report only definite findings.
+}
+`;
+}
+function fixturesScaffold(slug) {
+    return `export const fixtures = [
+  {
+    name: "reports a confirmed violation",
+    seed: {
+      "src/violation.ts": ${JSON.stringify("// " + SCAFFOLD_TODO + ": replace with code that must be reported\n")},
+    },
+    expected: [
+      { rule: ${JSON.stringify(slug)}, file: "src/violation.ts", line: 1 },
+    ],
+  },
+  {
+    name: "keeps a safe lookalike quiet",
+    seed: {
+      "src/safe.ts": ${JSON.stringify("// " + SCAFFOLD_TODO + ": replace with similar code that must remain quiet\n")},
+    },
+    expected: [],
+  },
+];
+`;
+}
+async function cmdScaffold(args) {
+    if (args.length !== 1 || args[0].startsWith("--")) {
+        fail("usage: any-doctor scaffold <kebab-case-slug>");
+        return 1;
+    }
+    const slug = args[0];
+    if (!validScaffoldSlug(slug)) {
+        fail("doctor slug must be kebab-case using lowercase letters and numbers, up to 60 characters");
+        return 1;
+    }
+    const dir = path.resolve("doctors");
+    const doctorPath = path.join(dir, slug + ".mjs");
+    const fixturesPath = path.join(dir, slug + ".fixtures.mjs");
+    const collisions = [doctorPath, fixturesPath].filter(p => fs.existsSync(p));
+    if (collisions.length > 0) {
+        fail("refusing to overwrite existing scaffold file(s): " + collisions.join(", "));
+        return 1;
+    }
+    fs.mkdirSync(dir, { recursive: true });
+    const created = [];
+    try {
+        fs.writeFileSync(doctorPath, doctorScaffold(slug), { flag: "wx" });
+        created.push(doctorPath);
+        fs.writeFileSync(fixturesPath, fixturesScaffold(slug), { flag: "wx" });
+        created.push(fixturesPath);
+    }
+    catch (e) {
+        for (const file of created)
+            fs.rmSync(file, { force: true });
+        fail("could not create scaffold: " + (e instanceof Error ? e.message : String(e)));
+        return 1;
+    }
+    const invocation = cliInvocation();
+    ok("created doctor scaffold:");
+    console.log("  " + doctorPath);
+    console.log("  " + fixturesPath);
+    console.log("");
+    console.log(dim("replace every " + SCAFFOLD_TODO + " marker; verification intentionally fails until none remain."));
+    console.log(dim("inspect supported analysis:"));
+    console.log("  " + invocation + " capabilities --format json");
+    console.log(dim("then verify:"));
+    console.log("  " + invocation + " verify " + path.relative(process.cwd(), doctorPath));
     return 0;
 }
 function parseDecideArgs(args) {
@@ -1024,7 +1279,10 @@ function slugify(intent) {
 function usage() {
     console.log(BOLD + "any-doctor" + RESET + dim(" — your agent writes the analyzer, fixtures prove it, CI reruns it forever"));
     console.log("");
-    console.log('  generate "<intent>" [--global]      print the exact prompt for your agent to build a doctor');
+    console.log('  generate "<intent>" [--global] [--stdout | --format json]');
+    console.log("                                    teach a current or new agent to author a doctor, starting with discovery");
+    console.log("  scaffold <kebab-case-slug>        create an intentionally incomplete doctor and fixture pair");
+    console.log("  capabilities [name] [--format json]  list supported authoring facts, recipe schemas and examples");
     console.log("  run [--all] [--include-tests] [doctor.(m)js] [dir]   scan; no argument = every doctor in one review tree");
     console.log("  verify [--all] [doctor.(m)js]     fixture gate (no doctor: fuzzy picker; --all: every doctor)");
     console.log("  decide (--key K | --file F --line N [--check C]) (--accepted|--not-applicable) --reason R");
@@ -1033,6 +1291,8 @@ function usage() {
     console.log("");
     console.log(dim("doctors live in ./doctors/ (repo), ~/.any-doctor/doctors/ (global), and the bundled pack (lowest priority)."));
     console.log(dim("generation delegates to your installed agent — run and verify never touch a model."));
+    console.log(dim("first-time agents: run generate; it prints the prompt and the exact bundled instructions path."));
+    console.log(dim("authors: 'any-doctor help author' prints the complete command sequence."));
     console.log(dim("agents: 'any-doctor help agents' prints the machine interface (JSON scan, decide, decisions)."));
 }
 export async function main(argv = process.argv.slice(2)) {
@@ -1053,6 +1313,20 @@ export async function main(argv = process.argv.slice(2)) {
             console.log(doc.trimEnd());
             return 0;
         }
+        if (rest[0] === "author") {
+            const doc = authorWorkflowText();
+            if (doc === null) {
+                fail("author workflow not found (skill/author-workflow.md missing).");
+                return 1;
+            }
+            console.log(doc.trimEnd());
+            console.log("");
+            console.log("Bundled SDK reference:");
+            console.log("  " + doctorSdkDocPath());
+            return 0;
+        }
+        if (rest[0] === "capabilities")
+            return await cmdCapabilities(["--help"]);
         usage();
         return 0;
     }
@@ -1064,6 +1338,10 @@ export async function main(argv = process.argv.slice(2)) {
     try {
         if (cmd === "generate")
             return await cmdGenerate(rest);
+        if (cmd === "scaffold")
+            return await cmdScaffold(rest);
+        if (cmd === "capabilities")
+            return await cmdCapabilities(rest);
         if (cmd === "run")
             return await cmdRun(rest);
         if (cmd === "verify")

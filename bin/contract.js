@@ -12,6 +12,10 @@ export function severityRank(s) {
 // prose; composing from the array is what keeps the copy honest the day
 // this list changes.
 export const DEFAULT_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
+// Scaffolds deliberately contain this marker until an author replaces every
+// placeholder. The Runner refuses marked programs and fixtures, so an empty
+// starting point can never be mistaken for a completed doctor.
+export const SCAFFOLD_TODO = "__ANY_DOCTOR_TODO__";
 // All doctors scan the same target, so the cohort's file count is any
 // doctor's count; the max is the honest pick when one crashed early. The
 // policy lives here, beside the RunOutcome field it fills and the Score
@@ -22,6 +26,7 @@ export function cohortFileCount(counts) {
 /** Doctor SDK semantic results are versioned, JSON-safe answers tied to the
  * exact source snapshot analyzed. Unknown is never absence. */
 export const SEMANTIC_RESULT_VERSION = 1;
+export const ANALYSIS_CAPABILITY_NAMES = ["bindings", "spans", "calls", "identity", "value-disposition", "resource-lifetime", "option-presence", "consumers", "structures"];
 export const UNKNOWN_REASONS = ["analysis-unavailable", "provider-failure", "unsupported-expression", "outside-owner", "unresolved-identity", "source-changed"];
 export const PROTOCOL_VERSION = 1;
 export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
@@ -160,12 +165,16 @@ export function compareFindings(expected, actual) {
 // it renders "narrowed", and the predicate verify uses to decide whether
 // analysis-on fixtures apply.
 /** Recipes imply their host capabilities; explicit needs may add requirements. */
+export function recipeAnalysisNeeds(name) {
+    return name === "unhandled-value" ? ["calls", "value-disposition"]
+        : name === "required-or-recommended-option" ? ["calls", "identity", "option-presence"]
+            : name === "resource-without-release" ? ["calls", "identity", "resource-lifetime"]
+                : name === "forbidden-call" ? ["calls", "identity"] : [];
+}
 export function checkAnalysisNeeds(check) {
-    var _a, _b, _c, _d;
-    const implied = ((_a = check.recipe) === null || _a === void 0 ? void 0 : _a.name) === "unhandled-value" ? ["calls", "value-disposition"]
-        : ((_b = check.recipe) === null || _b === void 0 ? void 0 : _b.name) === "required-or-recommended-option" ? ["calls", "identity", "option-presence"]
-            : ((_c = check.recipe) === null || _c === void 0 ? void 0 : _c.name) === "resource-without-release" ? ["calls", "identity", "resource-lifetime"] : [];
-    return [...new Set([...((_d = check.needs) !== null && _d !== void 0 ? _d : []), ...implied])];
+    var _a;
+    const implied = check.recipe ? recipeAnalysisNeeds(check.recipe.name) : [];
+    return [...new Set([...((_a = check.needs) !== null && _a !== void 0 ? _a : []), ...implied])];
 }
 export function narrowedCheckIds(meta) {
     var _a;

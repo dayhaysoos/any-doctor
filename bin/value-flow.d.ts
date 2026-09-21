@@ -22,6 +22,12 @@ export interface FlowValue extends SourceRange {
     }[];
     value?: number;
     alternatives?: number[];
+    /** Ternary selection edges, including the test. No predicate evaluation. */
+    selection?: {
+        test: number;
+        whenTrue: number;
+        whenFalse: number;
+    };
     /** Source slot index preserves array holes; spread slots may expand at runtime. */
     elements?: {
         value: number;
@@ -90,6 +96,14 @@ export interface ValueFlow {
             path: string[];
         }[];
         await: boolean;
+    })[];
+    jsxElements: (SourceRange & {
+        target: CallTarget;
+        attributes: {
+            name: string | null;
+            value?: number;
+            spread: boolean;
+        }[];
     })[];
 }
 /** Direct terminal transfer only; nested conditions/loops are not flattened. */

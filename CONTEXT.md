@@ -260,8 +260,9 @@ the analysis they need on their CheckMeta (`needs` — vocabulary:
 and the report renders "narrowed" — a degraded run is visible, never
 silent. `ctx.analysis.calls(file)` provides immediate call use, receiver identity,
 inline callback registration, and linked call ranges. These are syntax facts;
-stored, passed, or returned is not a promise-settlement verdict. Parse/adapter
-errors fail the doctor run explicitly. References answer by position, so analysis queries compose with
+stored, passed, or returned is not a promise-settlement verdict. A parse or
+adapter error narrows the affected file while analyzable neighboring files
+continue; the partial scan receives no score or grade. References answer by position, so analysis queries compose with
 rule queries: shapes from one engine, identities from the other.
 
 ## Engine

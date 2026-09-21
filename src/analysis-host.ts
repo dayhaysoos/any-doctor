@@ -3,9 +3,9 @@ import { projectConsumers, ProjectConsumers } from "./project-consumers.js";
 import { functionStructures, FunctionStructure } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, ExpressionRef, IdentityQuery, IdentityValue, Mode, OptionPresence, OptionPresenceQuery, RecipeDecision, RequiredOptionRecipeQuery, ResourceLifetime, ResourceLifetimeQuery, ResourceWithoutReleaseRecipeQuery, searchBase, SemanticResult, SEMANTIC_RESULT_VERSION, UnhandledValueRecipeQuery, ValueDisposition, ValueDispositionQuery, withinBase, withinDir } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, ExpressionRef, ForbiddenCallRecipeQuery, IdentityQuery, IdentityValue, Mode, OptionPresence, OptionPresenceQuery, RecipeDecision, RequiredOptionRecipeQuery, ResourceLifetime, ResourceLifetimeQuery, ResourceWithoutReleaseRecipeQuery, searchBase, SemanticResult, SEMANTIC_RESULT_VERSION, UnhandledValueRecipeQuery, ValueDisposition, ValueDispositionQuery, withinBase, withinDir } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls, AnalysisResult, AnalysisStatusResult, semanticProviderProvenance, SpansResult } from "./analysis.js";
-import { identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
+import { forbiddenCallRecipeResult, identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
 
 // The analysis host: the identity engine's side of the channel, a sibling
 // to the search host. The search host routes `op: "analysis"` requests
@@ -55,6 +55,29 @@ export type AnalysisResponse =
   | { semantic: SemanticResult<IdentityValue | ValueDisposition | ResourceLifetime | OptionPresence | RecipeDecision> }
   | { error: string };
 
+// Pair parsing with evaluation so each semantic kind has one typed owner.
+function semanticHandler<Q, R>(
+  parse: (value: unknown) => Q | null,
+  evaluate: (file: string, source: string, facts: AnalysisCalls, expression: ExpressionRef, query: Q) => SemanticResult<R>,
+) {
+  return (value: unknown) => {
+    const query = parse(value);
+    return query === null ? null : (file: string, source: string, facts: AnalysisCalls, expression: ExpressionRef) =>
+      evaluate(file, source, facts, expression, query);
+  };
+}
+
+const semanticHandlers = {
+  identity: semanticHandler(parseIdentityQuery, identityResult),
+  "value-disposition": semanticHandler(parseDispositionQuery, valueDispositionResult),
+  "resource-lifetime": semanticHandler(parseResourceQuery, resourceLifetimeResult),
+  "option-presence": semanticHandler(parseOptionQuery, optionPresenceResult),
+  "recipe-unhandled-value": semanticHandler(parseUnhandledRecipe, unhandledValueRecipeResult),
+  "recipe-resource-without-release": semanticHandler(parseResourceRecipe, resourceWithoutReleaseRecipeResult),
+  "recipe-required-option": semanticHandler(parseRequiredOptionRecipe, requiredOptionRecipeResult),
+  "recipe-forbidden-call": semanticHandler(parseForbiddenCallRecipe, forbiddenCallRecipeResult),
+};
+
 export function handleAnalysisRequest(
   req: AnalysisRequestBody,
   mode: Mode,
@@ -75,7 +98,9 @@ export function handleAnalysisRequest(
       ? { available: true, ...(provider ? { provider } : {}) }
       : { available: false, reason: s.reason, ...(provider ? { provider } : {}) };
   }
-  if ((req.kind === "identity" || req.kind === "value-disposition" || req.kind === "resource-lifetime" || req.kind === "option-presence" || req.kind === "recipe-unhandled-value" || req.kind === "recipe-resource-without-release" || req.kind === "recipe-required-option") && !status().available) {
+  const semantic = typeof req.kind === "string" && Object.hasOwn(semanticHandlers, req.kind)
+    ? semanticHandlers[req.kind as keyof typeof semanticHandlers] : undefined;
+  if (semantic && !status().available) {
     return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" } };
   }
   if (typeof req.file === "string" && req.sourceDigest !== undefined) {
@@ -96,7 +121,7 @@ export function handleAnalysisRequest(
       return { structures: functionStructures(req.file, fs.readFileSync(abs, "utf8")) };
     } catch (e) { return { error: String(e) }; }
   }
-  if (req.kind === "bindings" || req.kind === "spans" || req.kind === "calls" || req.kind === "identity" || req.kind === "value-disposition" || req.kind === "resource-lifetime" || req.kind === "option-presence" || req.kind === "recipe-unhandled-value" || req.kind === "recipe-resource-without-release" || req.kind === "recipe-required-option") {
+  if (req.kind === "bindings" || req.kind === "spans" || req.kind === "calls" || semantic) {
     if (typeof req.file !== "string" || req.file === "") {
       return { error: `ctx.analysis.${req.kind} needs a "file" path` };
     }
@@ -104,15 +129,15 @@ export function handleAnalysisRequest(
     if (!withinDir(abs, root)) {
       return { error: `ctx.analysis failed: file is outside the search root: ${req.file}` };
     }
-    if (req.kind === "identity" || req.kind === "value-disposition" || req.kind === "resource-lifetime" || req.kind === "option-presence" || req.kind === "recipe-unhandled-value" || req.kind === "recipe-resource-without-release" || req.kind === "recipe-required-option") {
+    if (semantic) {
       const expression = parseExpression(req.expression);
-      const query = req.kind === "identity" ? parseIdentityQuery(req.query) : req.kind === "value-disposition" ? parseDispositionQuery(req.query) : req.kind === "resource-lifetime" ? parseResourceQuery(req.query) : req.kind === "option-presence" ? parseOptionQuery(req.query) : req.kind === "recipe-unhandled-value" ? parseUnhandledRecipe(req.query) : req.kind === "recipe-resource-without-release" ? parseResourceRecipe(req.query) : parseRequiredOptionRecipe(req.query);
-      if (!expression || !query) return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "unsupported-expression" } };
+      const evaluate = semantic(req.query);
+      if (!expression || !evaluate) return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "unsupported-expression" } };
       const model = cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
       if ("error" in model) return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
       try {
         const source=fs.readFileSync(abs,"utf8");
-        return { semantic: req.kind === "identity" ? identityResult(req.file,source,model.file,expression,query as IdentityQuery) : req.kind === "value-disposition" ? valueDispositionResult(req.file,source,model.file,expression,query as ValueDispositionQuery) : req.kind === "resource-lifetime" ? resourceLifetimeResult(req.file,source,model.file,expression,query as ResourceLifetimeQuery) : req.kind === "option-presence" ? optionPresenceResult(req.file,source,model.file,expression,query as OptionPresenceQuery) : req.kind === "recipe-unhandled-value" ? unhandledValueRecipeResult(req.file,source,model.file,expression,query as UnhandledValueRecipeQuery) : req.kind === "recipe-resource-without-release" ? resourceWithoutReleaseRecipeResult(req.file,source,model.file,expression,query as ResourceWithoutReleaseRecipeQuery) : requiredOptionRecipeResult(req.file,source,model.file,expression,query as RequiredOptionRecipeQuery) };
+        return { semantic: evaluate(req.file, source, model.file, expression) };
       } catch {
         return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
       }
@@ -123,7 +148,7 @@ export function handleAnalysisRequest(
     if (req.kind === "calls") return cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
     return cachedModel(abs, root, spansCache, spansAnalyzer, req.file);
   }
-  return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: available, bindings, spans, calls, identity, value-disposition, resource-lifetime, option-presence, recipe-unhandled-value, recipe-resource-without-release, recipe-required-option` };
+  return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: ${["available", "bindings", "spans", "calls", "project", "structures", ...Object.keys(semanticHandlers)].join(", ")}` };
 }
 
 function parseDispositionQuery(value: unknown): ValueDispositionQuery | null {
@@ -136,6 +161,7 @@ function parseOptionQuery(value:unknown):OptionPresenceQuery|null{if(!value||typ
 function parseUnhandledRecipe(value:unknown):UnhandledValueRecipeQuery|null{if(!value||typeof value!=="object")return null;const record=value as Record<string,unknown>,producer=record.producer as Record<string,unknown>|undefined,consumers=record.consumers;return producer&&typeof producer.member==='string'&&Number.isInteger(producer.asyncArgument)&&producer.receiver==='array'&&Array.isArray(consumers)&&consumers.every(item=>typeof item==='string')?value as UnhandledValueRecipeQuery:null;}
 function parseResourceRecipe(value:unknown):ResourceWithoutReleaseRecipeQuery|null{if(!value||typeof value!=="object")return null;const record=value as Record<string,unknown>,acquisition=parseIdentityQuery(record.acquisition),owner=record.owner as Record<string,unknown>|undefined,ownerIdentity=parseIdentityQuery(owner?.identity),release=record.release;return acquisition&&ownerIdentity&&Number.isInteger(owner?.argument)&&Array.isArray(release)&&release.every(item=>typeof item==='string')?value as ResourceWithoutReleaseRecipeQuery:null;}
 function parseRequiredOptionRecipe(value:unknown):RequiredOptionRecipeQuery|null{if(!value||typeof value!=="object")return null;const record=value as Record<string,unknown>,call=parseIdentityQuery(record.call),option=parseOptionQuery(record.option);return call&&option?value as RequiredOptionRecipeQuery:null;}
+function parseForbiddenCallRecipe(value:unknown):ForbiddenCallRecipeQuery|null{if(!value||typeof value!=="object")return null;const record=value as Record<string,unknown>,target=parseIdentityQuery(record.target),scope=record.scope as Record<string,unknown>|undefined;const strings=(item:unknown)=>item===undefined||Array.isArray(item)&&item.every(value=>typeof value==='string');return target&&(!scope||strings(scope.under)&&strings(scope.extensions)&&strings(scope.exclude))?value as ForbiddenCallRecipeQuery:null;}
 
 function parseExpression(value: unknown): ExpressionRef | null {
   if (!value || typeof value !== "object") return null;

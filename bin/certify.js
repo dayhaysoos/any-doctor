@@ -319,10 +319,13 @@ export async function certify(mod, fixtures) {
     }
     return results;
 }
-const occurrence = (source, rule, needle, nth = 0) => { var _a; const offset = (_a = [...source.matchAll(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'))][nth]) === null || _a === void 0 ? void 0 : _a.index; if (offset === undefined)
-    throw new Error(`profile occurrence missing: ${needle}`); const before = source.slice(0, offset), line = before.split('\n').length, column = offset - (before.lastIndexOf('\n') + 1); return { rule, file: 'profile.ts', line, column }; };
+const occurrence = (source, rule, needle, nth = 0, file = 'profile.ts') => { var _a; const offset = (_a = [...source.matchAll(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'))][nth]) === null || _a === void 0 ? void 0 : _a.index; if (offset === undefined)
+    throw new Error(`profile occurrence missing: ${needle}`); const before = source.slice(0, offset), line = before.split('\n').length, column = offset - (before.lastIndexOf('\n') + 1); return { rule, file, line, column }; };
 const profile = (name, source, expected, semantic) => {
-    const fixture = { name, seed: { 'profile.ts': source }, expected };
+    return profileAt('profile.ts', name, source, expected, semantic);
+};
+const profileAt = (file, name, source, expected, semantic) => {
+    const fixture = { name, seed: { [file]: source }, expected };
     return semantic === 'unavailable' ? { ...fixture, analysis: 'off' } : { ...fixture, analysis: 'on', expectedSemantic: semantic };
 };
 /** Deterministic extension point for maintained recipe challenge cases. */
@@ -330,7 +333,7 @@ export function challengeProfileFixtures(check) {
     const declaration = check.recipe;
     if (!declaration)
         return [];
-    const fixtures = declaration.name === 'unhandled-value' ? unhandledProfile(check.id, declaration) : declaration.name === 'resource-without-release' ? resourceProfile(check.id, declaration) : optionProfile(check.id, declaration);
+    const fixtures = declaration.name === 'unhandled-value' ? unhandledProfile(check.id, declaration) : declaration.name === 'resource-without-release' ? resourceProfile(check.id, declaration) : declaration.name === 'required-or-recommended-option' ? optionProfile(check.id, declaration) : forbiddenCallProfile(check.id, declaration);
     if (!fixtures.length)
         throw new Error(`recipe ${declaration.name} has no applicable challenge profile for this declaration`);
     for (const fixture of fixtures) {
@@ -352,36 +355,47 @@ function unhandledProfile(rule, declaration) {
         profile('analysis unavailable', positive, [], 'unavailable'),
     ];
 }
-function identityFixture(query, alias) {
+function identityFixtures(query, alias) {
     var _a, _b;
-    const global = (_a = query.globals) === null || _a === void 0 ? void 0 : _a[0];
-    if (global) {
+    const fixtures = [];
+    for (const global of (_a = query.globals) !== null && _a !== void 0 ? _a : []) {
         const root = global.split('.')[0];
-        return { head: '', callee: global, shadow: `function probe(${root}){${global}(__ARGS__)}` };
+        fixtures.push({ label: `global ${global}`, head: '', callee: global, shadow: `function probe(${root}){${global}(__ARGS__)}` });
     }
     for (const spec of (_b = query.imports) !== null && _b !== void 0 ? _b : []) {
         for (const name of spec.names) {
-            if (name.startsWith('*.')) {
+            if (name.startsWith('*.') && name.length > 2) {
                 const member = name.slice(2);
-                return { head: `import * as ${alias} from ${JSON.stringify(spec.source)};\n`, callee: `${alias}.${member}`, shadow: `function probe(${alias}){${alias}.${member}(__ARGS__)}` };
+                fixtures.push({ label: `namespace import ${spec.source} ${name}`, head: `import * as ${alias} from ${JSON.stringify(spec.source)};\n`, callee: `${alias}.${member}`, shadow: `function probe(${alias}){${alias}.${member}(__ARGS__)}` });
+                continue;
             }
-            if (name.startsWith('default.')) {
+            if (name.startsWith('default.') && name.length > 'default.'.length) {
                 const member = name.slice('default.'.length);
-                return { head: `import ${alias} from ${JSON.stringify(spec.source)};\n`, callee: `${alias}.${member}`, shadow: `function probe(${alias}){${alias}.${member}(__ARGS__)}` };
+                fixtures.push({ label: `default import member ${spec.source} ${name}`, head: `import ${alias} from ${JSON.stringify(spec.source)};\n`, callee: `${alias}.${member}`, shadow: `function probe(${alias}){${alias}.${member}(__ARGS__)}` });
+                continue;
             }
-            if (name === 'default')
-                return { head: `import ${alias} from ${JSON.stringify(spec.source)};\n`, callee: alias, shadow: `function probe(${alias}){${alias}(__ARGS__)}` };
-            if (!name.includes('.'))
-                return { head: `import {${name} as ${alias}} from ${JSON.stringify(spec.source)};\n`, callee: alias, shadow: `function probe(${alias}){${alias}(__ARGS__)}` };
+            if (name === 'default') {
+                fixtures.push({ label: `default import ${spec.source}`, head: `import ${alias} from ${JSON.stringify(spec.source)};\n`, callee: alias, shadow: `function probe(${alias}){${alias}(__ARGS__)}` });
+                continue;
+            }
+            if (!name.includes('.')) {
+                fixtures.push({ label: `named import ${spec.source} ${name}`, head: `import {${name} as ${alias}} from ${JSON.stringify(spec.source)};\n`, callee: alias, shadow: `function probe(${alias}){${alias}(__ARGS__)}` });
+                continue;
+            }
+            throw new Error(`identity query cannot generate import challenge for ${JSON.stringify(spec.source)} ${JSON.stringify(name)}; use a named import, default, default.member, or *.member`);
         }
     }
+    const unique = [...new Map(fixtures.map(fixture => [fixture.label, fixture])).values()];
+    if (unique.length)
+        return unique;
     throw new Error(`identity query cannot generate a challenge target; declare a global, named import, default import, or namespace member`);
 }
 function optionProfile(rule, declaration) {
-    const query = declaration.query, target = identityFixture(query.call, 'profileCall'), callee = target.callee, head = target.head;
+    const query = declaration.query, targets = identityFixtures(query.call, 'profileCall'), target = targets[0], callee = target.callee, head = target.head;
     const option = query.option.option, positive = `${callee}("payload",{})`, value = option === 'signal' ? 'new AbortController().signal' : 'true';
     const present = `${head}${callee}("payload",{${option}:${value}});`, shadow = `${head}${target.shadow.replace('__ARGS__', '"payload",{}')}`;
     const alias = `${head}const invoke=${callee};invoke("payload",{});`, unknown = `${head}const options={};configure(options);${callee}("payload",options);\n${positive};`, same = `${head}${positive};${positive};`, positiveSource = `${head}${positive};`;
+    const declared = targets.slice(1).map(candidate => { const source = `${candidate.head}${candidate.callee}("payload",{});`; return profile(`declared call identity: ${candidate.label}`, source, [occurrence(source, rule, `${candidate.callee}("payload",{})`)], 'complete'); });
     return [
         profile('genuine absence positive', positiveSource, [occurrence(positiveSource, rule, positive)], 'complete'),
         profile('present option lookalike', present, [], 'complete'),
@@ -389,12 +403,49 @@ function optionProfile(rule, declaration) {
         profile('immutable call alias', alias, [occurrence(alias, rule, 'invoke("payload",{})')], 'complete'),
         profile('unknown options with positive neighbor', unknown, [occurrence(unknown, rule, positive)], 'narrowed'),
         profile('two same-line occurrences', same, [occurrence(same, rule, positive, 0), occurrence(same, rule, positive, 1)], 'complete'),
+        ...declared,
         profile('analysis unavailable', positiveSource, [], 'unavailable'),
+    ];
+}
+function forbiddenCallProfile(rule, declaration) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+    const query = declaration.query, targets = identityFixtures(query.target, 'profileForbidden'), target = targets[0], callee = target.callee, head = target.head;
+    const under = (_d = (_c = (_b = (_a = query.scope) === null || _a === void 0 ? void 0 : _a.under) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.replace(/\/$/, '')) !== null && _d !== void 0 ? _d : '', extension = (_g = (_f = (_e = query.scope) === null || _e === void 0 ? void 0 : _e.extensions) === null || _f === void 0 ? void 0 : _f[0]) !== null && _g !== void 0 ? _g : '.ts';
+    if (extension && !extension.startsWith('.'))
+        throw new Error('forbidden-call scope extensions must include the leading dot');
+    let file = (under ? under + '/' : '') + 'recipe-profile' + extension, index = 2;
+    while ((_j = (_h = query.scope) === null || _h === void 0 ? void 0 : _h.exclude) === null || _j === void 0 ? void 0 : _j.includes(file))
+        file = (under ? under + '/' : '') + `recipe-profile-${index++}` + extension;
+    const positive = `${head}${callee}(1);`;
+    const parts = callee.split('.'), member = parts.length > 1 ? parts.pop() : undefined, receiver = parts.join('.');
+    const receiverVariants = member ? [`(${receiver}).${member}(1);`, `(${receiver} as any).${member}(1);`, `${receiver}!.${member}(1);`, `${receiver} /* comment */\n  .${member}(1);`] : [];
+    const variants = [`${callee}(1);`, `(${callee})(1);`, `(${callee} as any)(1);`, `${callee}!(1);`, ...receiverVariants];
+    const equivalentSource = head + variants.join('\n');
+    const equivalentExpected = variants.map(variant => occurrence(equivalentSource, rule, variant, 0, file));
+    const shadow = `${head}${target.shadow.replace('__ARGS__', '1')}`;
+    const alias = `${head}const forbiddenAlias=${callee};forbiddenAlias(1);`;
+    const unrelated = `${head}console.log(0);${callee}(1);`;
+    const uncertain = `${head}let maybe=${callee};if(flag)maybe=other;maybe(1);\n${callee}(2);`;
+    const uncertainExpected = ((_k = query.reportUnknown) === null || _k === void 0 ? void 0 : _k.includes('unresolved-identity'))
+        ? [occurrence(uncertain, rule, 'maybe(1)', 0, file), occurrence(uncertain, rule, `${callee}(2)`, 0, file)]
+        : [occurrence(uncertain, rule, `${callee}(2)`, 0, file)];
+    const same = `${head}${callee}(1);${callee}(2);`;
+    const declared = targets.slice(1).map(candidate => { const source = `${candidate.head}${candidate.callee}(1);`; return profileAt(file, `declared target identity: ${candidate.label}`, source, [occurrence(source, rule, `${candidate.callee}(1)`, 0, file)], 'complete'); });
+    return [
+        profileAt(file, 'genuine positive', positive, [occurrence(positive, rule, `${callee}(1)`, 0, file)], 'complete'),
+        profileAt(file, 'equivalent syntax variants', equivalentSource, equivalentExpected, 'complete'),
+        profileAt(file, 'shadowed call identity', shadow, [], 'complete'),
+        profileAt(file, 'immutable call alias', alias, [occurrence(alias, rule, 'forbiddenAlias(1)', 0, file)], 'complete'),
+        profileAt(file, 'unrelated call with positive neighbor', unrelated, [occurrence(unrelated, rule, `${callee}(1)`, 0, file)], 'complete'),
+        profileAt(file, 'mutable alias with positive neighbor', uncertain, uncertainExpected, 'narrowed'),
+        profileAt(file, 'two same-line occurrences', same, [occurrence(same, rule, `${callee}(1)`, 0, file), occurrence(same, rule, `${callee}(2)`, 0, file)], 'complete'),
+        ...declared,
+        profileAt(file, 'analysis unavailable', positive, [], 'unavailable'),
     ];
 }
 function resourceProfile(rule, declaration) {
     var _a;
-    const query = declaration.query, acquisition = identityFixture(query.acquisition, 'profileAcquire'), ownerTarget = identityFixture(query.owner.identity, 'profileOwner'), release = query.release[0];
+    const query = declaration.query, acquisitions = identityFixtures(query.acquisition, 'profileAcquire'), owners = identityFixtures(query.owner.identity, 'profileOwner'), acquisition = acquisitions[0], ownerTarget = owners[0], release = query.release[0];
     if (!release)
         throw new Error('resource recipe needs at least one release identity');
     const head = acquisition.head + ownerTarget.head, acquire = acquisition.callee, owner = ownerTarget.callee, call = `${acquire}(()=>{},1)`, positive = `${head}${owner}(()=>{${call};},[]);`, lookalike = `${head}${owner}(()=>{${acquisition.shadow.replace('__ARGS__', '()=>{},1')}\n${call};},[]);`;
@@ -404,6 +455,9 @@ function resourceProfile(rule, declaration) {
     const unsupported = `${head}${owner}(()=>{const handle=${call};return()=>externalTransfer(handle)},[]);\n${owner}(()=>{${call};},[]);`;
     const unsupportedExpected = ((_a = declaration.query.reportUnknown) === null || _a === void 0 ? void 0 : _a.includes('unsupported-expression')) ? [occurrence(unsupported, rule, call, 0), occurrence(unsupported, rule, call, 1)] : [occurrence(unsupported, rule, call, 1)];
     const same = `${head}${owner}(()=>{${call};${call};},[]);`;
+    const declaredAcquisitions = acquisitions.slice(1).map(candidate => { const candidateHead = candidate.head + ownerTarget.head, candidateCall = `${candidate.callee}(()=>{},1)`, source = `${candidateHead}${owner}(()=>{${candidateCall};},[]);`; return profile(`declared acquisition identity: ${candidate.label}`, source, [occurrence(source, rule, candidateCall)], 'complete'); });
+    const declaredOwners = owners.slice(1).map(candidate => { const candidateHead = acquisition.head + candidate.head, source = `${candidateHead}${candidate.callee}(()=>{${call};},[]);`; return profile(`declared owner identity: ${candidate.label}`, source, [occurrence(source, rule, call)], 'complete'); });
+    const declaredReleases = query.release.slice(1).map(candidate => { const source = `${head}${owner}(()=>{const handle=${call};return()=>${candidate}(handle)},[]);`; return profile(`declared release identity: ${candidate}`, source, [], 'complete'); });
     return [
         profile('genuine unreleased positive', positive, [occurrence(positive, rule, call)], 'complete'),
         profile('shadowed acquisition with positive neighbor', lookalike, [occurrence(lookalike, rule, call, 1)], 'complete'),
@@ -412,6 +466,9 @@ function resourceProfile(rule, declaration) {
         profile('supported local cleanup transfer', helper, [], 'complete'),
         profile('unsupported cleanup transfer with positive neighbor', unsupported, unsupportedExpected, 'narrowed'),
         profile('two same-line occurrences', same, [occurrence(same, rule, call, 0), occurrence(same, rule, call, 1)], 'complete'),
+        ...declaredAcquisitions,
+        ...declaredOwners,
+        ...declaredReleases,
         profile('analysis unavailable', positive, [], 'unavailable'),
     ];
 }

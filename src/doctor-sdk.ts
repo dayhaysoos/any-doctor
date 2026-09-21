@@ -4,7 +4,7 @@ import type {
   IdentityValue, SemanticEvidence, SemanticResult, SourceRange, ValueDisposition,
   ValueDispositionQuery, ResourceLifetime, ResourceLifetimeQuery,
   OptionPresence, OptionPresenceQuery,
-  RecipeDecision, RequiredOptionRecipeQuery, ResourceWithoutReleaseRecipeQuery,
+  ForbiddenCallRecipeQuery, RecipeDecision, RequiredOptionRecipeQuery, ResourceWithoutReleaseRecipeQuery,
   UnhandledValueRecipeQuery,
 } from "./contract.js";
 import { SEMANTIC_RESULT_VERSION } from "./contract.js";
@@ -82,7 +82,12 @@ export function identityResult(
 
   const resolved = resolve(start.id);
   if (!resolved?.target) return unknown("unsupported-expression", evidence);
-  const origin = originOf(resolved.target);
+  const required = resolved.kind === "call" && resolved.target.binding === null && resolved.target.root === "require"
+    ? values.get(resolved.argumentRoles?.[0]?.value ?? -1)
+    : undefined;
+  const origin: IdentityOrigin | null = required?.kind === "literal" && typeof required.literal === "string"
+    ? { kind: "import", source: required.literal, name: "default" }
+    : originOf(resolved.target);
   if (!origin) return unknown("unresolved-identity", evidence);
   if (origin.kind === "global" && !(query.globals ?? []).includes(origin.name)) return unknown("unresolved-identity", evidence);
   if (origin.kind === "local") {
@@ -278,7 +283,7 @@ export function unhandledValueRecipeResult(file:string,source:string,facts:Analy
  * A lexical alias may use any name. Follow stable initializers and static own
  * properties; an opaque value stays uncertain, while an unrelated spelling or
  * a proven local function/parameter is outside this recipe's identity claim. */
-function optionIdentityCandidate(
+function identityCandidate(
   prepared: PreparedFacts,
   value: FlowValue,
   query: IdentityQuery,
@@ -289,7 +294,7 @@ function optionIdentityCandidate(
   const {values,bindings,states}=prepared;
   const visit=(id:number|undefined):FlowValue|'clear'|'unknown'=>{
     const child=id===undefined?undefined:values.get(id);
-    return child?optionIdentityCandidate(prepared,child,query,seen):'unknown';
+    return child?identityCandidate(prepared,child,query,seen):'unknown';
   };
   const target=value.target;
   // A factory's spelling says nothing about the identity of its return value.
@@ -332,6 +337,11 @@ function optionIdentityCandidate(
       if(property&&!property.accessor)return visit(property.value);
       if(property?.accessor)return 'unknown';
     }
+    // A member rooted at a lexical parameter is a proven local lookalike,
+    // even when its property spelling matches the configured global member.
+    // Do not narrow a scan for `function f(process) { process.exit() }`.
+    if(receiver?.kind==='reference'&&receiver.target?.binding!==null&&receiver.target?.binding!==undefined
+      && bindings.get(receiver.target.binding)?.parameter)return 'clear';
     const members=[...(query.globals??[]),...(query.imports??[]).flatMap(item=>item.names)];
     if(value.member!==null&&value.member!==undefined&&!members.some(name=>name.split('.').at(-1)===value.member))return 'clear';
   }
@@ -341,12 +351,75 @@ function optionIdentityCandidate(
   return 'unknown';
 }
 
+/** Candidate-aware call identity for custom checks. Reuse the recipe's
+ * membership rules without emitting a policy finding or private name filters. */
+export function callIdentityResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:IdentityQuery):SemanticResult<{matches:boolean}>{
+  const prepared=preparedFacts(facts,source),call=expressionValue(prepared,expression);
+  if(!call||call.kind!=='call'||call.callee===undefined)return unknown('unsupported-expression');
+  const callee=prepared.values.get(call.callee);if(!callee)return unknown('unsupported-expression');
+  const candidate=identityCandidate(prepared,callee,query);
+  const evidence:SemanticEvidence[]=[{kind:'expression',file,sourceDigest:prepared.digest!,range:rangeOf(call)}];
+  if(candidate==='clear')return {version:SEMANTIC_RESULT_VERSION,status:'known',value:{matches:false},evidence};
+  if(candidate==='unknown')return unknown('unresolved-identity',evidence);
+  const result=identityResult(file,source,facts,semanticRef(candidate),query);
+  // An unresolved member receiver can still hold a configured call. A local
+  // origin alone is not a proven nonmatch; parameters/own methods cleared above.
+  if(result.status==='known'&&!result.value.matches&&result.value.origin.kind==='local'&&candidate.kind==='member')
+    return unknown('unresolved-identity',evidence);
+  return result.status==='unknown'?result:{...result,value:{matches:result.value.matches}};
+}
+
+/** Forbidden-call membership is deliberately narrower than arbitrary runtime
+ * identity: a local callable is outside a direct-call claim unless a supported
+ * initializer links it to the forbidden target. Mutation after such a link is
+ * uncertain; an unrelated local parameter or helper is simply clear. */
+function forbiddenCallCandidate(prepared:PreparedFacts,value:FlowValue,query:IdentityQuery):FlowValue|'clear'|'unknown'{
+  if(value.kind==='member'){
+    const targetMembers=[...(query.globals??[]),...(query.imports??[]).flatMap(item=>item.names)]
+      .map(name=>name.split('.').at(-1));
+    if(value.member!==null&&value.member!==undefined&&!targetMembers.includes(value.member))return 'clear';
+  }
+  const binding=value.target?.binding;
+  if(binding!==null&&binding!==undefined){
+    const initializer=prepared.bindings.get(binding)?.initializer;
+    if(initializer===undefined)return 'clear';
+    const initial=prepared.values.get(initializer);
+    if(!initial)return 'unknown';
+    const state=prepared.states.get(binding);
+    if(state?.reassigned||state?.mutated)return 'unknown';
+    // A callable produced by invoking or constructing something is not a
+    // supported direct alias. Its runtime result may be anything, but this
+    // recipe intentionally claims direct identities and lexical aliases only.
+    if(initial.kind==='call'||initial.kind==='construct')return 'clear';
+  }
+  return identityCandidate(prepared,value,query);
+}
+
+/** Recipe: report a call only when its callee resolves to the configured
+ * global or import identity. Transparent JavaScript and TypeScript wrappers
+ * are normalized by the shared call model before this recipe sees them. */
+export function forbiddenCallRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:ForbiddenCallRecipeQuery):SemanticResult<RecipeDecision>{
+  const scope=query.scope;
+  if(scope?.under?.length&&!scope.under.some(dir=>{const normalized=dir.replace(/\/$/,'');return file.startsWith(normalized+'/');}))return recipeKnown('clear',[]);
+  if(scope?.extensions?.length&&!scope.extensions.some(extension=>file.endsWith(extension)))return recipeKnown('clear',[]);
+  if(scope?.exclude?.includes(file))return recipeKnown('clear',[]);
+  const prepared=preparedFacts(facts),subject=expressionValue(prepared,expression);
+  if(!subject||subject.kind!=='call'||subject.callee===undefined)return unknown('unsupported-expression');
+  const callee=prepared.values.get(subject.callee);if(!callee)return unknown('unsupported-expression');
+  const candidate=forbiddenCallCandidate(prepared,callee,query.target);
+  if(candidate==='clear')return recipeKnown('clear',[]);
+  if(candidate==='unknown')return unknown('unresolved-identity');
+  const identity=identityResult(file,source,facts,semanticRef(candidate),query.target);
+  if(identity.status==='unknown')return recipeUnknown(identity);
+  return recipeKnown(identity.value.matches?'report':'clear',identity.evidence);
+}
+
 /** Recipe: combine configured call identity with structured option presence. */
 export function requiredOptionRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:RequiredOptionRecipeQuery):SemanticResult<RecipeDecision>{
   const prepared=preparedFacts(facts),values=prepared.values,subject=expressionValue(prepared,expression);
   if(!subject||subject.kind!=='call'||subject.callee===undefined)return unknown('unsupported-expression');
   const callee=values.get(subject.callee);if(!callee)return unknown('unsupported-expression');
-  const candidate=optionIdentityCandidate(prepared,callee,query.call);
+  const candidate=identityCandidate(prepared,callee,query.call);
   if(candidate==='clear')return recipeKnown('clear',[]);
   if(candidate==='unknown')return unknown('unresolved-identity');
   const identity=identityResult(file,source,facts,semanticRef(candidate),query.call);if(identity.status==='unknown')return recipeUnknown(identity);if(!identity.value.matches)return recipeKnown('clear',identity.evidence);
@@ -360,7 +433,11 @@ export function resourceWithoutReleaseRecipeResult(file:string,source:string,fac
   const prepared=preparedFacts(facts),flow=facts.structure.flow,{values,bindings,states}=prepared;
   const subject=expressionValue(prepared,expression);
   if(!subject||subject.kind!=='call'||subject.callee===undefined)return unknown('unsupported-expression');
-  const acquisitionIdentity=identityResult(file,source,facts,semanticRef(values.get(subject.callee)!),query.acquisition);if(acquisitionIdentity.status==='unknown')return recipeUnknown(acquisitionIdentity);if(!acquisitionIdentity.value.matches)return recipeKnown('clear',acquisitionIdentity.evidence);
+  const callee=values.get(subject.callee);if(!callee)return unknown('unsupported-expression');
+  const candidate=identityCandidate(prepared,callee,query.acquisition);
+  if(candidate==='clear')return recipeKnown('clear',[]);
+  if(candidate==='unknown')return unknown('unresolved-identity');
+  const acquisitionIdentity=identityResult(file,source,facts,semanticRef(candidate),query.acquisition);if(acquisitionIdentity.status==='unknown')return recipeUnknown(acquisitionIdentity);if(!acquisitionIdentity.value.matches)return recipeKnown('clear',acquisitionIdentity.evidence);
   const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
   const resolve=(id:number|undefined,seen=new Set<number>()):FlowValue|null=>{if(id===undefined)return null;const value=values.get(id);if(!value||seen.has(id))return null;seen=new Set(seen).add(id);if(value.kind==='reference'&&value.target?.binding!==null&&value.target?.binding!==undefined&&stable(value.target.binding)){const initializer=bindings.get(value.target.binding)?.initializer;if(initializer!==undefined)return resolve(initializer,seen)??value;}return value;};
   let sawOwner=false;

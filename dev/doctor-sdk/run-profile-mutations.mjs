@@ -7,7 +7,7 @@ const repo=fs.realpathSync(process.cwd()),output=path.resolve(process.argv[2]??'
 if(!process.argv[2]||fs.existsSync(output))throw Error('usage: node dev/doctor-sdk/run-profile-mutations.mjs <fresh-output-dir>');
 fs.mkdirSync(output,{recursive:true});
 const mutations=[
-  {id:'broken-identity',file:'bin/doctor-sdk.js',from:"if (candidate === 'clear')\n        return recipeKnown('clear', []);",to:"if (candidate === 'clear')\n        return recipeKnown('report', []);",expect:'shadowed call identity'},
+  {id:'broken-identity',file:'bin/doctor-sdk.js',from:"const candidate = identityCandidate(prepared, callee, query.call);\n    if (candidate === 'clear')\n        return recipeKnown('clear', []);",to:"const candidate = identityCandidate(prepared, callee, query.call);\n    if (candidate === 'clear')\n        return recipeKnown('report', []);",expect:'shadowed call identity'},
   {id:'unknown-as-absent',file:'bin/doctor-sdk.js',from:'return result === "unknown" || result === "ignored" || result === "missing" ? unknown("unsupported-expression", evidence) : { version: SEMANTIC_RESULT_VERSION, status: "known", value: result, evidence };',to:'return result === "ignored" || result === "missing" ? unknown("unsupported-expression", evidence) : { version: SEMANTIC_RESULT_VERSION, status: "known", value: result === "unknown" ? "absent" : result, evidence };',expect:'unknown options with positive neighbor'},
   {id:'suppressed-reporting',file:'bin/sdk.js',from:"if (result.status === 'known' && result.value === 'report' || result.status === 'unknown'",to:"if (false && result.status === 'known' && result.value === 'report' || result.status === 'unknown'",expect:'genuine absence positive'},
 ];

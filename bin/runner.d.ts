@@ -11,6 +11,11 @@ declare const FixturesMissing_base: Schema.Class<FixturesMissing, Schema.TaggedS
 }>, Cause.YieldableError>;
 export declare class FixturesMissing extends FixturesMissing_base {
 }
+declare const ScaffoldIncomplete_base: Schema.Class<ScaffoldIncomplete, Schema.TaggedStruct<"ScaffoldIncomplete", {
+    readonly filePath: Schema.String;
+}>, Cause.YieldableError>;
+export declare class ScaffoldIncomplete extends ScaffoldIncomplete_base {
+}
 declare const DoctorCrashed_base: Schema.Class<DoctorCrashed, Schema.TaggedStruct<"DoctorCrashed", {
     readonly programPath: Schema.String;
     readonly detail: Schema.String;
@@ -30,7 +35,7 @@ declare const DoctorUnsafe_base: Schema.Class<DoctorUnsafe, Schema.TaggedStruct<
 }>, Cause.YieldableError>;
 export declare class DoctorUnsafe extends DoctorUnsafe_base {
 }
-export type RunnerError = ProgramMissing | FixturesMissing | DoctorCrashed | NoFramedResult | DoctorUnsafe;
+export type RunnerError = ProgramMissing | FixturesMissing | ScaffoldIncomplete | DoctorCrashed | NoFramedResult | DoctorUnsafe;
 export declare function isRunnerError(e: unknown): e is RunnerError;
 export declare function describeRunnerError(e: RunnerError): string;
 export declare function causeSummaryLine(e: RunnerError | undefined): string;

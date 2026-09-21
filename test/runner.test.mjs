@@ -90,6 +90,37 @@ test("verifyDoctor: missing fixtures throws FixturesMissing carrying the expecte
   }
 });
 
+test("Runner refuses unfinished scaffold markers in programs and fixtures", async () => {
+  const programMarked = tmpDoctor([
+    "export const meta = { id: 'todo', description: '__ANY_DOCTOR_TODO__', severity: 'info' }",
+    "export async function doctor(ctx) {}",
+  ]);
+  try {
+    fs.writeFileSync(programMarked.file.replace(/\.mjs$/, ".fixtures.mjs"), "export const fixtures = []");
+    await assert.rejects(
+      verifyDoctor({ programPath: programMarked.file }),
+      (e) => e._tag === "ScaffoldIncomplete" && e.filePath === programMarked.file,
+    );
+  } finally {
+    programMarked.cleanup();
+  }
+
+  const fixturesMarked = tmpDoctor([
+    "export const meta = { id: 'todo', description: 'x', severity: 'info' }",
+    "export async function doctor(ctx) {}",
+  ]);
+  try {
+    const fixtures = fixturesMarked.file.replace(/\.mjs$/, ".fixtures.mjs");
+    fs.writeFileSync(fixtures, "export const fixtures = ['__ANY_DOCTOR_TODO__']");
+    await assert.rejects(
+      verifyDoctor({ programPath: fixturesMarked.file }),
+      (e) => e._tag === "ScaffoldIncomplete" && e.filePath === fixtures,
+    );
+  } finally {
+    fixturesMarked.cleanup();
+  }
+});
+
 test("metaDoctor: reads meta; a broken doctor is data, not a throw", async () => {
   const good = await metaDoctor({ programPath: DOCTOR });
   assert.equal(good.meta.id, "async");

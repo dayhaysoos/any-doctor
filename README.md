@@ -46,6 +46,7 @@ Non-terminals and CI never see a prompt — output is stable and pipeable
 | **convex** | Convex discipline: indexed reads, bounded collects, validated args, awaited writes, honest runtime boundaries | 15 |
 | **effect-v4-kitlangton** | Effect v4 discipline — the mechanical rules of the [kitlangton Effect skill](https://www.ui-skills.com/skills/kitlangton/effect), enforced | 10 |
 | **openrouter** | OpenRouter discipline: stream errors surfaced, keep-alives skipped, cancellations that stop billing | 5 |
+| **deepgram** | Deepgram discipline: endpoint/model compatibility, streaming options, Read shapes, hosts, and proven browser key exposure | 5 |
 | **async** | Async and concurrency: dropped promise results, uncleared timers, fetch hygiene | 3 |
 
 Checks ship positive and innocent-lookalike fixtures. `verify` compares an

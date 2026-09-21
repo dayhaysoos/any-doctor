@@ -52,6 +52,7 @@ export interface ReportGroup {
     findings: Finding[];
 }
 export declare const DEFAULT_EXTS: string[];
+export declare const SCAFFOLD_TODO = "__ANY_DOCTOR_TODO__";
 export interface CrashedDoctor {
     id: string;
     detail: string;
@@ -267,6 +268,8 @@ export interface AnalysisCalls {
 /** Doctor SDK semantic results are versioned, JSON-safe answers tied to the
  * exact source snapshot analyzed. Unknown is never absence. */
 export declare const SEMANTIC_RESULT_VERSION: 1;
+export declare const ANALYSIS_CAPABILITY_NAMES: readonly ["bindings", "spans", "calls", "identity", "value-disposition", "resource-lifetime", "option-presence", "consumers", "structures"];
+export type AnalysisCapabilityName = typeof ANALYSIS_CAPABILITY_NAMES[number];
 export declare const UNKNOWN_REASONS: readonly ["analysis-unavailable", "provider-failure", "unsupported-expression", "outside-owner", "unresolved-identity", "source-changed"];
 export type UnknownReason = typeof UNKNOWN_REASONS[number];
 /** One observed custom-check uncertainty; counts are owned by the host. */
@@ -363,7 +366,19 @@ export interface RequiredOptionRecipeQuery {
     option: OptionPresenceQuery;
     reportUnknown?: UnknownReason[];
 }
-export type RecipeName = "unhandled-value" | "resource-without-release" | "required-or-recommended-option";
+export interface ForbiddenCallRecipeQuery {
+    target: IdentityQuery;
+    scope?: {
+        /** Relative directories whose descendants are in scope, for example ["src"]. */
+        under?: string[];
+        /** Exact suffixes including the dot, for example [".ts", ".tsx"]. */
+        extensions?: string[];
+        /** Exact normalized relative paths that are exempt. */
+        exclude?: string[];
+    };
+    reportUnknown?: UnknownReason[];
+}
+export type RecipeName = "unhandled-value" | "resource-without-release" | "required-or-recommended-option" | "forbidden-call";
 export type RecipeProfileDeclaration = {
     name: "unhandled-value";
     query: UnhandledValueRecipeQuery;
@@ -373,6 +388,9 @@ export type RecipeProfileDeclaration = {
 } | {
     name: "required-or-recommended-option";
     query: RequiredOptionRecipeQuery;
+} | {
+    name: "forbidden-call";
+    query: ForbiddenCallRecipeQuery;
 };
 export interface SemanticProviderProvenance {
     id: string;
@@ -451,6 +469,11 @@ export interface DoctorCtx {
         /** Resolve one captured expression through immutable aliases. Local and
          * shadowed lookalikes are known non-matches; unresolved targets are unknown. */
         identity(file: string, expression: ExpressionRef, query: IdentityQuery): SemanticResult<IdentityValue>;
+        /** Whole-call identity with shared candidate classification. Known nonmatches
+         * do not narrow; unsupported possible matches remain unknown. Needs identity. */
+        callIdentity(file: string, expression: ExpressionRef, query: IdentityQuery): SemanticResult<{
+            matches: boolean;
+        }>;
         /** Classify what supported local flow establishes for one exact value.
          * Awaiting an ordinary array does not consume the promises it contains. */
         valueDisposition(file: string, expression: ExpressionRef, query: ValueDispositionQuery): SemanticResult<ValueDisposition>;
@@ -472,6 +495,7 @@ export interface DoctorCtx {
         unhandledValue(file: string, producer: ExpressionRef, query: UnhandledValueRecipeQuery, finding: RecipeFinding): SemanticResult<RecipeDecision>;
         resourceWithoutRelease(file: string, acquisition: ExpressionRef, query: ResourceWithoutReleaseRecipeQuery, finding: RecipeFinding): SemanticResult<RecipeDecision>;
         requiredOrRecommendedOption(file: string, call: ExpressionRef, query: RequiredOptionRecipeQuery, finding: RecipeFinding): SemanticResult<RecipeDecision>;
+        forbiddenCall(file: string, call: ExpressionRef, query: ForbiddenCallRecipeQuery, finding: RecipeFinding): SemanticResult<RecipeDecision>;
     };
     report: {
         finding(f: Finding): void;
@@ -579,6 +603,7 @@ export declare function includeTestsFor(mode: Mode): boolean;
 export declare function runCommandFor(doctorPath: string, root: string, invoker?: string): string;
 export declare function compareFindings(expected: ExpectedFinding[], actual: Finding[]): FixtureDiff;
 /** Recipes imply their host capabilities; explicit needs may add requirements. */
+export declare function recipeAnalysisNeeds(name: RecipeName): string[];
 export declare function checkAnalysisNeeds(check: Pick<CheckMeta, "needs" | "recipe">): string[];
 export declare function narrowedCheckIds(meta: DoctorMeta): string[];
 export declare function readKeyFor(checkKey: string, file: string, line: number, column?: number): string;

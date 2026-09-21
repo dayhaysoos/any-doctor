@@ -57,6 +57,22 @@ test('JavaScript function parameters normalize into the TypeScript scope adapter
   assert.equal(result.file.calls[0].target.binding, result.file.functions[0].parameters[0]);
 });
 
+test('JavaScript files may contain JSX', () => {
+  const result = analysis.analyzeCalls(
+    'App.js',
+    'import { AgentProvider } from "@deepgram/ui"; export default function App() { return <AgentProvider />; }',
+  );
+  assert.equal(result.ok, true, result.ok ? undefined : result.error);
+});
+
+test('JavaScript module variants may contain JSX', () => {
+  const source = 'import { AgentProvider } from "@deepgram/ui"; export const App = () => <AgentProvider />;';
+  for (const file of ['App.mjs', 'App.cjs']) {
+    const result = analysis.analyzeCalls(file, source);
+    assert.equal(result.ok, true, result.ok ? undefined : `${file}: ${result.error}`);
+  }
+});
+
 test('reassignment is explicit evidence against treating a context name as stable', () => {
   const result=analysis.analyzeCalls('a.ts', `import {mutation} from './_generated/server';
 mutation({handler: async (ctx) => {ctx = other; ctx.db.patch(id, {});}});`);

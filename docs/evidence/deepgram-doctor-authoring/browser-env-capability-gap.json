@@ -1,0 +1,80 @@
+{
+  "intent": "Report a public browser environment API key passed to a proven Deepgram browser package without treating an opaque credential as a finding.",
+  "classification": "reusable-sdk-gap",
+  "minimalSeed": "import { AgentSession } from '@deepgram/agents'; new AgentSession({ auth: { apiKey: import.meta.env.VITE_DEEPGRAM_API_KEY }, agent: 'id' });",
+  "expected": "The public environment member is established as a client-exposed API-key identity and reported, while arbitrary credential expressions remain uncertain.",
+  "actual": "Resolved: the shared value graph now preserves import.meta identity and JSX prop values, so the Deepgram doctor reports recognized public browser environment credentials while opaque credentials still narrow.",
+  "reproductionCommand": "node bin/cli.js run doctors/deepgram.mjs docs/evidence/deepgram-doctor-authoring/held-out --format json",
+  "availableFacts": [
+    "Direct browser-package import and call or constructor provenance",
+    "Ordered nested auth.apiKey property resolution",
+    "Literal credential values",
+    "Check-scoped custom narrowing"
+  ],
+  "missingProof": "Historical gap: a framework-neutral identity for public browser environment members and JSX prop values was unavailable when this report was created.",
+  "affectedScope": "Recognized VITE_* and NEXT_PUBLIC_* credentials are now reportable on proven browser-package calls, constructors, and AgentProvider JSX; arbitrary credential expressions remain uncertain.",
+  "proposedNextStep": "Retain the former failure, definite positive, negative, opaque credential, and JSX spread cases as regressions.",
+  "acceptanceCases": {
+    "currentFailure": {
+      "seed": {
+        "entry.ts": "import { AgentSession } from '@deepgram/agents';\nnew AgentSession({ auth: { apiKey: import.meta.env.VITE_DEEPGRAM_API_KEY }, agent: 'id' });\n"
+      },
+      "findings": [
+        { "rule": "browser-api-key-exposure", "file": "entry.ts", "line": 2, "column": 0 }
+      ],
+      "narrowing": { "state": "complete", "reasons": [] },
+      "score": "present",
+      "grade": "present"
+    },
+    "definitePositive": {
+      "seed": {
+        "entry.ts": "import { AgentSession } from '@deepgram/agents';\nnew AgentSession({ auth: { apiKey: 'dg_live_secret' }, agent: 'id' });\nnew AgentSession({ auth: { apiKey: import.meta.env.VITE_DEEPGRAM_API_KEY }, agent: 'id' });\n"
+      },
+      "findings": [
+        { "rule": "browser-api-key-exposure", "file": "entry.ts", "line": 2, "column": 0 },
+        { "rule": "browser-api-key-exposure", "file": "entry.ts", "line": 3, "column": 0 }
+      ],
+      "narrowing": { "state": "complete", "reasons": [] },
+      "score": "present",
+      "grade": "present"
+    },
+    "negativeControl": {
+      "seed": {
+        "entry.ts": "import { AgentSession } from '@deepgram/agents';\nnew AgentSession({ auth: { tokenFactory: getToken }, agent: 'id' });\n"
+      },
+      "findings": [],
+      "narrowing": { "state": "complete", "reasons": [] },
+      "score": "present",
+      "grade": "present"
+    },
+    "uncertainControl": {
+      "seed": {
+        "entry.ts": "import { AgentSession } from '@deepgram/agents';\nnew AgentSession({ auth: { apiKey: getCredential() }, agent: 'id' });\n"
+      },
+      "findings": [],
+      "narrowing": { "state": "narrowed", "reasons": ["unsupported-expression"] },
+      "score": "null",
+      "grade": "null"
+    },
+    "jsxSpreadUncertain": {
+      "seed": {
+        "entry.tsx": "import { AgentProvider } from '@deepgram/ui';\n<AgentProvider {...runtimeProps} />;\n"
+      },
+      "findings": [],
+      "narrowing": { "state": "narrowed", "reasons": ["unsupported-expression"] },
+      "score": "null",
+      "grade": "null"
+    },
+    "jsxSpreadMixed": {
+      "seed": {
+        "entry.tsx": "import { AgentProvider } from '@deepgram/ui';\n<AgentProvider config={{ auth: { apiKey: 'dg_live_secret' } }} />;\n<AgentProvider {...runtimeProps} />;\n"
+      },
+      "findings": [
+        { "rule": "browser-api-key-exposure", "file": "entry.tsx", "line": 2, "column": 0 }
+      ],
+      "narrowing": { "state": "narrowed", "reasons": ["unsupported-expression"] },
+      "score": "null",
+      "grade": "null"
+    }
+  }
+}

@@ -60,6 +60,19 @@ test('missing custom capability narrows only dependent checks; independent work 
   assert.equal(result.semantic.incomplete,true);
  } finally {setAnalysisDisabled(false);}
 }));
+test('one unparseable file narrows the scan while analyzable files still produce findings',()=>sandbox(async root=>{
+ fs.writeFileSync(path.join(root,'broken.ts'),'export const = ;');
+ const program=path.join(root,'doctor.mjs');
+ fs.writeFileSync(program,`export const meta=${JSON.stringify(meta)};export async function doctor(ctx){for(const file of ctx.files.list(['.ts'])){const facts=ctx.analysis.calls(file);if(facts.calls.length)ctx.report.finding({rule:'sibling',file,line:1,column:0});}}`);
+ const run=spawnSync(process.execPath,[path.join(candidate,'bin/cli.js'),'run',program,root,'--format','json'],{encoding:'utf8'});
+ assert.equal(run.status,0,run.stderr);
+ const group=JSON.parse(run.stdout).groups[0];
+ assert.deepEqual(group.checks.flatMap(check=>check.findings).map(f=>f.file),['a.ts','b.ts']);
+ assert.deepEqual(group.semantic.narrowed,[{
+  capability:'calls',reason:'provider-failure',occurrences:1,files:[{file:'broken.ts',occurrences:1}],
+ }]);
+ assert.equal(group.semantic.incomplete,true);
+}));
 test('recipe unavailable declaration retains its existing recipe-scoped representation',()=>sandbox(async root=>{
  setAnalysisDisabled(true);
  try {

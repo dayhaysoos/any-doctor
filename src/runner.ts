@@ -4,7 +4,7 @@ import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { Cause, Effect, Exit, Schema } from "effect";
-import { DoctorMeta, fixturesPathFor, Mode, modeArgs, RESULT_SENTINEL, RunResult, SEARCH_RESULT, VerifyRunResult } from "./contract.js";
+import { DoctorMeta, fixturesPathFor, Mode, modeArgs, RESULT_SENTINEL, RunResult, SCAFFOLD_TODO, SEARCH_RESULT, VerifyRunResult } from "./contract.js";
 import { scanDoctorFile } from "./capabilities.js";
 import { analysisStatus } from "./analysis.js";
 import { unsafeRefusalLine } from "./report.js";
@@ -24,6 +24,10 @@ export class ProgramMissing extends Schema.TaggedError<ProgramMissing>()("Progra
 export class FixturesMissing extends Schema.TaggedError<FixturesMissing>()("FixturesMissing", {
   programPath: Schema.String,
   fixturesPath: Schema.String,
+}) {}
+
+export class ScaffoldIncomplete extends Schema.TaggedError<ScaffoldIncomplete>()("ScaffoldIncomplete", {
+  filePath: Schema.String,
 }) {}
 
 export class DoctorCrashed extends Schema.TaggedError<DoctorCrashed>()("DoctorCrashed", {
@@ -47,10 +51,10 @@ export class DoctorUnsafe extends Schema.TaggedError<DoctorUnsafe>()("DoctorUnsa
   findings: Schema.Array(Schema.String),
 }) {}
 
-export type RunnerError = ProgramMissing | FixturesMissing | DoctorCrashed | NoFramedResult | DoctorUnsafe;
+export type RunnerError = ProgramMissing | FixturesMissing | ScaffoldIncomplete | DoctorCrashed | NoFramedResult | DoctorUnsafe;
 
 export function isRunnerError(e: unknown): e is RunnerError {
-  return e instanceof ProgramMissing || e instanceof FixturesMissing
+  return e instanceof ProgramMissing || e instanceof FixturesMissing || e instanceof ScaffoldIncomplete
     || e instanceof DoctorCrashed || e instanceof NoFramedResult || e instanceof DoctorUnsafe;
 }
 
@@ -58,6 +62,8 @@ export function describeRunnerError(e: RunnerError): string {
   switch (e._tag) {
     case "ProgramMissing": return "no such doctor program: " + e.programPath;
     case "FixturesMissing": return "no fixtures found for this doctor — expected " + e.fixturesPath;
+    case "ScaffoldIncomplete": return "unfinished scaffold placeholder in " + e.filePath
+      + " — replace every " + SCAFFOLD_TODO + " marker before running or verifying";
     case "DoctorCrashed": return "doctor crashed:\n" + e.detail;
     case "NoFramedResult": return "doctor produced no framed result — stdout was:\n" + e.stdout;
     case "DoctorUnsafe": return "\ud83d\uded1 " + unsafeRefusalLine(path.basename(e.programPath), e.capabilities)
@@ -210,6 +216,9 @@ const execLoader = (
     if (!fs.existsSync(abs)) {
       return yield* new ProgramMissing({ programPath: abs });
     }
+    if (fs.readFileSync(abs, "utf8").includes(SCAFFOLD_TODO)) {
+      return yield* new ScaffoldIncomplete({ filePath: abs });
+    }
     const gate = scanDoctorFile(abs);
     if (gate.red.length > 0) {
       return yield* new DoctorUnsafe({
@@ -310,6 +319,9 @@ const verifyDoctorE = ({ programPath, fixturesPath }: VerifyOptions): Effect.Eff
     const fixtures = path.resolve(fixturesPath ?? fixturesPathFor(abs));
     if (!fs.existsSync(fixtures)) {
       return yield* new FixturesMissing({ programPath: abs, fixturesPath: fixtures });
+    }
+    if (fs.readFileSync(fixtures, "utf8").includes(SCAFFOLD_TODO)) {
+      return yield* new ScaffoldIncomplete({ filePath: fixtures });
     }
     const frame = yield* execLoader(abs, { kind: "verify", fixtures }, DEFAULT_TIMEOUT_MS);
     return yield* asVerifyResult(frame);

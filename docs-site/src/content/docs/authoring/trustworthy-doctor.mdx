@@ -1,0 +1,248 @@
+---
+title: Building a trustworthy doctor
+description: Take a doctor from an observed pattern to a bounded, tested check that reports uncertainty honestly.
+sidebar:
+  order: 12
+---
+
+A trustworthy doctor does not need to understand every program. It needs to be
+right about the cases it claims to understand and honest about the cases it
+cannot prove.
+
+That distinction matters when an agent writes the doctor. The same mistaken
+assumption can appear in both its detector and its fixtures, so a green fixture
+run is the beginning of evaluation rather than the end.
+
+This page describes the complete authoring path. Follow
+[Writing your first doctor](/authoring/first-doctor) for a runnable tutorial,
+[Honest checks](/authoring/honest-checks) for reporting guidance, and
+[Testing and evaluating doctors](/authoring/testing-doctors) for the full
+release process.
+
+## Start with one bounded claim
+
+Begin with the specific pattern you observed. Describe what the doctor can
+establish from source rather than the outcome you fear.
+
+Suppose a retry loop receives a `429` response. Your project wants a valid
+`Retry-After` header to influence the next wait.
+
+This claim is too broad:
+
+> Find bad retry logic.
+
+This one names observable relationships:
+
+> Report a repeat-capable retry that continues after its own `429` response and
+> waits for a duration proven independent of that response's `Retry-After`
+> header.
+
+Before writing code, record:
+
+- The reporting unit: occurrence, file, or project.
+- The source facts that establish the claim.
+- Similar-looking code that must remain quiet.
+- The cases that those facts cannot resolve.
+- What a reader must check before applying the suggested fix.
+
+The claim is ready when each phrase has either a public fact that proves it or a
+named limitation. A nearby identifier, matching source text, or dependency in
+an unrelated branch is not proof.
+
+## Choose the supported path
+
+Use the narrowest public mechanism that can establish the claim:
+
+| Available support | Authoring path |
+| --- | --- |
+| A recipe covers the whole claim | Configure the recipe and verify every declared identity and outcome |
+| Public analysis facts cover the claim | Write a bounded custom check using those facts |
+| A required relationship is unavailable | Keep the supported portion, narrow the affected check, and record the capability gap |
+
+Recipes own recurring mechanics such as call identity, option presence, value
+disposition, and resource lifetime. A custom check should still use shared facts
+for those mechanics instead of rebuilding name resolution or parsing source
+text.
+
+Run `any-doctor capabilities` to inspect the current recipes, analysis facts,
+limits, and custom-check procedure. Run `any-doctor help author` for the authoring
+commands available in your installed version.
+
+## Design three outcomes
+
+Every analyzed candidate must reach one of three honest outcomes:
+
+| Outcome | Meaning |
+| --- | --- |
+| Report | The available evidence establishes the check's bounded claim |
+| Clear | The evidence establishes that this candidate is outside the claim |
+| Unknown | A relevant relationship cannot be established with the available facts |
+
+Unknown is part of a trustworthy result. It should narrow the affected check and
+withhold the aggregate score and grade. It must not erase an independent finding
+that the doctor can establish.
+
+For example:
+
+```js
+// Report: the wait is demonstrably fixed.
+await new Promise(resolve => setTimeout(resolve, 500));
+```
+
+```js
+// Clear for native-timer checks: this is a local function.
+function setTimeout(callback, delay) {
+  scheduler.enqueue(callback, delay);
+}
+setTimeout(retry, 500);
+```
+
+```js
+// Unknown unless public facts prove which policy path is selected.
+const delay = valid
+  ? seconds * 1000
+  : calculateFallback();
+await new Promise(resolve => setTimeout(resolve, delay));
+```
+
+A doctor that marks the last example unknown may have narrower coverage than you
+want, but it is safer than claiming the code is clean. Broaden the analysis only
+when a reusable fact can prove the missing relationship.
+
+## Build four executable stakes
+
+Fixtures and isolated scans should cover four different responsibilities:
+
+### Definite positive
+
+Use the smallest source example that must produce a finding. Assert the rule,
+file, line, and column. For occurrence checks, include two violations so
+verification can detect accidental deduplication.
+
+### Negative control
+
+Use the nearest innocent lookalike. This might be a shadowed local function, a
+different import, a one-attempt loop, or a properly consumed value. Require no
+finding and complete coverage for the bounded claim.
+
+### Uncertain control
+
+Use a relevant candidate whose identity or value flow cannot be established.
+Require scoped narrowing and a null score and grade. An empty finding list by
+itself does not prove that uncertainty was preserved.
+
+### Positive beside uncertainty
+
+Put an established violation beside an uncertain candidate. Require the finding
+to remain visible while the report withholds its score. This prevents a repair
+from becoming “safe” by suppressing everything in a difficult file.
+
+Keep the expected behavior independent of the detector's first output. If an
+expectation changes, retain the reason and evidence for the correction.
+
+## Challenge equivalent code
+
+Source syntax can change without changing program meaning. Exercise the forms
+that matter to the claim:
+
+- Bare, qualified, and statically computed calls.
+- Named, renamed, default, and namespace imports where supported.
+- Stable aliases, parentheses, and TypeScript wrappers.
+- Local functions and parameters with familiar names.
+- Reassigned aliases, opaque helpers, and unsupported receiver aliases.
+- Nested scopes and unrelated nearby operations.
+- One-line, multiline, and repeated occurrences.
+
+Ask one question for each variation: should it report, clear, or remain unknown?
+Do not add a special case merely to make one string pass. Equivalent forms should
+reach equivalent outcomes through the same underlying fact.
+
+## Verify behavior, then evaluate usefulness
+
+Run the companion fixtures first:
+
+```bash
+any-doctor verify doctors/example.mjs
+```
+
+Inspect failures, crashes, and skipped coverage. A zero exit status does not turn
+unexercised coverage into a pass.
+
+Then run isolated cases through the real report path:
+
+```bash
+any-doctor run doctors/example.mjs evaluation/cases --format json
+```
+
+Inspect both `findings` and `semantic.narrowed`, along with the score and grade.
+Use cases the implementing agent did not tune against. Finally, scan a fixed real
+repository and inspect every changed finding against source.
+
+Keep these conclusions separate:
+
+- The fixtures match their expectations.
+- Held-out cases support the bounded claim.
+- Findings on the fixed repository are legitimate review candidates.
+- The packaged artifact behaves like the source candidate.
+
+None of those conclusions implies the next one automatically.
+
+## Try it on real projects
+
+Fixtures prove that the doctor handles the examples you wrote. They cannot show
+whether you and the doctor made the same mistaken assumption.
+
+Before trusting a doctor, run it against real projects that use the technology.
+Official examples, starter applications, SDK demos, and established open-source
+applications are useful places to start. Record the exact project commit so you
+can repeat the same scan later.
+
+Review every result against the source. Valid code should stay quiet. A crash or
+an unexplained incomplete result is also a failed evaluation, even when the
+doctor reports no findings.
+
+Then copy a few real examples and intentionally introduce each problem the
+doctor promises to catch. Verify that the unchanged example stays quiet and the
+broken version produces the expected finding at the expected location. Include
+at least one valid example that looks very similar to each broken example.
+
+Any Doctor does not choose these projects or decide whether their code is
+correct. This is an authoring and review step, not a library requirement. The
+goal is simple: test the doctor's assumptions against code you did not invent
+for the doctor.
+
+## Stop at the evidence boundary
+
+When public facts cannot prove a required relationship, record the smallest
+missing fact and keep that candidate unknown. A useful capability-gap report
+includes:
+
+- A complete runnable reproduction.
+- The expected and actual behavior.
+- The public facts already available.
+- The specific relationship those facts cannot prove.
+- Definite-positive, negative, uncertain, and mixed executable stakes.
+- The smallest reusable next step.
+
+An agent consuming Any Doctor should stay within the public SDK. A shared
+analysis extension belongs in Any Doctor itself and needs reusable positive,
+negative, uncertain, and mixed controls. Project-specific policy remains in the
+doctor.
+
+## Decide what is ready
+
+A doctor is ready for its stated scope when:
+
+- Its claim says only what its evidence establishes.
+- Definite positives and locations are preserved.
+- Innocent lookalikes remain quiet.
+- Unsupported relevant candidates narrow the affected check.
+- Uncertainty does not suppress neighboring findings.
+- Recommendations respect the same evidence boundary as detection.
+- Held-out cases and reviewed real code support the claim.
+- The exact artifact people will run reproduces the accepted results.
+- Remaining limitations are visible to the reader.
+
+The appropriate conclusion may be “ready for this bounded scope” or “useful for
+supervised review with these limits.” A perfect score, fewer findings, or a green
+fixture command cannot replace that evidence.

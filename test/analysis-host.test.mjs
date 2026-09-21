@@ -149,3 +149,45 @@ test('verify can request default test filtering for structural queries', () => {
  const out=JSON.parse(handleSearchLine(request({pattern:'f()',root:path.join(os.tmpdir(), "any-doctor-verify-scope"),includeTests:false}),{kind:'verify'},()=>({ok:true,matches:[{file:'a.test.ts',text:'f()'},{file:'a.ts',text:'f()'}]})));
  assert.deepEqual(out.matches.map(m=>m.file),['a.ts']);
 });
+
+const { analyzeCalls } = await import('../bin/analysis.js');
+const providers = await import('../bin/doctor-sdk.js');
+const semanticRoutes = [
+  ['identity','identityResult','fetch("/")', {globals:['fetch']}, 'callee'],
+  ['value-disposition','valueDispositionResult','[1].map(async x=>x)', {consumers:['Promise.all']}],
+  ['option-presence','optionPresenceResult','fetch("/")', {option:'signal',sources:['Request']}],
+  ['resource-lifetime','resourceLifetimeResult','function owner(){setTimeout(done,1)}', {release:['clearTimeout']}, 'owner'],
+  ['recipe-unhandled-value','unhandledValueRecipeResult','[1].map(async x=>x)', {producer:{member:'map',asyncArgument:0,receiver:'array'},consumers:['Promise.all']}],
+  ['recipe-resource-without-release','resourceWithoutReleaseRecipeResult','useEffect(()=>{setTimeout(done,1)},[])', {acquisition:{globals:['setTimeout']},owner:{identity:{globals:['useEffect']},argument:0},release:['clearTimeout']}],
+  ['recipe-required-option','requiredOptionRecipeResult','fetch("/")', {call:{globals:['fetch']},option:{option:'signal',sources:['Request']}}],
+  ['recipe-forbidden-call','forbiddenCallRecipeResult','process.exit(1)', {target:{globals:['process.exit']}}],
+];
+for(const [kind,provider,source,baseQuery,select] of semanticRoutes)test(`analysis host semantic registry routes ${kind}`,()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'semantic-route-'));
+ try{
+  fs.writeFileSync(path.join(dir,'entry.ts'),source);
+  const facts=analyzeCalls('entry.ts',source).file,values=facts.structure.flow.values;
+  const call=values.find(v=>v.kind==='call'),ref=v=>({id:v.id,start:v.start,end:v.end});
+  const expression=ref(select==='callee'?values.find(v=>v.id===call.callee):call);
+  const query=select==='owner'?{...baseQuery,owner:ref(values.find(v=>v.kind==='function'))}:baseQuery;
+  const req={kind,root:dir,file:'entry.ts',expression,query},mode={kind:'run',root:dir};
+  const expected=providers[provider]('entry.ts',source,facts,expression,query);
+  assert.equal(expected.status,'known',JSON.stringify(expected));
+  assert.deepEqual(handleAnalysisRequest(req,mode),{semantic:expected});
+  assert.equal(handleAnalysisRequest({...req,query:null},mode).semantic.reason,'unsupported-expression');
+  assert.equal(handleAnalysisRequest(req,mode,undefined,()=>({available:false})).semantic.reason,'analysis-unavailable');
+  assert.ok(handleAnalysisRequest({kind:'bad',root:dir},mode).error.includes(kind));
+ }finally{fs.rmSync(dir,{recursive:true,force:true});clearAnalysisCache()}
+});
+test('analysis host keeps nonsemantic calls, project and structures routes',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'structural-route-'));
+ try{
+  fs.writeFileSync(path.join(dir,'entry.ts'),'export function f(){fetch("/")}');
+  const mode={kind:'run',root:dir};
+  for(const [kind,field] of [['calls','file'],['project','project'],['structures','structures']]){
+   const result=handleAnalysisRequest({kind,root:dir,file:'entry.ts'},mode);
+   assert.ok(result[field],JSON.stringify(result));
+   assert.ok(handleAnalysisRequest({kind:'__proto__',root:dir},mode).error.includes(kind));
+  }
+ }finally{fs.rmSync(dir,{recursive:true,force:true});clearAnalysisCache()}
+});

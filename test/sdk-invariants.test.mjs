@@ -9,7 +9,7 @@ const root=process.env.DOCTOR_CANDIDATE_ROOT??fileURLToPath(new URL('../',import
 const {dashboardFrame}=await import(path.join(root,'bin/dashboard.js'));
 const {deriveSummary}=await import(path.join(root,'bin/summary.js'));
 const {buildTree}=await import(path.join(root,'bin/doctor-tree.js'));
-const {narrowedCheckIds,checkAnalysisNeeds}=await import(path.join(root,'bin/contract.js'));
+const {narrowedCheckIds,checkAnalysisNeeds,recipeAnalysisNeeds}=await import(path.join(root,'bin/contract.js'));
 const {meta}=await import('../fixtures/doctor-sdk-recipe-only.mjs');
 
 test('recipe declaration implies runtime and certification analysis needs',()=>{
@@ -42,8 +42,11 @@ for(const broken of [false,true])test(`maintained lookalike semantic coverage ${
 });
 
 test('canonical recipe requirements include explicit additions and all recipe families',()=>{
- const expected={'unhandled-value':['calls','value-disposition'],'required-or-recommended-option':['calls','identity','option-presence'],'resource-without-release':['calls','identity','resource-lifetime']};
- for(const [name,implied] of Object.entries(expected))assert.deepEqual(checkAnalysisNeeds({recipe:{name},needs:['extra','calls']}),['extra',...implied]);
+ const expected={'unhandled-value':['calls','value-disposition'],'required-or-recommended-option':['calls','identity','option-presence'],'resource-without-release':['calls','identity','resource-lifetime'],'forbidden-call':['calls','identity']};
+ for(const [name,implied] of Object.entries(expected)){
+  assert.deepEqual(recipeAnalysisNeeds(name),implied);
+  assert.deepEqual(checkAnalysisNeeds({recipe:{name},needs:['extra','calls']}),['extra',...implied]);
+ }
 });
 test('recipe-only metadata skips analysis-on profiles when the host channel is unavailable',async()=>{
  const {certify}=await import(path.join(root,'bin/certify.js'));
@@ -84,14 +87,54 @@ test('analysis-off author fixture cannot witness recipe-implied location coverag
 test('all maintained analysis-on profiles explicitly classify semantic coverage',async()=>{
  const {challengeProfileFixtures}=await import(path.join(root,'bin/certify.js'));
  const expected={
+  'forbidden-call':['complete','complete','complete','complete','complete','narrowed','complete'],
   'unhandled-value':['complete','complete','complete','narrowed','complete'],
   'required-or-recommended-option':['complete','complete','complete','complete','narrowed','complete'],
   'resource-without-release':['complete','complete','complete','complete','complete','narrowed','complete'],
  };
  for(const file of ['doctors/async.mjs','fixtures/doctor-sdk-reference.mjs']){
   const {meta}=await import(path.join(root,file));
-  for(const check of meta.checks)assert.deepEqual(challengeProfileFixtures(check).filter(f=>f.analysis!=='off').map(f=>f.expectedSemantic),expected[check.recipe.name],check.recipe.name);
+  for(const check of meta.checks){
+   const actual=challengeProfileFixtures(check).filter(f=>f.analysis!=='off').map(f=>f.expectedSemantic);
+   const maintained=expected[check.recipe.name];
+   assert.deepEqual(actual.slice(0,maintained.length),maintained,check.recipe.name);
+   assert.ok(actual.slice(maintained.length).every(status=>status==='complete'),`${check.recipe.name}: declared identity witnesses must require complete coverage`);
+  }
  }
+});
+
+test('resource recipe profiles exercise every declared identity and release form',async()=>{
+ const {challengeProfileFixtures}=await import(path.join(root,'bin/certify.js'));
+ const check={
+  id:'interval-cleanup',severity:'warning',reportingUnit:'occurrence',
+  recipe:{name:'resource-without-release',query:{
+   acquisition:{globals:['setInterval','window.setInterval']},
+   owner:{identity:{imports:[{source:'react',names:['useEffect','*.useEffect']}]},argument:0},
+   release:['clearInterval','window.clearInterval'],
+  }},
+ };
+ const fixtures=challengeProfileFixtures(check);
+ const names=fixtures.map(fixture=>fixture.name);
+ assert.ok(names.includes('declared acquisition identity: global window.setInterval'));
+ assert.ok(names.includes('declared owner identity: namespace import react *.useEffect'));
+ assert.ok(names.includes('declared release identity: window.clearInterval'));
+ const namespace=fixtures.find(fixture=>fixture.name==='declared owner identity: namespace import react *.useEffect');
+ assert.match(Object.values(namespace.seed).join('\n'),/import \* as profileOwner from "react"/);
+ assert.match(Object.values(namespace.seed).join('\n'),/profileOwner\.useEffect/);
+ assert.equal(namespace.expected.length,1);
+ assert.equal(namespace.expectedSemantic,'complete');
+});
+
+test('all identity-based recipe families exercise additional declared identities',async()=>{
+ const {challengeProfileFixtures}=await import(path.join(root,'bin/certify.js'));
+ const checks=[
+  {id:'forbidden',recipe:{name:'forbidden-call',query:{target:{globals:['process.exit','Deno.exit']}}}},
+  {id:'option',recipe:{name:'required-or-recommended-option',query:{call:{imports:[{source:'client',names:['request','*.request']}]},option:{option:'signal',sources:['RequestInit']}}}},
+ ];
+ const forbidden=challengeProfileFixtures(checks[0]);
+ assert.ok(forbidden.some(fixture=>fixture.name==='declared target identity: global Deno.exit'));
+ const option=challengeProfileFixtures(checks[1]);
+ assert.ok(option.some(fixture=>fixture.name==='declared call identity: namespace import client *.request'));
 });
 
 test('semantic mutations are rejected independently of unchanged finding projections',()=>{

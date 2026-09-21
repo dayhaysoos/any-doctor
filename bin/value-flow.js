@@ -10,7 +10,7 @@ export function terminalExit(node) {
 }
 export function valueFlow(nodes, parents, target, range, unwrap, functionStart) {
     var _a, _b;
-    const ids = new Map(), values = [], uses = [], bindings = [], loops = [], branches = [];
+    const ids = new Map(), values = [], uses = [], bindings = [], loops = [], branches = [], jsxElements = [];
     const functions = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression']);
     const dead = (n) => {
         let child = n, p = parents.get(child);
@@ -50,6 +50,7 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         return !computed && n.type === 'Identifier' ? String(n.name)
             : n.type === 'Literal' && ['string', 'number'].includes(typeof n.value) ? String(n.value) : null;
     };
+    const jsxName = (n) => typeof n.name === 'string' ? n.name : null;
     const precedingExits = new Map();
     const exits = (node) => terminalExit(node) !== undefined;
     // Build block-prefix facts once. Independent statements do not rescan all
@@ -78,7 +79,7 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         if (n.type === 'Super') {
             v.kind = 'super';
         }
-        else if (n.type === 'Identifier') {
+        else if (n.type === 'Identifier' || n.type === 'MetaProperty') {
             v.kind = 'reference';
             v.target = target(n);
         }
@@ -152,6 +153,7 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
         }
         else if (n.type === 'ConditionalExpression') {
             v.kind = 'choice';
+            v.selection = { test: value(n.test), whenTrue: value(n.consequent), whenFalse: value(n.alternate) };
             const test = unwrap(n.test);
             v.alternatives = test.type === 'Literal' && typeof test.value === 'boolean' ? [value((test.value ? n.consequent : n.alternate))] : [value(n.consequent), value(n.alternate)];
         }
@@ -179,7 +181,7 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
     };
     const arrayType = (n) => { var _a; return !!n && (n.type === 'TSArrayType' || n.type === 'TSTupleType' || n.type === 'TSTypeOperator' && arrayType(n.typeAnnotation) || n.type === 'TSTypeReference' && ['Array', 'ReadonlyArray'].includes((_a = target(n.typeName).root) !== null && _a !== void 0 ? _a : '') && target(n.typeName).binding === null); };
     for (const n of nodes) {
-        if (['Identifier', 'MemberExpression', 'Literal', 'TemplateLiteral', 'ArrayExpression', 'ObjectExpression', 'CallExpression', 'NewExpression', 'AwaitExpression', 'ConditionalExpression'].includes(n.type) || functions.has(n.type) || n.type === 'UnaryExpression' && n.operator === 'void')
+        if (['Identifier', 'MetaProperty', 'MemberExpression', 'Literal', 'TemplateLiteral', 'ArrayExpression', 'ObjectExpression', 'CallExpression', 'NewExpression', 'AwaitExpression', 'ConditionalExpression'].includes(n.type) || functions.has(n.type) || n.type === 'UnaryExpression' && n.operator === 'void')
             value(n);
         if (n.type === 'VariableDeclarator' && n.id.type === 'Identifier') {
             const b = target(n.id).binding;
@@ -240,6 +242,20 @@ export function valueFlow(nodes, parents, target, range, unwrap, functionStart) 
             patternBindings(p);
             loops.push({ ...range(n.body), functionStart: functionStart(n), iterable: value(n.right), binding: p.type === 'Identifier' ? target(p).binding : null, ...(p.type !== 'Identifier' ? { bindings: loopBindings } : {}), await: !!n.await });
         }
+        if (n.type === 'JSXOpeningElement') {
+            const attributes = n.attributes.map(attribute => {
+                if (attribute.type === 'JSXSpreadAttribute')
+                    return { name: null, value: value(attribute.argument), spread: true };
+                const raw = attribute.value;
+                if (!raw)
+                    return { name: jsxName(attribute.name), spread: false };
+                const expression = raw.type === 'JSXExpressionContainer' ? raw.expression : raw;
+                return (expression === null || expression === void 0 ? void 0 : expression.type) === 'JSXEmptyExpression'
+                    ? { name: jsxName(attribute.name), spread: false }
+                    : { name: jsxName(attribute.name), value: value(expression), spread: false };
+            });
+            jsxElements.push({ ...range(n), target: target(n.name), attributes });
+        }
     }
-    return { values, bindings, uses, loops, branches };
+    return { values, bindings, uses, loops, branches, jsxElements };
 }

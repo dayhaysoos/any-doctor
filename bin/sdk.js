@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { inventory } from "./file-scope.js";
 import * as fs from "fs";
 import * as path from "path";
-import { checkAnalysisNeeds, SEARCH_REQUEST, SEARCH_RESULT, SEMANTIC_RESULT_VERSION, withinDir } from "./contract.js";
+import { ANALYSIS_CAPABILITY_NAMES, checkAnalysisNeeds, SEARCH_REQUEST, SEARCH_RESULT, SEMANTIC_RESULT_VERSION, withinDir } from "./contract.js";
 import { maskNonCode } from "./mask.js";
-import { identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
+import { callIdentityResult, forbiddenCallRecipeResult, identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
 import { UNKNOWN_REASONS } from "./contract.js";
 // The verify harness forces the degraded path per fixture (fixture
 // `analysis: "off"`): the loader flips this switch before running that
@@ -74,15 +74,27 @@ export function buildCtx(root, opts = {}) {
     // loud failure names the kind and the needs declaration), channel call,
     // structural unwrap. bindings/spans/calls differ only in kind.
     const analysisFile = (kind, file) => {
-        var _a;
+        var _a, _b;
         if (analysisForcedOff || !ctx.analysis.available) {
             throw new Error(`ctx.analysis.${kind} requires the analysis engine and it is unavailable`
                 + " — check ctx.analysis.available, and declare the check's needs in meta so the report shows the narrowing.");
         }
         execution.modelRequests++;
         const r = runAnalysis({ kind, file, sourceDigest: digest(readSource(file)) }, root);
-        if (r.file === undefined || !(kind in r.file))
-            throw new Error((_a = r.error) !== null && _a !== void 0 ? _a : "ctx.analysis failed");
+        if (r.file === undefined || !(kind in r.file)) {
+            if ((_a = r.error) === null || _a === void 0 ? void 0 : _a.startsWith("analysis failed")) {
+                recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" }, file, { capability: kind });
+                const empty = kind === "bindings" ? { file, bindings: [] }
+                    : kind === "spans" ? { file, spans: [] }
+                        : { file, calls: [], functions: [], differences: [], structure: {
+                                flow: { values: [], bindings: [], uses: [], loops: [], branches: [], jsxElements: [] },
+                                values: [], bindings: [], functions: [], loops: [], directives: [],
+                            } };
+                analysisFiles.set(`${kind}:${file}`, empty);
+                return empty;
+            }
+            throw new Error((_b = r.error) !== null && _b !== void 0 ? _b : "ctx.analysis failed");
+        }
         analysisFiles.set(`${kind}:${file}`, r.file);
         return r.file;
     };
@@ -191,6 +203,20 @@ export function buildCtx(root, opts = {}) {
             calls(file) {
                 return cachedAnalysisFile("calls", file);
             },
+            callIdentity(file, expression, query) {
+                execution.semanticQueries++;
+                const unavailable = { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" };
+                if (analysisForcedOff || !ctx.analysis.available)
+                    return recordUnknown(unavailable, file, { capability: "identity" });
+                if (sourceChanged(file))
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "source-changed" }, file, { capability: "identity" });
+                try {
+                    return recordUnknown(callIdentityResult(file, readSource(file), cachedAnalysisFile("calls", file), expression, query), file, { capability: "identity" });
+                }
+                catch {
+                    return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" }, file, { capability: "identity" });
+                }
+            },
             identity(file, expression, query) {
                 execution.semanticQueries++;
                 const unavailable = { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" };
@@ -249,6 +275,7 @@ export function buildCtx(root, opts = {}) {
             unhandledValue(file, producer, query, finding) { return recipe('recipe-unhandled-value', file, producer, query, finding); },
             resourceWithoutRelease(file, acquisition, query, finding) { return recipe('recipe-resource-without-release', file, acquisition, query, finding); },
             requiredOrRecommendedOption(file, call, query, finding) { return recipe('recipe-required-option', file, call, query, finding); },
+            forbiddenCall(file, call, query, finding) { return recipe('recipe-forbidden-call', file, call, query, finding); },
         },
         report: {
             finding(f) {
@@ -279,7 +306,7 @@ export function buildCtx(root, opts = {}) {
     function recipe(kind, file, expression, query, finding) {
         var _a, _b;
         execution.semanticQueries++;
-        const recipeName = kind === 'recipe-unhandled-value' ? 'unhandled-value' : kind === 'recipe-resource-without-release' ? 'resource-without-release' : 'required-or-recommended-option';
+        const recipeName = kind === 'recipe-unhandled-value' ? 'unhandled-value' : kind === 'recipe-resource-without-release' ? 'resource-without-release' : kind === 'recipe-required-option' ? 'required-or-recommended-option' : 'forbidden-call';
         const context = { check: finding.rule, recipe: recipeName };
         if (analysisForcedOff || !ctx.analysis.available)
             return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'analysis-unavailable' }, file, context);
@@ -288,7 +315,7 @@ export function buildCtx(root, opts = {}) {
         let result;
         try {
             const facts = cachedAnalysisFile('calls', file), source = readSource(file);
-            result = kind === 'recipe-unhandled-value' ? unhandledValueRecipeResult(file, source, facts, expression, query) : kind === 'recipe-resource-without-release' ? resourceWithoutReleaseRecipeResult(file, source, facts, expression, query) : requiredOptionRecipeResult(file, source, facts, expression, query);
+            result = kind === 'recipe-unhandled-value' ? unhandledValueRecipeResult(file, source, facts, expression, query) : kind === 'recipe-resource-without-release' ? resourceWithoutReleaseRecipeResult(file, source, facts, expression, query) : kind === 'recipe-required-option' ? requiredOptionRecipeResult(file, source, facts, expression, query) : forbiddenCallRecipeResult(file, source, facts, expression, query);
         }
         catch {
             return recordUnknown({ version: SEMANTIC_RESULT_VERSION, status: 'unknown', reason: 'provider-failure' }, file, context);
@@ -341,7 +368,7 @@ export function buildCtx(root, opts = {}) {
             const available = ctx.analysis.available;
             // This provider implements these public analysis methods. Unknown capability
             // names must not inherit the provider's overall availability by accident.
-            const supported = new Set(["bindings", "spans", "calls", "identity", "value-disposition", "resource-lifetime", "option-presence", "consumers", "structures"]);
+            const supported = new Set(ANALYSIS_CAPABILITY_NAMES);
             const capabilityAvailable = (name) => available && supported.has(name);
             const unavailableReason = (_b = providerCache === null || providerCache === void 0 ? void 0 : providerCache.reason) !== null && _b !== void 0 ? _b : "analysis engine unavailable";
             const provider = providerCache !== null && providerCache !== void 0 ? providerCache : { id: "any-doctor/syntax-flow", version: "1", available, ...(!available ? { reason: unavailableReason } : {}), dependencies: [] };

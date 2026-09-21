@@ -48,7 +48,12 @@ function parseProgram(stack, file, source) {
     if (stack.error !== undefined)
         return { ok: false, error: stack.error };
     try {
-        const parsed = stack.parseSync(file, source, { sourceType: "module" });
+        const lang = /\.tsx$/i.test(file) ? "tsx"
+            : /\.(?:jsx?|mjs|cjs)$/i.test(file) ? "jsx"
+                : /\.d\.ts$/i.test(file) ? "dts"
+                    : /\.(?:ts|mts|cts)$/i.test(file) ? "ts"
+                        : "js";
+        const parsed = stack.parseSync(file, source, { sourceType: "module", lang });
         if (parsed.errors !== undefined && parsed.errors.length > 0) {
             return { ok: false, error: `analysis failed to parse ${file}: ${parsed.errors[0].message}` };
         }
@@ -425,14 +430,17 @@ export function analyzeCalls(file, source) {
             var _a;
             let n = unwrap(expr);
             const members = [];
-            while (n.type === "MemberExpression" && (!n.computed || unwrap(n.property).type === "Literal") && isNode(n.object) && isNode(n.property)) {
+            while ((n.type === "MemberExpression" || n.type === "JSXMemberExpression") && (!n.computed || unwrap(n.property).type === "Literal") && isNode(n.object) && isNode(n.property)) {
                 const name = n.computed ? propertyName(unwrap(n.property)) : idName(n.property);
                 if (!name)
                     break;
                 members.unshift(name);
                 n = unwrap(n.object);
             }
-            if (n.type !== "Identifier")
+            if (n.type === "MetaProperty") {
+                return { root: `${idName(n.meta)}.${idName(n.property)}`, members, binding: null };
+            }
+            if (n.type !== "Identifier" && n.type !== "JSXIdentifier")
                 return { root: null, members, binding: null };
             const identity = identities.get(n);
             return { root: idName(n), members, binding: (_a = identity === null || identity === void 0 ? void 0 : identity.binding) !== null && _a !== void 0 ? _a : null,
