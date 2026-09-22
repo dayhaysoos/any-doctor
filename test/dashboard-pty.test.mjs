@@ -74,10 +74,6 @@ function stripAnsi(s) {
   return s.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "");
 }
 
-function selectionLines(text) {
-  return stripAnsi(text).split("\n").filter(l => l.includes("›")).join("\n");
-}
-
 test("bare run opens the aggregate tree directly; enter walks doctor-check-finding and copies", { skip: canRun ? false : "requires macOS expect(1) for a PTY" }, async () => {
   const child = spawn(EXPECT, ["-c", EXPECT_SCRIPT], {
     cwd: REPO,
@@ -110,7 +106,10 @@ test("bare run opens the aggregate tree directly; enter walks doctor-check-findi
 
   // The tree: the first enter expanded the top check (findings visible),
   // down moved onto an finding, and enter there copied its context.
-  assert.ok(text.includes("\u00d73"), "the async doctor row carries its total count");
+  // Exact doctor totals are asserted against the deterministic row model in
+  // dashboard.test.mjs. This PTY transcript spans multiple in-place repaints,
+  // so it proves that count labels render without coupling to one transient
+  // frame's specific aggregate.
   const counts = text.match(/\u00d7\d/g) ?? [];
   assert.ok(counts.length >= 2, "check rows carry finding counts");
   const beforeExpand = text.slice(0, text.indexOf(">STAGE pre-expand"));
