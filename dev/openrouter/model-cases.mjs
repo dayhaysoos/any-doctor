@@ -19,6 +19,7 @@ export const cases=[
  ['external-model',`${setup}client.chat.send({model:env.MODEL})`,0,1],
  ['conditional',`${setup}client.chat.send({model:flag?'openai/gpt-4.1':'~openai/gpt-latest'})`,0,1],
  ['unknown-spread',`${setup}client.chat.send({model:'openai/gpt-4.1',...config})`,0,1],
+ ['prototype-model',`${setup}client.chat.send({__proto__:{model:'openai/gpt-4.1'}})`,0,1],
  ['reassigned-model',`${setup}let pin='openai/gpt-4.1';pin=external;client.chat.send({model:pin})`,0,1],
  ['opaque-config',`${setup}client.chat.send(makeConfig())`,0,1],
  ['unknown-neighbor',`${setup}client.chat.send({model:env.MODEL});client.chat.send({model:'openai/gpt-4.1'})`,1,1],

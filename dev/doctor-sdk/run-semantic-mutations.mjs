@@ -25,7 +25,7 @@ for(const mutation of controls){
  const root=path.join(output,mutation.id);assert.ok(!fs.existsSync(root),'fresh mutation copy required');fs.mkdirSync(root);
  for(const entry of ['bin','doctors','fixtures'])fs.cpSync(path.join(candidate,entry),path.join(root,entry),{recursive:true});
  fs.copyFileSync(path.join(candidate,'package.json'),path.join(root,'package.json'));fs.symlinkSync(path.join(owner,'node_modules'),path.join(root,'node_modules'),'dir');
- const file=path.join(root,mutation.omit?'bin/certify.js':'bin/sdk.js');let text=fs.readFileSync(file,'utf8');
+ const file=path.join(root,mutation.omit?'bin/recipe-definitions.js':'bin/sdk.js');let text=fs.readFileSync(file,'utf8');
  let from,to;
  if(mutation.omit){from='if (!fixtures.length)';to='fixtures[0].expectedSemantic = undefined;\n    '+from;}
  else if(mutation.suppress){from="if (result.status === 'known' && result.value === 'report' || result.status === 'unknown'";to="if (false && result.status === 'known' && result.value === 'report' || result.status === 'unknown'";}

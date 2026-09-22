@@ -26,7 +26,7 @@ export function cohortFileCount(counts) {
 /** Doctor SDK semantic results are versioned, JSON-safe answers tied to the
  * exact source snapshot analyzed. Unknown is never absence. */
 export const SEMANTIC_RESULT_VERSION = 1;
-export const ANALYSIS_CAPABILITY_NAMES = ["bindings", "spans", "calls", "identity", "value-disposition", "resource-lifetime", "option-presence", "consumers", "structures"];
+export const ANALYSIS_CAPABILITY_NAMES = ["bindings", "spans", "calls", "identity", "value-path", "value-disposition", "resource-lifetime", "option-presence", "consumers", "structures"];
 export const UNKNOWN_REASONS = ["analysis-unavailable", "provider-failure", "unsupported-expression", "outside-owner", "unresolved-identity", "source-changed"];
 export const PROTOCOL_VERSION = 1;
 export const RESULT_SENTINEL = "###ANY_DOCTOR_V1###";
@@ -160,26 +160,9 @@ export function compareFindings(expected, actual) {
     const missing = [...budget.values()].flatMap(rows => rows.filter(r => !r.used).map(r => entry(r.expected)));
     return { missing, unexpected };
 }
-// The degradation contract's one projection (D20 Stage 2): which checks
-// of this doctor declared analysis needs — the ids the report names when
-// it renders "narrowed", and the predicate verify uses to decide whether
-// analysis-on fixtures apply.
-/** Recipes imply their host capabilities; explicit needs may add requirements. */
-export function recipeAnalysisNeeds(name) {
-    return name === "unhandled-value" ? ["calls", "value-disposition"]
-        : name === "required-or-recommended-option" ? ["calls", "identity", "option-presence"]
-            : name === "resource-without-release" ? ["calls", "identity", "resource-lifetime"]
-                : name === "forbidden-call" ? ["calls", "identity"] : [];
-}
-export function checkAnalysisNeeds(check) {
-    var _a;
-    const implied = check.recipe ? recipeAnalysisNeeds(check.recipe.name) : [];
-    return [...new Set([...((_a = check.needs) !== null && _a !== void 0 ? _a : []), ...implied])];
-}
-export function narrowedCheckIds(meta) {
-    var _a;
-    return ((_a = meta.checks) !== null && _a !== void 0 ? _a : []).filter(c => checkAnalysisNeeds(c).length > 0).map(c => c.id);
-}
+// Preserve the public contract exports while the locally complete recipe
+// registry owns the implementation and implied-capability metadata.
+export { checkAnalysisNeeds, narrowedCheckIds, recipeAnalysisNeeds } from "./recipe-definitions.js";
 // The within-run occurrence handle: checkKey plus coordinates, COLUMN
 // INCLUDED — two findings on one line are two occurrences, and one
 // decision must never hide both (the review-probe bug: this key dropped

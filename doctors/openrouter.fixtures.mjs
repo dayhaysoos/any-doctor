@@ -203,6 +203,17 @@ fixtures.push({name:'midstream: two same-stream content consumers',seed:{'src/er
  '}',
 ].join('\n')},expected:[{rule:'midstream-error-ignored',file:'src/errors.ts',line:5,column:7},{rule:'midstream-error-ignored',file:'src/errors.ts',line:6,column:7}]});
 
+fixtures.push({name:'midstream: aliased stream options are observed at the request call',seed:{'src/alias-stream.ts':[
+ "import {OpenRouter} from '@openrouter/sdk';",
+ 'const client=new OpenRouter();const c=new AbortController();',
+ 'const options={stream:true};',
+ 'const stream=await client.chat.send(options,{signal:c.signal});',
+ 'options.stream=false;',
+ 'for await(const chunk of stream){',
+ '  out+=chunk.choices[0].delta.content;',
+ '}',
+].join('\n')},expected:[{rule:'midstream-error-ignored',file:'src/alias-stream.ts',line:7,column:7}]});
+
 fixtures.push({name:'retry: two response-dependent retry requests',seed:{'src/repeats.ts':[
  'async function first(){for(let i=0;i<3;i++){',
  '  const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{signal:null});',

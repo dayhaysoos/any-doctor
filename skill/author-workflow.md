@@ -32,6 +32,14 @@ Use this sequence when an agent encounters Any Doctor for the first time.
    values, distinguish test, true arm and false arm; a header dependency somewhere
    does not prove compliance on the relevant path.
 
+   When the claim needs one static object property path, use shared
+   `ctx.analysis.valueAtPath(file, subject, { at, path })`. Treat `absent` as
+   proven missing, explicit `undefined` as present without a constant, and
+   `unknown` as scoped uncertainty. Do not rebuild alias, spread, override,
+   mutation or escape handling over raw call facts. Keep `ctx.analysis.calls()`
+   for candidate discovery and specialized relationships Value Path does not
+   answer.
+
    Finish this step only when each required proof is supported or has a capability-gap
    report with a minimal executable seed, expected/actual result, available facts,
    missing relationship, affected scope, classification and acceptance cases.
@@ -79,4 +87,4 @@ authoring; the two workflows are separate.
 
 Consumer agents use public facts and recipes. Do not patch an installed Any Doctor package or build a private parser/resolver to force a result. When public facts are insufficient, narrow the affected check and produce a capability-gap report. Any Doctor maintainers may extend the shared provider only with a framework-neutral change and definite-positive, negative, uncertain, and mixed-neighbor regressions. A capability-gap report is evidence for future product work, not permission to guess or claim a clean result.
 
-Capability-gap acceptanceCases must name currentFailure, definitePositive, negativeControl and uncertainControl. Each includes a runnable seed or fixturePath, exact findings, narrowing state/reasons and score/grade presence. Validate with the authoring catalog’s validateCapabilityGapReport, then execute the stakes; ordinary doctor verify does not consume these reports. Keep a definite positive visible beside an uncertain neighbor.
+Capability-gap acceptanceCases must name currentFailure, definitePositive, negativeControl and uncertainControl. Each includes a runnable seed or fixturePath, exact findings, narrowing state/reasons and score/grade presence. Validate with the authoring catalog’s validateCapabilityGapReport, then execute them through certifyCapabilityGapReport; ordinary doctor verify does not consume these reports. Keep a definite positive visible beside an uncertain neighbor.

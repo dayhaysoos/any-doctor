@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { createHash } from "node:crypto";
 
 // The analysis host is the identity engine's side of the channel — a
 // pure function from request body to response, directly testable with an
@@ -11,6 +12,7 @@ import * as path from "node:path";
 const { handleAnalysisRequest, clearAnalysisCache } = await import("../bin/analysis-host.js");
 const { handleSearchLine } = await import("../bin/search-host.js");
 const { SEARCH_REQUEST } = await import("../bin/contract.js");
+const { RECIPE_DEFINITIONS } = await import("../bin/recipe-definitions.js");
 
 const TARGET = "/repo/target";
 const RUN = { kind: "run", root: TARGET };
@@ -153,7 +155,9 @@ test('verify can request default test filtering for structural queries', () => {
 const { analyzeCalls } = await import('../bin/analysis.js');
 const providers = await import('../bin/doctor-sdk.js');
 const semanticRoutes = [
+  ['call-identity','callIdentityResult','fetch("/")', {globals:['fetch']}, 'call'],
   ['identity','identityResult','fetch("/")', {globals:['fetch']}, 'callee'],
+  ['value-path','valueAtPathResult','const options={auth:{apiKey:"secret"}};consume(options)', {path:['auth','apiKey']}, 'argument'],
   ['value-disposition','valueDispositionResult','[1].map(async x=>x)', {consumers:['Promise.all']}],
   ['option-presence','optionPresenceResult','fetch("/")', {option:'signal',sources:['Request']}],
   ['resource-lifetime','resourceLifetimeResult','function owner(){setTimeout(done,1)}', {release:['clearTimeout']}, 'owner'],
@@ -162,21 +166,49 @@ const semanticRoutes = [
   ['recipe-required-option','requiredOptionRecipeResult','fetch("/")', {call:{globals:['fetch']},option:{option:'signal',sources:['Request']}}],
   ['recipe-forbidden-call','forbiddenCallRecipeResult','process.exit(1)', {target:{globals:['process.exit']}}],
 ];
+test('analysis host routes every canonical recipe kind',()=>{
+ const routed=semanticRoutes.filter(([kind])=>kind.startsWith('recipe-')).map(([kind])=>kind).sort();
+ assert.deepEqual(routed,Object.values(RECIPE_DEFINITIONS).map(item=>item.kind).sort());
+});
 for(const [kind,provider,source,baseQuery,select] of semanticRoutes)test(`analysis host semantic registry routes ${kind}`,()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'semantic-route-'));
  try{
   fs.writeFileSync(path.join(dir,'entry.ts'),source);
   const facts=analyzeCalls('entry.ts',source).file,values=facts.structure.flow.values;
   const call=values.find(v=>v.kind==='call'),ref=v=>({id:v.id,start:v.start,end:v.end});
-  const expression=ref(select==='callee'?values.find(v=>v.id===call.callee):call);
-  const query=select==='owner'?{...baseQuery,owner:ref(values.find(v=>v.kind==='function'))}:baseQuery;
-  const req={kind,root:dir,file:'entry.ts',expression,query},mode={kind:'run',root:dir};
+  const expression=ref(select==='callee'?values.find(v=>v.id===call.callee):select==='argument'?values.find(v=>v.id===call.arguments[0]):call);
+  const query=select==='owner'?{...baseQuery,owner:ref(values.find(v=>v.kind==='function'))}:select==='argument'?{...baseQuery,at:ref(call)}:baseQuery;
+  const req={kind,root:dir,file:'entry.ts',sourceDigest:createHash('sha256').update(source).digest('hex'),expression,query},mode={kind:'run',root:dir};
   const expected=providers[provider]('entry.ts',source,facts,expression,query);
   assert.equal(expected.status,'known',JSON.stringify(expected));
-  assert.deepEqual(handleAnalysisRequest(req,mode),{semantic:expected});
+  assert.deepEqual(handleAnalysisRequest(req,mode).semantic,expected);
   assert.equal(handleAnalysisRequest({...req,query:null},mode).semantic.reason,'unsupported-expression');
   assert.equal(handleAnalysisRequest(req,mode,undefined,()=>({available:false})).semantic.reason,'analysis-unavailable');
   assert.ok(handleAnalysisRequest({kind:'bad',root:dir},mode).error.includes(kind));
+ }finally{fs.rmSync(dir,{recursive:true,force:true});clearAnalysisCache()}
+});
+test('semantic requests expose host model-cache reuse without reparsing',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'semantic-cache-'));
+ try{
+  const source='fetch("/")';fs.writeFileSync(path.join(dir,'entry.ts'),source);
+  const facts=analyzeCalls('entry.ts',source).file,call=facts.structure.flow.values.find(value=>value.kind==='call');
+  const req={kind:'call-identity',root:dir,file:'entry.ts',sourceDigest:createHash('sha256').update(source).digest('hex'),expression:{id:call.id,start:call.start,end:call.end},query:{globals:['fetch']}};
+  const mode={kind:'run',root:dir};let parses=0;
+  const callsAnalyzer=(file,text)=>{parses++;assert.equal(text,source);return {ok:true,file:facts}};
+  const first=handleAnalysisRequest(req,mode,undefined,undefined,undefined,callsAnalyzer);
+  const second=handleAnalysisRequest(req,mode,undefined,undefined,undefined,callsAnalyzer);
+  assert.deepEqual(first.execution,{modelRequests:1,modelCacheHits:0});
+  assert.deepEqual(second.execution,{modelRequests:0,modelCacheHits:1});
+  assert.equal(parses,1);
+ }finally{fs.rmSync(dir,{recursive:true,force:true});clearAnalysisCache()}
+});
+test('semantic requests classify an unexpected source digest as source-changed',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'semantic-digest-'));
+ try{
+  const source='fetch("/")';fs.writeFileSync(path.join(dir,'entry.ts'),source);
+  const facts=analyzeCalls('entry.ts',source).file,call=facts.structure.flow.values.find(value=>value.kind==='call');
+  const result=handleAnalysisRequest({kind:'call-identity',root:dir,file:'entry.ts',sourceDigest:'stale',expression:{id:call.id,start:call.start,end:call.end},query:{globals:['fetch']}},{kind:'run',root:dir});
+  assert.deepEqual(result,{semantic:{version:1,status:'unknown',reason:'source-changed'},execution:{modelRequests:0,modelCacheHits:0}});
  }finally{fs.rmSync(dir,{recursive:true,force:true});clearAnalysisCache()}
 });
 test('analysis host keeps nonsemantic calls, project and structures routes',()=>{

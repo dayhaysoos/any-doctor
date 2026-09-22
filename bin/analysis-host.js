@@ -5,7 +5,9 @@ import * as fs from "fs";
 import * as path from "path";
 import { searchBase, SEMANTIC_RESULT_VERSION, withinBase, withinDir } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls, semanticProviderProvenance } from "./analysis.js";
-import { forbiddenCallRecipeResult, identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
+import { callIdentityResult, identityResult, optionPresenceResult, recipeEvaluationRuntime, resourceLifetimeResult, valueAtPathResult, valueDispositionResult } from "./doctor-sdk.js";
+import { RECIPE_DEFINITIONS } from "./recipe-definitions.js";
+import { parseIdentityQuery, parseOptionQuery } from "./semantic-query-parsers.js";
 // One cache per host process. The host lives in the runner process, so
 // the lifetime is the any-doctor invocation; across a cohort's doctors
 // the same unchanged file answers from memory.
@@ -27,17 +29,22 @@ function semanticHandler(parse, evaluate) {
         return query === null ? null : (file, source, facts, expression) => evaluate(file, source, facts, expression, query);
     };
 }
+const recipeSemanticHandlers = {};
+for (const candidate of Object.values(RECIPE_DEFINITIONS)) {
+    const definition = candidate;
+    recipeSemanticHandlers[definition.kind] = semanticHandler(definition.parse, (file, source, facts, expression, query) => definition.evaluate(recipeEvaluationRuntime, file, source, facts, expression, query));
+}
 const semanticHandlers = {
+    "call-identity": semanticHandler(parseIdentityQuery, callIdentityResult),
     identity: semanticHandler(parseIdentityQuery, identityResult),
+    "value-path": semanticHandler(parseValuePathQuery, valueAtPathResult),
     "value-disposition": semanticHandler(parseDispositionQuery, valueDispositionResult),
     "resource-lifetime": semanticHandler(parseResourceQuery, resourceLifetimeResult),
     "option-presence": semanticHandler(parseOptionQuery, optionPresenceResult),
-    "recipe-unhandled-value": semanticHandler(parseUnhandledRecipe, unhandledValueRecipeResult),
-    "recipe-resource-without-release": semanticHandler(parseResourceRecipe, resourceWithoutReleaseRecipeResult),
-    "recipe-required-option": semanticHandler(parseRequiredOptionRecipe, requiredOptionRecipeResult),
-    "recipe-forbidden-call": semanticHandler(parseForbiddenCallRecipe, forbiddenCallRecipeResult),
+    ...recipeSemanticHandlers,
 };
 export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, status = analysisStatus, spansAnalyzer = analyzeSpans, callsAnalyzer = analyzeCalls) {
+    var _a;
     const base = searchBase(mode);
     const root = typeof req.root === "string" ? path.resolve(req.root) : "";
     if (base === "" || !withinBase(root, base)) {
@@ -53,9 +60,18 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
     const semantic = typeof req.kind === "string" && Object.hasOwn(semanticHandlers, req.kind)
         ? semanticHandlers[req.kind] : undefined;
     if (semantic && !status().available) {
-        return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" } };
+        return {
+            semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" },
+            execution: { modelRequests: 0, modelCacheHits: 0 },
+        };
     }
-    if (typeof req.file === "string" && req.sourceDigest !== undefined) {
+    if (semantic && typeof req.sourceDigest !== "string") {
+        return {
+            semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "source-changed" },
+            execution: { modelRequests: 0, modelCacheHits: 0 },
+        };
+    }
+    if ((req.kind === "structures") && typeof req.file === "string" && req.sourceDigest !== undefined) {
         try {
             const abs = path.resolve(root, req.file);
             if (!withinDir(abs, root) || !withinDir(fs.realpathSync(abs), fs.realpathSync(root)))
@@ -97,24 +113,36 @@ export function handleAnalysisRequest(req, mode, analyzer = analyzeBindings, sta
             const expression = parseExpression(req.expression);
             const evaluate = semantic(req.query);
             if (!expression || !evaluate)
-                return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "unsupported-expression" } };
-            const model = cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
+                return {
+                    semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "unsupported-expression" },
+                    execution: { modelRequests: 0, modelCacheHits: 0 },
+                };
+            const model = cachedModel(abs, root, callsCache, callsAnalyzer, req.file, req.sourceDigest);
             if ("error" in model)
-                return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
+                return {
+                    semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: model.sourceChanged ? "source-changed" : "provider-failure" },
+                    execution: { modelRequests: model.sourceChanged ? 0 : 1, modelCacheHits: 0 },
+                };
+            const execution = { modelRequests: model.cacheHit ? 0 : 1, modelCacheHits: model.cacheHit ? 1 : 0 };
+            const value = (_a = model.file.structure.flow.values.find(item => item.id === expression.id && item.start === expression.start && item.end === expression.end)) !== null && _a !== void 0 ? _a : model.file.structure.flow.values.find(item => item.start === expression.start && item.end === expression.end);
+            const subject = value === undefined ? undefined : rangeOf(value);
             try {
-                const source = fs.readFileSync(abs, "utf8");
-                return { semantic: evaluate(req.file, source, model.file, expression) };
+                return { semantic: evaluate(req.file, model.source, model.file, expression), execution, ...(subject ? { subject } : {}) };
             }
             catch {
-                return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
+                return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" }, execution, ...(subject ? { subject } : {}) };
             }
         }
         if (req.kind === "bindings") {
-            return cachedModel(abs, root, modelCache, analyzer, req.file);
+            const model = cachedModel(abs, root, modelCache, analyzer, req.file, typeof req.sourceDigest === "string" ? req.sourceDigest : undefined);
+            return "error" in model ? model : { file: model.file };
         }
-        if (req.kind === "calls")
-            return cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
-        return cachedModel(abs, root, spansCache, spansAnalyzer, req.file);
+        if (req.kind === "calls") {
+            const model = cachedModel(abs, root, callsCache, callsAnalyzer, req.file, typeof req.sourceDigest === "string" ? req.sourceDigest : undefined);
+            return "error" in model ? model : { file: model.file };
+        }
+        const model = cachedModel(abs, root, spansCache, spansAnalyzer, req.file, typeof req.sourceDigest === "string" ? req.sourceDigest : undefined);
+        return "error" in model ? model : { file: model.file };
     }
     return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: ${["available", "bindings", "spans", "calls", "project", "structures", ...Object.keys(semanticHandlers)].join(", ")}` };
 }
@@ -124,38 +152,20 @@ function parseDispositionQuery(value) {
     const consumers = value.consumers;
     return Array.isArray(consumers) && consumers.every(item => typeof item === "string") ? { consumers } : null;
 }
+function parseValuePathQuery(value) { if (!value || typeof value !== "object")
+    return null; const record = value, at = parseExpression(record.at), path = record.path; return at && Array.isArray(path) && path.length > 0 && path.every(item => typeof item === "string") ? { at, path: path } : null; }
 function parseResourceQuery(value) { if (!value || typeof value !== 'object')
     return null; const record = value, owner = parseExpression(record.owner), release = record.release; return owner && Array.isArray(release) && release.every(item => typeof item === 'string') ? { owner, release } : null; }
-function parseOptionQuery(value) { if (!value || typeof value !== "object")
-    return null; const record = value; return typeof record.option === "string" && Array.isArray(record.sources) && record.sources.every(item => typeof item === "string") ? { option: record.option, sources: record.sources } : null; }
-function parseUnhandledRecipe(value) { if (!value || typeof value !== "object")
-    return null; const record = value, producer = record.producer, consumers = record.consumers; return producer && typeof producer.member === 'string' && Number.isInteger(producer.asyncArgument) && producer.receiver === 'array' && Array.isArray(consumers) && consumers.every(item => typeof item === 'string') ? value : null; }
-function parseResourceRecipe(value) { if (!value || typeof value !== "object")
-    return null; const record = value, acquisition = parseIdentityQuery(record.acquisition), owner = record.owner, ownerIdentity = parseIdentityQuery(owner === null || owner === void 0 ? void 0 : owner.identity), release = record.release; return acquisition && ownerIdentity && Number.isInteger(owner === null || owner === void 0 ? void 0 : owner.argument) && Array.isArray(release) && release.every(item => typeof item === 'string') ? value : null; }
-function parseRequiredOptionRecipe(value) { if (!value || typeof value !== "object")
-    return null; const record = value, call = parseIdentityQuery(record.call), option = parseOptionQuery(record.option); return call && option ? value : null; }
-function parseForbiddenCallRecipe(value) { if (!value || typeof value !== "object")
-    return null; const record = value, target = parseIdentityQuery(record.target), scope = record.scope; const strings = (item) => item === undefined || Array.isArray(item) && item.every(value => typeof value === 'string'); return target && (!scope || strings(scope.under) && strings(scope.extensions) && strings(scope.exclude)) ? value : null; }
 function parseExpression(value) {
     if (!value || typeof value !== "object")
         return null;
     const ref = value;
     return [ref.id, ref.start, ref.end].every(Number.isInteger) ? ref : null;
 }
-function parseIdentityQuery(value) {
-    if (!value || typeof value !== "object")
-        return null;
-    const query = value;
-    if (query.globals !== undefined && (!Array.isArray(query.globals) || !query.globals.every((item) => typeof item === "string")))
-        return null;
-    if (query.imports !== undefined && (!Array.isArray(query.imports) || !query.imports.every((item) => item && typeof item === "object" && typeof item.source === "string" && Array.isArray(item.names) && item.names.every((name) => typeof name === "string"))))
-        return null;
-    return query;
-}
 // The shared per-file model lifecycle: read (cache hit on content digest),
 // read, compute, cache. Bindings and spans are the same policy over two
 // analyzers and two caches.
-function cachedModel(abs, root, cache, compute, relFile) {
+function cachedModel(abs, root, cache, compute, relFile, expectedDigest) {
     let source;
     let digest;
     try {
@@ -163,9 +173,12 @@ function cachedModel(abs, root, cache, compute, relFile) {
             return { error: "analysis file outside root" };
         source = fs.readFileSync(abs, "utf8");
         digest = createHash("sha256").update(source).digest("hex");
+        if (expectedDigest !== undefined && digest !== expectedDigest) {
+            return { error: `source changed during analysis: ${relFile}`, sourceChanged: true };
+        }
         const cached = cache.get(abs);
         if (cached && cached.digest === digest)
-            return { file: cached.file };
+            return { file: cached.file, source, cacheHit: true };
     }
     catch {
         return { error: `ctx.analysis failed: cannot read ${relFile}` };
@@ -175,5 +188,8 @@ function cachedModel(abs, root, cache, compute, relFile) {
     if (!r.ok)
         return { error: r.error };
     cache.set(abs, { digest, file: r.file });
-    return { file: r.file };
+    return { file: r.file, source, cacheHit: false };
+}
+function rangeOf(value) {
+    return { start: value.start, end: value.end, line: value.line, column: value.column, endLine: value.endLine, endColumn: value.endColumn };
 }

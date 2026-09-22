@@ -192,8 +192,9 @@ test("author surface: capabilities JSON describes runtime-backed facts and recip
   assert.equal(result.schema, 1);
   assert.equal(result.command, "capabilities");
   assert.deepEqual(result.capabilities.map(x => x.name), [
-    "bindings", "spans", "calls", "identity", "value-disposition", "resource-lifetime", "option-presence", "consumers", "structures",
+    "bindings", "spans", "calls", "identity", "value-path", "value-disposition", "resource-lifetime", "option-presence", "consumers", "structures",
   ]);
+  assert.match(result.capabilities.find(x => x.name === "value-path").api, /valueAtPath/);
   assert.deepEqual(Object.fromEntries(result.recipes.map(x => [x.name, x.requires])), {
     "forbidden-call": ["calls", "identity"],
     "unhandled-value": ["calls", "value-disposition"],

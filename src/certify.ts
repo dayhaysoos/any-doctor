@@ -2,9 +2,11 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { buildCtx, setAnalysisDisabled, probeAnalysisAvailable } from "./sdk.js";
-import type { CheckMeta, DoctorMeta, ExpectedFinding, Finding, Fixture, FixtureResult, RecipeProfileDeclaration, RunResult } from "./contract.js";
+import type { CheckMeta, DoctorMeta, ExpectedFinding, Finding, Fixture, FixtureResult, RunResult } from "./contract.js";
 import { withinDir } from "./contract.js";
 import * as contract from "./contract.js";
+import { challengeProfileFixtures as recipeChallengeProfileFixtures, checkAnalysisNeeds, narrowedCheckIds } from "./recipe-definitions.js";
+import type { ChallengeFixture } from "./recipes/types.js";
 
 // The Certification harness: every verify-mode policy in one module, behind
 // one interface — certify(mod, fixtures) -> results. The policies: the claim
@@ -75,7 +77,7 @@ export function validateClaimContract(mod: DoctorModule): void {
     if (c.reportingUnit !== undefined && !["occurrence", "file", "project"].includes(String(c.reportingUnit))) {
       problems.push(`check "${String(c.id)}": reportingUnit must be occurrence, file, or project`);
     }
-    if (contract.checkAnalysisNeeds(c as unknown as CheckMeta).length > 0
+    if (checkAnalysisNeeds(c as unknown as CheckMeta).length > 0
       && (c.onUnknown !== "narrow" && c.onUnknown !== "skip")) {
       problems.push(`check "${String(c.id)}": onUnknown is required when analysis needs are explicit or implied by a recipe — "narrow" or "skip"`);
     }
@@ -158,7 +160,7 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
   // Only a doctor whose checks declare analysis needs can have
   // analysis-on sandboxes — probing anyone else would make a channel-less
   // direct invocation fail fixtures that never touch analysis at all.
-  const declaresNeeds = contract.narrowedCheckIds(mod.meta as DoctorMeta).length > 0;
+  const declaresNeeds = narrowedCheckIds(mod.meta as DoctorMeta).length > 0;
   let analysisAvailable: boolean | undefined;
   // The fixture loop's own rows, keyed by fixture — the location-coverage
   // witness asks "did THIS fixture pass", never "which row is this index".
@@ -247,14 +249,14 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
       results.push({ ...okRow(name), skipped: "reporting unit undeclared — location coverage not exercised" });
       continue;
     }
-    if (contract.checkAnalysisNeeds(check).length > 0 && await skipFor(true)) {
+    if (checkAnalysisNeeds(check).length > 0 && await skipFor(true)) {
       results.push(skipRow(name));
       continue;
     }
     const witness = fixtures.find((fixture) => {
       const row = rowByFixture.get(fixture);
       if (row === undefined || !row.ok || row.skipped !== undefined) return false;
-      if (contract.checkAnalysisNeeds(check).length > 0 && fixture.analysis === "off") return false;
+      if (checkAnalysisNeeds(check).length > 0 && fixture.analysis === "off") return false;
       const hits = fixture.expected.filter(f => f.rule === check.id);
       if (check.reportingUnit !== "occurrence") return hits.length > 0;
       return distinctLocationsInFile(hits);
@@ -308,143 +310,10 @@ export async function certify(mod: DoctorModule, fixtures: Fixture[]): Promise<F
   return results;
 }
 
-const occurrence=(source:string,rule:string,needle:string,nth=0,file='profile.ts'):ExpectedFinding=>{const offset=[...source.matchAll(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'))][nth]?.index;if(offset===undefined)throw new Error(`profile occurrence missing: ${needle}`);const before=source.slice(0,offset),line=before.split('\n').length,column=offset-(before.lastIndexOf('\n')+1);return {rule,file,line,column};};
-type ChallengeFixture = Fixture & (
-  | { analysis: 'on'; expectedSemantic: 'complete' | 'narrowed' }
-  | { analysis: 'off'; expectedSemantic?: never }
-);
-const profile = (name: string, source: string, expected: ExpectedFinding[], semantic: 'complete' | 'narrowed' | 'unavailable'): ChallengeFixture => {
-  return profileAt('profile.ts',name,source,expected,semantic);
-};
-const profileAt = (file:string,name: string, source: string, expected: ExpectedFinding[], semantic: 'complete' | 'narrowed' | 'unavailable'): ChallengeFixture => {
-  const fixture = {name, seed: {[file]: source}, expected};
-  return semantic === 'unavailable' ? {...fixture, analysis: 'off'} : {...fixture, analysis: 'on', expectedSemantic: semantic};
-};
-
-/** Deterministic extension point for maintained recipe challenge cases. */
-export function challengeProfileFixtures(check:CheckMeta):ChallengeFixture[]{
-  const declaration=check.recipe;if(!declaration)return [];
-  const fixtures=declaration.name==='unhandled-value'?unhandledProfile(check.id,declaration):declaration.name==='resource-without-release'?resourceProfile(check.id,declaration):declaration.name==='required-or-recommended-option'?optionProfile(check.id,declaration):forbiddenCallProfile(check.id,declaration);
-  if(!fixtures.length)throw new Error(`recipe ${declaration.name} has no applicable challenge profile for this declaration`);
-  for (const fixture of fixtures) {
-    if (fixture.analysis !== 'off' && !['complete', 'narrowed'].includes(fixture.expectedSemantic)) {
-      throw new Error(`profile "${fixture.name}": semantic expectation is required for analysis-on challenges`);
-    }
-  }
-  return fixtures;
-}
-
-function unhandledProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'unhandled-value'}>):ChallengeFixture[]{
-  const member=declaration.query.producer.member,p=`[1].${member}(async value=>value)`;
-  const positive=`${p};`,lookalike=`const object={${member}:async callback=>callback(1)};object.${member}(async value=>value);`,transfer=`function own(){return ${p}}`,unknown=`const items=getItems();items.${member}(async value=>value);\n${positive}`,same=`${positive}${positive}`;
-  return [
-    profile('genuine positive',positive,[occurrence(positive,rule,p)],'complete'),
-    profile('valid lookalike and shadowed producer',lookalike,[],'complete'),
-    profile('ownership transfer',transfer,[],'complete'),
-    profile('unsupported receiver with positive neighbor',unknown,[occurrence(unknown,rule,p)],'narrowed'),
-    profile('two same-line occurrences',same,[occurrence(same,rule,p,0),occurrence(same,rule,p,1)],'complete'),
-    profile('analysis unavailable',positive,[],'unavailable'),
-  ];
-}
-
-type IdentityFixture={label:string;head:string;callee:string;shadow:string};
-function identityFixtures(query:import("./contract.js").IdentityQuery,alias:string):IdentityFixture[]{
-  const fixtures:IdentityFixture[]=[];
-  for(const global of query.globals??[]){
-    const root=global.split('.')[0];
-    fixtures.push({label:`global ${global}`,head:'',callee:global,shadow:`function probe(${root}){${global}(__ARGS__)}`});
-  }
-  for(const spec of query.imports??[]){
-    for(const name of spec.names){
-      if(name.startsWith('*.')&&name.length>2){const member=name.slice(2);fixtures.push({label:`namespace import ${spec.source} ${name}`,head:`import * as ${alias} from ${JSON.stringify(spec.source)};\n`,callee:`${alias}.${member}`,shadow:`function probe(${alias}){${alias}.${member}(__ARGS__)}`});continue;}
-      if(name.startsWith('default.')&&name.length>'default.'.length){const member=name.slice('default.'.length);fixtures.push({label:`default import member ${spec.source} ${name}`,head:`import ${alias} from ${JSON.stringify(spec.source)};\n`,callee:`${alias}.${member}`,shadow:`function probe(${alias}){${alias}.${member}(__ARGS__)}`});continue;}
-      if(name==='default'){fixtures.push({label:`default import ${spec.source}`,head:`import ${alias} from ${JSON.stringify(spec.source)};\n`,callee:alias,shadow:`function probe(${alias}){${alias}(__ARGS__)}`});continue;}
-      if(!name.includes('.')){fixtures.push({label:`named import ${spec.source} ${name}`,head:`import {${name} as ${alias}} from ${JSON.stringify(spec.source)};\n`,callee:alias,shadow:`function probe(${alias}){${alias}(__ARGS__)}`});continue;}
-      throw new Error(`identity query cannot generate import challenge for ${JSON.stringify(spec.source)} ${JSON.stringify(name)}; use a named import, default, default.member, or *.member`);
-    }
-  }
-  const unique=[...new Map(fixtures.map(fixture=>[fixture.label,fixture])).values()];
-  if(unique.length)return unique;
-  throw new Error(`identity query cannot generate a challenge target; declare a global, named import, default import, or namespace member`);
-}
-
-function optionProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'required-or-recommended-option'}>):ChallengeFixture[]{
-  const query=declaration.query,targets=identityFixtures(query.call,'profileCall'),target=targets[0],callee=target.callee,head=target.head;
-  const option=query.option.option,positive=`${callee}("payload",{})`,value=option==='signal'?'new AbortController().signal':'true';
-  const present=`${head}${callee}("payload",{${option}:${value}});`,shadow=`${head}${target.shadow.replace('__ARGS__','"payload",{}')}`;
-  const alias=`${head}const invoke=${callee};invoke("payload",{});`,unknown=`${head}const options={};configure(options);${callee}("payload",options);\n${positive};`,same=`${head}${positive};${positive};`,positiveSource=`${head}${positive};`;
-  const declared=targets.slice(1).map(candidate=>{const source=`${candidate.head}${candidate.callee}("payload",{});`;return profile(`declared call identity: ${candidate.label}`,source,[occurrence(source,rule,`${candidate.callee}("payload",{})`)],'complete');});
-  return [
-    profile('genuine absence positive',positiveSource,[occurrence(positiveSource,rule,positive)],'complete'),
-    profile('present option lookalike',present,[],'complete'),
-    profile('shadowed call identity',shadow,[],'complete'),
-    profile('immutable call alias',alias,[occurrence(alias,rule,'invoke("payload",{})')],'complete'),
-    profile('unknown options with positive neighbor',unknown,[occurrence(unknown,rule,positive)],'narrowed'),
-    profile('two same-line occurrences',same,[occurrence(same,rule,positive,0),occurrence(same,rule,positive,1)],'complete'),
-    ...declared,
-    profile('analysis unavailable',positiveSource,[],'unavailable'),
-  ];
-}
-
-function forbiddenCallProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'forbidden-call'}>):ChallengeFixture[]{
-  const query=declaration.query,targets=identityFixtures(query.target,'profileForbidden'),target=targets[0],callee=target.callee,head=target.head;
-  const under=query.scope?.under?.[0]?.replace(/\/$/,'')??'',extension=query.scope?.extensions?.[0]??'.ts';
-  if(extension&&!extension.startsWith('.'))throw new Error('forbidden-call scope extensions must include the leading dot');
-  let file=(under?under+'/':'')+'recipe-profile'+extension,index=2;
-  while(query.scope?.exclude?.includes(file))file=(under?under+'/':'')+`recipe-profile-${index++}`+extension;
-  const positive=`${head}${callee}(1);`;
-  const parts=callee.split('.'),member=parts.length>1?parts.pop():undefined,receiver=parts.join('.');
-  const receiverVariants=member?[`(${receiver}).${member}(1);`,`(${receiver} as any).${member}(1);`,`${receiver}!.${member}(1);`,`${receiver} /* comment */\n  .${member}(1);`]:[];
-  const variants=[`${callee}(1);`,`(${callee})(1);`,`(${callee} as any)(1);`,`${callee}!(1);`,...receiverVariants];
-  const equivalentSource=head+variants.join('\n');
-  const equivalentExpected=variants.map(variant=>occurrence(equivalentSource,rule,variant,0,file));
-  const shadow=`${head}${target.shadow.replace('__ARGS__','1')}`;
-  const alias=`${head}const forbiddenAlias=${callee};forbiddenAlias(1);`;
-  const unrelated=`${head}console.log(0);${callee}(1);`;
-  const uncertain=`${head}let maybe=${callee};if(flag)maybe=other;maybe(1);\n${callee}(2);`;
-  const uncertainExpected=query.reportUnknown?.includes('unresolved-identity')
-    ? [occurrence(uncertain,rule,'maybe(1)',0,file),occurrence(uncertain,rule,`${callee}(2)`,0,file)]
-    : [occurrence(uncertain,rule,`${callee}(2)`,0,file)];
-  const same=`${head}${callee}(1);${callee}(2);`;
-  const declared=targets.slice(1).map(candidate=>{const source=`${candidate.head}${candidate.callee}(1);`;return profileAt(file,`declared target identity: ${candidate.label}`,source,[occurrence(source,rule,`${candidate.callee}(1)`,0,file)],'complete');});
-  return [
-    profileAt(file,'genuine positive',positive,[occurrence(positive,rule,`${callee}(1)`,0,file)],'complete'),
-    profileAt(file,'equivalent syntax variants',equivalentSource,equivalentExpected,'complete'),
-    profileAt(file,'shadowed call identity',shadow,[],'complete'),
-    profileAt(file,'immutable call alias',alias,[occurrence(alias,rule,'forbiddenAlias(1)',0,file)],'complete'),
-    profileAt(file,'unrelated call with positive neighbor',unrelated,[occurrence(unrelated,rule,`${callee}(1)`,0,file)],'complete'),
-    profileAt(file,'mutable alias with positive neighbor',uncertain,uncertainExpected,'narrowed'),
-    profileAt(file,'two same-line occurrences',same,[occurrence(same,rule,`${callee}(1)`,0,file),occurrence(same,rule,`${callee}(2)`,0,file)],'complete'),
-    ...declared,
-    profileAt(file,'analysis unavailable',positive,[],'unavailable'),
-  ];
-}
-
-function resourceProfile(rule:string,declaration:Extract<RecipeProfileDeclaration,{name:'resource-without-release'}>):ChallengeFixture[]{
-  const query=declaration.query,acquisitions=identityFixtures(query.acquisition,'profileAcquire'),owners=identityFixtures(query.owner.identity,'profileOwner'),acquisition=acquisitions[0],ownerTarget=owners[0],release=query.release[0];if(!release)throw new Error('resource recipe needs at least one release identity');
-  const head=acquisition.head+ownerTarget.head,acquire=acquisition.callee,owner=ownerTarget.callee,call=`${acquire}(()=>{},1)`,positive=`${head}${owner}(()=>{${call};},[]);`,lookalike=`${head}${owner}(()=>{${acquisition.shadow.replace('__ARGS__','()=>{},1')}\n${call};},[]);`;
-  const releasedAlias=`${head}${owner}(()=>{const handle=${call};const alias=handle;return()=>${release}(alias)},[]);`;
-  const wrongHandle=`${head}${owner}(()=>{const handle=${call};return()=>{const other=0;${release}(other)}},[]);`;
-  const helper=`${head}function transfer(handle){${release}(handle)}\n${owner}(()=>{const handle=${call};return()=>transfer(handle)},[]);`;
-  const unsupported=`${head}${owner}(()=>{const handle=${call};return()=>externalTransfer(handle)},[]);\n${owner}(()=>{${call};},[]);`;
-  const unsupportedExpected=declaration.query.reportUnknown?.includes('unsupported-expression')?[occurrence(unsupported,rule,call,0),occurrence(unsupported,rule,call,1)]:[occurrence(unsupported,rule,call,1)];
-  const same=`${head}${owner}(()=>{${call};${call};},[]);`;
-  const declaredAcquisitions=acquisitions.slice(1).map(candidate=>{const candidateHead=candidate.head+ownerTarget.head,candidateCall=`${candidate.callee}(()=>{},1)`,source=`${candidateHead}${owner}(()=>{${candidateCall};},[]);`;return profile(`declared acquisition identity: ${candidate.label}`,source,[occurrence(source,rule,candidateCall)],'complete');});
-  const declaredOwners=owners.slice(1).map(candidate=>{const candidateHead=acquisition.head+candidate.head,source=`${candidateHead}${candidate.callee}(()=>{${call};},[]);`;return profile(`declared owner identity: ${candidate.label}`,source,[occurrence(source,rule,call)],'complete');});
-  const declaredReleases=query.release.slice(1).map(candidate=>{const source=`${head}${owner}(()=>{const handle=${call};return()=>${candidate}(handle)},[]);`;return profile(`declared release identity: ${candidate}`,source,[],'complete');});
-  return [
-    profile('genuine unreleased positive',positive,[occurrence(positive,rule,call)],'complete'),
-    profile('shadowed acquisition with positive neighbor',lookalike,[occurrence(lookalike,rule,call,1)],'complete'),
-    profile('immutable handle alias release',releasedAlias,[],'complete'),
-    profile('different handle does not release acquisition',wrongHandle,[occurrence(wrongHandle,rule,call)],'complete'),
-    profile('supported local cleanup transfer',helper,[],'complete'),
-    profile('unsupported cleanup transfer with positive neighbor',unsupported,unsupportedExpected,'narrowed'),
-    profile('two same-line occurrences',same,[occurrence(same,rule,call,0),occurrence(same,rule,call,1)],'complete'),
-    ...declaredAcquisitions,
-    ...declaredOwners,
-    ...declaredReleases,
-    profile('analysis unavailable',positive,[],'unavailable'),
-  ];
+/** Maintained adversarial fixtures are selected by the locally complete
+ * recipe definition; certification retains this public authoring helper. */
+export function challengeProfileFixtures(check: CheckMeta): ChallengeFixture[] {
+  return recipeChallengeProfileFixtures(check);
 }
 
 // A shipped corpus directory, resolved next to the compiled module (bin/'s

@@ -3,9 +3,12 @@ import { projectConsumers, ProjectConsumers } from "./project-consumers.js";
 import { functionStructures, FunctionStructure } from "./function-structure.js";
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisFile, AnalysisSpans, AnalysisCalls, ExpressionRef, ForbiddenCallRecipeQuery, IdentityQuery, IdentityValue, Mode, OptionPresence, OptionPresenceQuery, RecipeDecision, RequiredOptionRecipeQuery, ResourceLifetime, ResourceLifetimeQuery, ResourceWithoutReleaseRecipeQuery, searchBase, SemanticResult, SEMANTIC_RESULT_VERSION, UnhandledValueRecipeQuery, ValueDisposition, ValueDispositionQuery, withinBase, withinDir } from "./contract.js";
+import { AnalysisFile, AnalysisSpans, AnalysisCalls, ExpressionRef, IdentityQuery, IdentityValue, Mode, OptionPresence, OptionPresenceQuery, RecipeDecision, ResourceLifetime, ResourceLifetimeQuery, searchBase, SemanticResult, SEMANTIC_RESULT_VERSION, SourceRange, ValueDisposition, ValueDispositionQuery, ValuePathQuery, ValuePathValue, withinBase, withinDir } from "./contract.js";
 import { analysisStatus, analyzeBindings, analyzeSpans, analyzeCalls, AnalysisResult, AnalysisStatusResult, semanticProviderProvenance, SpansResult } from "./analysis.js";
-import { forbiddenCallRecipeResult, identityResult, optionPresenceResult, requiredOptionRecipeResult, resourceLifetimeResult, resourceWithoutReleaseRecipeResult, unhandledValueRecipeResult, valueDispositionResult } from "./doctor-sdk.js";
+import { callIdentityResult, identityResult, optionPresenceResult, recipeEvaluationRuntime, resourceLifetimeResult, valueAtPathResult, valueDispositionResult } from "./doctor-sdk.js";
+import { RECIPE_DEFINITIONS, type RecipeHostKind } from "./recipe-definitions.js";
+import type { AnyRecipeDefinition } from "./recipes/types.js";
+import { parseIdentityQuery, parseOptionQuery } from "./semantic-query-parsers.js";
 
 // The analysis host: the identity engine's side of the channel, a sibling
 // to the search host. The search host routes `op: "analysis"` requests
@@ -52,7 +55,11 @@ export type AnalysisResponse =
   | { file: AnalysisFile }
   | { file: AnalysisSpans }
   | { file: AnalysisCalls }
-  | { semantic: SemanticResult<IdentityValue | ValueDisposition | ResourceLifetime | OptionPresence | RecipeDecision> }
+  | {
+      semantic: SemanticResult<IdentityValue | { matches: boolean } | ValuePathValue | ValueDisposition | ResourceLifetime | OptionPresence | RecipeDecision>;
+      execution?: { modelRequests: number; modelCacheHits: number };
+      subject?: SourceRange;
+    }
   | { error: string };
 
 // Pair parsing with evaluation so each semantic kind has one typed owner.
@@ -67,15 +74,23 @@ function semanticHandler<Q, R>(
   };
 }
 
+const recipeSemanticHandlers = {} as Record<RecipeHostKind, ReturnType<typeof semanticHandler<any, RecipeDecision>>>;
+for (const candidate of Object.values(RECIPE_DEFINITIONS)) {
+  const definition = candidate as AnyRecipeDefinition;
+  recipeSemanticHandlers[definition.kind] = semanticHandler(
+    definition.parse,
+    (file, source, facts, expression, query) => definition.evaluate(recipeEvaluationRuntime, file, source, facts, expression, query),
+  );
+}
+
 const semanticHandlers = {
+  "call-identity": semanticHandler(parseIdentityQuery, callIdentityResult),
   identity: semanticHandler(parseIdentityQuery, identityResult),
+  "value-path": semanticHandler(parseValuePathQuery, valueAtPathResult),
   "value-disposition": semanticHandler(parseDispositionQuery, valueDispositionResult),
   "resource-lifetime": semanticHandler(parseResourceQuery, resourceLifetimeResult),
   "option-presence": semanticHandler(parseOptionQuery, optionPresenceResult),
-  "recipe-unhandled-value": semanticHandler(parseUnhandledRecipe, unhandledValueRecipeResult),
-  "recipe-resource-without-release": semanticHandler(parseResourceRecipe, resourceWithoutReleaseRecipeResult),
-  "recipe-required-option": semanticHandler(parseRequiredOptionRecipe, requiredOptionRecipeResult),
-  "recipe-forbidden-call": semanticHandler(parseForbiddenCallRecipe, forbiddenCallRecipeResult),
+  ...recipeSemanticHandlers,
 };
 
 export function handleAnalysisRequest(
@@ -101,9 +116,18 @@ export function handleAnalysisRequest(
   const semantic = typeof req.kind === "string" && Object.hasOwn(semanticHandlers, req.kind)
     ? semanticHandlers[req.kind as keyof typeof semanticHandlers] : undefined;
   if (semantic && !status().available) {
-    return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" } };
+    return {
+      semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "analysis-unavailable" },
+      execution: { modelRequests: 0, modelCacheHits: 0 },
+    };
   }
-  if (typeof req.file === "string" && req.sourceDigest !== undefined) {
+  if (semantic && typeof req.sourceDigest !== "string") {
+    return {
+      semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "source-changed" },
+      execution: { modelRequests: 0, modelCacheHits: 0 },
+    };
+  }
+  if ((req.kind === "structures") && typeof req.file === "string" && req.sourceDigest !== undefined) {
     try {
       const abs = path.resolve(root, req.file);
       if (!withinDir(abs, root) || !withinDir(fs.realpathSync(abs), fs.realpathSync(root))) return { error: "analysis file outside root" };
@@ -132,21 +156,35 @@ export function handleAnalysisRequest(
     if (semantic) {
       const expression = parseExpression(req.expression);
       const evaluate = semantic(req.query);
-      if (!expression || !evaluate) return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "unsupported-expression" } };
-      const model = cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
-      if ("error" in model) return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
+      if (!expression || !evaluate) return {
+        semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "unsupported-expression" },
+        execution: { modelRequests: 0, modelCacheHits: 0 },
+      };
+      const model = cachedModel(abs, root, callsCache, callsAnalyzer, req.file, req.sourceDigest as string);
+      if ("error" in model) return {
+        semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: model.sourceChanged ? "source-changed" : "provider-failure" },
+        execution: { modelRequests: model.sourceChanged ? 0 : 1, modelCacheHits: 0 },
+      };
+      const execution = { modelRequests: model.cacheHit ? 0 : 1, modelCacheHits: model.cacheHit ? 1 : 0 };
+      const value = model.file.structure.flow.values.find(item => item.id === expression.id && item.start === expression.start && item.end === expression.end)
+        ?? model.file.structure.flow.values.find(item => item.start === expression.start && item.end === expression.end);
+      const subject = value === undefined ? undefined : rangeOf(value);
       try {
-        const source=fs.readFileSync(abs,"utf8");
-        return { semantic: evaluate(req.file, source, model.file, expression) };
+        return { semantic: evaluate(req.file, model.source, model.file, expression), execution, ...(subject ? { subject } : {}) };
       } catch {
-        return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" } };
+        return { semantic: { version: SEMANTIC_RESULT_VERSION, status: "unknown", reason: "provider-failure" }, execution, ...(subject ? { subject } : {}) };
       }
     }
     if (req.kind === "bindings") {
-      return cachedModel(abs, root, modelCache, analyzer, req.file);
+      const model = cachedModel(abs, root, modelCache, analyzer, req.file, typeof req.sourceDigest === "string" ? req.sourceDigest : undefined);
+      return "error" in model ? model : { file: model.file };
     }
-    if (req.kind === "calls") return cachedModel(abs, root, callsCache, callsAnalyzer, req.file);
-    return cachedModel(abs, root, spansCache, spansAnalyzer, req.file);
+    if (req.kind === "calls") {
+      const model = cachedModel(abs, root, callsCache, callsAnalyzer, req.file, typeof req.sourceDigest === "string" ? req.sourceDigest : undefined);
+      return "error" in model ? model : { file: model.file };
+    }
+    const model = cachedModel(abs, root, spansCache, spansAnalyzer, req.file, typeof req.sourceDigest === "string" ? req.sourceDigest : undefined);
+    return "error" in model ? model : { file: model.file };
   }
   return { error: `unknown analysis kind ${JSON.stringify(req.kind)} — known kinds: ${["available", "bindings", "spans", "calls", "project", "structures", ...Object.keys(semanticHandlers)].join(", ")}` };
 }
@@ -156,25 +194,12 @@ function parseDispositionQuery(value: unknown): ValueDispositionQuery | null {
   const consumers=(value as Record<string,unknown>).consumers;
   return Array.isArray(consumers)&&consumers.every(item=>typeof item==="string") ? {consumers} : null;
 }
+function parseValuePathQuery(value:unknown):ValuePathQuery|null{if(!value||typeof value!=="object")return null;const record=value as Record<string,unknown>,at=parseExpression(record.at),path=record.path;return at&&Array.isArray(path)&&path.length>0&&path.every(item=>typeof item==="string")?{at,path:path as string[]}:null;}
 function parseResourceQuery(value:unknown):ResourceLifetimeQuery|null{if(!value||typeof value!=='object')return null;const record=value as Record<string,unknown>,owner=parseExpression(record.owner),release=record.release;return owner&&Array.isArray(release)&&release.every(item=>typeof item==='string')?{owner,release}:null;}
-function parseOptionQuery(value:unknown):OptionPresenceQuery|null{if(!value||typeof value!=="object")return null;const record=value as Record<string,unknown>;return typeof record.option==="string"&&Array.isArray(record.sources)&&record.sources.every(item=>typeof item==="string")?{option:record.option,sources:record.sources}:null;}
-function parseUnhandledRecipe(value:unknown):UnhandledValueRecipeQuery|null{if(!value||typeof value!=="object")return null;const record=value as Record<string,unknown>,producer=record.producer as Record<string,unknown>|undefined,consumers=record.consumers;return producer&&typeof producer.member==='string'&&Number.isInteger(producer.asyncArgument)&&producer.receiver==='array'&&Array.isArray(consumers)&&consumers.every(item=>typeof item==='string')?value as UnhandledValueRecipeQuery:null;}
-function parseResourceRecipe(value:unknown):ResourceWithoutReleaseRecipeQuery|null{if(!value||typeof value!=="object")return null;const record=value as Record<string,unknown>,acquisition=parseIdentityQuery(record.acquisition),owner=record.owner as Record<string,unknown>|undefined,ownerIdentity=parseIdentityQuery(owner?.identity),release=record.release;return acquisition&&ownerIdentity&&Number.isInteger(owner?.argument)&&Array.isArray(release)&&release.every(item=>typeof item==='string')?value as ResourceWithoutReleaseRecipeQuery:null;}
-function parseRequiredOptionRecipe(value:unknown):RequiredOptionRecipeQuery|null{if(!value||typeof value!=="object")return null;const record=value as Record<string,unknown>,call=parseIdentityQuery(record.call),option=parseOptionQuery(record.option);return call&&option?value as RequiredOptionRecipeQuery:null;}
-function parseForbiddenCallRecipe(value:unknown):ForbiddenCallRecipeQuery|null{if(!value||typeof value!=="object")return null;const record=value as Record<string,unknown>,target=parseIdentityQuery(record.target),scope=record.scope as Record<string,unknown>|undefined;const strings=(item:unknown)=>item===undefined||Array.isArray(item)&&item.every(value=>typeof value==='string');return target&&(!scope||strings(scope.under)&&strings(scope.extensions)&&strings(scope.exclude))?value as ForbiddenCallRecipeQuery:null;}
-
 function parseExpression(value: unknown): ExpressionRef | null {
   if (!value || typeof value !== "object") return null;
   const ref = value as Record<string, unknown>;
   return [ref.id, ref.start, ref.end].every(Number.isInteger) ? ref as unknown as ExpressionRef : null;
-}
-
-function parseIdentityQuery(value: unknown): IdentityQuery | null {
-  if (!value || typeof value !== "object") return null;
-  const query = value as Record<string, unknown>;
-  if (query.globals !== undefined && (!Array.isArray(query.globals) || !query.globals.every((item) => typeof item === "string"))) return null;
-  if (query.imports !== undefined && (!Array.isArray(query.imports) || !query.imports.every((item) => item && typeof item === "object" && typeof item.source === "string" && Array.isArray(item.names) && item.names.every((name: unknown) => typeof name === "string")))) return null;
-  return query as unknown as IdentityQuery;
 }
 
 // The shared per-file model lifecycle: read (cache hit on content digest),
@@ -186,15 +211,19 @@ function cachedModel<T>(
   cache: Map<string, { digest: string; file: T }>,
   compute: (rel: string, source: string) => { ok: true; file: T } | { ok: false; error: string },
   relFile: string,
-): { file: T } | { error: string } {
+  expectedDigest?: string,
+): { file: T; source: string; cacheHit: boolean } | { error: string; sourceChanged?: boolean } {
   let source: string;
   let digest: string;
   try {
     if (!withinDir(fs.realpathSync(abs), fs.realpathSync(root))) return { error: "analysis file outside root" };
     source = fs.readFileSync(abs, "utf8");
     digest = createHash("sha256").update(source).digest("hex");
+    if (expectedDigest !== undefined && digest !== expectedDigest) {
+      return { error: `source changed during analysis: ${relFile}`, sourceChanged: true };
+    }
     const cached = cache.get(abs);
-    if (cached && cached.digest === digest) return { file: cached.file };
+    if (cached && cached.digest === digest) return { file: cached.file, source, cacheHit: true };
   } catch {
     return { error: `ctx.analysis failed: cannot read ${relFile}` };
   }
@@ -202,5 +231,9 @@ function cachedModel<T>(
   const r = compute(rel, source);
   if (!r.ok) return { error: r.error };
   cache.set(abs, { digest, file: r.file });
-  return { file: r.file };
+  return { file: r.file, source, cacheHit: false };
+}
+
+function rangeOf(value: SourceRange): SourceRange {
+  return { start: value.start, end: value.end, line: value.line, column: value.column, endLine: value.endLine, endColumn: value.endColumn };
 }

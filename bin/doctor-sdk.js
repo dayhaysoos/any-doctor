@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { SEMANTIC_RESULT_VERSION } from "./contract.js";
+import { recipeDefinition } from "./recipe-definitions.js";
 const preparedFactsCache = new WeakMap();
 function preparedFacts(facts, source) {
     let prepared = preparedFactsCache.get(facts);
@@ -17,6 +18,187 @@ function preparedFacts(facts, source) {
 function expressionValue(prepared, expression) {
     const byId = prepared.values.get(expression.id);
     return (byId === null || byId === void 0 ? void 0 : byId.start) === expression.start && byId.end === expression.end ? byId : prepared.byRange.get(`${expression.start}:${expression.end}`);
+}
+/** Resolve one static property path at one source observation. This is a
+ * deliberately small query: it exposes the answer and terminal expression,
+ * while alias, spread, mutation and escape mechanics remain host-owned. */
+export function valueAtPathResult(file, source, facts, expression, query) {
+    const prepared = preparedFacts(facts, source), digest = prepared.digest, { values, bindings, states } = prepared;
+    const subject = expressionValue(prepared, expression), at = expressionValue(prepared, query.at);
+    if (!subject || !at || !Array.isArray(query.path) || !query.path.length || query.path.some(part => typeof part !== "string"))
+        return unknown("unsupported-expression");
+    // `at` is commonly the containing call, so its arguments legitimately
+    // begin after at.start. Values outside its full range are future state.
+    if (subject.start > at.end)
+        return unknown("unsupported-expression");
+    const evidence = [];
+    const add = (kind, value, relationship) => {
+        if (evidence.some(item => item.kind === kind && item.range.start === value.start && item.range.end === value.end && item.relationship === relationship))
+            return;
+        evidence.push({ kind, file, sourceDigest: digest, range: rangeOf(value), ...(relationship ? { relationship } : {}) });
+    };
+    add("expression", subject, "value-path-subject");
+    add("expression", at, "value-path-observation");
+    const beforeObservation = (start) => start === undefined || start < at.start || start > at.start && start < at.end;
+    const stableAt = (binding, relativePath) => {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        const state = states.get(binding);
+        if (!state)
+            return true;
+        if (((_a = state.writes) !== null && _a !== void 0 ? _a : []).some(site => beforeObservation(site.start)))
+            return false;
+        if (((_b = state.mutationSites) !== null && _b !== void 0 ? _b : []).some(beforeObservation))
+            return false;
+        if (((_c = state.opaqueCallSites) !== null && _c !== void 0 ? _c : []).some(beforeObservation))
+            return false;
+        const initializer = (_d = bindings.get(binding)) === null || _d === void 0 ? void 0 : _d.initializer;
+        const immutablePrimitive = (id, seen = new Set()) => {
+            var _a, _b, _c, _d, _e;
+            if (id === undefined || seen.has(id))
+                return false;
+            const value = values.get(id);
+            if (!value)
+                return false;
+            seen = new Set(seen).add(id);
+            if (value.kind === "literal" || value.template)
+                return true;
+            if (value.kind === "reference" && ((_a = value.target) === null || _a === void 0 ? void 0 : _a.binding) !== null && ((_b = value.target) === null || _b === void 0 ? void 0 : _b.binding) !== undefined) {
+                const target = value.target.binding, targetState = states.get(target);
+                if (((_c = targetState === null || targetState === void 0 ? void 0 : targetState.writes) !== null && _c !== void 0 ? _c : []).some(site => beforeObservation(site.start)) || (targetState === null || targetState === void 0 ? void 0 : targetState.reassigned))
+                    return false;
+                return immutablePrimitive((_d = bindings.get(target)) === null || _d === void 0 ? void 0 : _d.initializer, seen);
+            }
+            if ((_e = value.alternatives) === null || _e === void 0 ? void 0 : _e.length)
+                return value.alternatives.every(item => immutablePrimitive(item, seen));
+            return false;
+        };
+        // Passing a primitive cannot let the callee mutate the captured value.
+        // Object identity transfers remain uncertain from the transfer onward.
+        const overlaps = (left, right) => {
+            const length = Math.min(left.length, right.length);
+            return left.slice(0, length).every((part, index) => part === right[index]);
+        };
+        if (((_e = state.escapeSites) !== null && _e !== void 0 ? _e : []).some(site => { var _a; return beforeObservation(site.start) && !site.immutable && overlaps((_a = site.path) !== null && _a !== void 0 ? _a : [], relativePath); }) && !immutablePrimitive(initializer))
+            return false;
+        // Older or third-party fact providers may only supply aggregate flags.
+        if (state.reassigned && !((_f = state.writes) !== null && _f !== void 0 ? _f : []).length)
+            return false;
+        if (state.mutated && !((_g = state.mutationSites) !== null && _g !== void 0 ? _g : []).length)
+            return false;
+        if (((_h = state.escapes) !== null && _h !== void 0 ? _h : []).length && !((_j = state.escapeSites) !== null && _j !== void 0 ? _j : []).length && !immutablePrimitive(initializer))
+            return false;
+        return true;
+    };
+    const resolve = (id, seen = new Set(), relativePath = []) => {
+        var _a, _b, _c, _d, _e, _f;
+        if (id === undefined || seen.has(id))
+            return null;
+        const value = values.get(id);
+        if (!value)
+            return null;
+        if (value.start > at.end)
+            return null;
+        seen = new Set(seen).add(id);
+        if (value.kind === "await" || value.kind === "void" && value.value !== undefined)
+            return (_a = resolve(value.value, seen, relativePath)) !== null && _a !== void 0 ? _a : value;
+        if (value.kind === "reference" && ((_b = value.target) === null || _b === void 0 ? void 0 : _b.binding) !== null && ((_c = value.target) === null || _c === void 0 ? void 0 : _c.binding) !== undefined) {
+            const binding = value.target.binding, path = [...value.target.members, ...relativePath];
+            if (!stableAt(binding, path))
+                return null;
+            const initializer = (_d = bindings.get(binding)) === null || _d === void 0 ? void 0 : _d.initializer;
+            if (initializer !== undefined) {
+                add("alias", value, "value-path-alias");
+                return (_e = resolve(initializer, seen, path)) !== null && _e !== void 0 ? _e : null;
+            }
+        }
+        if (value.kind === "member" && value.member !== null && value.member !== undefined) {
+            const receiver = resolve(value.receiver, seen, [value.member, ...relativePath]);
+            if (receiver) {
+                const found = property(receiver, value.member, seen, relativePath);
+                if (found.kind === "present")
+                    return found.value;
+            }
+        }
+        if ((_f = value.alternatives) === null || _f === void 0 ? void 0 : _f.length) {
+            const alternatives = value.alternatives.map(id => resolve(id, seen, relativePath));
+            const first = alternatives[0];
+            if (first && alternatives.every(item => item && sameConstant(first, item)))
+                return first;
+            return null;
+        }
+        return value;
+    };
+    function property(input, name, seen = new Set(), remainingPath = []) {
+        var _a;
+        const object = resolve(input.id, seen, [name, ...remainingPath]);
+        if (!object || seen.has(object.id) || object.kind !== "object")
+            return { kind: "unknown" };
+        seen = new Set(seen).add(object.id);
+        add("expression", object, "value-path-object");
+        let result = { kind: "absent" };
+        for (const item of (_a = object.properties) !== null && _a !== void 0 ? _a : []) {
+            if (item.spread) {
+                const spread = resolve(item.value, seen, [name, ...remainingPath]);
+                const nested = spread ? property(spread, name, seen, remainingPath) : { kind: "unknown" };
+                if (nested.kind !== "absent")
+                    result = nested;
+                continue;
+            }
+            if (item.name === null) {
+                result = { kind: "unknown" };
+                continue;
+            }
+            // Configuration Doctors historically abstain on prototype inheritance:
+            // Value Path proves explicit ordered configuration, not prototype lookup.
+            if (item.name === "__proto__" && result.kind === "absent") {
+                result = { kind: "unknown" };
+                continue;
+            }
+            if (item.name === name) {
+                const selected = item.accessor ? null : resolve(item.value, seen, remainingPath);
+                result = selected ? { kind: "present", value: selected } : { kind: "unknown" };
+            }
+        }
+        return result;
+    }
+    const sameConstant = (left, right) => left.kind === "literal" && right.kind === "literal" && left.literal === right.literal;
+    const constant = (value, seen = new Set()) => {
+        const resolved = resolve(value.id, seen);
+        if (!resolved || seen.has(resolved.id))
+            return undefined;
+        if (resolved.kind === "literal")
+            return resolved.literal;
+        if (!resolved.template)
+            return undefined;
+        seen = new Set(seen).add(resolved.id);
+        let text = resolved.template.quasis[0];
+        if (text === null)
+            return undefined;
+        for (let i = 0; i < resolved.template.expressions.length; i++) {
+            const part = resolve(resolved.template.expressions[i], seen), suffix = resolved.template.quasis[i + 1];
+            if (!part || suffix === null)
+                return undefined;
+            const literal = constant(part, seen);
+            if (literal === undefined)
+                return undefined;
+            text += String(literal) + suffix;
+        }
+        return text;
+    };
+    let current = resolve(subject.id, new Set(), query.path);
+    if (!current)
+        return unknown("unsupported-expression", evidence);
+    for (let index = 0; index < query.path.length; index++) {
+        const found = property(current, query.path[index], new Set(), query.path.slice(index + 1));
+        if (found.kind === "unknown")
+            return unknown("unsupported-expression", evidence);
+        if (found.kind === "absent")
+            return { version: SEMANTIC_RESULT_VERSION, status: "known", value: { state: "absent" }, evidence };
+        current = found.value;
+    }
+    add("expression", current, "value-path-terminal");
+    const literal = constant(current);
+    return { version: SEMANTIC_RESULT_VERSION, status: "known", value: { state: "present", expression: { id: current.id, start: current.start, end: current.end }, ...(literal !== undefined ? { constant: literal } : {}) }, evidence };
 }
 const unknown = (reason, evidence) => ({
     version: SEMANTIC_RESULT_VERSION,
@@ -442,70 +624,7 @@ const recipeKnown = (value, evidence) => ({ version: SEMANTIC_RESULT_VERSION, st
 /** Recipe: resolve a configured producer and report only when its exact value is
  * established as discarded. Array identity is owned here, not by consumers. */
 export function unhandledValueRecipeResult(file, source, facts, expression, query) {
-    var _a, _b, _c;
-    const prepared = preparedFacts(facts), flow = facts.structure.flow, { values, bindings, states } = prepared;
-    const subject = expressionValue(prepared, expression);
-    if (!subject || subject.kind !== 'call')
-        return unknown('unsupported-expression');
-    if (subject.member !== query.producer.member)
-        return recipeKnown('clear', []);
-    const stable = (binding) => { var _a, _b; return !((_a = states.get(binding)) === null || _a === void 0 ? void 0 : _a.reassigned) && !((_b = states.get(binding)) === null || _b === void 0 ? void 0 : _b.mutated); };
-    const resolve = (id, seen = new Set()) => { var _a, _b, _c, _d; if (id === undefined)
-        return null; const value = values.get(id); if (!value || seen.has(id))
-        return null; seen = new Set(seen).add(id); if (value.kind === 'reference' && ((_a = value.target) === null || _a === void 0 ? void 0 : _a.binding) !== null && ((_b = value.target) === null || _b === void 0 ? void 0 : _b.binding) !== undefined) {
-        if (!stable(value.target.binding))
-            return null;
-        const initializer = (_c = bindings.get(value.target.binding)) === null || _c === void 0 ? void 0 : _c.initializer;
-        if (initializer !== undefined)
-            return (_d = resolve(initializer, seen)) !== null && _d !== void 0 ? _d : value;
-    } return value; };
-    const array = (id, seen = new Set()) => {
-        var _a, _b, _c, _d, _e, _f, _g;
-        if (id === undefined || seen.has(id))
-            return 'unknown';
-        seen = new Set(seen).add(id);
-        const raw = values.get(id), binding = (_a = raw === null || raw === void 0 ? void 0 : raw.target) === null || _a === void 0 ? void 0 : _a.binding;
-        if (binding !== null && binding !== undefined && ((_c = (_b = states.get(binding)) === null || _b === void 0 ? void 0 : _b.escapes) === null || _c === void 0 ? void 0 : _c.length))
-            return 'unknown';
-        if (binding !== null && binding !== undefined && ((_d = bindings.get(binding)) === null || _d === void 0 ? void 0 : _d.array) && stable(binding))
-            return true;
-        const value = resolve(id);
-        if (!value)
-            return 'unknown';
-        if (value.kind === 'array')
-            return true;
-        if (value.kind === 'object') {
-            let method;
-            for (const property of (_e = value.properties) !== null && _e !== void 0 ? _e : []) {
-                if (property.spread || property.name === null)
-                    method = undefined;
-                else if (property.name === query.producer.member)
-                    method = property;
-            }
-            if (method && !method.accessor && ((_f = resolve(method.value)) === null || _f === void 0 ? void 0 : _f.kind) === 'function')
-                return false;
-        }
-        if (value.kind === 'call' && ['filter', 'slice', 'concat', 'map', 'flat', 'flatMap', 'toSorted', 'toReversed', 'toSpliced'].includes((_g = value.member) !== null && _g !== void 0 ? _g : ''))
-            return array(value.receiver, seen) === true ? true : 'unknown';
-        return 'unknown';
-    };
-    const callback = resolve((_a = subject.arguments) === null || _a === void 0 ? void 0 : _a[query.producer.asyncArgument]);
-    // Native scalar conversions are synchronous even without a local body.
-    if ((callback === null || callback === void 0 ? void 0 : callback.kind) === 'reference' && ((_b = callback.target) === null || _b === void 0 ? void 0 : _b.binding) === null && callback.target.members.length === 0 && ['String', 'Number', 'Boolean', 'BigInt', 'Symbol'].includes((_c = callback.target.root) !== null && _c !== void 0 ? _c : ''))
-        return recipeKnown('clear', []);
-    if ((callback === null || callback === void 0 ? void 0 : callback.kind) !== 'function')
-        return unknown('unsupported-expression');
-    if (!callback.async)
-        return recipeKnown('clear', []);
-    const receiver = array(subject.receiver);
-    if (receiver === false)
-        return recipeKnown('clear', []);
-    if (receiver === 'unknown')
-        return unknown('unsupported-expression');
-    const disposition = valueDispositionResult(file, source, facts, semanticRef(subject), { consumers: query.consumers });
-    if (disposition.status === 'unknown')
-        return recipeUnknown(disposition);
-    return recipeKnown(disposition.value === 'discarded' ? 'report' : 'clear', disposition.evidence);
+    return recipeDefinition("unhandled-value").evaluate(recipeEvaluationRuntime, file, source, facts, expression, query);
 }
 /** Establish the recipe's candidate space before requesting semantic identity.
  * A lexical alias may use any name. Follow stable initializers and static own
@@ -645,99 +764,16 @@ function forbiddenCallCandidate(prepared, value, query) {
  * global or import identity. Transparent JavaScript and TypeScript wrappers
  * are normalized by the shared call model before this recipe sees them. */
 export function forbiddenCallRecipeResult(file, source, facts, expression, query) {
-    var _a, _b, _c;
-    const scope = query.scope;
-    if (((_a = scope === null || scope === void 0 ? void 0 : scope.under) === null || _a === void 0 ? void 0 : _a.length) && !scope.under.some(dir => { const normalized = dir.replace(/\/$/, ''); return file.startsWith(normalized + '/'); }))
-        return recipeKnown('clear', []);
-    if (((_b = scope === null || scope === void 0 ? void 0 : scope.extensions) === null || _b === void 0 ? void 0 : _b.length) && !scope.extensions.some(extension => file.endsWith(extension)))
-        return recipeKnown('clear', []);
-    if ((_c = scope === null || scope === void 0 ? void 0 : scope.exclude) === null || _c === void 0 ? void 0 : _c.includes(file))
-        return recipeKnown('clear', []);
-    const prepared = preparedFacts(facts), subject = expressionValue(prepared, expression);
-    if (!subject || subject.kind !== 'call' || subject.callee === undefined)
-        return unknown('unsupported-expression');
-    const callee = prepared.values.get(subject.callee);
-    if (!callee)
-        return unknown('unsupported-expression');
-    const candidate = forbiddenCallCandidate(prepared, callee, query.target);
-    if (candidate === 'clear')
-        return recipeKnown('clear', []);
-    if (candidate === 'unknown')
-        return unknown('unresolved-identity');
-    const identity = identityResult(file, source, facts, semanticRef(candidate), query.target);
-    if (identity.status === 'unknown')
-        return recipeUnknown(identity);
-    return recipeKnown(identity.value.matches ? 'report' : 'clear', identity.evidence);
+    return recipeDefinition("forbidden-call").evaluate(recipeEvaluationRuntime, file, source, facts, expression, query);
 }
 /** Recipe: combine configured call identity with structured option presence. */
 export function requiredOptionRecipeResult(file, source, facts, expression, query) {
-    const prepared = preparedFacts(facts), values = prepared.values, subject = expressionValue(prepared, expression);
-    if (!subject || subject.kind !== 'call' || subject.callee === undefined)
-        return unknown('unsupported-expression');
-    const callee = values.get(subject.callee);
-    if (!callee)
-        return unknown('unsupported-expression');
-    const candidate = identityCandidate(prepared, callee, query.call);
-    if (candidate === 'clear')
-        return recipeKnown('clear', []);
-    if (candidate === 'unknown')
-        return unknown('unresolved-identity');
-    const identity = identityResult(file, source, facts, semanticRef(candidate), query.call);
-    if (identity.status === 'unknown')
-        return recipeUnknown(identity);
-    if (!identity.value.matches)
-        return recipeKnown('clear', identity.evidence);
-    const option = optionPresenceResult(file, source, facts, semanticRef(subject), query.option);
-    if (option.status === 'unknown')
-        return recipeUnknown(option);
-    return recipeKnown(option.value === 'absent' ? 'report' : 'clear', [...identity.evidence, ...option.evidence]);
+    return recipeDefinition("required-or-recommended-option").evaluate(recipeEvaluationRuntime, file, source, facts, expression, query);
 }
 /** Recipe: find a configured owner, validate acquisition identity and classify
  * the exact handle in that owner's returned cleanup. */
 export function resourceWithoutReleaseRecipeResult(file, source, facts, expression, query) {
-    var _a;
-    const prepared = preparedFacts(facts), flow = facts.structure.flow, { values, bindings, states } = prepared;
-    const subject = expressionValue(prepared, expression);
-    if (!subject || subject.kind !== 'call' || subject.callee === undefined)
-        return unknown('unsupported-expression');
-    const callee = values.get(subject.callee);
-    if (!callee)
-        return unknown('unsupported-expression');
-    const candidate = identityCandidate(prepared, callee, query.acquisition);
-    if (candidate === 'clear')
-        return recipeKnown('clear', []);
-    if (candidate === 'unknown')
-        return unknown('unresolved-identity');
-    const acquisitionIdentity = identityResult(file, source, facts, semanticRef(candidate), query.acquisition);
-    if (acquisitionIdentity.status === 'unknown')
-        return recipeUnknown(acquisitionIdentity);
-    if (!acquisitionIdentity.value.matches)
-        return recipeKnown('clear', acquisitionIdentity.evidence);
-    const stable = (binding) => { var _a, _b; return !((_a = states.get(binding)) === null || _a === void 0 ? void 0 : _a.reassigned) && !((_b = states.get(binding)) === null || _b === void 0 ? void 0 : _b.mutated); };
-    const resolve = (id, seen = new Set()) => { var _a, _b, _c, _d; if (id === undefined)
-        return null; const value = values.get(id); if (!value || seen.has(id))
-        return null; seen = new Set(seen).add(id); if (value.kind === 'reference' && ((_a = value.target) === null || _a === void 0 ? void 0 : _a.binding) !== null && ((_b = value.target) === null || _b === void 0 ? void 0 : _b.binding) !== undefined && stable(value.target.binding)) {
-        const initializer = (_c = bindings.get(value.target.binding)) === null || _c === void 0 ? void 0 : _c.initializer;
-        if (initializer !== undefined)
-            return (_d = resolve(initializer, seen)) !== null && _d !== void 0 ? _d : value;
-    } return value; };
-    let sawOwner = false;
-    for (const ownerCall of flow.values.filter(value => value.kind === 'call' && !value.dead && value.callee !== undefined)) {
-        const ownerIdentity = identityResult(file, source, facts, semanticRef(values.get(ownerCall.callee)), query.owner.identity);
-        if (ownerIdentity.status !== 'known' || !ownerIdentity.value.matches)
-            continue;
-        sawOwner = true;
-        const owner = resolve((_a = ownerCall.arguments) === null || _a === void 0 ? void 0 : _a[query.owner.argument]);
-        if ((owner === null || owner === void 0 ? void 0 : owner.kind) !== 'function')
-            continue;
-        const lifetime = resourceLifetimeResult(file, source, facts, semanticRef(subject), { owner: semanticRef(owner), release: query.release });
-        if (lifetime.status === 'unknown' && lifetime.reason === 'outside-owner')
-            continue;
-        if (lifetime.status === 'unknown')
-            return recipeUnknown(lifetime);
-        return recipeKnown(lifetime.value === 'unreleased' ? 'report' : 'clear', [...acquisitionIdentity.evidence, ...ownerIdentity.evidence, ...lifetime.evidence]);
-    }
-    return recipeKnown('clear', acquisitionIdentity.evidence);
+    return recipeDefinition("resource-without-release").evaluate(recipeEvaluationRuntime, file, source, facts, expression, query);
 }
 function originOf(target) {
     if (target.source && target.importedName)
@@ -760,3 +796,28 @@ function matches(origin, query) {
 function rangeOf(value) {
     return { start: value.start, end: value.end, line: value.line, column: value.column, endLine: value.endLine, endColumn: value.endColumn };
 }
+/** Internal adapter used by locally complete recipe modules. It exposes the
+ * shared semantic mechanics recipes compose without making those mechanics a
+ * second public Doctor interface. */
+export const recipeEvaluationRuntime = {
+    prepare: preparedFacts,
+    expression: expressionValue,
+    ref: semanticRef,
+    known: recipeKnown,
+    unknown: (reason, evidence) => ({
+        version: SEMANTIC_RESULT_VERSION,
+        status: "unknown",
+        reason,
+        ...((evidence === null || evidence === void 0 ? void 0 : evidence.length) ? { evidence } : {}),
+    }),
+    unknownFrom: recipeUnknown,
+    identityCandidate,
+    forbiddenCallCandidate,
+    identity: (file, source, facts, expression, query) => {
+        const result = identityResult(file, source, facts, expression, query);
+        return result.status === "unknown" ? result : { ...result, value: { matches: result.value.matches } };
+    },
+    disposition: valueDispositionResult,
+    lifetime: resourceLifetimeResult,
+    option: optionPresenceResult,
+};

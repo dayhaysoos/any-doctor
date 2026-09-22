@@ -12,7 +12,7 @@ export const meta = {
   ],
   checks: [
     {
-      id: "endpoint-model-mismatch", revision: 4, reportingUnit: "occurrence", needs: ["calls", "identity"], onUnknown: "narrow", severity: "warning",
+      id: "endpoint-model-mismatch", revision: 4, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "warning",
       description: "Deepgram endpoint or provider settings conflict with the model family or schema.",
       claim: "A proven Deepgram streaming endpoint, SDK namespace, or browser-agent provider has a statically known model from an incompatible family, a statically known non-string type/version/model field, or a fully known /v2/speak configuration omits its required model.",
       impact: "Deepgram rejects the request or cannot serve the selected model family.",
@@ -22,7 +22,7 @@ export const meta = {
       blindSpots: ["Dynamic models and opaque option objects narrow after Deepgram provenance is established. SDK Voice Agent Settings are followed only from a bounded same-file agent.v1 connection; custom aliases implemented outside the file are not executed."],
     },
     {
-      id: "unsupported-streaming-option", revision: 2, reportingUnit: "occurrence", needs: ["calls", "identity"], onUnknown: "narrow", severity: "warning",
+      id: "unsupported-streaming-option", revision: 2, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "warning",
       description: "Deepgram streaming transport receives an unsupported static option.",
       claim: "A proven Deepgram WebSocket or SDK streaming connection has a statically present option that its selected listen or speak transport does not support.",
       impact: "The WebSocket handshake can fail, or the requested analysis may be silently absent.",
@@ -32,7 +32,7 @@ export const meta = {
       blindSpots: ["Opaque URL parameters and option objects narrow. Mid-session Configure message validation is outside this check."],
     },
     {
-      id: "invalid-read-request", revision: 2, reportingUnit: "occurrence", needs: ["calls", "identity"], onUnknown: "narrow", severity: "warning",
+      id: "invalid-read-request", revision: 2, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "warning",
       description: "A fully known Deepgram /v1/read request has an invalid static shape.",
       claim: "A proven raw or SDK Read request is fully known and omits language, enables no supported analysis feature, uses detect_entities, supplies both or neither text and url, or uses a non-POST raw method.",
       impact: "Deepgram rejects the Read request instead of producing text analysis.",
@@ -52,7 +52,7 @@ export const meta = {
       blindSpots: ["Dynamically constructed URLs and custom hosts are outside the raw candidate set."],
     },
     {
-      id: "browser-api-key-exposure", revision: 2, reportingUnit: "occurrence", needs: ["calls", "identity"], onUnknown: "narrow", severity: "error",
+      id: "browser-api-key-exposure", revision: 2, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "error",
       description: "A proven Deepgram browser package receives a long-lived or public API key.",
       claim: "A direct @deepgram/agents, @deepgram/react, @deepgram/ui, or @deepgram/agents-widget call, constructor, or JSX element receives auth.apiKey whose value is a nonempty literal or a public browser environment variable.",
       impact: "Anyone who loads the browser bundle can recover and bill against the exposed Deepgram credential.",
@@ -93,6 +93,8 @@ function inspectFile(ctx, file) {
   const bindingStates = new Map(facts.structure.bindings.map((binding) => [binding.binding, binding]));
   const byStart = new Map(flow.values.map((value) => [value.start, value]));
   const narrowed = new Set();
+  let observation;
+  const observe = (value) => { observation = value; };
   function allowedEscape(target) {
     const path = [target.root, ...target.members].filter(Boolean).join(".");
     if (target.binding === null && ["fetch", "globalThis.fetch", "window.fetch", "self.fetch", "JSON.stringify", "WebSocket", "globalThis.WebSocket", "window.WebSocket", "self.WebSocket"].includes(path)) return true;
@@ -132,13 +134,13 @@ function inspectFile(ctx, file) {
       const state = bindingStates.get(binding);
       if (state?.initializer !== undefined) {
         let current = resolve(byStart.get(state.initializer)?.id, seen);
-        for (const key of state.path ?? []) current = propertyValue(current, key, seen);
+        for (const key of state.path ?? []) current = localPropertyValue(current, key, seen);
         return current;
       }
     }
     if (value.kind === "member") {
       const receiver = resolve(value.receiver, seen);
-      if (receiver?.kind === "object") return propertyValue(receiver, value.member, seen);
+      if (receiver?.kind === "object") return localPropertyValue(receiver, value.member, seen);
     }
     if (value.alternatives) {
       const alternatives = value.alternatives.map((part) => resolve(part, seen));
@@ -149,7 +151,7 @@ function inspectFile(ctx, file) {
     return value;
   }
 
-  function propertyValue(object, name, seen = new Set()) {
+  function localPropertyValue(object, name, seen = new Set()) {
     if (object === undefined || (object?.kind === "literal" && object.literal === null)) return undefined;
     if (object === UNKNOWN || object?.kind !== "object" || name === null) return UNKNOWN;
     const state = `property:${object.id}:${name}`;
@@ -157,17 +159,45 @@ function inspectFile(ctx, file) {
     seen = new Set(seen).add(state);
     let result;
     for (const item of object.properties ?? []) {
-      if (item.spread) {
-        const nested = propertyValue(resolve(item.value, seen), name, seen);
-        if (nested !== undefined) result = nested;
-      } else if (item.name === null) result = UNKNOWN;
+      if (item.spread) { const nested = localPropertyValue(resolve(item.value, seen), name, seen); if (nested !== undefined) result = nested; }
+      else if (item.name === null) result = UNKNOWN;
       else if (item.name === name) result = item.accessor ? UNKNOWN : resolve(item.value, seen);
       else if (item.name === "__proto__" && result === undefined) result = UNKNOWN;
     }
     return result;
   }
+  function propertyPath(id, path, at = observation) {
+    const object = id === undefined ? undefined : values.get(id);
+    if (object === undefined || (object?.kind === "literal" && object.literal === null)) return undefined;
+    if (object === UNKNOWN || path.some(name => name === null) || !at) return UNKNOWN;
+    const result = ctx.analysis.valueAtPath(file, { id: object.id, start: object.start, end: object.end }, {
+      at: { id: at.id, start: at.start, end: at.end }, path,
+    });
+    if (result.status === "unknown") {
+      // D32 requires this migration to preserve the Doctor's established
+      // behavior. The shared engine can now see nested container transfers the
+      // legacy Deepgram resolver did not; retain that old answer only when the
+      // original whole-file stability gate still proves the root stable.
+      const root = values.get(id);
+      const state = root?.kind === "reference" && root.target?.binding != null ? bindingStates.get(root.target.binding) : undefined;
+      const before = (site) => site < at.end;
+      if ((state?.writes ?? []).some((site) => before(site.start))
+        || (state?.mutationSites ?? []).some(before)
+        || (state?.opaqueCallSites ?? []).some(before)) return UNKNOWN;
+      let legacy = resolve(id);
+      if (legacy === UNKNOWN) return UNKNOWN;
+      for (const name of path) legacy = localPropertyValue(legacy, name);
+      return legacy;
+    }
+    if (result.value.state === "absent") return undefined;
+    const terminal = values.get(result.value.expression.id) ?? byStart.get(result.value.expression.start);
+    if (!terminal) return UNKNOWN;
+    return Object.hasOwn(result.value, "constant") ? { ...terminal, kind: "literal", literal: result.value.constant } : terminal;
+  }
 
-  const property = (id, name) => propertyValue(resolve(id), name);
+  function propertyValue(object, name, at = observation) { return propertyPath(object?.id, [name], at); }
+
+  const property = (id, name, at = observation) => propertyPath(id, [name], at);
   function literal(id, seen = new Set()) {
     const value = resolve(id);
     if (!value || value === UNKNOWN || seen.has(value.id)) return UNKNOWN;
@@ -216,6 +246,7 @@ function inspectFile(ctx, file) {
   function sdkCall(call) {
     const chain = memberChain(call.callee);
     if (!chain || chain === UNKNOWN) return chain;
+    if (!chain.root || !["call", "construct"].includes(chain.root.kind)) return undefined;
     const name = identityName(chain.root.callee);
     const client = chain.root.kind === "construct"
       ? ["@deepgram/sdk:DeepgramClient", "@deepgram/sdk:*.DeepgramClient"].includes(name)
@@ -301,6 +332,7 @@ function inspectFile(ctx, file) {
 
   function checkMismatch(call, endpoint, optionsId) {
     const rule = "endpoint-model-mismatch";
+    if (!endpoint.url && knownObject(optionsId) === UNKNOWN) return narrow(rule, call);
     const model = endpoint.url ? endpoint.url.parsed.searchParams.get("model") ?? undefined : optionLiteral(optionsId, "model");
     if (model === UNKNOWN) return narrow(rule, call);
     if (model !== undefined && typeof model !== "string") {
@@ -320,6 +352,7 @@ function inspectFile(ctx, file) {
       unsupported = names.filter((name) => endpoint.url.parsed.searchParams.has(name));
       encoding = endpoint.url.parsed.searchParams.get("encoding") ?? undefined;
     } else {
+      if (knownObject(optionsId) === UNKNOWN) return narrow(rule, call);
       unsupported = findPresent(optionsId, names);
       encoding = optionLiteral(optionsId, "encoding");
       if (unsupported === UNKNOWN || encoding === UNKNOWN) return narrow(rule, call);
@@ -347,7 +380,7 @@ function inspectFile(ctx, file) {
     const query = endpoint.url?.parsed.searchParams;
     const request = knownObject(optionsId);
     if (request === UNKNOWN) return narrow(rule, call);
-    const nestedBody = raw ? undefined : propertyValue(request, "body");
+    const nestedBody = raw ? undefined : property(optionsId, "body", call);
     if (nestedBody === UNKNOWN) return narrow(rule, call);
     const body = raw ? jsonBody(optionsId) : nestedBody ?? request;
     if (body === UNKNOWN || (body !== undefined && body.kind !== "object")) return narrow(rule, call);
@@ -371,8 +404,9 @@ function inspectFile(ctx, file) {
     const entities = field("detect_entities");
     if (entities === UNKNOWN) return narrow(rule, call);
     if (entities !== undefined) problems.push("detect_entities is unsupported");
-    const text = propertyValue(body, "text");
-    const url = propertyValue(body, "url");
+    const bodyId = raw ? body?.id : nestedBody?.id ?? optionsId;
+    const text = property(bodyId, "text", call);
+    const url = property(bodyId, "url", call);
     if (text === UNKNOWN || url === UNKNOWN) return narrow(rule, call);
     if ((text === undefined) === (url === undefined)) problems.push("body must contain exactly one of text or url");
     if (problems.length) report(rule, call, `Invalid Deepgram Read request: ${problems.join("; ")}.`);
@@ -402,16 +436,18 @@ function inspectFile(ctx, file) {
 
   function checkVoiceProvider(call, configId) {
     const rule = "endpoint-model-mismatch";
-    const agent = property(configId, "agent");
+    if (knownObject(configId) === UNKNOWN) return narrow(rule, call);
+    const at = values.has(call.id) ? call : observation;
+    const agent = propertyPath(configId, ["agent"], at);
     if (agent === UNKNOWN) return narrow(rule, call);
     if (agent === undefined) return;
     if (agent.kind !== "object") return;
     for (const side of ["listen", "speak"]) {
-      const section = propertyValue(agent, side);
+      const section = propertyPath(configId, ["agent", side], at);
       if (section === UNKNOWN) { narrow(rule, call); continue; }
       if (section === undefined) continue;
       if (section.kind !== "object") { narrow(rule, call); continue; }
-      const provider = propertyValue(section, "provider");
+      const provider = propertyPath(configId, ["agent", side, "provider"], at);
       if (provider === UNKNOWN) { narrow(rule, call); continue; }
       if (provider !== undefined && provider.kind !== "object") {
         const kind = schemaKind(provider);
@@ -419,9 +455,19 @@ function inspectFile(ctx, file) {
         else report(rule, call, `Voice Agent ${side} provider must be an object; received ${kind}.`);
         continue;
       }
-      const typeFact = schemaValue(provider?.id, "type");
-      const versionFact = schemaValue(provider?.id, "version");
-      const modelFact = schemaValue(provider?.id, "model");
+      const field = (name) => {
+        const value = propertyPath(configId, ["agent", side, "provider", name], at);
+        if (value === UNKNOWN || value === undefined) return value;
+        if (identityName(value.id) === "undefined") return undefined;
+        const resolved = resolve(value.id);
+        if (resolved === UNKNOWN || resolved === undefined) return UNKNOWN;
+        if (resolved.kind === "literal") return { value: resolved.literal, type: resolved.literal === null ? "null" : typeof resolved.literal };
+        if (resolved.kind === "object") return { type: "object" };
+        return UNKNOWN;
+      };
+      const typeFact = field("type");
+      const versionFact = field("version");
+      const modelFact = field("model");
       if ([typeFact, versionFact, modelFact].includes(UNKNOWN)) { narrow(rule, call); continue; }
       if (typeFact !== undefined && typeFact.type !== "string") {
         report(rule, call, `Voice Agent ${side} provider type must be a string; received ${typeFact.type}.`);
@@ -499,6 +545,7 @@ function inspectFile(ctx, file) {
     let config;
     for (const attribute of element.attributes) {
       if (attribute.spread) {
+        observe(values.get(attribute.value));
         const spread = knownObject(attribute.value);
         if (spread === UNKNOWN) config = UNKNOWN;
         else {
@@ -514,10 +561,17 @@ function inspectFile(ctx, file) {
   function checkBrowserCredential(call, source, configId = call.arguments?.[0]) {
     const rule = "browser-api-key-exposure";
     if (!BROWSER_SOURCES.has(source)) return;
-    const config = knownObject(configId);
+    const at = values.has(call.id) ? call : observation;
+    // Preserve this Doctor's pre-Value-Path conservative policy: once a
+    // browser config binding escapes or mutates anywhere in the file, abstain.
+    // The shared Value Path query itself remains observation-relative.
+    const resolvedConfig = resolve(configId);
+    const config = resolvedConfig === UNKNOWN ? UNKNOWN : resolvedConfig?.kind === "object" ? resolvedConfig : UNKNOWN;
     if (config === UNKNOWN) return narrow(rule, call);
-    const auth = propertyValue(config, "auth");
-    const apiKey = auth === UNKNOWN ? UNKNOWN : auth === undefined ? propertyValue(config, "apiKey") : propertyValue(auth, "apiKey");
+    const auth = propertyPath(configId, ["auth"], at);
+    const apiKey = auth === UNKNOWN ? UNKNOWN : auth === undefined
+      ? propertyPath(configId, ["apiKey"], at)
+      : propertyPath(configId, ["auth", "apiKey"], at);
     if (apiKey === UNKNOWN) return narrow(rule, call);
     if (apiKey === undefined) return;
     const exposed = publicCredential(apiKey.id);
@@ -526,6 +580,7 @@ function inspectFile(ctx, file) {
   }
 
   for (const call of flow.values.filter((value) => (value.kind === "call" || value.kind === "construct") && !value.dead)) {
+    observe(call);
     const kind = call.kind === "construct" ? "websocket" : "fetch";
     const url = urlFact(call, kind);
     if (url && url !== UNKNOWN && officialDeepgramUrl(url)) {
@@ -575,6 +630,7 @@ function inspectFile(ctx, file) {
       narrow("endpoint-model-mismatch", element);
       continue;
     }
+    observe(values.get(config));
     checkBrowserCredential(element, browser.source, config);
     checkVoiceProvider(element, config);
   }

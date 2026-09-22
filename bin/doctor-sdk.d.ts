@@ -1,4 +1,9 @@
-import type { AnalysisCalls, ExpressionRef, IdentityQuery, IdentityValue, SemanticResult, ValueDisposition, ValueDispositionQuery, ResourceLifetime, ResourceLifetimeQuery, OptionPresence, OptionPresenceQuery, ForbiddenCallRecipeQuery, RecipeDecision, RequiredOptionRecipeQuery, ResourceWithoutReleaseRecipeQuery, UnhandledValueRecipeQuery } from "./contract.js";
+import type { AnalysisCalls, ExpressionRef, IdentityQuery, IdentityValue, SemanticResult, ValueDisposition, ValueDispositionQuery, ResourceLifetime, ResourceLifetimeQuery, OptionPresence, OptionPresenceQuery, ValuePathQuery, ValuePathValue, ForbiddenCallRecipeQuery, RecipeDecision, RequiredOptionRecipeQuery, ResourceWithoutReleaseRecipeQuery, UnhandledValueRecipeQuery } from "./contract.js";
+import type { RecipeEvaluationRuntime } from "./recipes/types.js";
+/** Resolve one static property path at one source observation. This is a
+ * deliberately small query: it exposes the answer and terminal expression,
+ * while alias, spread, mutation and escape mechanics remain host-owned. */
+export declare function valueAtPathResult(file: string, source: string, facts: AnalysisCalls, expression: ExpressionRef, query: ValuePathQuery): SemanticResult<ValuePathValue>;
 /** Host-owned lexical identity. The doctor supplies accepted technology names;
  * parsing, alias resolution, shadowing and evidence stay behind this seam. */
 export declare function identityResult(file: string, source: string, facts: AnalysisCalls, expression: ExpressionRef, query: IdentityQuery): SemanticResult<IdentityValue>;
@@ -30,3 +35,7 @@ export declare function requiredOptionRecipeResult(file: string, source: string,
 /** Recipe: find a configured owner, validate acquisition identity and classify
  * the exact handle in that owner's returned cleanup. */
 export declare function resourceWithoutReleaseRecipeResult(file: string, source: string, facts: AnalysisCalls, expression: ExpressionRef, query: ResourceWithoutReleaseRecipeQuery): SemanticResult<RecipeDecision>;
+/** Internal adapter used by locally complete recipe modules. It exposes the
+ * shared semantic mechanics recipes compose without making those mechanics a
+ * second public Doctor interface. */
+export declare const recipeEvaluationRuntime: RecipeEvaluationRuntime;

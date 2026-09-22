@@ -4,10 +4,13 @@ import type {
   IdentityValue, SemanticEvidence, SemanticResult, SourceRange, ValueDisposition,
   ValueDispositionQuery, ResourceLifetime, ResourceLifetimeQuery,
   OptionPresence, OptionPresenceQuery,
+  ValuePathQuery, ValuePathValue,
   ForbiddenCallRecipeQuery, RecipeDecision, RequiredOptionRecipeQuery, ResourceWithoutReleaseRecipeQuery,
   UnhandledValueRecipeQuery,
 } from "./contract.js";
 import { SEMANTIC_RESULT_VERSION } from "./contract.js";
+import { recipeDefinition } from "./recipe-definitions.js";
+import type { RecipeEvaluationRuntime } from "./recipes/types.js";
 
 type FlowValue = AnalysisCalls["structure"]["flow"]["values"][number];
 
@@ -29,6 +32,109 @@ function preparedFacts(facts:AnalysisCalls,source?:string):PreparedFacts{
 function expressionValue(prepared:PreparedFacts,expression:ExpressionRef):FlowValue|undefined{
   const byId=prepared.values.get(expression.id);
   return byId?.start===expression.start&&byId.end===expression.end?byId:prepared.byRange.get(`${expression.start}:${expression.end}`);
+}
+
+/** Resolve one static property path at one source observation. This is a
+ * deliberately small query: it exposes the answer and terminal expression,
+ * while alias, spread, mutation and escape mechanics remain host-owned. */
+export function valueAtPathResult(
+  file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:ValuePathQuery,
+):SemanticResult<ValuePathValue>{
+  const prepared=preparedFacts(facts,source),digest=prepared.digest!,{values,bindings,states}=prepared;
+  const subject=expressionValue(prepared,expression),at=expressionValue(prepared,query.at);
+  if(!subject||!at||!Array.isArray(query.path)||!query.path.length||query.path.some(part=>typeof part!=="string"))return unknown("unsupported-expression");
+  // `at` is commonly the containing call, so its arguments legitimately
+  // begin after at.start. Values outside its full range are future state.
+  if(subject.start>at.end)return unknown("unsupported-expression");
+  const evidence:SemanticEvidence[]=[];
+  const add=(kind:SemanticEvidence["kind"],value:FlowValue,relationship?:string)=>{
+    if(evidence.some(item=>item.kind===kind&&item.range.start===value.start&&item.range.end===value.end&&item.relationship===relationship))return;
+    evidence.push({kind,file,sourceDigest:digest,range:rangeOf(value),...(relationship?{relationship}:{})});
+  };
+  add("expression",subject,"value-path-subject");add("expression",at,"value-path-observation");
+  const beforeObservation=(start:number|undefined)=>start===undefined||start<at.start||start>at.start&&start<at.end;
+  const stableAt=(binding:number,relativePath:string[]):boolean=>{
+    const state=states.get(binding);if(!state)return true;
+    if((state.writes??[]).some(site=>beforeObservation(site.start)))return false;
+    if((state.mutationSites??[]).some(beforeObservation))return false;
+    if((state.opaqueCallSites??[]).some(beforeObservation))return false;
+    const initializer=bindings.get(binding)?.initializer;
+    const immutablePrimitive=(id:number|undefined,seen=new Set<number>()):boolean=>{
+      if(id===undefined||seen.has(id))return false;const value=values.get(id);if(!value)return false;
+      seen=new Set(seen).add(id);
+      if(value.kind==="literal"||value.template)return true;
+      if(value.kind==="reference"&&value.target?.binding!==null&&value.target?.binding!==undefined){
+        const target=value.target.binding,targetState=states.get(target);
+        if((targetState?.writes??[]).some(site=>beforeObservation(site.start))||targetState?.reassigned)return false;
+        return immutablePrimitive(bindings.get(target)?.initializer,seen);
+      }
+      if(value.alternatives?.length)return value.alternatives.every(item=>immutablePrimitive(item,seen));
+      return false;
+    };
+    // Passing a primitive cannot let the callee mutate the captured value.
+    // Object identity transfers remain uncertain from the transfer onward.
+    const overlaps=(left:string[],right:string[])=>{
+      const length=Math.min(left.length,right.length);
+      return left.slice(0,length).every((part,index)=>part===right[index]);
+    };
+    if((state.escapeSites??[]).some(site=>beforeObservation(site.start)&&!site.immutable&&overlaps(site.path??[],relativePath))&&!immutablePrimitive(initializer))return false;
+    // Older or third-party fact providers may only supply aggregate flags.
+    if(state.reassigned&&!(state.writes??[]).length)return false;
+    if(state.mutated&&!(state.mutationSites??[]).length)return false;
+    if((state.escapes??[]).length&&!(state.escapeSites??[]).length&&!immutablePrimitive(initializer))return false;
+    return true;
+  };
+  const resolve=(id:number|undefined,seen=new Set<number>(),relativePath:string[]=[]):FlowValue|null=>{
+    if(id===undefined||seen.has(id))return null;const value=values.get(id);if(!value)return null;
+    if(value.start>at.end)return null;
+    seen=new Set(seen).add(id);
+    if(value.kind==="await"||value.kind==="void"&&value.value!==undefined)return resolve(value.value,seen,relativePath)??value;
+    if(value.kind==="reference"&&value.target?.binding!==null&&value.target?.binding!==undefined){
+      const binding=value.target.binding,path=[...value.target.members,...relativePath];if(!stableAt(binding,path))return null;
+      const initializer=bindings.get(binding)?.initializer;
+      if(initializer!==undefined){add("alias",value,"value-path-alias");return resolve(initializer,seen,path)??null;}
+    }
+    if(value.kind==="member"&&value.member!==null&&value.member!==undefined){
+      const receiver=resolve(value.receiver,seen,[value.member,...relativePath]);if(receiver){const found=property(receiver,value.member,seen,relativePath);if(found.kind==="present")return found.value;}
+    }
+    if(value.alternatives?.length){
+      const alternatives=value.alternatives.map(id=>resolve(id,seen,relativePath));const first=alternatives[0];
+      if(first&&alternatives.every(item=>item&&sameConstant(first,item)))return first;
+      return null;
+    }
+    return value;
+  };
+  type Property={kind:"present";value:FlowValue}|{kind:"absent"}|{kind:"unknown"};
+  function property(input:FlowValue,name:string,seen=new Set<number>(),remainingPath:string[]=[]):Property{
+    const object=resolve(input.id,seen,[name,...remainingPath]);if(!object||seen.has(object.id)||object.kind!=="object")return {kind:"unknown"};
+    seen=new Set(seen).add(object.id);add("expression",object,"value-path-object");
+    let result:Property={kind:"absent"};
+    for(const item of object.properties??[]){
+      if(item.spread){const spread=resolve(item.value,seen,[name,...remainingPath]);const nested=spread?property(spread,name,seen,remainingPath):{kind:"unknown"} as Property;if(nested.kind!=="absent")result=nested;continue;}
+      if(item.name===null){result={kind:"unknown"};continue;}
+      // Configuration Doctors historically abstain on prototype inheritance:
+      // Value Path proves explicit ordered configuration, not prototype lookup.
+      if(item.name==="__proto__"&&result.kind==="absent"){result={kind:"unknown"};continue;}
+      if(item.name===name){
+        const selected=item.accessor?null:resolve(item.value,seen,remainingPath);
+        result=selected?{kind:"present",value:selected}:{kind:"unknown"};
+      }
+    }
+    return result;
+  }
+  const sameConstant=(left:FlowValue,right:FlowValue)=>left.kind==="literal"&&right.kind==="literal"&&left.literal===right.literal;
+  const constant=(value:FlowValue,seen=new Set<number>()):string|number|boolean|null|undefined=>{
+    const resolved=resolve(value.id,seen);if(!resolved||seen.has(resolved.id))return undefined;
+    if(resolved.kind==="literal")return resolved.literal;
+    if(!resolved.template)return undefined;seen=new Set(seen).add(resolved.id);
+    let text=resolved.template.quasis[0];if(text===null)return undefined;
+    for(let i=0;i<resolved.template.expressions.length;i++){const part=resolve(resolved.template.expressions[i],seen),suffix=resolved.template.quasis[i+1];if(!part||suffix===null)return undefined;const literal=constant(part,seen);if(literal===undefined)return undefined;text+=String(literal)+suffix;}
+    return text;
+  };
+  let current=resolve(subject.id,new Set(),query.path);if(!current)return unknown("unsupported-expression",evidence);
+  for(let index=0;index<query.path.length;index++){const found=property(current,query.path[index],new Set(),query.path.slice(index+1));if(found.kind==="unknown")return unknown("unsupported-expression",evidence);if(found.kind==="absent")return {version:SEMANTIC_RESULT_VERSION,status:"known",value:{state:"absent"},evidence};current=found.value;}
+  add("expression",current,"value-path-terminal");const literal=constant(current);
+  return {version:SEMANTIC_RESULT_VERSION,status:"known",value:{state:"present",expression:{id:current.id,start:current.start,end:current.end},...(literal!==undefined?{constant:literal}:{})},evidence};
 }
 
   const unknown = <T>(reason: "provider-failure" | "unsupported-expression" | "unresolved-identity" | "outside-owner", evidence?: SemanticEvidence[]): SemanticResult<T> => ({
@@ -254,29 +360,7 @@ const recipeKnown=(value:RecipeDecision,evidence:SemanticEvidence[]):SemanticRes
 /** Recipe: resolve a configured producer and report only when its exact value is
  * established as discarded. Array identity is owned here, not by consumers. */
 export function unhandledValueRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:UnhandledValueRecipeQuery):SemanticResult<RecipeDecision>{
-  const prepared=preparedFacts(facts),flow=facts.structure.flow,{values,bindings,states}=prepared;
-  const subject=expressionValue(prepared,expression);
-  if(!subject||subject.kind!=='call')return unknown('unsupported-expression');
-  if(subject.member!==query.producer.member)return recipeKnown('clear',[]);
-  const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
-  const resolve=(id:number|undefined,seen=new Set<number>()):FlowValue|null=>{if(id===undefined)return null;const value=values.get(id);if(!value||seen.has(id))return null;seen=new Set(seen).add(id);if(value.kind==='reference'&&value.target?.binding!==null&&value.target?.binding!==undefined){if(!stable(value.target.binding))return null;const initializer=bindings.get(value.target.binding)?.initializer;if(initializer!==undefined)return resolve(initializer,seen)??value;}return value;};
-  const array=(id:number|undefined,seen=new Set<number>()):boolean|'unknown'=>{if(id===undefined||seen.has(id))return 'unknown';seen=new Set(seen).add(id);const raw=values.get(id),binding=raw?.target?.binding;if(binding!==null&&binding!==undefined&&states.get(binding)?.escapes?.length)return 'unknown';if(binding!==null&&binding!==undefined&&bindings.get(binding)?.array&&stable(binding))return true;const value=resolve(id);if(!value)return 'unknown';if(value.kind==='array')return true;
-    if(value.kind==='object'){
-      let method:NonNullable<FlowValue['properties']>[number]|undefined;
-      for(const property of value.properties??[]){
-        if(property.spread||property.name===null)method=undefined;
-        else if(property.name===query.producer.member)method=property;
-      }
-      if(method&&!method.accessor&&resolve(method.value)?.kind==='function')return false;
-    }
-    if(value.kind==='call'&&['filter','slice','concat','map','flat','flatMap','toSorted','toReversed','toSpliced'].includes(value.member??''))return array(value.receiver,seen)===true?true:'unknown';return 'unknown';};
-  const callback=resolve(subject.arguments?.[query.producer.asyncArgument]);
-  // Native scalar conversions are synchronous even without a local body.
-  if(callback?.kind==='reference'&&callback.target?.binding===null&&callback.target.members.length===0&&['String','Number','Boolean','BigInt','Symbol'].includes(callback.target.root??''))return recipeKnown('clear',[]);
-  if(callback?.kind!=='function')return unknown('unsupported-expression');if(!callback.async)return recipeKnown('clear',[]);
-  const receiver=array(subject.receiver);if(receiver===false)return recipeKnown('clear',[]);if(receiver==='unknown')return unknown('unsupported-expression');
-  const disposition=valueDispositionResult(file,source,facts,semanticRef(subject),{consumers:query.consumers});if(disposition.status==='unknown')return recipeUnknown(disposition);
-  return recipeKnown(disposition.value==='discarded'?'report':'clear',disposition.evidence);
+  return recipeDefinition("unhandled-value").evaluate(recipeEvaluationRuntime,file,source,facts,expression,query);
 }
 
 /** Establish the recipe's candidate space before requesting semantic identity.
@@ -399,57 +483,18 @@ function forbiddenCallCandidate(prepared:PreparedFacts,value:FlowValue,query:Ide
  * global or import identity. Transparent JavaScript and TypeScript wrappers
  * are normalized by the shared call model before this recipe sees them. */
 export function forbiddenCallRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:ForbiddenCallRecipeQuery):SemanticResult<RecipeDecision>{
-  const scope=query.scope;
-  if(scope?.under?.length&&!scope.under.some(dir=>{const normalized=dir.replace(/\/$/,'');return file.startsWith(normalized+'/');}))return recipeKnown('clear',[]);
-  if(scope?.extensions?.length&&!scope.extensions.some(extension=>file.endsWith(extension)))return recipeKnown('clear',[]);
-  if(scope?.exclude?.includes(file))return recipeKnown('clear',[]);
-  const prepared=preparedFacts(facts),subject=expressionValue(prepared,expression);
-  if(!subject||subject.kind!=='call'||subject.callee===undefined)return unknown('unsupported-expression');
-  const callee=prepared.values.get(subject.callee);if(!callee)return unknown('unsupported-expression');
-  const candidate=forbiddenCallCandidate(prepared,callee,query.target);
-  if(candidate==='clear')return recipeKnown('clear',[]);
-  if(candidate==='unknown')return unknown('unresolved-identity');
-  const identity=identityResult(file,source,facts,semanticRef(candidate),query.target);
-  if(identity.status==='unknown')return recipeUnknown(identity);
-  return recipeKnown(identity.value.matches?'report':'clear',identity.evidence);
+  return recipeDefinition("forbidden-call").evaluate(recipeEvaluationRuntime,file,source,facts,expression,query);
 }
 
 /** Recipe: combine configured call identity with structured option presence. */
 export function requiredOptionRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:RequiredOptionRecipeQuery):SemanticResult<RecipeDecision>{
-  const prepared=preparedFacts(facts),values=prepared.values,subject=expressionValue(prepared,expression);
-  if(!subject||subject.kind!=='call'||subject.callee===undefined)return unknown('unsupported-expression');
-  const callee=values.get(subject.callee);if(!callee)return unknown('unsupported-expression');
-  const candidate=identityCandidate(prepared,callee,query.call);
-  if(candidate==='clear')return recipeKnown('clear',[]);
-  if(candidate==='unknown')return unknown('unresolved-identity');
-  const identity=identityResult(file,source,facts,semanticRef(candidate),query.call);if(identity.status==='unknown')return recipeUnknown(identity);if(!identity.value.matches)return recipeKnown('clear',identity.evidence);
-  const option=optionPresenceResult(file,source,facts,semanticRef(subject),query.option);if(option.status==='unknown')return recipeUnknown(option);
-  return recipeKnown(option.value==='absent'?'report':'clear',[...identity.evidence,...option.evidence]);
+  return recipeDefinition("required-or-recommended-option").evaluate(recipeEvaluationRuntime,file,source,facts,expression,query);
 }
 
 /** Recipe: find a configured owner, validate acquisition identity and classify
  * the exact handle in that owner's returned cleanup. */
 export function resourceWithoutReleaseRecipeResult(file:string,source:string,facts:AnalysisCalls,expression:ExpressionRef,query:ResourceWithoutReleaseRecipeQuery):SemanticResult<RecipeDecision>{
-  const prepared=preparedFacts(facts),flow=facts.structure.flow,{values,bindings,states}=prepared;
-  const subject=expressionValue(prepared,expression);
-  if(!subject||subject.kind!=='call'||subject.callee===undefined)return unknown('unsupported-expression');
-  const callee=values.get(subject.callee);if(!callee)return unknown('unsupported-expression');
-  const candidate=identityCandidate(prepared,callee,query.acquisition);
-  if(candidate==='clear')return recipeKnown('clear',[]);
-  if(candidate==='unknown')return unknown('unresolved-identity');
-  const acquisitionIdentity=identityResult(file,source,facts,semanticRef(candidate),query.acquisition);if(acquisitionIdentity.status==='unknown')return recipeUnknown(acquisitionIdentity);if(!acquisitionIdentity.value.matches)return recipeKnown('clear',acquisitionIdentity.evidence);
-  const stable=(binding:number)=>!states.get(binding)?.reassigned&&!states.get(binding)?.mutated;
-  const resolve=(id:number|undefined,seen=new Set<number>()):FlowValue|null=>{if(id===undefined)return null;const value=values.get(id);if(!value||seen.has(id))return null;seen=new Set(seen).add(id);if(value.kind==='reference'&&value.target?.binding!==null&&value.target?.binding!==undefined&&stable(value.target.binding)){const initializer=bindings.get(value.target.binding)?.initializer;if(initializer!==undefined)return resolve(initializer,seen)??value;}return value;};
-  let sawOwner=false;
-  for(const ownerCall of flow.values.filter(value=>value.kind==='call'&&!value.dead&&value.callee!==undefined)){
-    const ownerIdentity=identityResult(file,source,facts,semanticRef(values.get(ownerCall.callee!)!),query.owner.identity);if(ownerIdentity.status!=='known'||!ownerIdentity.value.matches)continue;sawOwner=true;
-    const owner=resolve(ownerCall.arguments?.[query.owner.argument]);if(owner?.kind!=='function')continue;
-    const lifetime=resourceLifetimeResult(file,source,facts,semanticRef(subject),{owner:semanticRef(owner),release:query.release});
-    if(lifetime.status==='unknown'&&lifetime.reason==='outside-owner')continue;
-    if(lifetime.status==='unknown')return recipeUnknown(lifetime);
-    return recipeKnown(lifetime.value==='unreleased'?'report':'clear',[...acquisitionIdentity.evidence,...ownerIdentity.evidence,...lifetime.evidence]);
-  }
-  return recipeKnown('clear',acquisitionIdentity.evidence);
+  return recipeDefinition("resource-without-release").evaluate(recipeEvaluationRuntime,file,source,facts,expression,query);
 }
 
 function originOf(target: CallTarget): IdentityOrigin | null {
@@ -469,3 +514,29 @@ function matches(origin: IdentityOrigin, query: IdentityQuery): boolean {
 function rangeOf(value: FlowValue): SourceRange {
   return { start: value.start, end: value.end, line: value.line, column: value.column, endLine: value.endLine, endColumn: value.endColumn };
 }
+
+/** Internal adapter used by locally complete recipe modules. It exposes the
+ * shared semantic mechanics recipes compose without making those mechanics a
+ * second public Doctor interface. */
+export const recipeEvaluationRuntime: RecipeEvaluationRuntime = {
+  prepare: preparedFacts,
+  expression: expressionValue,
+  ref: semanticRef,
+  known: recipeKnown,
+  unknown: (reason, evidence) => ({
+    version: SEMANTIC_RESULT_VERSION,
+    status: "unknown",
+    reason,
+    ...(evidence?.length ? { evidence } : {}),
+  }),
+  unknownFrom: recipeUnknown,
+  identityCandidate,
+  forbiddenCallCandidate,
+  identity: (file, source, facts, expression, query) => {
+    const result = identityResult(file, source, facts, expression, query);
+    return result.status === "unknown" ? result : { ...result, value: { matches: result.value.matches } };
+  },
+  disposition: valueDispositionResult,
+  lifetime: resourceLifetimeResult,
+  option: optionPresenceResult,
+};

@@ -10,6 +10,7 @@ const {dashboardFrame}=await import(path.join(root,'bin/dashboard.js'));
 const {deriveSummary}=await import(path.join(root,'bin/summary.js'));
 const {buildTree}=await import(path.join(root,'bin/doctor-tree.js'));
 const {narrowedCheckIds,checkAnalysisNeeds,recipeAnalysisNeeds}=await import(path.join(root,'bin/contract.js'));
+const {RECIPE_DEFINITIONS}=await import(path.join(root,'bin/recipe-definitions.js'));
 const {meta}=await import('../fixtures/doctor-sdk-recipe-only.mjs');
 
 test('recipe declaration implies runtime and certification analysis needs',()=>{
@@ -46,6 +47,18 @@ test('canonical recipe requirements include explicit additions and all recipe fa
  for(const [name,implied] of Object.entries(expected)){
   assert.deepEqual(recipeAnalysisNeeds(name),implied);
   assert.deepEqual(checkAnalysisNeeds({recipe:{name},needs:['extra','calls']}),['extra',...implied]);
+ }
+});
+test('canonical recipe definitions are locally complete and own unique host kinds',()=>{
+ const expected={'unhandled-value':['calls','value-disposition'],'required-or-recommended-option':['calls','identity','option-presence'],'resource-without-release':['calls','identity','resource-lifetime'],'forbidden-call':['calls','identity']};
+ assert.deepEqual(Object.keys(RECIPE_DEFINITIONS).sort(),Object.keys(expected).sort());
+ assert.equal(new Set(Object.values(RECIPE_DEFINITIONS).map(item=>item.kind)).size,Object.keys(expected).length);
+ assert.equal(new Set(Object.values(RECIPE_DEFINITIONS).map(item=>item.method)).size,Object.keys(expected).length);
+ for(const [name,definition] of Object.entries(RECIPE_DEFINITIONS)){
+  assert.deepEqual(definition.needs,expected[name]);
+  assert.deepEqual(recipeAnalysisNeeds(name),expected[name]);
+  assert.equal(typeof definition.method,'string',`${name}.method`);
+  for(const hook of ['parse','evaluate','authoring','challenges'])assert.equal(typeof definition[hook],'function',`${name}.${hook}`);
  }
 });
 test('recipe-only metadata skips analysis-on profiles when the host channel is unavailable',async()=>{

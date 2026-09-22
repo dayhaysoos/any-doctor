@@ -163,7 +163,7 @@ The interface shared by doctor programs, the runner, the report, the
 fixture harness, and the generator prompt. The single place where the
 shape of ctx, meta, findings, and the runner protocol is defined.
 
-## Doctor SDK (planned)
+## Doctor SDK
 
 The deeper semantic portion of the DoctorCtx interface: host-owned queries for
 identity, value disposition, resource lifetime and option presence. It hides the
@@ -172,21 +172,35 @@ unknown result. It is not initially an importable package; Confinement still giv
 doctor programs one route to product capabilities through `ctx`. See the
 [Doctor SDK design](docs/plans/doctor-sdk/design.md).
 
-## Semantic result (planned)
+## Semantic result
 
 The answer from one Doctor SDK query: a known value with supporting evidence, or
 an unknown result with a named reason. Unknown never means absent, discarded,
 unreleased or safe. A check that cannot support its claim from a known result
 abstains and exposes narrowed coverage.
 
-## Check recipe (planned)
+## Value Path
+
+A bounded Doctor SDK query that establishes whether one static property path is
+present or absent at one source observation. A present result identifies the
+terminal expression and may include a primitive constant. Unsupported flow is
+unknown; it never implies absence or safety.
+
+## Check recipe
 
 A host-owned composition of Doctor SDK queries for a recurring check family, such
 as an unhandled value, a resource without release, or a required/recommended call
 option. The recipe owns recurring mechanics, uncertainty, evidence and challenge
 selection; the doctor owns technology-specific selectors, meaning and copy.
 
-## Challenge profile (planned)
+Each maintained recipe is locally complete under `src/recipes/`: its module owns
+the host kind and implied needs, wire-query parser, semantic composition,
+authoring catalog entry and generated challenge profile. `recipe-definitions.ts`
+is the one registry consumed by the host, SDK, authoring catalog and certifier.
+Adding or changing a recipe happens in its recipe module rather than by editing
+parallel switches in those consumers.
+
+## Challenge profile
 
 A maintained certification corpus selected by a check recipe or declared semantic
 capability. It pairs genuine positives with lookalikes, shadowing, aliases,

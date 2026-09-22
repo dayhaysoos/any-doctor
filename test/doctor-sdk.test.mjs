@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {analyzeCalls} from '../bin/analysis.js';
-import {forbiddenCallRecipeResult,identityResult,optionPresenceResult,resourceLifetimeResult,resourceWithoutReleaseRecipeResult,valueDispositionResult} from '../bin/doctor-sdk.js';
+import {forbiddenCallRecipeResult,identityResult,optionPresenceResult,resourceLifetimeResult,resourceWithoutReleaseRecipeResult,valueAtPathResult,valueDispositionResult} from '../bin/doctor-sdk.js';
 import {challengeProfileFixtures} from '../bin/certify.js';
 
 function identities(source){
@@ -34,6 +34,158 @@ test('Doctor SDK identity rejects stale or invented expression references',()=>{
   const source='fetch("/")',parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
   const result=identityResult('example.ts',source,parsed.file,{id:999,start:0,end:1},{globals:['fetch']});
   assert.deepEqual(result,{version:1,status:'unknown',reason:'unsupported-expression'});
+});
+
+test('DoctorCtx semantic calls use host validation and preserve cache metrics',()=>{
+  const repo=fileURLToPath(new URL('../',import.meta.url)),tmp=fs.mkdtempSync(path.join(os.tmpdir(),'doctor-sdk-host-route-'));
+  try{
+    const target=path.join(tmp,'target');fs.mkdirSync(target);fs.writeFileSync(path.join(target,'entry.ts'),'fetch("/")');
+    const doctor=path.join(tmp,'host-route.mjs');fs.writeFileSync(doctor,`
+      export const meta={id:'host-route',description:'Host route probe',severity:'info',checks:[{id:'route-probe',description:'Probe the semantic host route',claim:'The host classifies an invalid semantic query.',lookalikes:['A valid query'],reportingUnit:'occurrence',needs:['identity'],onUnknown:'narrow'}]};
+      export async function doctor(ctx){
+        const file=ctx.files.list(['.ts'])[0];
+        const call=ctx.analysis.calls(file).structure.flow.values.find(value=>value.kind==='call');
+        const ref={id:call.id,start:call.start,end:call.end};
+        const invalid=ctx.analysis.callIdentity(file,ref,null);
+        const valid=ctx.analysis.callIdentity(file,ref,{globals:['fetch']});
+        ctx.report.finding({rule:'route-probe',file,line:1,message:JSON.stringify({invalid,valid})});
+      }
+    `);
+    const run=spawnSync(process.execPath,[path.join(repo,'bin/cli.js'),'run',doctor,target,'--format','json'],{cwd:repo,encoding:'utf8',timeout:30000});
+    assert.equal(run.status,0,run.stdout+run.stderr);const json=JSON.parse(run.stdout),group=json.groups[0];
+    const result=JSON.parse(group.checks[0].findings[0].message);
+    assert.equal(result.invalid.reason,'unsupported-expression');
+    assert.deepEqual(result.valid.value,{matches:true});
+    assert.deepEqual(group.semantic.execution,{semanticQueries:2,modelRequests:1,modelCacheHits:1});
+    assert.equal(group.semantic.narrowed[0].reason,'unsupported-expression');
+  }finally{fs.rmSync(tmp,{recursive:true,force:true})}
+});
+
+test('DoctorCtx Value Path resolves one static path at the observation site',()=>{
+  const repo=fileURLToPath(new URL('../',import.meta.url)),tmp=fs.mkdtempSync(path.join(os.tmpdir(),'doctor-sdk-value-path-'));
+  try{
+    const target=path.join(tmp,'target');fs.mkdirSync(target);fs.writeFileSync(path.join(target,'entry.ts'),`
+      const auth={apiKey:'secret'};
+      const base={auth};
+      const config={...base};
+      consume(config);
+      config.auth={apiKey:'later'};
+      const opaque={get auth(){return getAuth()}};
+      consume(opaque);
+    `);
+    const doctor=path.join(tmp,'value-path.mjs');fs.writeFileSync(doctor,`
+      export const meta={id:'value-path',description:'Value Path probe',severity:'info',checks:[{id:'value-path-probe',description:'Probe a static property path',claim:'The host resolves the path.',lookalikes:['A missing path'],reportingUnit:'occurrence',needs:['value-path'],onUnknown:'narrow'}]};
+      export async function doctor(ctx){
+        const file=ctx.files.list(['.ts'])[0];
+        const values=ctx.analysis.calls(file).structure.flow.values;
+        const calls=values.filter(value=>value.kind==='call'&&value.target?.root==='consume');
+        const call=calls[0];
+        const subject=values.find(value=>value.id===call.arguments[0]);
+        const opaqueCall=calls[1];
+        const opaque=values.find(value=>value.id===opaqueCall.arguments[0]);
+        const ref=value=>({id:value.id,start:value.start,end:value.end});
+        const present=ctx.analysis.valueAtPath(file,ref(subject),{at:ref(call),path:['auth','apiKey']});
+        const absent=ctx.analysis.valueAtPath(file,ref(subject),{at:ref(call),path:['auth','token']});
+        const unknown=ctx.analysis.valueAtPath(file,ref(opaque),{at:ref(opaqueCall),path:['auth','apiKey']});
+        ctx.report.finding({rule:'value-path-probe',file,line:1,message:JSON.stringify({present,absent,unknown})});
+      }
+    `);
+    const run=spawnSync(process.execPath,[path.join(repo,'bin/cli.js'),'run',doctor,target,'--format','json'],{cwd:repo,encoding:'utf8',timeout:30000});
+    assert.equal(run.status,0,run.stdout+run.stderr);const json=JSON.parse(run.stdout);
+    const result=JSON.parse(json.groups[0].checks[0].findings[0].message);
+    assert.equal(result.present.status,'known');
+    assert.equal(result.present.value.state,'present');
+    assert.equal(result.present.value.constant,'secret');
+    assert.equal(result.absent.status,'known');
+    assert.deepEqual(result.absent.value,{state:'absent'});
+    assert.equal(result.unknown.status,'unknown');
+    assert.deepEqual(json.groups[0].semantic.narrowed,[],'a reusable fact does not assign an unknown result to a check');
+    assert.deepEqual(json.groups[0].semantic.execution,{semanticQueries:3,modelRequests:1,modelCacheHits:3});
+  }finally{fs.rmSync(tmp,{recursive:true,force:true})}
+});
+
+test('Value Path distinguishes missing, explicit undefined, and prior mutation',()=>{
+  const inspect=(source,path)=>{
+    const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
+    const values=parsed.file.structure.flow.values;
+    const call=values.find(value=>value.kind==='call'&&value.target?.root==='consume');assert.ok(call);
+    const subject=values.find(value=>value.id===call.arguments[0]);assert.ok(subject);
+    return valueAtPathResult('example.ts',source,parsed.file,ref(parsed.file,subject.id),{at:ref(parsed.file,call.id),path});
+  };
+  const explicit=inspect('const options={signal:undefined};consume(options);',['signal']);
+  assert.equal(explicit.status,'known');
+  assert.equal(explicit.value.state,'present');
+  assert.equal('constant' in explicit.value,false);
+  assert.equal(inspect('const options={};consume(options);',['signal']).value.state,'absent');
+  assert.equal(inspect('const options={};options.signal=external;consume(options);',['signal']).status,'unknown');
+});
+
+test('Value Path applies ordered spreads and use-site escape timing',()=>{
+  const inspect=(source,path=['key'])=>{
+    const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
+    const values=parsed.file.structure.flow.values;
+    const call=values.find(value=>value.kind==='call'&&value.target?.root==='consume');assert.ok(call);
+    const subject=values.find(value=>value.id===call.arguments[0]);assert.ok(subject);
+    return valueAtPathResult('example.ts',source,parsed.file,ref(parsed.file,subject.id),{at:ref(parsed.file,call.id),path});
+  };
+  const override=inspect('const base={key:"old"};const options={...base,key:"new"};consume(options);');
+  assert.equal(override.status,'known');assert.equal(override.value.constant,'new');
+  assert.equal(inspect('const options={key:"safe"};consume(options);configure(options);').value.constant,'safe');
+  assert.equal(inspect('const options={key:"safe"};configure(options);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};configure({options});consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};configure([options]);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};configure(...[options]);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};new Wrapper(options);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe",mutate(){this.key=external}};options.mutate();consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};consume(options,configure(options));').status,'unknown');
+  assert.equal(inspect('const options={key:"safe",mutate(){this.key=external}};consume(options,options.mutate());').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};configure(options,consume(options));').value.constant,'safe');
+  assert.equal(inspect('const options={Factory:class {},key:"safe"};new options.Factory();consume(options);').value.constant,'safe');
+  assert.equal(inspect('const options={auth:{key:"safe"}};configure(options.auth);consume(options);',['auth','key']).status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};configure(options.key);consume(options);').value.constant,'safe');
+  assert.equal(inspect('const options={auth:{key:"secret"},logging:{key:"safe"}};configure(options.auth);consume(options);',['logging','key']).value.constant,'safe');
+  assert.equal(inspect('const options={auth:{key:"safe"}};configure({...options});consume(options);',['auth','key']).status,'unknown');
+  assert.equal(inspect('const listen={provider:{key:"safe"}};configure(listen.provider);const options={agent:{listen}};consume(options);',['agent','listen','provider','key']).status,'unknown');
+  assert.equal(inspect('const options={auth:{key:"safe"}};const wrapper={options};configure(wrapper);consume(options);',['auth','key']).status,'unknown');
+  assert.equal(inspect('const options={auth:{key:"safe"}};const wrapper=[options];configure(wrapper);consume(options);',['auth','key']).status,'unknown');
+  assert.equal(inspect('const options={auth:{key:"safe"}};const inner={options};const wrapper={inner};configure(wrapper);consume(options);',['auth','key']).status,'unknown');
+  assert.equal(inspect('const options={auth:{key:"safe"}};const wrapper={};wrapper.options=options;configure(wrapper);consume(options);',['auth','key']).status,'unknown');
+  assert.equal(inspect('const options={auth:{key:"safe"}};let wrapper={};wrapper={options};configure(wrapper);consume(options);',['auth','key']).status,'unknown');
+  assert.equal(inspect('const auth={key:"safe"};const base={auth};configure({...base});consume(auth);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};const items=[options];configure([...items]);consume(options);').status,'unknown');
+  assert.equal(inspect('const auth={key:"safe"};const base={auth};const wrapper={...base};configure(wrapper);consume(auth);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};const box={};const alias=box;alias.options=options;configure(box);consume(options);').status,'unknown');
+  assert.equal(inspect('const auth={key:"safe"};const base={};base.auth=auth;configure({...base});consume(auth);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};const wrapper={};wrapper.options=options;configure({...wrapper});consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};const items=[];items[0]=options;configure([...items]);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};let wrapper={options};wrapper={};configure(wrapper);consume(options);').value.constant,'safe');
+  assert.equal(inspect('const options={key:"safe"};const box={};box.a=options;configure(box.b);consume(options);').value.constant,'safe');
+  assert.equal(inspect('const options={key:"safe"};const box={};box.a=options;box.a=null;configure(box);consume(options);').value.constant,'safe');
+  assert.equal(inspect('const options={key:"safe"};let wrapper={options};const alias=wrapper;wrapper={};configure(alias);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};const base={options};const wrapper={...base};base.options=null;configure(wrapper);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};let wrapper={options};wrapper=configure(wrapper);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};const wrapper=flag?{options}:{};configure(wrapper);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};const wrapper={slot:{options}};const alias=wrapper.slot;wrapper.slot={};configure(alias);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};const base={slot:{options}};const copied={...base};base.slot={};configure(copied);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};let wrapper={options};const a=wrapper;const b=a;wrapper={};configure(b);consume(options);').status,'unknown');
+  assert.equal(inspect('const options={key:"safe"};let wrapper={options};function clear(){wrapper={}}configure(wrapper);consume(options);').status,'unknown');
+  assert.equal(inspect('const base={key:"safe"};configure({...base});consume(base);').value.constant,'safe');
+  assert.equal(inspect('const base={key:"safe"};const wrapper={...base};configure(wrapper);consume(base);').value.constant,'safe');
+  assert.equal(inspect('const pin="safe";configure({key:pin});consume({key:pin});').value.constant,'safe');
+  assert.equal(inspect('const pin=flag?"safe":"safe";configure(pin);consume({key:pin});').value.constant,'safe');
+  assert.equal(inspect('const name="key";const options={[name]:"dynamic"};consume(options);').status,'unknown');
+  assert.equal(inspect('const options={get key(){return "dynamic"}};consume(options);').status,'unknown');
+  assert.equal(inspect('const options={__proto__:{key:"inherited"}};consume(options);').status,'unknown');
+});
+
+test('Value Path refuses values constructed after the observation',()=>{
+  const source='consume(options);const options={key:"future"};';
+  const parsed=analyzeCalls('example.ts',source);assert.equal(parsed.ok,true);
+  const values=parsed.file.structure.flow.values;
+  const call=values.find(value=>value.kind==='call'&&value.target?.root==='consume');assert.ok(call);
+  const subject=values.find(value=>value.id===call.arguments[0]);assert.ok(subject);
+  const result=valueAtPathResult('example.ts',source,parsed.file,ref(parsed.file,subject.id),{at:ref(parsed.file,call.id),path:['key']});
+  assert.equal(result.status,'unknown');
 });
 
 test('Doctor SDK identity resolves a stable CommonJS require binding',()=>{

@@ -1272,6 +1272,88 @@ Agent authority resolves as: whoever runs the command in the repo
 decides; finer policy arrives with M3's project scope. Open for M3:
 project-scope storage layout, Git convergence, CI application.
 
+## D32 — Value Path makes recurring property proof reusable
+
+**Date:** 2026-09-21
+
+**Context:** OpenRouter and Deepgram each interpret the JS/TS value graph to
+follow stable aliases, ordered properties and spreads, constants, mutation and
+cycles before applying technology policy. The duplication is a correctness
+problem: equivalent source can acquire different proof and uncertainty rules,
+and every new Doctor author must rebuild analysis mechanics from raw facts.
+
+**Decision:** `DoctorCtx.analysis` gains one singular language-neutral query,
+`valueAtPath(file, subject, { at, path })`, and the `value-path` capability. It
+establishes whether one static property path is present or absent at a specified
+source observation, with digest-bound evidence. A present value exposes the
+terminal source expression and, when proven, a string, number, boolean or null
+constant. It does not expose AST nodes, binding ids, origins, normalized shape,
+a traversable graph, named batching or automatic narrowing. Arbitrary operators,
+predicates, callback execution, recursive serialization and cross-module runtime
+interpretation remain outside the interface.
+
+Observation is use-site-relative: prior mutation or opaque transfer is unknown;
+the consuming use itself and later changes do not taint the earlier fact. A
+missing property is absent, while an explicitly supplied language-level no-value
+remains present and lets policy interpret it. Malformed requests and valid but
+unsupported source return structured uncertainty through the existing semantic
+host boundary. The Doctor decides whether an unknown answer narrows its Check.
+
+JS/TS remains the only implementation initially. The public result is language-
+neutral now, but no formal language-adapter interface is introduced until a
+second language exists; one adapter would make that seam hypothetical. Raw
+`ctx.analysis.calls()` remains the advanced escape hatch. Technology-specific
+safe-transfer assertions do not enter Value Path: the Engine reports only proof
+it can establish independently.
+
+Deepgram and OpenRouter are the proving migrations. Their findings, locations,
+messages, evidence, narrowing and score/grade presence remain identical. Only
+the property-path mechanics actually replaced by the query are deleted; their
+specialized identity and control-flow policy remains local. Later Doctors
+migrate when that same deletion test demonstrates leverage. Accuracy changes
+are reviewed separately from the architecture migration.
+
+**Consequences:** Doctor programs become smaller policy modules over shared
+semantic proof, while the host owns source integrity, caching, evaluation and
+uncertainty. Certification gains one cross-language-ready conformance contract.
+The 0.2.0 public Doctor contract grows, so the SDK guide, authoring catalog,
+agent workflow, examples, declarations and capability reporting must ship with
+the implementation; green runtime tests alone are not completion.
+
+---
+
+## D33 — A recipe is one locally complete module
+
+**Date:** 2026-09-21
+
+**Context:** Recipe knowledge was split across the contract's implied-capability
+map, analysis-host query parsers, Doctor SDK evaluators, the authoring catalog and
+the certification harness's challenge switch. A new recipe or a semantic change
+required shotgun edits, and those parallel representations could drift even when
+each individual file remained type-correct.
+
+**Decision:** Every maintained recipe lives under `src/recipes/` as one locally
+complete definition. The module owns its name, host kind, implied needs, query
+parser, semantic composition, authoring detail and maintained challenge
+generator. `src/recipe-definitions.ts` is the sole registry and exposes the small
+selection interface used by the analysis host, Doctor runtime, authoring catalog
+and certifier. Those consumers contain no recipe-name switches or recipe-specific
+schemas, evaluators or fixture generators.
+
+Generic semantic mechanics remain host-owned. Recipe modules receive an internal
+evaluation runtime for prepared facts, identity, value disposition, option
+presence and resource lifetime; this is an internal seam, not a second public
+Doctor interface. Existing evaluator exports remain thin compatibility adapters
+for repository tests and internal consumers. Public `DoctorCtx` methods, recipe
+queries, findings, narrowing and certification behavior do not change.
+
+**Consequences:** A recipe change is local and its documentation and adversarial
+proof travel with its implementation. The deletion test now holds: removing a
+recipe module removes its runtime, authoring and certification behavior, while
+removing the registry would force selection logic back into every consumer.
+Adding a recipe requires one module plus one registry entry and tests through the
+registry interface. Mutation controls target the owning compiled recipe module.
+
 ---
 
 ## Historical open questions

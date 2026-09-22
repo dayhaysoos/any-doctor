@@ -89,6 +89,20 @@ dg.speak.v2.audio.generate({ text: "hi", model: "flux-alexis-en", encoding: "mp3
     expected: [],
   },
   {
+    name: "preserves legacy whole-file stability while retaining a definite SDK neighbor",
+    seed: { "src/sdk-stability.ts": `
+import { DeepgramClient } from "@deepgram/sdk";
+const dg = new DeepgramClient({ apiKey: process.env.DEEPGRAM_API_KEY });
+const unstable = { model: "flux-general-multi", detect_language: true };
+dg.listen.v1.createConnection(unstable);
+unstable.extra = true;
+dg.listen.v1.createConnection({ model: "flux-general-multi" });
+` },
+    expected: [
+      { rule: "endpoint-model-mismatch", file: "src/sdk-stability.ts", line: 7 },
+    ],
+  },
+  {
     name: "reports unsupported raw streaming options",
     seed: { "src/raw-stream.ts": `
 new WebSocket("wss://api.deepgram.com/v2/listen?model=flux-general-en&smart_format=true&topics=true");
@@ -277,6 +291,44 @@ export const NextPublicEnv = () => <AgentProvider config={{ auth: { apiKey: next
       { rule: "browser-api-key-exposure", file: "src/browser-jsx.tsx", line: 5 },
       { rule: "browser-api-key-exposure", file: "src/browser-jsx.tsx", line: 6 },
       { rule: "browser-api-key-exposure", file: "src/browser-jsx.tsx", line: 7 },
+    ],
+  },
+  {
+    name: "nested wrapper transfer preserves the legacy browser credential finding",
+    seed: { "src/browser-wrapper.ts": `
+import { AgentSession } from "@deepgram/agents";
+const config = { auth: { apiKey: "dg_live_secret" } };
+opaque({ config });
+new AgentSession(config);
+` },
+    expected: [
+      { rule: "browser-api-key-exposure", file: "src/browser-wrapper.ts", line: 5 },
+    ],
+  },
+  {
+    name: "browser config mutation narrows without suppressing a definite neighbor",
+    seed: { "src/browser-mutated.ts": `
+import { AgentSession } from "@deepgram/agents";
+const config = { auth: { apiKey: "uncertain_after_mutation" } };
+config.normalize();
+new AgentSession(config);
+new AgentSession({ auth: { apiKey: "definite_neighbor" } });
+` },
+    expected: [
+      { rule: "browser-api-key-exposure", file: "src/browser-mutated.ts", line: 6 },
+    ],
+  },
+  {
+    name: "JSX config transfer remains conservative beside a definite neighbor",
+    seed: { "src/browser-jsx-mutated.tsx": `
+import { AgentProvider } from "@deepgram/ui";
+const config = { auth: { apiKey: "uncertain_after_transfer" } };
+opaque(config);
+export const Uncertain = () => <AgentProvider config={config} />;
+export const Definite = () => <AgentProvider config={{ auth: { apiKey: "definite_neighbor" } }} />;
+` },
+    expected: [
+      { rule: "browser-api-key-exposure", file: "src/browser-jsx-mutated.tsx", line: 6 },
     ],
   },
   {

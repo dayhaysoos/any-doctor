@@ -14,7 +14,7 @@ export const meta = {
   ],
   checks: [
     {
-      id: 'midstream-error-ignored', revision: 2, reportingUnit: 'occurrence', needs: ['calls'], onUnknown: 'narrow', severity: 'warning',
+      id: 'midstream-error-ignored', revision: 2, reportingUnit: 'occurrence', needs: ['calls','value-path'], onUnknown: 'narrow', severity: 'warning',
       description: 'OpenRouter stream content is accepted without a prior same-chunk error exclusion.',
       claim: 'A supported chat stream delta is written, returned or passed onward without a dominating exclusion of the same chunk error shape.',
       impact: 'A midstream failure can be mistaken for a successful empty or partial reply.',
@@ -24,7 +24,7 @@ export const meta = {
       blindSpots: ['Opaque chunk handlers and reassigned or conditional flow narrow. Library error guarantees and cross-file handlers are not executed.'],
     },
     {
-      id: 'sse-comment-parse-crash', revision: 2, reportingUnit: 'occurrence', needs: ['calls'], onUnknown: 'narrow', severity: 'warning',
+      id: 'sse-comment-parse-crash', revision: 2, reportingUnit: 'occurrence', needs: ['calls','value-path'], onUnknown: 'narrow', severity: 'warning',
       description: 'OpenRouter SSE comment lines can reach a handwritten JSON parser.',
       claim: 'A native JSON.parse receives a line from a supported OpenRouter SSE reader without a preceding effective comment exclusion.',
       impact: 'Legal keep-alive comments can interrupt stream parsing.',
@@ -35,7 +35,7 @@ export const meta = {
     },
     {
       id: "missing-abort-signal",
-      revision: 2, reportingUnit: 'occurrence', needs: ['calls','identity','option-presence'], onUnknown: 'narrow',
+      revision: 2, reportingUnit: 'occurrence', needs: ['calls','identity','option-presence','value-path'], onUnknown: 'narrow',
       severity: 'info',
       description: 'Review an OpenRouter request without an established caller cancellation signal.',
       claim: 'A native fetch or supported chat client call with OpenRouter provenance and no established caller signal in its ordered request options.',
@@ -46,7 +46,7 @@ export const meta = {
       blindSpots: ['Unknown inputs, reassignment and opaque options abstain. SDK cancellation contracts are checked separately from native RequestInit.'],
     },
     {
-      id: 'retry-after-ignored', revision: 2, reportingUnit: 'occurrence', needs: ['calls'], onUnknown: 'narrow', severity: 'info',
+      id: 'retry-after-ignored', revision: 2, reportingUnit: 'occurrence', needs: ['calls','value-path'], onUnknown: 'narrow', severity: 'info',
       description: 'Review a raw OpenRouter retry path with no corresponding Retry-After consultation.',
       claim: 'A native OpenRouter request in a response-dependent retry loop has no supported corresponding response-header read on the failure path.',
       impact: 'A retry policy may ignore server-provided delay guidance and repeat requests too quickly.',
@@ -56,7 +56,7 @@ export const meta = {
       blindSpots: ['Opaque callbacks, unresolved response identity and conditional header consultation narrow; reading a header is not proof of correct waiting.'],
     },
     {
-      id: 'hardcoded-dated-model-slug', revision: 2, reportingUnit: 'occurrence', needs: ['calls'], onUnknown: 'narrow', severity: 'info',
+      id: 'hardcoded-dated-model-slug', revision: 2, reportingUnit: 'occurrence', needs: ['calls','value-path'], onUnknown: 'narrow', severity: 'info',
       description: 'Review a concrete model pin selected for OpenRouter.',
       claim: 'A version-looking concrete model literal in a supported OpenRouter request or model-factory selection.',
       impact: 'A pin preserves reproducibility but requires deliberate availability and upgrade decisions.',
@@ -119,13 +119,13 @@ function requestFacts(ctx, file) {
       if (init !== undefined) return resolve(init,seen);
       if (state?.initializer !== undefined) {
         let item=resolve(byStart.get(state.initializer)?.id,seen);
-        for(const key of state.path??[]) item=propertyValue(item,key,seen);
+        for(const key of state.path??[]) item=localPropertyValue(item,key,seen);
         return item;
       }
     }
     if (v.kind === 'member') {
       const parent=resolve(v.receiver,seen);
-      if (parent?.kind === 'object') return propertyValue(parent,v.member,seen);
+      if (parent?.kind === 'object') return localPropertyValue(parent,v.member,seen);
     }
     if (v.alternatives) {
       const choices=v.alternatives.map(x=>resolve(x,seen));
@@ -143,7 +143,9 @@ function requestFacts(ctx, file) {
     }
     return v.operation?v:resolve(id);
   }
-  function propertyValue(v,name,seen=new Set()) {
+  // Internal identity resolution needs the graph's local object projection;
+  // policy-facing property reads below use Value Path at an explicit call site.
+  function localPropertyValue(v,name,seen=new Set()) {
     if(v===undefined || v?.kind==='literal'&&v.literal===null)return undefined;
     if(v===UNKNOWN || v?.kind!=='object' || name===null)return UNKNOWN;
     const state='property:'+v.id+':'+name;
@@ -151,14 +153,22 @@ function requestFacts(ctx, file) {
     seen=new Set(seen).add(state);
     let result;
     for(const p of v.properties??[]) {
-      if(p.spread){const nested=propertyValue(resolve(p.value,seen),name,seen);if(nested!==undefined)result=nested;}
+      if(p.spread){const nested=localPropertyValue(resolve(p.value,seen),name,seen);if(nested!==undefined)result=nested;}
       else if(p.name===null)result=UNKNOWN;
       else if(p.name===name)result=p.accessor?UNKNOWN:resolve(p.value,seen);
       else if(p.name==='__proto__'&&result===undefined)result=UNKNOWN;
     }
     return result;
   }
-  const property=(id,name)=>propertyValue(resolve(id),name);
+  function propertyValue(v,name,at) {
+    if(v===undefined || v?.kind==='literal'&&v.literal===null)return undefined;
+    if(v===UNKNOWN || name===null || !at)return UNKNOWN;
+    const result=ctx.analysis.valueAtPath(file,{id:v.id,start:v.start,end:v.end},{at:{id:at.id,start:at.start,end:at.end},path:[name]});
+    if(result.status==='unknown')return UNKNOWN;
+    if(result.value.state==='absent')return undefined;
+    return values.get(result.value.expression.id)??byStart.get(result.value.expression.start)??UNKNOWN;
+  }
+  const property=(id,name,at)=>propertyValue(id===undefined?undefined:values.get(id),name,at);
   function literal(id,seen=new Set()) {
     const v=resolve(id);if(!v||v===UNKNOWN||seen.has(v.id))return UNKNOWN;
     if(v.kind==='literal')return v.literal;
@@ -206,9 +216,11 @@ function requestFacts(ctx, file) {
     const openai=['openai:default','openai:OpenAI'].includes(ctor)&&method==='chat.completions.create';
     if(!official&&!openai)return undefined;
     const config=v.arguments?.[0], key=official?'serverURL':'baseURL';
-    const override=official?property(call.arguments?.[1],'serverURL'):undefined;
-    const base=override??property(config,key);
-    const custom=property(config,official?'httpClient':'fetch');
+    const override=official?property(call.arguments?.[1],'serverURL',call):undefined;
+    // Constructor configuration is observed when the client captures it, not
+    // at a later request after the constructor has legitimately received it.
+    const base=override??property(config,key,v);
+    const custom=property(config,official?'httpClient':'fetch',v);
     const ep=base===UNKNOWN||custom!==undefined?UNKNOWN:base===undefined?official:endpoint(base.id);
     return {endpoint:ep,official,config,body:call.arguments?.[0]};
   }
@@ -225,8 +237,9 @@ function checkRequests(ctx,file) {
     if(!native){
       const client=m.clientCall(call);if(!client||client.endpoint===false)continue;
       const options=call.arguments?.[1];
-      const direct=m.property(options,'signal');
-      const signal=direct??(client.official?m.propertyValue(m.property(options,'fetchOptions'),'signal'):undefined);
+      const direct=m.property(options,'signal',call);
+      const fetchOptions=m.property(options,'fetchOptions',call);
+      const signal=direct??(client.official?m.propertyValue(fetchOptions,'signal',call):undefined);
       if(client.endpoint===UNKNOWN||signal===UNKNOWN || signal!==undefined&&signal?.literal!==null&&!(signal?.kind==='member'&&signal.member==='signal'&&m.name(m.resolve(signal.receiver)?.callee)==='AbortController')){
         ctx.report.narrowing({check:'missing-abort-signal',file,reason:'unsupported-expression',capability:'calls'});
       }else if(signal===undefined||signal?.literal===null)ctx.report.finding({rule:'missing-abort-signal',file,line:call.line,column:call.column});
@@ -246,19 +259,19 @@ function checkModel(ctx,file,m,call) {
   if(fn===UNKNOWN&&m.modelOrigin(call.callee)){candidate=true;model=UNKNOWN;}
   else if(['@openrouter/ai-sdk-provider:openrouter','@openrouter/ai-sdk-provider:*.openrouter'].includes(m.name(call.callee))||['@openrouter/ai-sdk-provider:createOpenRouter','@openrouter/ai-sdk-provider:*.createOpenRouter'].includes(factory)){
     candidate=true;model=m.resolve(call.arguments?.[0]);
-    if(factory){const base=m.property(fn.arguments?.[0],'baseURL');if(base!==undefined)endpoint=base===UNKNOWN?UNKNOWN:m.endpoint(base.id);}
+    if(factory){const base=m.property(fn.arguments?.[0],'baseURL',call);if(base!==undefined)endpoint=base===UNKNOWN?UNKNOWN:m.endpoint(base.id);}
   } else {
     const native=m.native(call), client=m.clientCall(call);
     if(native){
       endpoint=native===UNKNOWN?UNKNOWN:m.endpoint(call.arguments?.[0]);
-      let body=m.property(call.arguments?.[1],'body');
+      let body=m.property(call.arguments?.[1],'body',call);
       const input=m.resolve(call.arguments?.[0]);
-      if(body===undefined&&input?.kind==='construct'&&m.name(input.callee)==='Request')body=m.property(input.arguments?.[1],'body');
-      if(body!==undefined){candidate=true;model=body?.kind==='call'&&m.name(body.callee)==='JSON.stringify'?m.property(body.arguments?.[0],'model'):UNKNOWN;}
+      if(body===undefined&&input?.kind==='construct'&&m.name(input.callee)==='Request')body=m.property(input.arguments?.[1],'body',call);
+      if(body!==undefined){candidate=true;model=body?.kind==='call'&&m.name(body.callee)==='JSON.stringify'?m.property(body.arguments?.[0],'model',call):UNKNOWN;}
     }else if(client){
       candidate=true;endpoint=client.endpoint;
-      const nested=m.property(call.arguments?.[0],'chatRequest');
-      model=m.property(nested!==undefined&&nested!==UNKNOWN?nested.id:call.arguments?.[0],'model');
+      const nested=m.property(call.arguments?.[0],'chatRequest',call);
+      model=m.property(nested!==undefined&&nested!==UNKNOWN?nested.id:call.arguments?.[0],'model',call);
     }
   }
   if(!candidate||endpoint===false)return;
@@ -300,13 +313,13 @@ function streamFacts(m) {
     else if(v.kind==='call'){
       const native=m.native(v),client=m.clientCall(v);
       if(native&&m.endpoint(v.arguments?.[0])!==false){
-        const body=m.property(v.arguments?.[1],'body');
+        const body=m.property(v.arguments?.[1],'body',v);
         const config=body?.kind==='call'&&m.name(body.callee)==='JSON.stringify'?body.arguments?.[0]:undefined;
-        const stream=m.property(config,'stream');
+        const stream=m.property(config,'stream',v);
         if(stream?.literal!==false)p={origin:v.id,stage:'response',unknown:native===UNKNOWN||m.endpoint(v.arguments?.[0])===UNKNOWN||stream?.literal!==true};
       }else if(client&&client.endpoint!==false){
-        const nested=m.property(v.arguments?.[0],'chatRequest');
-        const stream=nested===UNKNOWN?UNKNOWN:m.property(nested?.id??v.arguments?.[0],'stream');
+        const nested=m.property(v.arguments?.[0],'chatRequest',v);
+        const stream=nested===UNKNOWN?UNKNOWN:m.property(nested?.id??v.arguments?.[0],'stream',v);
         // An explicit unresolved flag may produce a stream. Missing/false flags
         // use the SDK non-stream default and establish no chunk provenance.
         if(stream!==undefined&&stream?.literal!==false)p={origin:v.id,stage:'chunks',unknown:client.endpoint===UNKNOWN||stream?.literal!==true};
@@ -388,7 +401,8 @@ function checkStreamErrors(ctx,file,m) {
     return false;
   }
   function consume(id,opaque=false) {
-    const value=m.values.get(id),p=provenance(id);if(!value||!p||reported.has(id))return;
+    const value=m.values.get(id);if(!value||reported.has(id))return;
+    const p=provenance(id);if(!p)return;
     if(p.stage!=='content'&&!(opaque&&p.stage==='chunk'&&!p.members?.length))return;
     reported.add(id);
     const guards=(value.guards??[]).map(g=>excludes(g.test,g.truthy,p));

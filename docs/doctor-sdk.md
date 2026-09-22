@@ -44,6 +44,26 @@ value, and invoke `ctx.recipes`. Declare the same recipe and serializable query 
 the check's metadata so certification automatically selects its maintained
 challenge profile.
 
+### Maintaining or adding a recipe
+
+This is a repository-maintainer workflow, not an interface available to confined
+Doctors. Each recipe has one module under `src/recipes/` that owns its complete
+definition: host kind and implied needs, query parsing, semantic evaluation,
+authoring schema and example, and maintained challenge generation. Register that
+module once in `src/recipe-definitions.ts`. The analysis host, runtime capability
+derivation, `capabilities` catalog and certification harness consume that same
+definition; do not add recipe-specific switches or parallel metadata maps to
+those consumers.
+
+Shared recipe helpers belong in `src/recipes/support.ts`. Shared semantic
+mechanics remain host-owned behind the internal evaluation runtime in
+`src/doctor-sdk.ts`; a recipe composes those mechanics but does not reimplement a
+parser, binding resolver or value graph. Preserve the public `DoctorCtx` method,
+serialized query and observable findings unless a separately reviewed contract
+change is intended. A complete recipe change includes focused host/evaluator
+tests, catalog coverage, maintained positive/negative/unknown/neighbor profiles,
+mutation controls and packed-artifact verification.
+
 ### Identity selectors
 
 Recipe identity queries use explicit source spellings. Local aliases resolve
@@ -226,6 +246,48 @@ The recipe resolves the actual call identity and ordered options through
 supported aliases, spreads and constructors. It establishes code evidence only;
 the doctor decides whether absence is an error, a recommendation or irrelevant.
 
+## Value Path: ask for a property instead of rebuilding resolution
+
+Use `ctx.analysis.valueAtPath` when a custom Check needs to know whether one
+static property path exists on a candidate value. The query owns stable aliases,
+ordered object spreads, overrides, primitive constants, cycles, and use-site
+mutation/escape uncertainty.
+
+```js
+const ref = value => ({ id: value.id, start: value.start, end: value.end });
+const result = ctx.analysis.valueAtPath(file, ref(config), {
+  at: ref(requestCall),
+  path: ["auth", "apiKey"],
+});
+
+if (result.status === "unknown") {
+  ctx.report.narrowing({
+    check: "browser-api-key-exposure",
+    file,
+    reason: result.reason,
+    capability: "value-path",
+  });
+} else if (result.value.state === "present") {
+  // expression identifies the terminal source; constant is optional.
+}
+```
+
+`absent` means the supported object construction proves that the path is
+missing. An explicit `undefined` is `present` without `constant`. A prior write,
+member mutation, opaque transfer, accessor, dynamic key, unresolved spread or
+conflicting alternative is `unknown`. The consuming use at `at`, and mutations
+after it, do not retroactively taint the answer.
+
+Value Path does not automatically add an unscoped narrowing entry. The Doctor
+interprets the fact and calls `ctx.report.narrowing` for the affected Check when
+an unknown answer prevents that Check's claim, as in the example above.
+
+Value Path does not establish API identity, interpret predicates, execute
+helpers, traverse modules, or decide the Check's policy. Prefer a recipe when
+one owns the whole claim. Keep `ctx.analysis.calls()` for candidate discovery
+and specialized analysis; do not recreate alias/property/spread resolution over
+its raw graph.
+
 ## Custom checks: inspect existing facts before writing a resolver
 
 When no recipe fits, use the same host-owned facts through `ctx`. The public
@@ -371,11 +433,13 @@ Produce this authoring report when an accepted claim lacks a justified proof.
 It does not submit a runtime finding, add a provider, or authorize consumer edits.
 The `customChecks.gapReport` catalog exposes the required fields, classifications,
 and four mandatory `acceptanceCases` stakes. Author tooling can import
-`validateCapabilityGapReport` from the shipped `bin/authoring.js` using its absolute
-file path (outside the confined doctor). It returns `{ valid, errors }`, validates
-report structure and score/narrowing consistency, and does not execute seeds or
-check path existence. Normal `verify` does not consume gap reports. Run the stakes
-separately and compare exact findings, narrowing reasons and score/grade presence.
+`validateCapabilityGapReport` and `certifyCapabilityGapReport` from the shipped
+`bin/authoring.js` using its absolute file path (outside the confined doctor).
+Validation returns `{ valid, errors }` and checks report structure and
+score/narrowing consistency. Certification accepts `{ doctorPath, reportDir? }`,
+isolates every seed (or resolves its `fixturePath` from `reportDir`), runs the real
+CLI, and compares exact findings, narrowing reasons, score/grade presence, crashes,
+broken doctors, and unsafe skips. Normal `verify` does not consume gap reports.
 Use one report per missing relationship, linking multiple seeds when equivalent.
 
 ```json
@@ -461,8 +525,9 @@ Use one report per missing relationship, linking multiple seeds when equivalent.
 }
 ```
 
-Each `seed` maps relative filenames to complete source; materialize it in an isolated
-directory and run the migrated doctor against it. A `fixturePath` may replace `seed`.
+Each `seed` maps relative filenames to complete source; certification materializes
+it in an isolated directory and runs the migrated doctor against it. A `fixturePath`
+may replace `seed` and resolves from the supplied `reportDir`.
 The positive stake deliberately includes an uncertain neighbor. Attach
 candidate path/digest, exact output and source positions. State the smallest missing
 relationship, not "needs better analysis." Separate multiple blockers:
@@ -498,9 +563,9 @@ and held-out syntax examples are necessary to test that blind spot.
 
 ## Direct semantic queries
 
-`ctx.analysis.identity`, `valueDisposition`, `resourceLifetime`, and
-`optionPresence` expose the underlying versioned results when a recipe does not
-fit. Prefer a recipe when the claim matches: its shared challenge profile covers
+`ctx.analysis.identity`, `valueAtPath`, `valueDisposition`, `resourceLifetime`,
+and `optionPresence` expose versioned results when a recipe does not fit. Prefer
+a recipe when the claim matches: its shared challenge profile covers
 identity lookalikes, transfers or aliases, unknown flow beside a positive,
 multiple occurrences, and unavailable analysis.
 

@@ -7,7 +7,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {analyzeCalls} from '../bin/analysis.js';
 import {callIdentityResult} from '../bin/doctor-sdk.js';
-import {authoringCatalog, validateCapabilityGapReport} from '../bin/authoring.js';
+import {authoringCatalog, certifyCapabilityGapReport, validateCapabilityGapReport} from '../bin/authoring.js';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const query={globals:['fetch','globalThis.fetch','window.fetch','self.fetch','setTimeout','globalThis.setTimeout','window.setTimeout']};
 const ref=v=>({id:v.id,start:v.start,end:v.end});
@@ -137,4 +137,33 @@ test('gap report rejects coerced narrowing states outside the uncertain control'
  const result=validateCapabilityGapReport(report);
  assert.equal(result.valid,false);
  assert.ok(result.errors.some(error=>error.includes('currentFailure: narrowing')));
+});
+
+test('capability-gap certification executes every published behavioral stake',()=>{
+ const evidenceDir=path.join(root,'docs/evidence/deepgram-doctor-authoring');
+ const report=JSON.parse(fs.readFileSync(path.join(evidenceDir,'browser-env-capability-gap.json'),'utf8'));
+ const result=certifyCapabilityGapReport(report,{
+  doctorPath:path.join(root,'doctors/deepgram.mjs'),
+  reportDir:evidenceDir,
+ });
+ assert.equal(result.failed,0,JSON.stringify(result.cases,null,2));
+ assert.equal(result.passed,Object.keys(report.acceptanceCases).length);
+ assert.ok(result.cases.every(item=>item.ok));
+});
+
+test('capability-gap certification rejects false findings, narrowing and score claims',()=>{
+ const evidenceDir=path.join(root,'docs/evidence/deepgram-doctor-authoring');
+ const report=JSON.parse(fs.readFileSync(path.join(evidenceDir,'browser-env-capability-gap.json'),'utf8'));
+ report.acceptanceCases=Object.fromEntries(['currentFailure','definitePositive','negativeControl','uncertainControl'].map(name=>[name,report.acceptanceCases[name]]));
+ Object.assign(report.acceptanceCases.currentFailure,{
+  findings:[],
+  narrowing:{state:'narrowed',reasons:['provider-failure']},
+  score:'null',
+  grade:'null',
+ });
+ assert.deepEqual(validateCapabilityGapReport(report),{valid:true,errors:[]});
+ const result=certifyCapabilityGapReport(report,{doctorPath:path.join(root,'doctors/deepgram.mjs'),reportDir:evidenceDir});
+ const failure=result.cases.find(item=>item.name==='currentFailure');
+ assert.equal(failure.ok,false);
+ for(const label of ['findings','narrowing reasons','narrowing state','score','grade'])assert.ok(failure.errors.some(error=>error.startsWith(label+':')),label);
 });
