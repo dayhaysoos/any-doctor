@@ -1,0 +1,81 @@
+{
+  "release": "0.2.0",
+  "sourceCandidate": "b1b705f71a103345770c968669ce1a6eff5b249c",
+  "previousPublishedVersion": "0.1.2",
+  "environment": {
+    "node": "v26.5.0",
+    "npm": "11.17.0"
+  },
+  "artifact": {
+    "filename": "any-doctor-0.2.0.tgz",
+    "sha256": "00d8c53732cd3e1534010d3dd477bef14ec4dfc43b06dc70fa77d65cec6265c9",
+    "npmIntegrity": "sha512-1iXZGSXTSry1RMuk5qleaa0dp+iAZ1AA/iKI1K1ZSzRf6c1IcV6U9Pm8rMrfVY+u3CqQzElRkJCg+ZYTT5FhNg==",
+    "packedBytes": 345548,
+    "unpackedBytes": 1284120,
+    "files": 167
+  },
+  "gates": {
+    "tests": { "passed": 1091, "failed": 0, "skipped": 0 },
+    "doctorVerificationLocal": { "passed": 336, "failed": 0, "skipped": 10, "doctors": 6 },
+    "doctorVerificationPacked": { "passed": 336, "failed": 0, "skipped": 10, "doctors": 6 },
+    "capabilityGapCertification": { "passed": 6, "failed": 0, "skipped": 0 },
+    "packageDryRun": { "files": 167, "succeeded": true },
+    "diffCheck": { "succeeded": true }
+  },
+  "realRepository": {
+    "name": "Sift",
+    "sourceCommit": "555ffb36e57a042165d3b9873b4641f31b3451f9",
+    "selection": "The same 1,530 tracked JavaScript, TypeScript and JSON paths as the retained Sift corpus, reconstructed from clean Git bytes.",
+    "manifestDigest": "0fd4a7ec618af5e5a0a59c1f201c7886c0988946a473c79b803052828e7e86b8",
+    "integrityBefore": { "matched": 1530, "expected": 1530 },
+    "integrityAfter": { "matched": 1530, "expected": 1530 },
+    "baseline": { "version": "0.1.2", "eligibleFiles": 679, "findings": 405, "crashes": 0, "analysisAvailable": true },
+    "candidate": { "version": "0.2.0", "eligibleFiles": 671, "findings": 266, "crashes": 0, "analysisAvailable": true },
+    "findingDelta": { "identity": "doctor, rule, file and line", "retained": 189, "removed": 216, "added": 77 },
+    "classifications": {
+      "async": {
+        "retained": 7,
+        "removed": 11,
+        "added": 2,
+        "assessment": "Existing source review classifies three removals as corrected false positives, two as unknown wrappers, six as missed contextual review candidates, and both additions as review candidates."
+      },
+      "convex": {
+        "retained": 94,
+        "removed": 16,
+        "added": 30,
+        "assessment": "Existing per-location source review classifies all removals as corrected pattern scope and all additions as review candidates."
+      },
+      "deepgram": {
+        "retained": 0,
+        "removed": 0,
+        "added": 0,
+        "assessment": "New doctor; no definite Deepgram finding was established on this target."
+      },
+      "effectV4Kitlangton": {
+        "retained": 42,
+        "removed": 0,
+        "added": 0,
+        "assessment": "Exact rule, file and line parity."
+      },
+      "openrouter": {
+        "retained": 0,
+        "removed": 57,
+        "added": 15,
+        "assessment": "The documented migration removes the false SSE warning and declaration/catalog lookalikes; six actual pins move to request-selection locations and nine request-lifetime review candidates are added."
+      },
+      "slop": {
+        "retained": 46,
+        "removed": 132,
+        "added": 26,
+        "assessment": "Existing source review classifies 56 removals as intentional narrowing and 76 as corrected false positives. All 26 additions are explicitly worded source-review candidates, not deletion authorization."
+      }
+    }
+  },
+  "limitations": [
+    "Finding counts are not accuracy estimates; the retained per-location source classifications remain authoritative.",
+    "The candidate evaluates 671 eligible files versus 679 under 0.1.2; unsupported extension and analysis boundaries remain documented.",
+    "Async intentionally retains six missed contextual review candidates and two unknown wrappers rather than broadening the supported semantic contract.",
+    "The historical Sift manifest included one unrecoverable dirty generated declaration. This release uses the reproducible clean bytes of the pinned commit and records a new manifest digest.",
+    "npm authentication and publication are deliberately left to the package owner."
+  ]
+}
