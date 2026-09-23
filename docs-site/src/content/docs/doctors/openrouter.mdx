@@ -5,28 +5,29 @@ sidebar:
   order: 9
 ---
 
-OpenRouter discipline: stream errors surfaced, keep-alives skipped,
-cancellations that stop billing.
+OpenRouter discipline: stream errors surfaced, keep-alives skipped, request
+lifetimes reviewed, retry policy checked, and deliberate model pins identified.
 
 | Severity | Check | Catches |
 | -------- | ----- | ------- |
 | warning | `midstream-error-ignored` | A streamed response consumed without checking for mid-stream errors |
 | warning | `sse-comment-parse-crash` | A hand-rolled SSE reader that feeds keep-alive comments to `JSON.parse` |
-| warning | `missing-abort-signal` | A request sent without an AbortSignal — cancellation keeps billing |
-| warning | `retry-after-ignored` | A retry loop that never reads the Retry-After header |
-| info | `hardcoded-dated-model-slug` | A dated model slug hardcoded where a maintained alias would survive provider removals |
+| info | `missing-abort-signal` | A proven native or supported client request with no established caller cancellation signal |
+| info | `retry-after-ignored` | A response-dependent raw retry loop with no corresponding Retry-After consultation |
+| info | `hardcoded-dated-model-slug` | A concrete version-looking model pin selected in a supported request |
 
 ## Blind spots (the short version)
 
-- OpenRouter context is detected by the file mentioning it anywhere
-  (URL, import, baseURL); files routing through an unmarked wrapper are
-  not covered.
-- Stream-error checks reason per file: an error check living in a
-  different file from the consumption loop is not seen.
-- Abort and retry checks pair the marker with the call on the same line:
-  a multi-line fetch whose URL lands on the next line is not recognized;
-  SDK-managed backoff is not recognized.
-- Cost/token accounting is deliberately not checked: file-level absence
-  reasoning false-positives on apps whose wrapper logs usage elsewhere.
+- Calls, aliases, bounded templates, ordered options and property paths are
+  resolved structurally; formatting and line wrapping do not change the answer.
+- Stream checks cover supported chat-completion reader transformations in one
+  file. Cross-module handlers and custom parsers are not executed.
+- Mutation, opaque transfers, unresolved choices, callbacks and conditional
+  header consultation narrow the affected check. SDK-managed retry behavior is
+  outside the raw retry claim.
+- Reading Retry-After does not prove correct waiting, and signal presence does
+  not prove that a caller aborts or that every provider stops billing.
+- Cost/token accounting is deliberately not checked. Default `.mts`, `.cts`,
+  `.cjs`, generated and test exclusions remain.
 
 The full list prints in every report this doctor appears in.

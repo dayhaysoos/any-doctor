@@ -12,8 +12,9 @@ precision measurement.
 The purpose is to help users and their own agents find recurring AI-code concerns
 beyond ordinary linting. Project-specific policies and contextual review candidates
 are valid doctor intents; phrase them accurately instead of calling every finding
-a proven bug. Planned review decisions and history belong to the CLI, not to
-doctor implementations. Doctors continue to emit raw findings through this contract.
+a proven bug. Review decisions belong to the CLI, and finding history remains
+planned; neither belongs in doctor implementations. Doctors continue to emit raw
+findings through this contract.
 
 ## Start with discovery
 

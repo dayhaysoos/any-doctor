@@ -294,16 +294,14 @@ export const NextPublicEnv = () => <AgentProvider config={{ auth: { apiKey: next
     ],
   },
   {
-    name: "nested wrapper transfer preserves the legacy browser credential finding",
+    name: "nested opaque transfer narrows instead of claiming the credential remains unchanged",
     seed: { "src/browser-wrapper.ts": `
 import { AgentSession } from "@deepgram/agents";
 const config = { auth: { apiKey: "dg_live_secret" } };
 opaque({ config });
 new AgentSession(config);
 ` },
-    expected: [
-      { rule: "browser-api-key-exposure", file: "src/browser-wrapper.ts", line: 5 },
-    ],
+    expected: [],
   },
   {
     name: "browser config mutation narrows without suppressing a definite neighbor",

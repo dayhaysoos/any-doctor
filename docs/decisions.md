@@ -1313,6 +1313,13 @@ specialized identity and control-flow policy remains local. Later Doctors
 migrate when that same deletion test demonstrates leverage. Accuracy changes
 are reviewed separately from the architecture migration.
 
+**Later audit note (2026-09-22):** The bundled-doctor modernization audit made
+one separately reviewed accuracy change: Deepgram now trusts Value Path's unknown
+result after a configuration is nested inside an object passed to an opaque call,
+rather than reviving the old resolver's definite credential finding. The case
+narrows because the opaque call may mutate the nested configuration. D32's
+architecture and proof boundary are unchanged.
+
 **Consequences:** Doctor programs become smaller policy modules over shared
 semantic proof, while the host owns source integrity, caching, evaluation and
 uncertainty. Certification gains one cross-language-ready conformance contract.

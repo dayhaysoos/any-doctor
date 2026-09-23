@@ -1,6 +1,10 @@
 # Doctor SDK implementation milestones
 
-Read [design](design.md) first. Execute these milestones in order on one branch.
+Status: completed. This file preserves the checkpoint sequence and acceptance
+gates used to deliver the SDK; it is not the current work queue. See
+[../../features.md](../../features.md) for current availability.
+
+Read [design](design.md) first. The implementation executed these milestones in order.
 Each milestone is a vertical slice: host fact, `DoctorCtx` interface, one real
 doctor behavior, focused tests, consumer verification and evidence. Finish its
 gate before editing the next milestone.

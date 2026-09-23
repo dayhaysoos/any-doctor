@@ -10,8 +10,10 @@ direct env reads, named Effect.fn, deterministic generators, validated
 boundaries, no casts that silence the type system. The mechanical rules
 of the kitlangton Effect skill, enforced.
 
-Ships as `effect-v4-kitlangton`. Only files that import `effect` (or
-`effect/...`) are scanned; zod checks apply to files importing zod.
+Ships as `effect-v4-kitlangton`. All checks use semantic revision 2 and shared
+JS/TS syntax, call, identity, binding and span facts. Syntax-only Effect checks
+run only in files with a parser-resolved Effect import reference; zod checks
+apply to resolved imports from zod.
 
 | Severity | Check | Catches |
 | -------- | ----- | ------- |
@@ -30,11 +32,19 @@ Ships as `effect-v4-kitlangton`. Only files that import `effect` (or
 
 - Effect idioms routed through re-exporting wrappers are not covered;
   generated `.d.ts` files are skipped entirely.
+- API aliases, multiline calls, static bracket access and shadowed lookalikes
+  are resolved structurally. `Effect.fn` names and `Effect.gen` bodies must be
+  direct static arguments; aliased or dynamic values and opaque generator
+  factories narrow instead of producing a definite finding.
+- Class and generator extents come from the parser; braces in strings, templates
+  or regex literals do not truncate the scan.
 - Boundary and startup code legitimately reads the environment — the
   check cannot tell application logic from boundaries.
 - `cause-level-recovery` and `blind-layer-merge` record the skill's
   defaults, not proven misuse.
 - `sleep-in-test` only fires when test files are scanned — pass
   `--include-tests` to check test discipline.
+- Without the shared analysis provider, all checks narrow to silence; that is
+  incomplete coverage, not a clean result.
 
 The full list prints in every report this doctor appears in.

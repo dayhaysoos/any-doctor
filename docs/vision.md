@@ -1,6 +1,6 @@
 # Vision and direction
 
-Updated September 10, 2026. This is the current product direction. Feature
+Updated September 22, 2026. This is the current product direction. Feature
 availability lives in [features.md](features.md); implementation planning lives
 in the [finding lifecycle proposal](plans/finding-lifecycle/proposal.md).
 
@@ -56,10 +56,11 @@ Scanning stays accessible through npx without a required initialization step.
 When someone records a decision, the CLI can create state lazily. Doctors stay
 focused on analysis; the CLI owns persistence and applies decisions afterward.
 
-Local SQLite storage will support decisions, finding observations, and bounded
-history. Git-tracked files will be authoritative for shared project decisions
-and configuration. SQLite indexes the checked-out shared state; teams converge
-through ordinary Git review and merge, not by merging database files.
+Remembered local decisions are available today in a lazily created, atomic JSON
+file. Git-tracked files are planned as the authority for shared project decisions
+and configuration. A local database is deferred until bounded observations and
+history justify it; teams will converge through ordinary Git review and merge,
+not by merging database files.
 
 The lifecycle distinguishes accepted concerns, non-applicable findings, observed
 disappearance, and claimed fixes. Changed code, changed rules, uncertain identity,
@@ -96,6 +97,10 @@ than promising every analysis everywhere.
 - Large-repository runs expose coverage and resource limits instead of reporting
   partial analysis as a clean result.
 
-The next work is the [finding lifecycle plan](plans/finding-lifecycle/milestones.md).
-Its open questions must be resolved in the relevant milestone, not silently
-treated as implemented behavior.
+Identity-aware comparison and remembered local decisions have landed. The
+immediate phase is adoption and reliability feedback on real repositories. The
+next planned lifecycle slice is Git-shared project decisions (M3), followed
+separately by bounded history (M4). See the
+[finding lifecycle plan](plans/finding-lifecycle/milestones.md); its remaining
+open questions must be resolved in the relevant milestone, not silently treated
+as implemented behavior.

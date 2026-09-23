@@ -1,5 +1,9 @@
 # Overnight Doctor SDK implementation handoff
 
+Status: completed historical handoff. The branch instructions below document the
+original authorized run; do not execute them as current work. The SDK shipped in
+`0.2.0`. See [../../HANDOFF.md](../../HANDOFF.md) for the current handoff.
+
 Implement the Doctor SDK foundations on the existing local branch
 `feature/doctor-sdk-foundations`. Work through the checkpoints in order and keep
 one local commit per completed checkpoint. Do not push, publish, deploy, change the

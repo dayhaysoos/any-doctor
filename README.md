@@ -13,8 +13,9 @@ rescan after changes. Saved doctors run without model inference.
 
 Analysis runs locally without an account, API key, or telemetry. Package/tool
 installation can require downloads; the doctor runtime has no network access.
-Remembered decisions and finding history are [planned](docs/plans/finding-lifecycle/proposal.md),
-not available yet.
+Remembered local decisions persist between runs and resurface when their source
+evidence or doctor meaning changes. Shared project decisions and finding history
+remain [planned](docs/plans/finding-lifecycle/proposal.md).
 
 [![npm version](https://img.shields.io/npm/v/any-doctor.svg)](https://www.npmjs.com/package/any-doctor)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](#)
@@ -38,6 +39,13 @@ npx any-doctor@latest run slop   # one doctor, straight to the report
 Non-terminals and CI never see a prompt — output is stable and pipeable
 (`--format json`, or `ANY_DOCTOR_HEADLESS=1`).
 
+During review, press `a` to accept an applicable concern or `x` to mark it not
+applicable; both require a reason. The decision is stored locally under
+`.any-doctor/`, hides the matching occurrence from later active lists, and can
+be inspected or reversed with `any-doctor decisions`. Changed evidence resurfaces
+the finding for reassessment. Local decisions never suppress raw JSON findings or
+change CI gates; keep `.any-doctor/decisions.local.json` untracked.
+
 ## The bundled pack
 
 | Doctor | Discipline | Checks |
@@ -51,8 +59,8 @@ Non-terminals and CI never see a prompt — output is stable and pipeable
 
 Checks ship positive and innocent-lookalike fixtures. `verify` compares an
 exact multiset of rule/file/line and optional column, then runs shared innocent
-and sensitivity corpora. Convex checks also declare per-check location coverage;
-legacy undeclared coverage is reported as not exercised. Passing fixtures show
+and sensitivity corpora. Every bundled check declares its reporting unit, and
+occurrence checks carry per-check location coverage. Passing fixtures show
 agreement on those cases, not a general accuracy guarantee. See
 [the reliability protocol](docs/doctor-reliability.md).
 
@@ -133,9 +141,9 @@ npx any-doctor@latest run --all --fail-on warning --base origin/main
 | [CONTEXT.md](CONTEXT.md) | Domain glossary — canonical terms |
 | [docs/vision.md](docs/vision.md) | Current goals and product direction |
 | [docs/features.md](docs/features.md) | Available features versus planned work |
-| [docs/plans/analysis-improvements.md](docs/plans/analysis-improvements.md) | Next slice: source evidence, identity, and reliable Git-base comparisons |
-| [docs/plans/finding-lifecycle/proposal.md](docs/plans/finding-lifecycle/proposal.md) | Planned decisions, history, and team workflows |
-| [docs/plans/finding-lifecycle/design.md](docs/plans/finding-lifecycle/design.md) | State ownership, SQLite, Git convergence, and open choices |
+| [docs/plans/analysis-improvements.md](docs/plans/analysis-improvements.md) | Delivered identity work and later analysis opportunities |
+| [docs/plans/finding-lifecycle/proposal.md](docs/plans/finding-lifecycle/proposal.md) | Current local decisions plus planned history and team workflows |
+| [docs/plans/finding-lifecycle/design.md](docs/plans/finding-lifecycle/design.md) | State ownership, Git convergence, future history storage, and open choices |
 | [docs/plans/finding-lifecycle/milestones.md](docs/plans/finding-lifecycle/milestones.md) | Implementation slices and acceptance evidence |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Current handoff and next bounded task |
 | [docs/decisions.md](docs/decisions.md) | Historical choices and explicit supersessions |
@@ -145,7 +153,9 @@ npx any-doctor@latest run --all --fail-on warning --base origin/main
 
 ## Status
 
-Pre-1.0. The next direction is reliable finding identity, remembered decisions,
-team sharing, and bounded local history. Scanning stays available through npx
-without mandatory initialization. See the [feature map](docs/features.md) for
-current availability. MIT.
+Pre-1.0. Finding identity and remembered local decisions are available. The next
+product phase is real-world adoption and reliability feedback; the next planned
+lifecycle feature is Git-shared project decisions, followed separately by bounded
+local history. Scanning stays available through npx without mandatory
+initialization. See the [feature map](docs/features.md) for current availability.
+MIT.

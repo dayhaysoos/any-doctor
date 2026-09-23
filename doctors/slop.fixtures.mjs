@@ -514,3 +514,46 @@ fixtures.push({name:"locations: two overlapping substring lines",seed:{"index.ts
 fixtures.push({name:"locations: two hostname routing lines",seed:{"index.ts":'export function f(host:string){\nif(host.includes("localhost")) return LOCAL_URL;\nif(host.includes("staging")) return STAGING_URL;\n}'},expected:[2,3].map(line=>({rule:"environment-guessed-from-hostname-substring",file:"index.ts",line}))});
 fixtures.push({name:"locations: two boolean collapse lines",seed:{"index.ts":'export function f(input:any){\nconst enabled = input ?? detect();\nconsole.log(enabled === true ? "a" : "b");\nreturn enabled === true ? "x" : "y";\n}'},expected:[3,4].map(line=>({rule:"boolean-collapsed-into-three-state",file:"index.ts",line}))});
 fixtures.push({name:"locations: two unbounded abbreviation lines",seed:{"index.ts":'export function f(value:string){\nconsole.log(/ai/i.test(value));\nreturn /ai/i.test(value);\n}'},expected:[2,3].map(line=>({rule:"unanchored-abbreviation-regex",file:"index.ts",line}))});
+
+fixtures.push(
+  {
+    name: "shared call facts preserve hostname routing across formatting",
+    seed: { "src/env.ts": 'function route(backendUrl: string) {\n  if (backendUrl\n    .includes(\n      "staging",\n    )) return STAGING_URL;\n  return PROD_URL;\n}\n' },
+    expected: [{ rule: "environment-guessed-from-hostname-substring", file: "src/env.ts", line: 2 }],
+  },
+  {
+    name: "shared value facts preserve overlapping substring chains across lines",
+    seed: { "src/filter.ts": 'function matches(value: string) {\n  return value.includes("referral") ||\n    value.includes("refer");\n}\n' },
+    expected: [{ rule: "prefix-overlapping-substring-match", file: "src/filter.ts", line: 2 }],
+  },
+  {
+    name: "overlapping substrings on different receivers stay silent",
+    seed: { "src/filter.ts": 'function matches(first: string, second: string) {\n  return first.includes("referral") || second.includes("refer");\n}\n' },
+    expected: [],
+  },
+  {
+    name: "shared value facts preserve multiline tri-state collapse",
+    seed: { "src/state.ts": 'function state(input?: boolean) {\n  const enabled = input ?? detect();\n  return enabled === true\n    ? "enabled"\n    : "disabled";\n}\n' },
+    expected: [{ rule: "boolean-collapsed-into-three-state", file: "src/state.ts", line: 3 }],
+  },
+  {
+    name: "a later boolean write prevents a stale tri-state finding",
+    seed: { "src/state.ts": 'function state(input?: boolean) {\n  let enabled = input ?? detect();\n  enabled = true;\n  return enabled === true ? "enabled" : "disabled";\n}\n' },
+    expected: [],
+  },
+  {
+    name: "multiline side-effecting initializers are not unread values",
+    seed: { "src/cache.ts": 'const warmed =\n  warmCache();\n' },
+    expected: [],
+  },
+  {
+    name: "regex check follows the actual multiline test receiver",
+    seed: { "src/filter.ts": 'function matches(value: string) {\n  return /ai/i\n    .test(value);\n}\n' },
+    expected: [{ rule: "unanchored-abbreviation-regex", file: "src/filter.ts", line: 2 }],
+  },
+  {
+    name: "an unrelated abbreviation literal beside another test stays silent",
+    seed: { "src/filter.ts": 'function matches(value: string) {\n  const abbreviation = /ai/i;\n  console.log(abbreviation);\n  return /artificial-intelligence/i.test(value);\n}\n' },
+    expected: [],
+  },
+);

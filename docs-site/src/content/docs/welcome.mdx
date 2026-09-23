@@ -12,8 +12,9 @@ scans without wasting tokens on the findings, making it easier for your
 agents to fix things without searching the whole codebase.
 
 Run it after your agent finishes work. You and your agent can fix what's
-real and record decisions. The decisions persist between runs so that if
-you decide to ignore a finding, it won't show up again.
+real or record an accepted/not-applicable decision with a reason. Local
+decisions persist between runs and leave the active list; changed evidence
+resurfaces them for reassessment. Raw findings and CI gates remain unchanged.
 
 ## The loop
 
@@ -33,6 +34,8 @@ We have some doctors for you to test in your own codebase!
   environments, careless text matching
 - [openrouter](/doctors/openrouter): stream errors surfaced, cancellations
   that stop billing
+- [deepgram](/doctors/deepgram): endpoint/model compatibility, streaming
+  options, Read shapes, hosts and proven browser key exposure
 - [effect-v4](/doctors/effect-v4-kitlangton): the rules of the
   [kitlangton Effect skill](https://www.ui-skills.com/skills/kitlangton/effect)
 

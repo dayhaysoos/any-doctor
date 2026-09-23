@@ -31,6 +31,9 @@ directly or through a namespace from Deepgram browser packages are covered,
 including ordered local prop spreads and `VITE_*` or `NEXT_PUBLIC_*`
 credentials followed through stable same-file aliases. Opaque prop spreads
 narrow the affected checks instead of producing a clean score.
+Passing a configuration inside an object to an opaque call also narrows later
+credential inspection: the doctor does not assume the nested object remained
+unchanged merely to preserve a historical finding.
 
 The doctor does not make product-choice recommendations or inspect audio bytes,
 pricing, access, callback ordering, retry timing, keepalive schedules, or

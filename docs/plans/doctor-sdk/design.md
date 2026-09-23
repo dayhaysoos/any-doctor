@@ -1,18 +1,18 @@
 # Doctor SDK foundations
 
-Status: planned. This document defines the intended module and its limits. The
-ordered implementation and gates live in [milestones](milestones.md). The fixed
-starting evidence lives in [baseline](baseline.md).
+Status: implemented and published in `0.2.0`. This document records the intended
+module and its limits; [milestones](milestones.md), [baseline](baseline.md) and
+the evidence directories preserve the completed implementation sequence.
 
 ## Problem
 
-Doctor authors currently receive useful structural and identity facts, but a
-semantic check can still require the doctor program to implement its own value
-tracking, resource matching, option inspection and uncertainty policy. The
-Async modernization demonstrated the cost: its doctor-local model repaired the
-known cases, then fresh equivalent transfers exposed more false findings.
+Before the SDK, doctor authors received useful structural and identity facts but
+a semantic check could still require private value tracking, resource matching,
+option inspection and uncertainty policy. The Async modernization demonstrated
+the cost: its doctor-local model repaired known cases, then fresh equivalent
+transfers exposed more false findings.
 
-The product should make a good first implementation more likely. A doctor author
+The SDK makes a good first implementation more likely. A doctor author
 should state the project-specific concern and interpretation. Any Doctor should
 own recurring JavaScript and TypeScript mechanics once, behind a small interface,
 and verify those mechanics with shared challenges.
@@ -147,8 +147,8 @@ a defect, an informational policy candidate or irrelevant in that framework.
 
 ## Check recipes
 
-Recipes are host-owned compositions of proven semantic queries. The first three
-are:
+Recipes are host-owned compositions of proven semantic queries. The shipped
+recipes are:
 
 - Unhandled value: a producer, supported consumers, ownership transfers and the
   claim made when disposition is established as discarded.
@@ -156,6 +156,8 @@ are:
   and the claim made when absence is established.
 - Required or recommended option: a resolved call, option sources and the claim
   made when absence is established.
+- Forbidden call: a resolved direct call identity and the claim made when the
+  configured API is established.
 
 A recipe supplies uncertainty behavior, evidence ranges, occurrence reporting
 and a shared challenge profile. The doctor supplies technology-specific selectors,

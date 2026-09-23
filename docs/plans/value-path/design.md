@@ -34,9 +34,12 @@ hatch for relationships outside Value Path.
 ## Adoption rule
 
 Deepgram and OpenRouter replace their duplicated property-path walkers while
-retaining specialized identity and control-flow logic. Their fixture behavior
-must stay identical. Later Doctors migrate only where the shared query deletes
-real recurring mechanics; language adapters wait until a second language exists.
+retaining specialized identity and control-flow logic. The original migration
+kept fixture behavior identical. A later fidelity audit removed Deepgram's legacy
+fallback and changed one opaque nested-transfer case from a finding to explicit
+uncertainty because Value Path could not prove the nested object stayed unchanged.
+Later Doctors migrate only where the shared query deletes real recurring mechanics;
+language adapters wait until a second language exists.
 
 ## Documentation gate
 

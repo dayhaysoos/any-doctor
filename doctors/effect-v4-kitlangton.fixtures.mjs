@@ -315,7 +315,7 @@ export const fixtures = [
     expected: [{ rule: "date-now-in-gen", file: "src/direct.ts", line: 3 }],
   },
   {
-    name: "date-now-in-gen: Date.now in a nested callback inside the generator is flagged",
+    name: "date-now-in-gen: containment in a nested callback does not imply execution",
     seed: {
       "src/nested.ts": [
         'import { Effect } from "effect";',
@@ -324,7 +324,7 @@ export const fixtures = [
         "});",
       ].join("\n"),
     },
-    expected: [{ rule: "date-now-in-gen", file: "src/nested.ts", line: 3 }],
+    expected: [],
   },
   {
     name: "date-now-in-gen: a string lookalike and bare Date.now outside generators stay silent",
@@ -371,10 +371,97 @@ export const fixtures = [
     expected: [],
   },
   {
-    name: "zod-single-record: bracket access and lookalike names stay silent",
+    name: "zod-single-record: static bracket access resolves to the same zod API",
     seed: {
       "src/schema.ts": 'import { z } from "zod";\nconst text = z.string();\nconst labels = z["record"](z.string());\n',
     },
-    expected: [],
+    expected: [{ rule: "zod-single-record", file: "src/schema.ts", line: 3 }],
   },
 ];
+
+fixtures.push(
+  {
+    name: "locations: two type-silencing casts in one Effect file",
+    seed: { "src/casts.ts": 'import { Effect } from "effect";\nconst first = value as any;\nconst second = other!.name;\n' },
+    expected: [2, 3].map((line) => ({ rule: "type-silencing-cast", file: "src/casts.ts", line })),
+  },
+  {
+    name: "locations: two Schema class builders",
+    seed: { "src/models.ts": 'import { Schema } from "effect";\nexport class A extends Schema.Class<A>("A")({}) {}\nexport class B extends Schema.TaggedClass<B>()("B", {}) {}\n' },
+    expected: [2, 3].map((line) => ({ rule: "schema-class-as-default", file: "src/models.ts", line })),
+  },
+  {
+    name: "locations: exact class spans preserve two hand-rolled tags",
+    seed: { "src/errors.ts": 'import { Effect } from "effect";\nexport class A extends Error { readonly _tag = "A"; method() { return /[{}]/; } }\nexport class B extends Error { method() { return `{}`; } readonly _tag = "B"; }\n' },
+    expected: [2, 3].map((line) => ({ rule: "handrolled-tagged-error", file: "src/errors.ts", line })),
+  },
+  {
+    name: "locations: two cause-level recovery calls",
+    seed: { "src/recovery.ts": 'import { Effect } from "effect";\nexport const a = Effect.catchCause(onCause);\nexport const b = Effect.sandbox(program);\n' },
+    expected: [2, 3].map((line) => ({ rule: "cause-level-recovery", file: "src/recovery.ts", line })),
+  },
+  {
+    name: "locations: two direct process environment reads",
+    seed: { "src/config.ts": 'import { Effect } from "effect";\nexport const a = process.env.A;\nexport const b = process.env["B"];\n' },
+    expected: [2, 3].map((line) => ({ rule: "direct-process-env-read", file: "src/config.ts", line })),
+  },
+  {
+    name: "locations: two unnamed Effect functions",
+    seed: { "src/functions.ts": 'import { Effect } from "effect";\nexport const a = Effect.fn(function* () {});\nexport const b = Effect.fn(() => Effect.void);\n' },
+    expected: [2, 3].map((line) => ({ rule: "unnamed-effect-fn", file: "src/functions.ts", line })),
+  },
+  {
+    name: "locations: two global clocks in one resolved generator",
+    seed: { "src/clock.ts": 'import { Effect } from "effect";\nexport const work = Effect.gen(function* () {\n  const a = Date.now();\n  return Date.now() - a;\n});\n' },
+    expected: [3, 4].map((line) => ({ rule: "date-now-in-gen", file: "src/clock.ts", line })),
+  },
+  {
+    name: "locations: two single-argument zod records",
+    seed: { "src/schema.ts": 'import { z } from "zod";\nexport const a = z.record(z.string());\nexport const b = z["record"](z.number());\n' },
+    expected: [2, 3].map((line) => ({ rule: "zod-single-record", file: "src/schema.ts", line })),
+  },
+  {
+    name: "locations: two sleeps in a test",
+    seed: { "src/timing.test.ts": 'import { Effect } from "effect";\nexport const a = Effect.sleep(1);\nexport const b = Effect.sleep(2);\n' },
+    expected: [2, 3].map((line) => ({ rule: "sleep-in-test", file: "src/timing.test.ts", line })),
+  },
+  {
+    name: "locations: two blind layer merges",
+    seed: { "src/layers.ts": 'import { Effect, Layer } from "effect";\nexport const a = Layer.mergeAll(A, B);\nexport const b = Effect.provideMerge(C);\n' },
+    expected: [2, 3].map((line) => ({ rule: "blind-layer-merge", file: "src/layers.ts", line })),
+  },
+  {
+    name: "shared identity follows Effect API aliases and multiline names",
+    seed: { "src/aliases.ts": 'import { Effect as E, Schema as S } from "effect";\nconst recover = E.catchAllCause;\nexport const a = recover(onCause);\nexport class Model extends S.Class<Model>("Model")({}) {}\nexport const named = E.fn(\n  "Alias.named",\n)(function* () {});\n' },
+    expected: [
+      { rule: "cause-level-recovery", file: "src/aliases.ts", line: 3 },
+      { rule: "schema-class-as-default", file: "src/aliases.ts", line: 4 },
+    ],
+  },
+  {
+    name: "shadowed API lookalikes stay silent",
+    seed: { "src/lookalikes.ts": 'import { Effect as RealEffect } from "effect";\nexport function example(Effect, Schema, Data, Layer, Date, process) {\n  Effect.fn(work); Schema.Class("X"); Data.TaggedError("X"); Layer.mergeAll(a, b);\n  process.env.KEY;\n  return RealEffect.gen(function* () { return Date.now(); });\n}\n' },
+    expected: [],
+  },
+  {
+    name: "dynamic Effect names and generator factories narrow instead of becoming definite findings",
+    seed: { "src/dynamic.ts": 'import { Effect } from "effect";\ndeclare const dynamicName: unknown;\nexport const named = Effect.fn(dynamicName)(function* () {});\nexport const generated = Effect.gen(makeGenerator());\n' },
+    expected: [],
+  },
+  {
+    name: "Data.TaggedError usage outside a class remains visible",
+    seed: { "src/error-builder.ts": 'import { Data } from "effect";\nexport const makeError = Data.TaggedError("Failure");\n' },
+    expected: [{ rule: "handrolled-tagged-error", file: "src/error-builder.ts", line: 2 }],
+  },
+  {
+    name: "a nested class tag is not attributed to its outer Error class",
+    seed: { "src/nested-error.ts": 'import { Effect } from "effect";\nclass Outer extends Error {\n  method() { return class Inner { readonly _tag = "Inner" } }\n}\nexport const use = Effect.succeed(Outer);\n' },
+    expected: [],
+  },
+  {
+    name: "analysis-off narrows every semantic Effect check to silence",
+    analysis: "off",
+    seed: { "src/degraded.ts": 'import { Effect } from "effect";\nexport const work = Effect.fn(function* () { return Date.now(); });\n' },
+    expected: [],
+  },
+);

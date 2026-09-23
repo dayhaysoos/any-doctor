@@ -1,7 +1,8 @@
 # Finding lifecycle: product proposal
 
-Status: direction agreed in the September 10, 2026 planning conversation;
-implementation has not started. Exact command names and defaults are proposals.
+Status: identity-aware comparison and remembered local decisions are implemented;
+shared project decisions and bounded history remain planned. Current command names
+and local behavior are documented below; project/history behavior remains a proposal.
 Read [vision](../../vision.md) for purpose, [design](design.md) for mechanisms,
 and [milestones](milestones.md) for scope and acceptance evidence.
 
@@ -29,15 +30,16 @@ bounded batches. No state is required to perform a one-off read-only scan.
 
 A user chooses **Not applicable** when the finding's interpretation is wrong for
 this code, or **Accepted** when the concern applies but the implementation is
-intentional. Both require a reason and explicit local/project scope. A decision
-can be reversed. Its matching scope stays limited to the reviewed finding unless
-the user explicitly chooses a broader project policy.
+intentional. Both require a reason. Current decisions are local and reversible;
+project scope is M3. A decision's matching scope stays limited to the reviewed
+finding.
 
 The first saved decision creates state automatically; a separate init command is
 not a prerequisite. Applicable decisions hide findings from the normal active
 list, while a review view exposes them and their reasons. Raw findings and
-analysis failures remain inspectable. Proposed active, reviewed, and raw counts
-must distinguish these states; exact score and CI integration is open in design.
+analysis failures remain inspectable. The active score excludes applicable local
+decisions, while JSON retains raw findings and CI gates continue to judge raw
+findings. M3 will revisit presentation when project decisions exist.
 
 ### Fix and rescan
 
@@ -55,7 +57,7 @@ continuing; a confidently matched finding that returns may be labeled reappeared
 
 Project decisions are Git-tracked and reviewed alongside code. A pull or branch
 switch makes the checked-out records authoritative on the next reconciliation.
-CI applies those records without needing a developer's SQLite file. Conflicting
+CI applies those records without needing a developer's local state file. Conflicting
 decisions stay visible until resolved; timestamp ordering does not settle intent.
 
 Local decisions stay private to the checkout and are labeled as such. They never
@@ -92,13 +94,13 @@ are outside this feature. Mandatory init and registry expansion are not dependen
 Cross-file rename matching can start conservatively; uncertain continuity must
 remain visible rather than being guessed.
 
-## Open product choices
+## Open product choices for M3/M4
 
 - Whether ordinary interactive runs save history automatically; headless and CI
   defaults, read-only behavior, and explicit persistence controls.
-- Exact CLI verbs, TUI actions, local/project selection, and agent policy format.
-- How reviewed decisions affect optional CI gates and the existing score display.
+- Project-record CLI/TUI actions, local/project selection, and agent policy format.
+- How shared project decisions affect optional CI gates and score presentation.
 - Default history retention and storage budgets, informed by scale measurements.
 
 Resolve each choice in its milestone and write the result into the design and
-decision log. The current documentation task does not implement those choices.
+decision log before presenting it as available behavior.

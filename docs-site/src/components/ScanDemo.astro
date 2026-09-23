@@ -155,7 +155,7 @@
       animate(
         el,
         { opacity: [0, 1], transform: [`translateY(${distance}px)`, "translateY(0px)"] },
-        { duration: 0.35, easing: REVEAL_EASE },
+        { duration: 0.35, ease: REVEAL_EASE },
       );
     }
 
@@ -167,7 +167,7 @@
       animate(
         session,
         { transform: `translateY(-${overflow}px)` },
-        { duration: 0.8, easing: SCROLL_EASE },
+        { duration: 0.8, ease: SCROLL_EASE },
       );
     }
 

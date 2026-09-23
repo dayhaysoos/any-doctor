@@ -12,7 +12,7 @@ export const meta = {
   ],
   checks: [
     {
-      id: "endpoint-model-mismatch", revision: 4, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "warning",
+      id: "endpoint-model-mismatch", revision: 5, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "warning",
       description: "Deepgram endpoint or provider settings conflict with the model family or schema.",
       claim: "A proven Deepgram streaming endpoint, SDK namespace, or browser-agent provider has a statically known model from an incompatible family, a statically known non-string type/version/model field, or a fully known /v2/speak configuration omits its required model.",
       impact: "Deepgram rejects the request or cannot serve the selected model family.",
@@ -22,7 +22,7 @@ export const meta = {
       blindSpots: ["Dynamic models and opaque option objects narrow after Deepgram provenance is established. SDK Voice Agent Settings are followed only from a bounded same-file agent.v1 connection; custom aliases implemented outside the file are not executed."],
     },
     {
-      id: "unsupported-streaming-option", revision: 2, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "warning",
+      id: "unsupported-streaming-option", revision: 3, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "warning",
       description: "Deepgram streaming transport receives an unsupported static option.",
       claim: "A proven Deepgram WebSocket or SDK streaming connection has a statically present option that its selected listen or speak transport does not support.",
       impact: "The WebSocket handshake can fail, or the requested analysis may be silently absent.",
@@ -32,7 +32,7 @@ export const meta = {
       blindSpots: ["Opaque URL parameters and option objects narrow. Mid-session Configure message validation is outside this check."],
     },
     {
-      id: "invalid-read-request", revision: 2, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "warning",
+      id: "invalid-read-request", revision: 3, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "warning",
       description: "A fully known Deepgram /v1/read request has an invalid static shape.",
       claim: "A proven raw or SDK Read request is fully known and omits language, enables no supported analysis feature, uses detect_entities, supplies both or neither text and url, or uses a non-POST raw method.",
       impact: "Deepgram rejects the Read request instead of producing text analysis.",
@@ -52,7 +52,7 @@ export const meta = {
       blindSpots: ["Dynamically constructed URLs and custom hosts are outside the raw candidate set."],
     },
     {
-      id: "browser-api-key-exposure", revision: 2, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "error",
+      id: "browser-api-key-exposure", revision: 3, reportingUnit: "occurrence", needs: ["calls", "identity", "value-path"], onUnknown: "narrow", severity: "error",
       description: "A proven Deepgram browser package receives a long-lived or public API key.",
       claim: "A direct @deepgram/agents, @deepgram/react, @deepgram/ui, or @deepgram/agents-widget call, constructor, or JSX element receives auth.apiKey whose value is a nonempty literal or a public browser environment variable.",
       impact: "Anyone who loads the browser bundle can recover and bill against the exposed Deepgram credential.",
@@ -173,22 +173,7 @@ function inspectFile(ctx, file) {
     const result = ctx.analysis.valueAtPath(file, { id: object.id, start: object.start, end: object.end }, {
       at: { id: at.id, start: at.start, end: at.end }, path,
     });
-    if (result.status === "unknown") {
-      // D32 requires this migration to preserve the Doctor's established
-      // behavior. The shared engine can now see nested container transfers the
-      // legacy Deepgram resolver did not; retain that old answer only when the
-      // original whole-file stability gate still proves the root stable.
-      const root = values.get(id);
-      const state = root?.kind === "reference" && root.target?.binding != null ? bindingStates.get(root.target.binding) : undefined;
-      const before = (site) => site < at.end;
-      if ((state?.writes ?? []).some((site) => before(site.start))
-        || (state?.mutationSites ?? []).some(before)
-        || (state?.opaqueCallSites ?? []).some(before)) return UNKNOWN;
-      let legacy = resolve(id);
-      if (legacy === UNKNOWN) return UNKNOWN;
-      for (const name of path) legacy = localPropertyValue(legacy, name);
-      return legacy;
-    }
+    if (result.status === "unknown") return UNKNOWN;
     if (result.value.state === "absent") return undefined;
     const terminal = values.get(result.value.expression.id) ?? byStart.get(result.value.expression.start);
     if (!terminal) return UNKNOWN;

@@ -17,25 +17,29 @@ reviewed PRs.
 | info | `boolean-collapsed-into-three-state` | A nullish-defaulted boolean collapsed into a two-way ternary feeding a three-state domain |
 | warning | `prefix-overlapping-substring-match` | An OR-chain of substring tests whose literals overlap by prefix |
 | warning | `named-import-without-reference` | A named import with zero references — value, JSX, and type positions all resolve |
-| info | `export-without-any-consumer` | A named export with no consumer found — deletion candidate |
+| info | `export-without-any-consumer` | A named export with no consumer found — bounded review candidate, not deletion authorization |
 | info | `unread-local-binding` | A non-exported local binding never read in its file |
 | info | `unanchored-abbreviation-regex` | A short case-insensitive regex tested against text without word boundaries |
 
 ## Blind spots (the short version)
 
-- Helpers: only function declarations are compared, bodies must be
+- Helpers: named function declarations and expressions are compared; bodies must be
   identically equal, and trivial bodies are ignored. Doctors and build
   output are exempt.
-- Dead exports: entry-point-shaped files are exempt, and a name counts
-  as consumed when any other file imports it from anywhere, so same-name
-  imports can mask a dead export. Dynamic imports and test-file consumers
-  are not resolved.
-- Bindings: the engine resolves value positions only — a name reused in
-  comments or strings can mask a dead binding.
-- Hostname: only `.includes()`/`startsWith` shapes are seen; URL parsing
-  and configured-base-URL-first flows are not.
-- Three checks (dead exports, unread bindings, unused imports) need the
-  analysis engine; without it they narrow to silence and the report says
-  so.
+- Dead exports: host-resolved module identities include tests, generated
+  consumers, types, barrels, dynamic imports and declared public entries.
+  Unresolved namespaces/configuration and undeclared external loading remain
+  review questions.
+- Bindings: the engine resolves value, JSX and type positions. A masked
+  whole-word guard preserves unsupported identifier uses without counting
+  comments, strings or regex literals as usage.
+- Hostname, substring, tri-state and regex checks use shared call/value facts,
+  so multiline formatting does not change the answer. The substring check
+  requires the same lexical receiver; the regex must be a direct literal used
+  as the actual `.test()` receiver or `.match()` argument.
+- URL parsing, configured-base-URL-first flows, switches, interprocedural
+  defaults and compiled `RegExp` objects remain outside the supported shapes.
+- All eight checks need shared analysis; without it they narrow to silence and
+  the report says so.
 
 The full list prints in every report this doctor appears in.

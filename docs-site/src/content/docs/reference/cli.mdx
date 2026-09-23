@@ -12,12 +12,32 @@ installed agent — `run` and `verify` never touch a model.
 ## generate
 
 ```bash
-any-doctor generate "<intent>" [--global]
+any-doctor generate "<intent>" [--global] [--stdout | --format json]
 ```
 
 Prints the exact prompt for your agent to build a doctor for the
 described mistake. `--global` targets `~/.any-doctor/doctors/` instead of
-the repo's `./doctors/`.
+the repo's `./doctors/`. `--stdout` avoids clipboard interaction;
+`--format json` returns the machine-readable generation result.
+
+## scaffold
+
+```bash
+any-doctor scaffold <kebab-case-slug>
+```
+
+Create an intentionally incomplete doctor and fixture pair. This is a file
+scaffold, not a substitute for the discovery and challenge workflow printed by
+`help author`.
+
+## capabilities
+
+```bash
+any-doctor capabilities [name] [--format json]
+```
+
+List the shared analysis facts, Value Path contract, recipe schemas, examples and
+known limits an author should use before proposing private analysis machinery.
 
 ## run
 
@@ -33,7 +53,7 @@ Scan. No argument = every doctor in one review tree. Flags:
 | `--include-tests` | Include test files in the scan (some checks need this) |
 | `--format report\|json` | Human report or machine JSON (see the [JSON reference](/agents/json-reference)) |
 | `--base <ref>` | Diff mode: `added` / `continuing` / `noLongerDetected` against the merge base |
-| `--fail-on error\|warning\|info` | Set the gate bar over RAW findings |
+| `--fail-on none\|error\|warning\|info` | Set the gate bar over RAW findings (`none` is the default) |
 
 Exit code is nonzero when a gate fails or when doctors crash, break, or
 get skipped — those are infrastructure failures, always.
@@ -69,9 +89,9 @@ List remembered decisions for a directory, or reverse one by key.
 ## help
 
 ```bash
-any-doctor help [agents]
+any-doctor help [agents|author]
 ```
 
-General help, or `help agents` for the machine interface — the same
-content as the [agent guide](/agents/agent-guide), printed by the CLI
-itself.
+General help, `help agents` for the machine interface, or `help author` for the
+complete doctor-authoring command sequence. The agent content matches the
+[agent guide](/agents/agent-guide) and is printed by the CLI itself.

@@ -1,120 +1,99 @@
 # Finding lifecycle: milestones and handoff
 
-Status: planning complete enough to scope the next slice; M1–M4 are unimplemented.
-Read [proposal](proposal.md) and [design](design.md) before implementing any slice.
-This document is a scope/evidence map, not an instruction to execute all milestones
-without a bounded task from the maintainer.
+Status: M1 and M2 shipped; M3 and M4 are planned. Read
+[proposal](proposal.md) and [design](design.md) before implementing a remaining
+slice. This is a scope/evidence map, not authorization to execute every milestone
+or publish a version.
 
-## Starting point
+## Delivered: M1 — identity and comparable Git-base scans
 
-The current source has raw location-based findings, per-check fixture coverage,
-JSON output, optional CI gates, and stateless Git-base comparison. It has no
-persistent decisions, SQLite layer, or durable finding history. The prior Convex
-repair has its own [verification record](../../repair-audit-007.md); its numbers
-do not certify future lifecycle behavior or subsequent commits.
+M1 delivered A1+A2 from the
+[analysis improvements plan](../analysis-improvements.md): source-bound evidence,
+versioned host identity and movement-aware comparison in the existing `--base`
+workflow. Exact fixture verification remains location-strict.
 
-Before work, inspect the actual branch, HEAD, dirty state, package version, and
-runtime. Preserve existing work. Map the change to the cohort/summary/report/CLI
-interfaces before adding the finding-state module. Keep doctor confinement intact.
+The implementation surfaces content-only fallback, ambiguity, stale evidence,
+line-scoped evidence and unavailable context. It preserves namespace separation,
+literal meaning, source/doctor provenance and linear duplicate matching. D30 and
+its repair amendment record the accepted contract and residual limitations.
 
-## M1 — Identity, provenance, and measurable scale
+M1 did not add persistent state, arbitrary rename tracking, a general call graph,
+type checking or a whole-program value engine.
 
-**Deliver:** A1 + A2 in the [analysis improvements plan](../analysis-improvements.md).
-Preserve source evidence, settle the anchor source and contract compatibility,
-then use versioned finding identity in the existing stateless Git-base comparison.
-A standalone library without this consumer does not complete M1.
+## Delivered: M2 — remember one local decision end to end
 
-**Acceptance:** the analysis plan owns the exact matrix for line movement,
-duplicate occurrences, relevant edits, custom doctors, Unicode/snapshots, and
-incomplete coverage. Keep compareFindings strict for fixture verification.
+M2 delivered accepted and not-applicable decisions with required reasons,
+reversal and reassessment. The dashboard, report, JSON and agent interface derive
+from one review view. Active lists hide applicable decisions; raw findings remain
+inspectable and gates continue to judge raw findings.
 
-**Scale proof:** measure identity/comparison records separately from the complete
-scanner. Set resource budgets from representative workloads and expose current
-limits. If intended workloads exceed them, scope the necessary pipeline work
-explicitly; neither a million synthetic records nor SQLite proves scanner capacity.
+State is created lazily at `<target>/.any-doctor/decisions.local.json` and written
+by atomic replacement. This deliberately replaced the proposed SQLite delivery:
+decision-only volume did not justify a database or native-binding matrix. D31
+records the choice, concurrency limitations, shell-safe keys, provenance rules and
+repair evidence.
 
-**Exclude:** persistence UI, team sync, guaranteed cross-file rename matching, and
-general module/type/flow analysis. Those broader capabilities do not all block M2/M3.
+M2 did not add project scope, cross-machine history, automatic fixing, telemetry
+or autonomous authority to dismiss findings.
 
-## M2 — Remember one decision end to end
+## Next: M3 — share and reconcile project decisions
 
-**Deliver:** local SQLite created lazily on the first saved decision; accepted and
-not-applicable decisions with reasons, reversal, and bounded structured retrieval.
-Wire the normal report and agent workflow through the same derived decision state.
+**Deliver:** reviewable Git-tracked project records that a fresh checkout and
+read-only CI can apply without private local state. Local decisions remain explicit
+and private. A checked-out branch's records are authoritative; deletion and
+reversal must not resurrect records from another branch or cache.
 
-**Acceptance:** save, restart through an isolated packaged/npx-style installation,
-rescan, inspect the reason, reverse, and rescan again. Changed or ambiguous evidence
-requires reassessment. Raw findings remain accessible. Test duplicate decisions,
-concurrent agent writes, process interruption, schema migration, and corrupt-state
-reporting. Reads and scans work without an init step or mandatory persistent writes.
+**Acceptance:**
 
-Resolve command/UI names, explicit agent decision authority, local/project scope
-selection, automatic history defaults, and the SQLite driver/runtime matrix here.
-Replace unconditional fix prompts with investigation and authorized decision paths;
-do not let an agent dismiss findings simply to report a clean run.
+- Two equivalent checkouts apply identical project decisions despite different
+  private histories.
+- Independent records merge predictably; semantically conflicting records fail
+  closed even if Git merges their text.
+- Branch switches, worktrees, dirty records, deletion/reversal, doctor revision
+  changes and malformed state are visible and conservative.
+- A crash during a project-record write cannot destroy unrelated decisions.
+- Fresh read-only CI applies project records without an init step or writable
+  project database.
+- Raw, active and reviewed counts remain distinct; an accepted finding is never
+  labeled fixed.
 
-**Scale proof:** indexed bounded queries over M1 workloads, startup overhead, write
-contention, and storage per current finding/decision. A database microbenchmark
-does not replace measuring the scan-to-report path.
+**Resolve in M3:** record partitioning and serialization, doctor namespace and
+rename identity, project decision authority, CI suppression semantics, score
+presentation and local/project precedence.
 
-**Exclude:** cross-machine history service and automatic code edits.
+**Exclude:** database replication, hosted accounts, synchronized personal history,
+issue tracking and automatic code modification.
 
-## M3 — Share and reconcile project decisions
-
-**Deliver:** Git-tracked authoritative project records and a reconstructible SQLite
-index. Shared CI can apply records in a fresh or read-only checkout. Local decisions
-are explicit and do not change shared CI behavior.
-
-**Acceptance:** two checkouts at equivalent source/tool/config/decision inputs apply
-identical project decisions with different private histories. Test independent
-edits, semantic conflicts that textually merge, decision reversal/deletion, branch
-switches, dirty decision files, worktrees, changed detector revisions, and index
-rebuild after deletion. A crash between file write and index update recovers from
-the authoritative file. Concurrent file updates must preserve independent records.
-
-Resolve partitioning, compatible revision handling, CI suppression semantics,
-read-only operation, and score presentation. Display raw/active/reviewed states
-without labeling accepted findings as fixed or hiding analysis failures.
-
-**Scale proof:** large decision sets, reconciliation of unchanged versus changed
-shared state, merge-review usability, and bounded lookup/output costs.
-
-**Exclude:** database replication, global team accounts, shared developer timelines.
-
-## M4 — Bounded history and comparable rescans
+## Later: M4 — bounded history and comparable rescans
 
 **Deliver:** first/last observations, new/continuing/no-longer-detected/reappeared
 views, and claimed-fix records with explicit rescan evidence. Add retention,
-storage limits, summaries, and bounded query/export behavior.
+storage limits, summaries and bounded query/export behavior.
+
+M4 is the point to select and validate an indexed local store such as SQLite.
+History volume, query needs and the supported Node/platform matrix must justify
+the dependency; M2's flat decision file remains authoritative until superseded by
+an accepted migration.
 
 **Acceptance:** a comparable complete scan can establish absence; omitted files,
-disabled rules, degraded analysis, changed detector meaning, and aborted runs
-cannot. Claimed fixes and accepted decisions remain distinct. Branch changes do
-not create false resolutions. Expired detail is labeled unavailable. Retention
-preserves durable decisions and current state; limits never silently drop live
-findings or turn an incomplete scan green.
+disabled rules, degraded analysis, changed detector meaning and aborted runs
+cannot. Retention preserves durable decisions and current state, labels expired
+detail, and never turns incomplete coverage into a clean result.
 
-**Scale proof:** repeated mostly unchanged runs as well as high-churn runs, concurrent
-agents, interrupted writes, and long-history queries. Measure end-to-end peak memory,
-disk growth and reclamation, query latency, and output/token sizes against M1 budgets.
-Avoid full snapshots per run and identify any remaining unbounded report buffers.
+**Exclude:** claims that disappearance proves a bug was fixed, hosted analytics
+and issue tracking.
 
-**Exclude:** claims that absence proves a bug fixed, hosted analytics, issue tracking.
+## Completion evidence for each remaining milestone
 
-## Completion evidence for each milestone
+- Bind the delivered scope and update accepted choices in the design and decision
+  log.
+- Reproduce motivating cases and test correctness, recovery, conflicts and scale.
+- Review the exact candidate against repository standards and the milestone spec.
+- Run focused and full tests, all-doctor verification and capability-gap stakes.
+- Build and pack; exercise the installed artifact on a clean consumer and a
+  representative real repository without modifying the target.
+- Record source/tool revisions, working-tree state, outcomes, limitations and
+  measured resource costs.
+- Update feature availability, glossary terms and [HANDOFF](../../HANDOFF.md).
 
-- Bound the delivered scope and update open/accepted choices in the design.
-- Run meaningful identity, correctness, recovery, and scale checks for that slice.
-  Keep author-written tests separate from independent counterexample evidence.
-- Review the exact candidate against repository standards and the milestone spec;
-  address actionable findings and re-review changed behavior.
-- Build and pack the candidate; test the installed artifact on a representative
-  repository (Sift is one target, not evidence of massive-codebase capacity).
-- Record source/tool revisions, working-tree state, coverage, outcomes, limitations,
-  and measured resource budgets. Compare regressions with the prior candidate.
-- Update feature availability, glossary terms that actually landed, and HANDOFF.
-  Publication and version changes remain the maintainer's separate action.
-
-The recommended next task is A1 + A2 of the [analysis plan](../analysis-improvements.md),
-which implements M1. Reliable identity and comparability precede persistence;
-broader analysis enhancements remain independent work.
+Publication and version changes are separate maintainer decisions.

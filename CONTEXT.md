@@ -5,11 +5,10 @@ When a term here conflicts with language elsewhere, this file wins.
 
 Current product intent lives in [docs/vision.md](docs/vision.md). For work on
 persistent decisions, history, identity, or team convergence, read the
-[lifecycle design](docs/plans/finding-lifecycle/design.md); the first identity
-delivery (lifecycle M1, slices A1+A2) is planned in
-[analysis improvements](docs/plans/analysis-improvements.md). Their proposed records
-are not implemented interfaces; the glossary below describes current behavior
-unless a term is explicitly marked planned.
+[lifecycle design](docs/plans/finding-lifecycle/design.md). Identity (M1) and
+remembered local decisions (M2) have landed; Git-shared decisions (M3) and
+bounded history (M4) remain planned. The glossary below describes current
+behavior unless a term is explicitly marked planned.
 
 ## Doctor program
 
@@ -88,8 +87,8 @@ tree without rebuilding it. A SiteFinding's readKey
 Text the dashboard copies to the clipboard as one unit of agent work: one
 finding (fixPrompt), every finding of one check (checkFixPrompt), or a
 doctor's whole batch (doctorFixPrompt) — pure functions of Doctor-tree
-types plus the verify command, no terminal required. The lifecycle plan
-(M2) reworks this family toward investigation-first framing and
+types plus the verify command, no terminal required. The local-decision
+delivery (M2) reworked this family toward investigation-first framing and
 authorized decision paths.
 
 ## Gate
@@ -384,9 +383,10 @@ Where a doctor program lives: repo-local (`./doctors/`, committed with
 the consuming repo), user-global (`~/.any-doctor/doctors/`, available
 in every repo), or bundled (the first-party pack inside the package,
 read-only — a starting point, not a dependency). Repo-local wins slug
-collisions, then user-global, then bundled. Scanning a target repo
-currently does not persist state in any scope. Planned CLI-owned state is
-separate from doctor discovery and does not grant doctors write capabilities.
+collisions, then user-global, then bundled. Scanning itself remains read-only.
+Recording a review decision creates CLI-owned local state under the target's
+`.any-doctor/` directory; that state is separate from doctor discovery and does
+not grant doctors write capabilities.
 
 ## Skill
 
@@ -406,18 +406,19 @@ positive witness. Unspecified legacy units and unavailable analysis are
 reported as not exercised, not counted as passing. Fixture expectations
 establish tested coverage, not general correctness or independence of labels.
 
-## Lifecycle vocabulary (planned, except where marked landed)
+## Lifecycle vocabulary
 
-These terms describe the accepted direction, not current fields on Finding or
-DoctorCtx. The [design](docs/plans/finding-lifecycle/design.md) owns their data
-and applicability rules.
+These terms describe shipped and planned lifecycle behavior. They are CLI-owned,
+not DoctorCtx capabilities. The [design](docs/plans/finding-lifecycle/design.md)
+owns their data and applicability rules.
 
-- **Finding identity** *(landed in the diff path, D30)*: continuity of one
+- **Finding identity** *(landed in diff and local decisions, D30/D31)*: continuity of one
   occurrence across comparable scans, distinct from its current source
-  coordinates. Host-derived today — check key, file, normalized flagged-line
-  digest, indentation-relative column, and innermost enclosing function span —
-  computed per comparison from one post-scan read, never persisted.
-- **Observation:** evidence that a finding was detected in a particular scan.
+  coordinates. Host-derived today — check key, file, normalized evidence digest,
+  indentation-relative column, and innermost enclosing function span. The CLI
+  computes it from source-bound capture; local decisions persist the resulting key.
+- **Observation** *(planned, M4)*: evidence that a finding was detected in a
+  particular retained scan.
 - **Decision** *(landed locally, D31)*: a reasoned accepted/not-applicable
   disposition with a required reason, stored in the local decisions file,
   reversible, attached to a Finding identity — it changes review state
@@ -429,7 +430,8 @@ and applicability rules.
   matched by cardinality are flagged ambiguous.
 - **No longer detected** *(landed in the diff path)*: absence established by
   compatible, completed coverage.
-- **Claimed fix:** a recorded explanation of remediation, separate from rescan evidence.
+- **Claimed fix** *(planned, M4)*: a recorded explanation of remediation,
+  separate from rescan evidence.
 - **Reassessment** *(landed locally)*: a decision requires review because
   its evidence changed — the finding resurfaces with a warning; the
   decision is never silently carried.

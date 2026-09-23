@@ -1,73 +1,85 @@
 # Feature map
 
-Updated September 10, 2026. This replaces the outdated F1–F3 planning text;
-historical discovery choices remain in [decisions.md](decisions.md).
+Updated September 22, 2026. This is the current availability map for the
+published `0.2.0` line. Historical choices remain in [decisions.md](decisions.md);
+implementation evidence remains under [evidence](evidence/).
 
-## Available in the inspected source
+## Available
 
-- Local, user-global, and bundled doctor discovery; local wins slug collisions.
-- Interactive doctor selection with no default selection, grouped findings, and
-  prompts that users can copy to their own agent. Headless runs do not prompt.
-- Explicit doctor runs, all-doctor runs, JSON reports, optional CI severity gates,
-  and a stateless comparison against a Git base. The diff is identity-aware
-  (A1+A2): a finding that moved with its code is **continuing**, a base occurrence
-  with no head counterpart is **no longer detected**, and only genuinely added
-  occurrences gate — with content-only matches (`contextFallback`), duplicate
-  buckets (`ambiguous`), and stale reads surfaced rather than smoothed over.
-- Agent authoring instructions, fixture verification, shared counterexamples,
-  and optional structural/semantic analysis with declared degraded behavior.
-- The Convex repair recorded in [repair-audit-007.md](repair-audit-007.md).
+### Run and review
 
-Current findings still carry source locations only — the identity layer derives
-its evidence host-side (doctor namespace, normalized line digest, relative
-column, enclosing structural context), so no doctor or contract change was
-needed. Current run does not persist decisions or history. Generate prepares
-the authoring skill and prompt; the user's agent writes the doctor and fixtures.
+- Local, user-global and bundled doctor discovery; local doctors win slug
+  collisions.
+- Interactive selection and review, direct doctor runs, all-doctor runs, stable
+  JSON, and investigation-first prompts for a user's own agent.
+- Optional CI severity gates. Crashes, broken doctors and unsafe skips always
+  fail independently of the severity bar.
+- Test files excluded by default and included explicitly with `--include-tests`.
 
-## Next: finding lifecycle
+### Identity and decisions (M1 + M2)
 
-First deliver [analysis evidence and identity](plans/analysis-improvements.md) in
-the existing stateless Git-base comparison. This is lifecycle M1, before saved
-decisions. Broader import/type/flow analysis is separate follow-up work.
+- Identity-aware `--base` comparison: added, continuing and no-longer-detected
+  occurrences, with ambiguous, content-fallback, line-scoped and stale evidence
+  reported rather than hidden.
+- Remembered local accepted/not-applicable decisions with required reasons,
+  created from the dashboard or `decide`, inspected and reversed with
+  `decisions`.
+- Exact-evidence application: changed source or incompatible doctor provenance
+  resurfaces a decision for reassessment; duplicate identities do not receive an
+  unsafe suppression.
+- Active review lists can hide applicable decisions, while raw findings remain
+  available and CI gates continue to judge raw findings.
+- Lazy state creation at `<target>/.any-doctor/decisions.local.json`; ordinary
+  scans require no initialization and create no state.
 
-The [proposal](plans/finding-lifecycle/proposal.md) owns product behavior; the
-[design](plans/finding-lifecycle/design.md) owns proposed storage and convergence;
-the [milestones](plans/finding-lifecycle/milestones.md) own delivery order and proof.
+### Authoring and analysis
 
-Planned capabilities:
+- Agent authoring instructions, scaffolding, fixture verification, shared
+  innocent/sensitivity corpora, per-check coverage and maintained recipe
+  challenge profiles.
+- Bounded structural and semantic facts for bindings, spans, calls, identity,
+  value disposition, resource lifetime, option presence, project consumers and
+  structural fingerprints.
+- Value Path (`ctx.analysis.valueAtPath`) for a static property path at a source
+  observation. It returns present, absent or explicit uncertainty and is used by
+  the bundled Deepgram and OpenRouter doctors.
+- Locally complete recipes registered once for runtime evaluation, authoring
+  metadata and certification challenges.
+- Bundled Async, Convex, Deepgram, Effect, OpenRouter and Slop doctors.
+- A completed bundled-doctor modernization audit: every check declares its
+  shared analysis needs and unknown policy; [the doctor matrix](doctor-modernization.md)
+  records which mechanics are shared and which technology policy remains local.
 
-- Stable finding identity and exact scan provenance.
-- Local and project decisions with reasons, reversal, and reassessment.
-- Local SQLite state, created lazily; shared decisions as reviewable Git files.
-- Consistent decisions across branches, teammates, agents, and CI.
-- Finding history, comparable rescans, and honest disappearance/fix reporting.
-- Bounded history and report queries for large repositories and concurrent agents.
+## Adoption phase
 
-None of these lifecycle capabilities is implemented by this documentation update.
-Command names, storage schemas, and automatic-history defaults remain open.
+The immediate product work is real-repository testing: usefulness, false
+positives, narrowed cases, first-attempt custom doctor yield and decision use.
+Small `0.2.x` documentation, reliability and usability repairs should be driven by
+those observations rather than by an open-ended analysis expansion.
 
-## Just landed (M2, on `implement/m2-decisions`)
+## Next planned lifecycle slice: M3
 
-- Remembered local decisions: accepted / not-applicable with a required
-  reason, reversible, attached to finding identity (D31) — created from
-  the dashboard (a/x + reason prompt, v review view, u undo) or the CLI
-  (`decide`, `decisions --reverse`).
-- Decided findings leave the active list on later scans; evidence changes
-  resurface them with an explicit reassessment warning; raw findings stay
-  inspectable and the gate never counts a decision as a fix.
-- Investigation-first copy prompts carrying the exact decide command.
+M3 shares selected project decisions through reviewable Git-tracked records and
+applies them consistently in fresh checkouts and CI. Local decisions remain
+private. The slice must define conflict handling, branch switching, doctor
+identity across authors, read-only CI behavior and the relationship between
+reviewed state and score presentation.
 
-## Deferred
+See the [proposal](plans/finding-lifecycle/proposal.md),
+[design](plans/finding-lifecycle/design.md), and
+[milestones](plans/finding-lifecycle/milestones.md). M3 is planned, not shipped.
 
-Hosted team history, a public doctor registry, mandatory adoption/init workflows,
-and issue-tracker features are outside the next lifecycle scope. Custom doctor
-authoring and useful contextual suggestions remain core to the product.
+## Later, separately scoped
 
-## Changes the implementation must account for
+- M4 bounded finding observations and history: first/last seen, reappeared and
+  comparable no-longer-detected views with explicit retention limits.
+- Additional Doctor SDK or Value Path coverage, triggered by reproduced real
+  false positives or missed findings rather than speculative JavaScript semantics.
+- A second language provider and adapter boundary, triggered by an actual second
+  language implementation.
+- Hosted team history, public registry expansion, issue-tracker integration and
+  automatic code modification. None is required for local scanning or decisions.
 
-The future CLI may write its own state when recording a run or a decision;
-doctors retain their read-only analysis contract. Existing read-only scans must
-remain possible. The current dashboard's unconditional fix prompts need an
-investigation-first lifecycle that also supports an authorized decision.
-Host-side diff identity (landed) is the first step toward persistent
-per-finding identity for decisions; decisions themselves remain unimplemented.
+Historical plans and evidence may name older branches, package versions and
+counts. Their status headers identify them as completed records; they are not the
+current feature map.

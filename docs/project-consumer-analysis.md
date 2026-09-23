@@ -182,9 +182,14 @@ same-line surrounding statements cannot affect the fingerprint. Each site retain
 its coordinates and full function evidence span. There is no text fallback when
 the engine is absent.
 
-Both changed Slop checks use revision 2. Old revision-1 decisions must be
-reassessed. Other checks retain their revisions; all Slop checks declare their
-actual occurrence reporting unit. `Fixture.includeTests: false` exercises ordinary
+The duplicate-helper and export checks use revision 2, as do the four checks later
+migrated from line matching to shared call/value facts (hostname routing, boolean
+collapse, overlapping substrings and abbreviation regexes). Old revision-1
+decisions for those checks must be reassessed. `unread-local-binding` also uses
+revision 2 because its side-effect exemption now follows shared initializer and
+call ranges across multiline formatting; the remaining binding-only check retains
+its revision. All Slop checks declare their actual occurrence reporting unit.
+`Fixture.includeTests: false` exercises ordinary
 default scope, while omitted/true retains the legacy deliberately seeded test
 scope. See the implementation verification report for measured behavior and
 remaining coverage limitations; this design is not independent certification.

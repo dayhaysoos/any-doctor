@@ -6,13 +6,13 @@ export const meta = {
   blindSpots: [
     "Helpers: named function declarations/expressions only. Matching AST structure preserves literals; signatures do not count toward the minimum three executable statements and 25 body nodes. Captured bindings and contracts can differ. Doctor programs and generated output are exempt.",
     "Exports: host-resolved module identities include tests, generated consumers, types, barrels and declared public entries. No consumer found is bounded to the captured inventory and supported resolution; unresolved namespaces/configuration abstain. See analysisCoverage for scan-specific limits. Undeclared external/framework loading remains a review question.",
-    "Bindings: the analysis engine resolves value positions only - a binding used purely as a type never becomes a reference. The text-occurrence guard keeps those out of findings, but a name reused in comments or strings can mask a genuinely dead binding. Parameter and catch bindings are not checked.",
-    "Hostname: only .includes()/startsWith shapes against known environment tokens on host/URL-ish receivers are seen; URL parsing, DNS suffix checks, and configured-base-URL-first flows are not.",
-    "Substring matches: only OR-chains whose literal arguments overlap by prefix are flagged; a single unbounded stem that silently matches longer words is not seen.",
-    "Boolean collapse: the shape requires a ?? -defaulted boolean later tested with `=== true ?`; switches, explicit typeof branches, and collapses without a nullish default are not recognized.",
-    "Abbreviation regexes: only bare 1-5 letter case-insensitive patterns without anchors or word boundaries used with .test()/.match() are flagged; longer patterns and compiled RegExp objects are not seen.",
+    "Bindings: the analysis engine resolves value, JSX and type positions. A masked whole-word guard conservatively preserves unsupported identifier uses without letting comments, strings or regex literals manufacture usage. Parameter and catch bindings are not checked.",
+    "Hostname: shared call/branch facts cover .includes()/startsWith against known environment tokens on host/URL-ish receivers when a branch visibly returns or assigns a URL-shaped identifier; URL parsing, DNS suffix checks, and configured-base-URL-first flows are not.",
+    "Substring matches: shared value facts cover logical OR trees whose direct literal arguments overlap by prefix on the same lexical receiver; aliased literals and a single unbounded stem that silently matches longer words are not seen.",
+    "Boolean collapse: shared value facts require a local ?? initializer with no intervening modeled write and a later `=== true ?`; switches, reassignment, explicit typeof branches, and interprocedural defaults are not recognized.",
+    "Abbreviation regexes: only direct bare 2-5 letter case-insensitive regex literals used as the actual .test() receiver or .match() argument are flagged; aliased and compiled RegExp objects are not seen.",
     "Declaration files (.d.ts) are skipped entirely: they declare types, not behavior - a `declare const` is a contract, not a dead binding.",
-    "This doctor needs the identity engine for three checks (dead exports, unread bindings, unused imports); without it those narrow to silence and the report says so.",
+    "All eight checks use shared analysis facts; without the JS/TS provider they narrow to silence and the report says so.",
   ],
   checks: [
     {
@@ -26,15 +26,17 @@ export const meta = {
       fix: "Compare contracts, captured bindings, side effects and future ownership before considering a shared implementation. Intentional copies may remain; matching source structure does not prove behavioral equivalence.",
       claim: "A nontrivial function has matching AST source structure (literal contents preserved, comments and formatting ignored) in another module; captured values and contracts may differ.",
       lookalikes: ["intentional domain-separated copies", "bodies below three statements or 25 syntax nodes", "doctor programs and build artifacts (exempt)"],
-      needs: ["spans"],
+      needs: ["structures"],
       onUnknown: "narrow",
     },
     {
       id: "environment-guessed-from-hostname-substring",
       description: "Environment routing decided by a hostname substring with a fixed fallback.",
       severity: "info",
-      revision: 1,
+      revision: 2,
       reportingUnit: "occurrence",
+      needs: ["calls"],
+      onUnknown: "narrow",
       impact: "Every deployment host the substring does not anticipate falls through to the fallback environment - production traffic silently using local/dev settings, or vice versa. The corpus caught this 8 times across 2 PRs.",
       why: "Guessing environment from `host.includes(\"staging\")` encodes a naming convention as a behavior switch; opaque custom domains and renamed deployments break the guess with no error anywhere.",
       fix: "Read the environment from configuration (an explicit env var or build-time constant) and treat unknown values as errors, with the hostname heuristic at most a last-resort default.",
@@ -45,8 +47,10 @@ export const meta = {
       id: "boolean-collapsed-into-three-state",
       description: "A nullish-defaulted boolean collapsed into a two-way ternary that feeds a three-state domain.",
       severity: "info",
-      revision: 1,
+      revision: 2,
       reportingUnit: "occurrence",
+      needs: ["calls"],
+      onUnknown: "narrow",
       impact: "false from 'not detected' and false from 'explicitly refused' become the same state - downstream logic treats unknown as negative, 8 findings across 4 PRs in the corpus.",
       why: "`x ?? detect()` yields boolean | undefined, but `x === true ? A : B` maps both false and undefined to B. The three-state union was written knowing the difference; the collapse forgets it.",
       fix: "Branch on the actual three states: `typeof x === \"boolean\" ? (x ? A : B) : C` - or model the source as an explicit tri-state from the start.",
@@ -57,8 +61,10 @@ export const meta = {
       id: "prefix-overlapping-substring-match",
       description: "An OR-chain of substring tests whose literals overlap by prefix.",
       severity: "warning",
-      revision: 1,
+      revision: 2,
       reportingUnit: "occurrence",
+      needs: ["calls"],
+      onUnknown: "narrow",
       impact: "`includes(\"referral\") || includes(\"refer\")` also matches 'reference', 'referee', 'preferred' - the classifier accepts unrelated words and the stem list grows by accretion. 5 findings across 5 PRs.",
       why: "The shorter stem subsumes the longer one entirely and both subsume words nobody meant. Substring matching has no word boundary, so every added stem widens the net silently.",
       fix: "Match whole tokens: split the text and compare exact membership, or use a word-bounded regex (\\breferral\\b) - one explicit list, no accidental vocabulary.",
@@ -74,7 +80,7 @@ export const meta = {
       impact: "Likely dead public surface: code that looks load-bearing, is maintained, reviewed, and shipped - but no consumer was found. The corpus caught this 5 times across 4 PRs.",
       why: "Generated code over-exports ('might be useful'), and nothing in the toolchain reports an export with zero consumers. The host resolves supported consumer edges by module identity and exposes coverage limits; this is a candidate, not a verdict.",
       fix: "Review whether this export is intentional or externally/framework consumed; declare entryPoints in any-doctor.analysis.json where appropriate. Only change it after checking side effects and contracts. This finding does not authorize deleting its module or initializer.",
-      needs: ["bindings"],
+      needs: ["consumers"],
       claim: "An authored exported binding with no observed local, runtime, test, type or re-export consumer, public exposure, or affected uncertainty in the host snapshot.",
       lookalikes: ["entry-point files", "test-only consumers (always reference evidence)", "namespace member usage", "string-built references"],
       onUnknown: "narrow",
@@ -97,12 +103,12 @@ export const meta = {
       id: "unread-local-binding",
       description: "A non-exported local binding that is never read anywhere in its file.",
       severity: "info",
-      revision: 1,
+      revision: 2,
       reportingUnit: "occurrence",
       impact: "Computation whose result nobody uses - constants, derived values, whole call results assigned and forgotten. The corpus found these as rate-limit constants and computed guards left behind by refactors.",
       why: "Bindings created for a plan the code abandoned. Side-effecting initializers are deliberately exempt (the call may matter even when the value does not).",
       fix: "Delete the binding; if its initializer has side effects, keep the expression and drop the assignment.",
-      needs: ["bindings"],
+      needs: ["bindings", "calls"],
       claim: "A non-exported, non-excluded, non-underscore local binding never read in its file, with a side-effect-free initializer.",
       lookalikes: ["object-rest exclusions", "side-effecting initializers", "underscore-prefixed names", "exported bindings"],
       onUnknown: "narrow",
@@ -111,8 +117,10 @@ export const meta = {
       id: "unanchored-abbreviation-regex",
       description: "A short case-insensitive regex tested against text without word boundaries.",
       severity: "info",
-      revision: 1,
+      revision: 2,
       reportingUnit: "occurrence",
+      needs: ["calls"],
+      onUnknown: "narrow",
       impact: "/ai/i matches 'said', 'wait', 'chair' - an abbreviation filter that accepts common words wholesale. 4 findings across 4 PRs.",
       why: "Short stems need boundaries; without them the regex is a substring test wearing a regex costume, and case-insensitivity widens it further.",
       fix: "Anchor it: /\\bai\\b/i - or match against whole tokens after splitting.",
@@ -137,31 +145,31 @@ export async function doctor(ctx) {
     }
     return entry;
   };
+  if (!ctx.analysis.available) return;
 
-  // --- pass 1: text-shape checks (no engine needed) ---
+  // --- pass 1: shared structural and value facts ---
   const helperBodies = new Map(); // normalized body -> sites
   for (const file of files) {
     if (/\.fixtures\.mjs$/.test(file)) continue;
-    const lines = readFile(file).masked.split("\n");
-    const rawLines = readFile(file).raw.split("\n");
-    if (ctx.analysis.available) collectHelperBodies(helperBodies, file, ctx.analysis.structures(file));
-    checkHostnameGuess(ctx, file, lines);
-    checkPrefixOverlappingSubstrings(ctx, file, lines);
-    checkBooleanCollapse(ctx, file, lines);
-    checkUnanchoredAbbreviation(ctx, file, lines);
+    const facts = ctx.analysis.calls(file);
+    const valueModel = buildValueModel(facts);
+    collectHelperBodies(helperBodies, file, ctx.analysis.structures(file));
+    checkHostnameGuess(ctx, file, readFile(file), valueModel);
+    checkPrefixOverlappingSubstrings(ctx, file, valueModel);
+    checkBooleanCollapse(ctx, file, valueModel);
+    checkUnanchoredAbbreviation(ctx, file, readFile(file).raw, valueModel);
   }
   reportIdenticalHelpers(ctx, helperBodies);
 
-  // --- pass 2: identity checks (narrow to silence without the engine) ---
-  if (!ctx.analysis.available) return;
-
+  // --- pass 2: project consumers and lexical bindings ---
   for (const file of files) {
     if (/\.fixtures\.mjs$/.test(file)) continue;
     const model = ctx.analysis.bindings(file);
+    const valueModel = buildValueModel(ctx.analysis.calls(file));
     const lines = readFile(file).masked.split("\n");
     checkDeadExports(ctx, file);
     checkUnusedImports(ctx, file, lines, model);
-    checkUnreadLocals(ctx, file, lines, model);
+    checkUnreadLocals(ctx, file, lines, model, valueModel);
   }
 }
 
@@ -204,77 +212,109 @@ function reportIdenticalHelpers(ctx, map) {
 
 const ENV_TOKENS = /localhost|127\.0\.0\.1|staging|\.?prod\b|\.?dev\b|vercel\.app|netlify\.app/i;
 const HOSTISH = /host|origin|url|endpoint|backend|apibase/i; // substrings: camelCase receivers like backendUrl carry no word boundaries
+const ROUTE_VALUE = /\breturn\s+[A-Za-z_$][\w$]*(?:URL|ORIGIN|BASE|ENDPOINT)[\w$]*\b|[A-Za-z_$][\w$]*(?:URL|ORIGIN|BASE|ENDPOINT)[\w$]*\s*=/i;
 
 // Only ROUTING is claimed: the branch must assign or return a URL-ish
 // constant (LOCAL_URL, PROD_URL, API_ORIGIN...). A throw guard (`if
 // (!url.startsWith("http://localhost:")) throw`) is enforcement, not
 // routing - exempt.
-function checkHostnameGuess(ctx, file, lines) {
-  const rawLines = ctx.files.read(file).split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line.includes(".includes(") && !line.includes(".startsWith(")) continue;
-    if (!HOSTISH.test(line)) continue;
-    const rawLine = rawLines[i];
-    if (/\bthrow\b/.test(line)) continue; // a guard, not a route
-    if (!/\breturn\s+\w*(?:URL|ORIGIN|BASE|ENDPOINT)\w*/.test(line)
-      && !/\w*(?:URL|ORIGIN|BASE|ENDPOINT)\w*\s*=/.test(line)) continue;
-    if (/\.(?:includes|startsWith)\(\s*["'][^"']*["']/.test(rawLine) && ENV_TOKENS.test(rawLine)) {
-      ctx.report.finding({ rule: "environment-guessed-from-hostname-substring", file, line: i + 1 });
-    }
+function checkHostnameGuess(ctx, file, source, model) {
+  const { flow, values, literal, finding } = model;
+  const calls = flow.values.filter((value) => value.kind === "call" && !value.dead && ["includes", "startsWith"].includes(value.member));
+  for (const call of calls) {
+    const token = literal(call.arguments?.[0]);
+    const receiver = values.get(call.receiver);
+    if (typeof token !== "string" || !ENV_TOKENS.test(token) || !receiver) continue;
+    if (!HOSTISH.test(source.raw.slice(receiver.start, receiver.end))) continue;
+    const branch = flow.branches.find((item) => {
+      const test = values.get(item.test);
+      return test && test.start <= call.start && call.end <= test.end;
+    });
+    if (!branch) continue;
+    const routes = [branch.whenTrue, branch.whenFalse].filter(Boolean).some((range) =>
+      ROUTE_VALUE.test(source.masked.slice(range.start, range.end)));
+    if (routes) finding(ctx, file, "environment-guessed-from-hostname-substring", call);
   }
 }
 
 // --- prefix-overlapping-substring-match ---------------------------------------
 
-function checkPrefixOverlappingSubstrings(ctx, file, lines) {
-  const rawLines = ctx.files.read(file).split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const includes = (line.match(/\.includes\(/g) ?? []).length;
-    if (includes < 2 || !line.includes("||")) continue;
-    const args = [...rawLines[i].matchAll(/\.includes\(\s*(["'])([^"']*)\1/g)].map(m => m[2]);
-    if (args.length < 2) continue;
-    for (let a = 0; a < args.length; a++) {
-      for (let b = a + 1; b < args.length; b++) {
-        const [x, y] = [args[a], args[b]];
-        if (x.length < y.length ? y.startsWith(x) : x.startsWith(y)) {
-          ctx.report.finding({ rule: "prefix-overlapping-substring-match", file, line: i + 1 });
-          a = args.length; // one finding per line
-          break;
-        }
-      }
+function checkPrefixOverlappingSubstrings(ctx, file, model) {
+  const { flow, values, literal, receiverKey, finding } = model;
+  const nested = new Set(flow.values.flatMap((value) => value.operation?.operator === "||" ? value.operation.operands : []));
+  const flatten = (id) => {
+    const value = values.get(id);
+    return value?.operation?.operator === "||" ? value.operation.operands.flatMap(flatten) : [value];
+  };
+  for (const expression of flow.values) {
+    if (expression.operation?.operator !== "||" || nested.has(expression.id)) continue;
+    const calls = flatten(expression.id).filter((value) => value?.kind === "call" && value.member === "includes" && !value.dead)
+      .map((call) => ({ call, text: literal(call.arguments?.[0]), receiver: receiverKey(call.receiver) }))
+      .filter((item) => typeof item.text === "string" && item.receiver);
+    let overlap = false;
+    for (let left = 0; left < calls.length && !overlap; left++) for (let right = left + 1; right < calls.length; right++) {
+      if (calls[left].receiver !== calls[right].receiver) continue;
+      const [a, b] = [calls[left].text, calls[right].text];
+      if (a.length < b.length ? b.startsWith(a) : a.startsWith(b)) { overlap = true; break; }
     }
+    if (overlap) finding(ctx, file, "prefix-overlapping-substring-match", expression);
   }
 }
 
 // --- boolean-collapsed-into-three-state ---------------------------------------
 
-function checkBooleanCollapse(ctx, file, lines) {
-  for (let i = 0; i < lines.length; i++) {
-    const m = /(\w+)\s*===\s*true\s*\?/.exec(lines[i]);
-    if (!m) continue;
-    const name = m[1];
-    // The nullish default earlier in the file is what makes the collapse
-    // lossy: undefined falls into the false branch.
-    const defaulted = new RegExp(`\\b${name}\\s*=[^=]*\\?\\?`).test(lines.slice(0, i).join("\n"));
-    if (defaulted) {
-      ctx.report.finding({ rule: "boolean-collapsed-into-three-state", file, line: i + 1 });
+function checkBooleanCollapse(ctx, file, model) {
+  const { flow, values, flowBindings, literal, finding } = model;
+  for (const choice of flow.values) {
+    if (!choice.selection) continue;
+    const test = values.get(choice.selection.test);
+    if (!test?.operation || !["===", "=="].includes(test.operation.operator)) continue;
+    const [left, right] = test.operation.operands;
+    const subjectId = literal(left) === true ? right : literal(right) === true ? left : undefined;
+    const subject = values.get(subjectId);
+    const binding = subject?.kind === "reference" ? subject.target?.binding : null;
+    if (binding == null) continue;
+    const initial = values.get(flowBindings.get(binding)?.initializer);
+    const hasPriorWrite = flow.uses.some((use) => use.kind === "write" && use.binding === binding && !use.dead
+      && values.get(use.value)?.start < choice.start);
+    if (initial?.operation?.operator === "??" && !hasPriorWrite) {
+      finding(ctx, file, "boolean-collapsed-into-three-state", choice);
     }
   }
 }
 
 // --- unanchored-abbreviation-regex ---------------------------------------------
 
-function checkUnanchoredAbbreviation(ctx, file, lines) {
-  const rawLines = ctx.files.read(file).split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    if (!/\.(?:test|match)\(/.test(lines[i])) continue;
-    for (const m of rawLines[i].matchAll(/\/([a-z]{2,5})\/[gimsuy]*i[gimsuy]*\b/g)) {
-      ctx.report.finding({ rule: "unanchored-abbreviation-regex", file, line: i + 1 });
-      break;
+function checkUnanchoredAbbreviation(ctx, file, raw, model) {
+  const { flow, values, finding } = model;
+  for (const call of flow.values.filter((value) => value.kind === "call" && !value.dead && ["test", "match"].includes(value.member))) {
+    const pattern = values.get(call.member === "test" ? call.receiver : call.arguments?.[0]);
+    if (!pattern) continue;
+    const text = raw.slice(pattern.start, pattern.end).trim();
+    const match = /^\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\])*)\/([a-z]*)$/i.exec(text);
+    if (match && /^[a-z]{2,5}$/i.test(match[1]) && match[2].includes("i")) {
+      finding(ctx, file, "unanchored-abbreviation-regex", call);
     }
   }
+}
+
+function buildValueModel(facts) {
+  const flow = facts.structure.flow;
+  const values = new Map(flow.values.map((value) => [value.id, value]));
+  const flowBindings = new Map(flow.bindings.map((binding) => [binding.binding, binding]));
+  const literal = (id) => values.get(id)?.literal;
+  const receiverKey = (id) => {
+    const value = values.get(id);
+    if (!value) return undefined;
+    if (value.target?.binding != null) return `binding:${value.target.binding}:${value.target.members.join(".")}`;
+    if (value.target?.binding === null && value.target.root) return `global:${value.target.root}:${value.target.members.join(".")}`;
+    return `value:${value.id}`;
+  };
+  const finding = (ctx, file, rule, location) => ctx.report.finding({
+    rule, file, line: location.line, column: location.column,
+    evidence: { endLine: location.endLine, endColumn: location.endColumn },
+  });
+  return { flow, values, flowBindings, literal, receiverKey, finding };
 }
 
 // --- identity checks -----------------------------------------------------------
@@ -328,7 +368,7 @@ function checkUnusedImports(ctx, file, lines, model) {
   }
 }
 
-function checkUnreadLocals(ctx, file, lines, model) {
+function checkUnreadLocals(ctx, file, lines, model, valueModel) {
   const fileText = lines.join("\n");
   for (const b of model.bindings) {
     if (b.kind !== "Variable") continue;
@@ -342,23 +382,24 @@ function checkUnreadLocals(ctx, file, lines, model) {
     if (b.name.startsWith("_")) continue;
     const occurrences = fileText.split(new RegExp(`\\b${escapeRe(b.name)}\\b`)).length - 1;
     if (occurrences > 1) continue;
-    // Conservative side-effect exemption: any initializer containing a
-    // call, await, or parenthesized expression is left alone - the work
-    // may matter even when the value does not.
-    const declLine = lines[b.line - 1] ?? "";
-    if (declLine.includes("(") || declLine.includes("await ")) continue;
+    // Initializer ranges and calls come from the shared value model, so a
+    // multiline side-effecting initializer is treated exactly like one line.
+    const binding = offsetAt(fileText, b.line, b.column);
+    const initializer = valueModel.values.get(valueModel.flowBindings.get(binding)?.initializer);
+    if (!initializer) continue;
+    if (["call", "construct", "await"].includes(initializer.kind)) continue;
+    if (valueModel.flow.values.some((value) => value.kind === "call" && !value.dead
+      && initializer.start <= value.start && value.end <= initializer.end)) continue;
     ctx.report.finding({ rule: "unread-local-binding", file, line: b.line });
   }
 }
 
-// --- shared helpers -------------------------------------------------------------
-
-function countChars(line, ch) {
-  let n = 0;
-  for (const c of line) if (c === ch) n++;
-  return n;
-}
-
 function escapeRe(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function offsetAt(source, line, column) {
+  let offset = 0;
+  for (let current = 1; current < line; current++) offset = source.indexOf("\n", offset) + 1;
+  return offset + column;
 }

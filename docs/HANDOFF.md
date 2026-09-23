@@ -1,117 +1,94 @@
-# Handoff — finding lifecycle planning
+# Handoff — post-0.2.0 adoption and finding lifecycle
 
-Updated September 10, 2026. Start here when continuing Any Doctor's product direction
-or implementing decisions, history, identity, or team sharing.
+Updated September 22, 2026. Start here when continuing Any Doctor's product
+direction, adoption work, decisions, history, identity, or team sharing.
+
+## Current release state
+
+- npm package: `any-doctor@0.2.0`.
+- Source release tag: `v0.2.0` at `3f98de0`.
+- `main` additionally contains `5b91bf8`, a test-only PTY release-gate
+  stabilization; the packed artifact was byte-identical after that change.
+- Release verification completed with 1,091 tests, all bundled doctors verified,
+  capability-gap certification, packed-consumer checks and a clean diff check.
+
+Recheck npm, HEAD and the working tree before making a new release claim. Evidence
+records describe their named candidates; they are not automatically current.
 
 ## Read in order
 
-1. [Vision](vision.md): the maintainer's three priorities and the trust model.
-2. [Feature map](features.md): available behavior versus planned work.
-3. [Lifecycle proposal](plans/finding-lifecycle/proposal.md): user and agent workflows.
-4. [Lifecycle design](plans/finding-lifecycle/design.md): ownership, storage,
-   identity, Git reconciliation, scale, and unresolved choices.
-5. [Milestones](plans/finding-lifecycle/milestones.md): bounded delivery and evidence.
-6. [Analysis improvements](plans/analysis-improvements.md): the concrete M1
-   implementation scope, anchor/contract choices, and strict acceptance matrix.
+1. [Vision](vision.md): purpose and trust model.
+2. [Feature map](features.md): shipped behavior versus planned work.
+3. [Lifecycle proposal](plans/finding-lifecycle/proposal.md): user and agent
+   workflows.
+4. [Lifecycle design](plans/finding-lifecycle/design.md): state ownership,
+   identity, Git reconciliation and remaining choices.
+5. [Lifecycle milestones](plans/finding-lifecycle/milestones.md): completed M1/M2
+   and planned M3/M4 boundaries.
+6. [Doctor SDK](doctor-sdk.md) and [Value Path](plans/value-path/design.md): the
+   shipped semantic authoring surface.
+7. [Bundled doctor modernization](doctor-modernization.md): current shared seams,
+   retained domain policy and verification expectations for every doctor.
 
-D29 in [decisions.md](decisions.md) records this direction. Current terms remain in
-[CONTEXT.md](../CONTEXT.md); planned lifecycle terms are explicitly marked there.
+## What shipped before and in 0.2.0
 
-## Current state
+- M1 identity-aware Git-base comparison with source-bound evidence, conservative
+  ambiguity and stale-source handling.
+- M2 remembered local accepted/not-applicable decisions, required reasons,
+  reversal, reassessment, dashboard and agent/JSON workflows. State is atomic
+  JSON, not SQLite; gates remain based on raw findings.
+- The Doctor SDK semantic result contract, shared recipes and maintained challenge
+  profiles.
+- Value Path as a bounded shared property-path query, adopted by Deepgram and
+  OpenRouter. A later fidelity audit removed Deepgram's private fallback and
+  intentionally narrowed one nested opaque-transfer credential case.
+- Locally complete recipe modules behind one registry.
+- The bundled doctors use the shared provider consistently: Async is recipe-native;
+  Deepgram and OpenRouter use Value Path; Convex retains domain-specific graph
+  policy over shared facts; Effect and Slop no longer carry line/brace parsers.
 
-This documentation pass began on a clean checkout at source HEAD 4adf69c. The
-package declared version 0.0.7. Recheck branch, HEAD, dirty state, runtime, and
-publication status before implementation; these are inspection facts, not a
-permanent baseline or proof of what npm currently serves.
+Authoritative architectural decisions are D30–D33 in
+[decisions.md](decisions.md). Preserved implementation plans and evidence may
+contain older branch names, package versions and baseline counts.
 
-The prior Convex/certification repair is now part of the inspected source, followed
-by additional review commits. Its [audit](repair-audit-007.md) records the exact
-older candidate tested, including 286 tests and 100 Convex verification rows.
-Those results must not be presented as a fresh test of later source or this plan.
+## Immediate phase: adoption
 
-**Delivered on `implement/analysis-a1-a2` (A1+A2, D30 + identity-repair
-amendment):** the `--base` diff compares through the host-derived identity
-layer — added / continuing / no-longer-detected with contextFallback,
-ambiguous, stale, lineScoped, unreadable, and contextUnavailable surfaced in
-report, JSON, and gate paths. `compareFindings` stays the strict fixture gate.
-An adversarial review's four findings are repaired with its probes as
-regression tests: literal-preserving normalization (quote-state scanner;
-string/template/regex interiors byte-exact), execution-bound provenance and
-evidence (pre-scan doctor digests, scan-adjacent immutable source capture,
-post-capture consistency recheck), optional host-validated Finding evidence
-ranges (multiline continuation edits break identity; scope surfaced as
-lineScoped), and linear duplicate matching (per-bucket cursors; 100k
-identical pairs ~58ms — dev/identity-bench.mjs is the benchmark of record).
-Evidence: 332 tests green plus a packed-artifact smoke on sift-skills (Apple
-M1 Pro, 16 GB, Node 26.5.0; full-pack `--base HEAD~5`: 402 continuing / 1
-added — the added finding cross-checked against git as a gitignored
-working-tree artifact — 402 lineScoped honestly reported because no bundled
-doctor emits ranges yet). Remaining limitations (D30 amendment, explicitly
-not guarantees): edits during a scan itself remain undetectable;
-receiver/declaration linkage unused; same-line occurrences need columns;
-bundled doctors emit no evidence ranges yet. The CLI still has no persistent
-decision store, SQLite layer, or finding history.
+Use real repositories to measure:
 
-**Architecture pass (same branch):** the dashboard split into its three
-concerns — src/doctor-tree.ts (the view-model: SiteFinding, buildTree,
-summaries, expansion defaults), src/prompts.ts (the Task prompt family),
-and a slimmer src/dashboard.ts (layout, frame, loop, read state);
-RunOutcome/CrashedDoctor/cohortFileCount/DEFAULT_EXTS moved to
-contract.ts. Strictly behavior-preserving (test bodies unchanged, import
-sources updated); glossary entries added (Dashboard, Doctor tree, Task
-prompt). M2's decision workflow now lands in the loop's state and the
-prompt family without piercing the tree.
+- time to the first useful finding;
+- false positives and missed findings, classified per check;
+- narrowed/unknown cases users expected the tool to answer;
+- first-attempt `generate` → `verify` → `run` success for a custom doctor;
+- whether users understand and use remembered decisions;
+- installation, performance, terminal and JSON friction.
 
-**Delivered on `implement/m2-decisions` (M2, D31):** local remembered
-decisions end to end — flat atomic state (no SQLite; the coupling rule
-is auto-history ⇒ database, reconsidered at M4), decide/decisions
-commands, dashboard a/x/v/u with a reason prompt, exact-identity
-application with visible reassessment, gates on raw findings, packed-
-install acceptance on sift-skills (decide → fresh-process rescan hides
-and annotates → inspect → reverse), 370 tests. Five review loops plus two adversarial repair rounds closed
-the findings: the loops caught and fixed a duplicate-suppression
-defect (identical occurrences now hold decisions back as ambiguous), an
-unreachable reason pane, a falsely-claimed flag refusal, NUL-bearing
-keys that could not cross argv (now base64url everywhere a shell can
-see them), and an encoded-key recording regression — all pinned by
-tests, with D31 recording the overclaims honestly.
+Prefer small `0.2.x` documentation, correctness and usability repairs backed by
+reproductions. A new semantic capability starts from a concrete false positive or
+miss plus valid lookalikes; Value Path remains bounded rather than growing into a
+general JavaScript interpreter.
 
-## Next bounded scope
+## Next planned feature: M3 shared project decisions
 
-M2 — remember one decision end to end — is next, per the
-[milestones](plans/finding-lifecycle/milestones.md). The identity layer's v1
-choices are recorded in D30 and the [design](plans/finding-lifecycle/design.md)
-open-choice table; per-check compatibility revisions and doctor-supplied
-evidence are still open there because nothing persists yet.
+M3 makes selected decisions reviewable Git-tracked project state and applies them
+consistently in fresh checkouts and CI. It must preserve private local decisions,
+raw findings, doctor confinement and one-off read-only scans.
 
-Broader module resolution, value flow, control flow, and optional types are later
-independently scoped capabilities. They do not all block M2/M3. Measure the real
-scanner separately from synthetic identity records; report current limits and
-assign scanner-scale work explicitly before claiming massive-codebase capacity.
+Before implementation, resolve and record:
 
-M3 (share decisions through Git, CI application) is next; M4 adds bounded
-history. These are planning increments, not authorization to run all four
-or publish a version.
-Resolve open choices in their milestone and write accepted decisions back to the
-design and decision log. Maintain one-off read-only scans and doctor confinement.
+- shared record layout and deterministic serialization;
+- doctor namespace/rename identity;
+- semantic conflict behavior after textual Git merges;
+- branch/worktree reconciliation and deletion;
+- read-only CI application and whether shared decisions affect gates;
+- raw, active and reviewed score presentation.
 
-## Product constraints to preserve
+M4 bounded history is separate. It is the point to reconsider SQLite or another
+indexed local store; M3 does not require a database merely to share decisions.
 
-Useful contextual findings and user-defined conventions remain in scope. The goal
-is better review with the user's own agent, not forcing every report to zero.
-Accepted concerns, not-applicable findings, observed disappearance, and claimed
-fixes must remain distinct. A dismissal does not authorize broad detector changes.
+## Completion evidence for future slices
 
-SQLite is local state; committed project files are authoritative for team decisions.
-Private decisions cannot silently change CI. Git branch changes and semantic merge
-conflicts must be tested, including cache rebuild from shared records. No mandatory
-hosted service, account, init, or built-in model provider is required.
-
-## Validation for the next agent
-
-Use the milestone's acceptance cases and independent counterexamples. Review the
-actual candidate, pack/install it, and exercise a real target such as Sift without
-changing unrelated product code. Sift alone does not validate massive-codebase
-performance; retain the scale harness results and limits too. Update this handoff
-with the delivered slice, exact evidence, and remaining open choices. The maintainer
-owns versioning and publication unless a later instruction explicitly changes that.
+Bind the exact candidate and target, reproduce the motivating case, run focused
+and full tests, verify all doctors, build and pack, exercise a clean consumer and a
+representative real repository, review the actual diff, and record limitations.
+Publication and version changes remain separate maintainer actions unless a task
+explicitly authorizes them.

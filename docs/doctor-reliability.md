@@ -4,10 +4,10 @@ A passing fixture suite establishes agreement on its cases. It does not establis
 precision on arbitrary repositories. Treat every check as a bounded claim.
 
 The [Doctor SDK foundations](doctor-sdk.md) move recurring identity, value-flow,
-resource and option mechanics into host-owned semantic queries and certify three
-reusable recipes with metadata-selected challenge profiles. The implementation
-on its feature branch is a review candidate, not a published compatibility
-promise; the [design](plans/doctor-sdk/design.md) remains the governing boundary.
+resource and option mechanics into host-owned semantic queries and certify four
+reusable recipes with metadata-selected challenge profiles. The SDK and Value
+Path are published in `0.2.0`; the [design](plans/doctor-sdk/design.md) records
+their governing boundary.
 
 The [vision](vision.md) includes project-specific policies and contextual review
 candidates alongside defects. Reliability means the evidence supports the stated
@@ -51,14 +51,16 @@ corrected false positive, preserved positive, intentional narrowing, new candida
 or regression. Counts alone cannot establish improvement. Record versions, target
 commit and dirty state, analysis availability, crashes, and unsupported cases.
 
-## Review decisions and reliability (planned)
+## Review decisions and reliability
 
-The [lifecycle proposal](plans/finding-lifecycle/proposal.md) adds accepted and
-not-applicable decisions. Preserve their reasons and distinguish the two: an
+The [lifecycle proposal](plans/finding-lifecycle/proposal.md) defines accepted and
+not-applicable decisions. Local decisions are implemented; project sharing and
+history remain planned. Preserve their reasons and distinguish the two: an
 accepted concern is not evidence that the detector is wrong. A confirmed
 not-applicable case should become a counterexample for its rule when appropriate.
-Shared decisions change the review view, not raw observations or analysis coverage.
-They must not silently teach a doctor to ignore unrelated similar code.
+Decisions change the active review view, not raw observations or analysis coverage.
+Local decisions do not change gates. No decision may silently teach a doctor to
+ignore unrelated similar code.
 
 Revalidate decision applicability after relevant source or rule changes. A claimed
 fix, a disappearance under comparable coverage, and an accepted finding are
@@ -71,7 +73,7 @@ authorize telemetry, uploading source, or automatic global rule changes.
 
 ## Current Convex boundaries
 
-Convex revision-2 checks use shared call structure and lexical identity. Supported
+Convex revision-2/3 checks use shared call structure and lexical identity. Supported
 registration imports, immutable aliases, local handler/config variables and direct
 handlers establish contexts. Database aliases, destructuring, imported context
 types (including local aliases and `Pick`), and consistent observed local helper

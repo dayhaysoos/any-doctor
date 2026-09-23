@@ -1,12 +1,13 @@
 ---
 title: Remembered decisions
-description: Not all findings are bad. Ignore the false positives and they'll never show up again.
+description: Record why a finding is accepted or not applicable, and reassess it when evidence changes.
 sidebar:
   order: 5
 ---
 
-Not all findings are bad. Sometimes the code is fine and the check can't
-tell. A decision is you telling any-doctor to stop bringing it up.
+Not every finding requires a code change. Sometimes a concern is real but
+intentional; sometimes the check does not apply to this code. A decision records
+which case you reviewed and why.
 
 There are two kinds:
 
@@ -21,13 +22,14 @@ of it.
 
 ## What's remembered
 
-A decision sticks to the finding, not to the line number. The code
-moves, the file gets renamed — the decision still applies. The finding
-only comes back when something actually changed: the code changed, or
-the doctor changed what it looks for.
+A decision sticks to the finding's evidence identity, not only its line number.
+Moving unchanged code within the same file can preserve the decision. File renames
+are not a current guarantee. Changed evidence, changed doctor meaning, stale source
+or ambiguous identical occurrences resurface the finding for reassessment.
 
 ## Changing your mind
 
-Press `u` on a finding in the dashboard to undo its decision. Decisions
-live in your repo, in `.any-doctor/`. Delete that file and everything
-comes back.
+Press `u` on a finding in the dashboard to undo its decision, or use
+`any-doctor decisions --reverse <key>`. Local state lives at
+`.any-doctor/decisions.local.json`; keep it untracked. Inspect and reverse
+individual records instead of deleting the file.
