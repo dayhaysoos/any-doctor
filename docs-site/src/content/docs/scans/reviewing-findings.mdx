@@ -36,7 +36,7 @@ You can navigate the tree below with your keyboard.
 | `left` | Collapse, walk out |
 | `a` | Accept the finding as intended |
 | `x` | Mark the check not-applicable to this code |
-| `v` | Review view — findings with their decision state |
+| `v` | Reviewed-findings view — decisions with their state and reason |
 | `u` | Reverse a decision on the selected finding |
 | `c` | Copy a fix prompt |
 | `q` (or `esc`) | Quit |
@@ -45,6 +45,17 @@ You can navigate the tree below with your keyboard.
 
 `a` and `x` prompt you for the reason your choices are being made, for
 future reference.
+
+## Revisit reviewed findings
+
+Decided findings leave the active list. Press `v` to reveal them again,
+dimmed and labeled **accepted** or **not applicable**. Select one to read the
+recorded reason, then press `u` if you want to reverse the decision and return
+the finding to the active list.
+
+The footer shows the current count, such as `v reviewed (3)`. When the count is
+zero, pressing `v` explains that there are no reviewed findings yet instead of
+opening an identical-looking empty view.
 
 ## Copy the work for your agent
 

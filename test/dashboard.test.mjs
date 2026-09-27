@@ -764,6 +764,18 @@ test("dashboard: a records an accepted decision through the reason prompt and hi
   }
 });
 
+test("dashboard: v explains the empty reviewed-findings view instead of silently toggling", async () => {
+  const stdin = new FakeStdin();
+  const stdout = new FakeStdout();
+  const done = runDashboardOn({ stdin, stdout }, dashInput(), copyAlways);
+  stdin.send("v");
+  const frame = stdout.frames.filter(f => f.includes("\x1b[H")).at(-1);
+  assert.match(frame, /no reviewed findings yet — use a or x on a finding to record a decision/);
+  assert.match(frame, /v reviewed \(0\)/, "the footer names the collection and exposes its count");
+  stdin.send("q");
+  await settle(done);
+});
+
 test("dashboard: x records not-applicable; an empty reason is refused; esc cancels", async () => {
   const decided = [];
   const stdin = new FakeStdin();

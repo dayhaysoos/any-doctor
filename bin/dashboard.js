@@ -243,7 +243,7 @@ function itemRowText(it, isSelected, readKeys, c, showCheckId = true, reviewed, 
     return `${isSelected ? c("›", BOLD) : " "}${glyph} ${c(it.site.file + ":" + it.site.line, wrap)}${suffix}${mark}`;
 }
 export function dashboardFrame(state) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u;
     const { tree, selectedRow, readKeys, useColor, cols, rows } = state;
     const c = colorizer(useColor);
     const findings = tree.flatMap(d => d.checks.flatMap(g => g.items));
@@ -419,7 +419,7 @@ export function dashboardFrame(state) {
                 ? `a reason is required — type one (esc cancels): ${state.prompt.buffer}▏`
                 : `Reason for ${state.prompt.disposition === "accepted" ? "accepting" : "not-applicable"} ${state.prompt.file}:${state.prompt.line}: ${state.prompt.buffer}▏ (enter records · esc cancels)`, YELLOW)
             : state.notice ? c("✔ " + state.notice, GREEN) : "",
-        c("↑↓ move · →← expand · enter copy · c copy group · a accept · x n/a · u undo · v review · q quit", DIM),
+        c(`↑↓ move · →← expand · enter copy · c copy group · a accept · x n/a · u undo · v reviewed (${(_u = (_t = state.dispositionByReadKey) === null || _t === void 0 ? void 0 : _t.size) !== null && _u !== void 0 ? _u : 0}) · q quit`, DIM),
     ];
     const frameLines = layout.compact
         ? [...headerLines, ...body, ...(layout.footerRows ? [footer.filter(Boolean).join(' · ')] : [])]
@@ -733,11 +733,16 @@ export async function runDashboardOn(env, input, deps = {}) {
             const row = rows[selectedRow];
             const rowKey = toggleKeyOf(row);
             if (key === "v") {
-                showReviewed = !showReviewed;
                 const decidedCount = (_b = view === null || view === void 0 ? void 0 : view.suppressedReadKeys.size) !== null && _b !== void 0 ? _b : 0;
-                notice = showReviewed && decidedCount > 0
-                    ? `review view — ${decidedCount} decided finding${decidedCount === 1 ? "" : "s"} shown dim`
-                    : undefined;
+                if (decidedCount === 0) {
+                    showReviewed = false;
+                    notice = "no reviewed findings yet — use a or x on a finding to record a decision";
+                    return;
+                }
+                showReviewed = !showReviewed;
+                notice = showReviewed
+                    ? `showing ${decidedCount} reviewed finding${decidedCount === 1 ? "" : "s"} dim — press v to return to active findings`
+                    : "showing active findings — press v to revisit reviewed decisions";
                 selectedRow = 0;
                 step(1);
                 return;

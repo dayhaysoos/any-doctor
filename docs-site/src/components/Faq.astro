@@ -1,124 +1,92 @@
 ---
-// FAQ accordion — native details/summary, no JavaScript. Answers are the
-// author's own words.
+// Native details/summary keeps the FAQ usable without client JavaScript.
 ---
 
-<div class="faq" data-faq>
-  <details name="faq">
-    <summary>What is a doctor?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
-    <div class="a"><p>
-      A doctor is a single JS file that scans your repo for mistakes and
-      reports the findings. You can create your own doctors for specific
-      patterns in your own codebase and re-use them later on or share with
-      your team.
-    </p></div>
-  </details>
+<section class="faq" aria-labelledby="faq-title">
+  <h2 id="faq-title">A few honest answers.</h2>
+  <div class="questions">
+    <details name="faq">
+      <summary>What is a doctor?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="a"><p>
+        A doctor is a JavaScript file that scans a repository for a bounded
+        class of mistakes and reports evidence. You can author one for a
+        recurring project rule, test it with fixtures, and share it with your team.
+      </p></div>
+    </details>
 
-  <details name="faq">
-    <summary>Why "doctor"?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
-    <div class="a"><p>
-      Heavily inspired by the react-doctor experience. "What if we had a
-      'doctor' for everything we cared about?"
-    </p></div>
-  </details>
+    <details name="faq">
+      <summary>How is this different from ESLint or Oxlint?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="a"><p>
+        Use a trustworthy existing lint rule whenever it fits. Consider a doctor
+        when recurring project-specific policy depends on relationships among
+        calls, values, files, ownership, ordering, or domain identity. A custom
+        lint plugin can do sophisticated analysis too; Any Doctor supplies the
+        authoring, fixtures, evidence, explicit limits, and decision workflow.
+      </p></div>
+    </details>
 
-  <details name="faq">
-    <summary>What's the health score?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
-    <div class="a"><p>
-      A 0–100 number at the end of a run. Severity is weighted across
-      findings and files with a grade.
-    </p></div>
-  </details>
+    <details name="faq">
+      <summary>Does it replace AI or human code review?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="a"><p>
+        No. Doctors handle stable, repeatable observations without model
+        inference. Keep AI and human reviewers for product intent, architecture,
+        security, unfamiliar situations, and anything that still requires judgment.
+      </p></div>
+    </details>
 
-  <details name="faq">
-    <summary>How is this different from ESLint?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
-    <div class="a"><p>
-      You should still 100% be using linters. any-doctor is designed for
-      recurring patterns that show up in your code that you don't
-      necessarily want to make lint configs for.
-    </p></div>
-  </details>
+    <details name="faq">
+      <summary>What happens when a finding is intentional?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="a"><p>
+        Mark it accepted, or mark the check not applicable, and record why. The
+        finding leaves the active list but remains visible in the reviewed view.
+        Changed evidence or changed doctor meaning brings it back for reassessment.
+        A genuine detector false positive should become a fixture and improve the doctor.
+      </p></div>
+    </details>
 
-  <details name="faq">
-    <summary>How is this different from AI code reviewers?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
-    <div class="a"><p>
-      You should still run your regular AI code reviewers. However, you can
-      save your agents tokens and time by having them run doctors. Doctors
-      should be calling out bad patterns from mistakes you've seen them make
-      so they can focus on the real issues.
-    </p></div>
-  </details>
+    <details name="faq">
+      <summary>Does scanning send my source code anywhere?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="a"><p>
+        No. Scans run locally, without an Any Doctor account, API key, or hosted
+        scoring service. Doctor processes have no network, subprocess, or
+        project-write authority. If an external agent helps author a doctor, that
+        provider's data policy applies to the authoring conversation.
+      </p></div>
+    </details>
 
-  <details name="faq">
-    <summary>What about false positives?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
-    <div class="a"><p>
-      You or your agent can accept findings as intended so it never shows
-      again.
-    </p></div>
-  </details>
+    <details name="faq">
+      <summary>Can it run in CI?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="a"><p>
+        It is designed for CI with JSON output, exit codes, and base-branch
+        comparison so a change can be judged by newly introduced findings. Pin
+        the package version for reproducibility while Any Doctor is pre-1.0.
+      </p></div>
+    </details>
 
-  <details name="faq">
-    <summary>Does it send my code anywhere?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
-    <div class="a"><p>No.</p></div>
-  </details>
-
-  <details name="faq">
-    <summary>How do I write my own?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
-    <div class="a"><p>
-      Describe the patterns or bugs you want to catch with any-doctor to
-      your agent. The doctor contract is one file with named checks and
-      evidence rules. A full agent guide is baked into the CLI.
-    </p></div>
-  </details>
-
-  <details name="faq">
-    <summary>Can it run in CI?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
-    <div class="a"><p>
-      Yes — though it's untested in real CI so far. JSON output and exit
-      codes are built in.
-    </p></div>
-  </details>
-</div>
+    <details name="faq">
+      <summary>Why “doctor”?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="a"><p>
+        React Doctor showed how useful a fast, agent-friendly health check could
+        feel. Any Doctor asks what happens when teams can create that experience
+        for the recurring review knowledge specific to their own code.
+      </p></div>
+    </details>
+  </div>
+</section>
 
 <style>
-  .faq { margin-top: 5rem; }
-  details {
-    border-bottom: 1px solid var(--color-border);
-  }
+  .faq { margin-top: 5.5rem; }
+  .faq > h2 { margin: 0 0 1.25rem; color: var(--color-foreground); font-size: 1.5rem; line-height: 1.2; letter-spacing: -0.025em; font-weight: 700; }
+  details { border-bottom: 1px solid var(--color-border); }
   details:first-of-type { border-top: 1px solid var(--color-border); }
-  summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1.05rem 0.25rem;
-    cursor: pointer;
-    list-style: none;
-    font-weight: 600;
-    font-size: 1.05rem;
-    color: var(--color-foreground);
-  }
+  summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.05rem 0.25rem; cursor: pointer; list-style: none; font-weight: 650; font-size: 1rem; color: var(--color-foreground); }
   summary::-webkit-details-marker { display: none; }
-  summary:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 4px;
-    border-radius: 4px;
-  }
-  .chev {
-    width: 1rem;
-    height: 1rem;
-    flex-shrink: 0;
-    color: var(--color-muted-foreground);
-    transition: transform 0.2s ease;
-  }
+  summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; border-radius: 4px; }
+  .chev { width: 1rem; height: 1rem; flex-shrink: 0; color: var(--color-muted-foreground); transition: transform 180ms ease; }
   details[open] .chev { transform: rotate(90deg); }
   details[open] summary { color: var(--color-primary); }
-  .a { padding: 0 0.25rem 1.15rem; }
-  .a p {
-    margin: 0;
-    font-size: 0.98rem;
-    line-height: 1.7;
-    color: var(--color-muted-foreground);
-    max-width: 46rem;
-  }
+  .a { padding: 0 2rem 1.2rem 0.25rem; }
+  .a p { max-width: 65ch; margin: 0; color: var(--color-muted-foreground); font-size: 0.94rem; line-height: 1.75; }
+  @media (max-width: 760px) { .faq { margin-top: 4.5rem; } }
+  @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
 </style>

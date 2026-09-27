@@ -528,7 +528,7 @@ export function dashboardFrame(state: DashboardFrameState): string {
         ? `a reason is required — type one (esc cancels): ${state.prompt.buffer}▏`
         : `Reason for ${state.prompt.disposition === "accepted" ? "accepting" : "not-applicable"} ${state.prompt.file}:${state.prompt.line}: ${state.prompt.buffer}▏ (enter records · esc cancels)`, YELLOW)
       : state.notice ? c("✔ " + state.notice, GREEN) : "",
-    c("↑↓ move · →← expand · enter copy · c copy group · a accept · x n/a · u undo · v review · q quit", DIM),
+    c(`↑↓ move · →← expand · enter copy · c copy group · a accept · x n/a · u undo · v reviewed (${state.dispositionByReadKey?.size ?? 0}) · q quit`, DIM),
   ];
 
   const frameLines = layout.compact
@@ -840,11 +840,16 @@ export async function runDashboardOn(env: { stdin: TtyStdin; stdout: TtyStdout }
       const rowKey = toggleKeyOf(row);
 
       if (key === "v") {
-        showReviewed = !showReviewed;
         const decidedCount = view?.suppressedReadKeys.size ?? 0;
-        notice = showReviewed && decidedCount > 0
-          ? `review view — ${decidedCount} decided finding${decidedCount === 1 ? "" : "s"} shown dim`
-          : undefined;
+        if (decidedCount === 0) {
+          showReviewed = false;
+          notice = "no reviewed findings yet — use a or x on a finding to record a decision";
+          return;
+        }
+        showReviewed = !showReviewed;
+        notice = showReviewed
+          ? `showing ${decidedCount} reviewed finding${decidedCount === 1 ? "" : "s"} dim — press v to return to active findings`
+          : "showing active findings — press v to revisit reviewed decisions";
         selectedRow = 0;
         step(1);
         return;

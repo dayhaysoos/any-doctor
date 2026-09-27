@@ -1,74 +1,27 @@
 ---
-// The honest logo wall: instead of "trusted by 10,000 companies," it's
-// trusted by exactly one guy, scrolling the companies whose tools he
-// actually uses. Text names, not logos — no trademark art to borrow.
-// Edit the COMPANIES list to taste.
+const tools = ["Apple", "GitHub", "Cloudflare", "Anthropic", "Convex", "Effect", "OpenRouter", "React", "npm", "Motion", "Astro", "Tailwind"];
 ---
 
-<div class="trusted" data-trusted>
-  <div class="label">Trusted by one guy who uses:</div>
-  <div class="marquee" aria-hidden="true">
-    <div class="track">
-      {
-        Array.from({ length: 2 }).map(() => (
-          <div class="set">
-            {[
-              "Apple",
-              "GitHub",
-              "Cloudflare",
-              "Anthropic",
-              "Convex",
-              "Effect",
-              "OpenRouter",
-              "React",
-              "npm",
-              "Motion",
-              "Astro",
-              "Tailwind",
-            ].map((name) => (
-              <span class="name">
-                {name}
-                <span class="sep">·</span>
-              </span>
-            ))}
-          </div>
-        ))
-      }
-    </div>
+<aside class="trusted" aria-labelledby="trusted-title">
+  <p id="trusted-title"><strong>Trusted by one guy.</strong> <span>Yes, that is the whole list.</span></p>
+  <p class="setup">He uses it around:</p>
+  <div class="tools" aria-label="Tools used by that one guy">
+    {tools.map((name) => <span>{name}</span>)}
   </div>
-</div>
+</aside>
 
 <style>
-  .trusted { margin-top: 2.25rem; }
-  .label {
-    font-size: 0.9rem;
-    color: var(--color-muted-foreground);
-    text-align: center;
-    margin-bottom: 0.9rem;
-  }
-  .marquee {
-    overflow: hidden;
-    -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
-    mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
-  }
-  .track {
-    display: flex;
-    width: max-content;
-    animation: marquee 36s linear infinite;
-  }
-  .set { display: flex; align-items: baseline; }
-  .name {
-    font-family: var(--nb-font-mono);
-    font-size: 1.05rem;
-    color: var(--color-muted-foreground);
-    white-space: nowrap;
-    padding-inline: 0.9rem;
-  }
-  .sep { padding-left: 1.8rem; color: var(--color-border); }
-  @keyframes marquee {
-    to { transform: translateX(-50%); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .track { animation: none; }
+  .trusted { margin-top: 2.5rem; padding: 2rem 0; border-block: 1px solid var(--color-border); text-align: center; }
+  .trusted p { margin: 0; }
+  .trusted > p:first-child { color: var(--color-foreground); font-size: clamp(1.2rem, 2.5vw, 1.55rem); }
+  .trusted strong { font-weight: 780; }
+  .trusted > p:first-child span { color: var(--color-muted-foreground); }
+  .setup { margin-top: 0.35rem !important; color: var(--color-muted-foreground); font-size: 0.88rem; }
+  .tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.45rem 1rem; margin-top: 1rem; color: var(--color-muted-foreground); font: 600 0.78rem/1.5 var(--nb-font-mono); }
+  .tools span { position: relative; }
+  .tools span:not(:last-child)::after { content: "·"; position: absolute; left: calc(100% + 0.45rem); color: var(--color-border-strong); }
+  @media (max-width: 520px) {
+    .tools { gap: 0.4rem 0.85rem; }
+    .tools span:not(:last-child)::after { left: calc(100% + 0.36rem); }
   }
 </style>
