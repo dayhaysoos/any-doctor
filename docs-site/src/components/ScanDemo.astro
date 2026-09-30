@@ -1,202 +1,249 @@
 ---
-// A compact example of the core loop: a repeated review lesson becomes a
-// doctor, the doctor catches the next occurrence, and the agent fixes it.
+// PROTOTYPE: A deliberately minimal visualization of authored Doctor rules
+// scanning one repository. Disposable until the idea is proven.
 ---
 
-<section class="demo" data-demo aria-labelledby="demo-title">
-  <div class="demo-heading">
-    <div>
-      <h2 id="demo-title">A review lesson your codebase remembers.</h2>
-      <p>Here is one example: this team requires every request helper to accept and pass an AbortSignal.</p>
-    </div>
-    <button type="button" class="playback" data-playback aria-label="Pause example">
-      <svg data-pause viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 3.5h2v9h-2zm5 0h2v9h-2z" fill="currentColor"/></svg>
-      <svg data-play class="icon-hidden" viewBox="0 0 16 16" aria-hidden="true"><path d="m5 3 8 5-8 5z" fill="currentColor"/></svg>
-    </button>
-  </div>
+<section class="scan-demo" data-scan-demo aria-labelledby="scan-demo-title">
+  <header class="demo-heading">
+    <p>Your rules. Every file.</p>
+    <h2 id="scan-demo-title">Scan the whole codebase at once.</h2>
+  </header>
 
-  <div class="stage-nav" role="tablist" aria-label="Example stages">
-    <button type="button" role="tab" aria-selected="true" aria-controls="stage-review" id="tab-review" data-stage-button="0">
-      <span>Review says it</span><small>once again</small>
-    </button>
-    <button type="button" role="tab" aria-selected="false" aria-controls="stage-catch" id="tab-catch" data-stage-button="1" tabindex="-1">
-      <span>Doctor catches it</span><small>every time</small>
-    </button>
-    <button type="button" role="tab" aria-selected="false" aria-controls="stage-fix" id="tab-fix" data-stage-button="2" tabindex="-1">
-      <span>Agent fixes it</span><small>before review</small>
-    </button>
-  </div>
-
-  <div class="window">
-    <div class="window-bar" aria-hidden="true">
-      <span></span><span></span><span></span>
-      <strong>src/profile.ts</strong>
-      <em>example team rule</em>
+  <div class="scan-card">
+    <div class="card-bar">
+      <span><i aria-hidden="true"></i> your-repo/</span>
+      <div class="severity-legend" aria-hidden="true"><span>critical</span><span>warning</span></div>
     </div>
 
-    <div class="stage" role="tabpanel" id="stage-review" aria-labelledby="tab-review" data-stage="0">
-      <pre><code><span class="dim">1  async function loadProfile(id) &#123;</span>
-<span class="focus">2    const response = await fetch(`/api/users/$&#123;id&#125;`);</span>
-<span class="dim">3    return response.json();</span>
-<span class="dim">4  &#125;</span></code></pre>
-      <aside>
-        <p class="label">Review comment · again</p>
-        <blockquote>“Request helpers must accept and pass an AbortSignal.”</blockquote>
-        <p>Your team already knows this rule. The reviewer should not have to rediscover it on every change.</p>
-      </aside>
-    </div>
+    <div class="tree-stage">
+      <div class="scan-heading" aria-hidden="true">
+        <span class="scan-index" data-scan-index>SCAN 01 / 03</span>
+        <div class="scan-carousel"><span data-scan-label>SECURITY RULES</span></div>
+        <i></i>
+      </div>
 
-    <div class="stage" role="tabpanel" id="stage-catch" aria-labelledby="tab-catch" data-stage="1" hidden>
-      <pre><code><span class="dim">1  async function loadProfile(id) &#123;</span>
-<span class="flagged">2    const response = await fetch(`/api/users/$&#123;id&#125;`);</span>
-<span class="dim">3    return response.json();</span>
-<span class="dim">4  &#125;</span></code></pre>
-      <aside>
-        <p class="label">team-network/abort-signal-required</p>
-        <h3>Request cannot be cancelled.</h3>
-        <p>This helper does not accept or pass an AbortSignal.</p>
-        <div class="facts"><span>local</span><span>deterministic</span><span>0 tokens</span></div>
-      </aside>
-    </div>
+      <div class="tree-wrap">
+        <div class="scan-sweep" aria-hidden="true"></div>
+        <div class="repo-tree" role="img" aria-label="A terminal-style repository tree. Authored security, code-convention, and architecture rules scan every branch and reveal warnings and critical findings.">
+          <div class="tree-row root" data-row><span class="tree-glyph">◆</span><strong>src/</strong></div>
+          <div class="tree-row folder" data-row><span class="tree-glyph">├──</span><strong>routes/</strong></div>
+          <div class="tree-row file" data-row data-security="critical" data-architecture="warning"><span class="tree-glyph">│   ├──</span><span>account.ts</span><i data-marker>!</i></div>
+          <div class="tree-row file" data-row data-conventions="warning"><span class="tree-glyph">│   ├──</span><span>profile.ts</span><i data-marker>!</i></div>
+          <div class="tree-row file" data-row data-conventions="warning" data-architecture="critical"><span class="tree-glyph">│   └──</span><span>settings.ts</span><i data-marker>!</i></div>
 
-    <div class="stage" role="tabpanel" id="stage-fix" aria-labelledby="tab-fix" data-stage="2" hidden>
-      <pre><code><span class="good">1  async function loadProfile(id, signal) &#123;</span>
-<span class="good">2    const response = await fetch(</span>
-<span class="good">3      `/api/users/$&#123;id&#125;`, &#123; signal &#125;</span>
-<span class="good">4    );</span>
-<span class="good">5    return response.json();</span>
-<span class="good">6  &#125;</span></code></pre>
-      <aside>
-        <p class="label">Rescan</p>
-        <div class="clean">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 10 3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <strong>Finding resolved</strong>
+          <div class="tree-row folder" data-row><span class="tree-glyph">├──</span><strong>handlers/</strong></div>
+          <div class="tree-row file" data-row data-conventions="warning"><span class="tree-glyph">│   ├──</span><span>account.ts</span><i data-marker>!</i></div>
+          <div class="tree-row file" data-row data-security="warning"><span class="tree-glyph">│   ├──</span><span>admin.ts</span><i data-marker>!</i></div>
+          <div class="tree-row file" data-row data-architecture="warning"><span class="tree-glyph">│   └──</span><span>billing.ts</span><i data-marker>!</i></div>
+
+          <div class="tree-row folder" data-row><span class="tree-glyph">└──</span><strong>jobs/</strong></div>
+          <div class="tree-row file" data-row data-architecture="warning"><span class="tree-glyph">    ├──</span><span>sync-profile.ts</span><i data-marker>!</i></div>
+          <div class="tree-row file" data-row data-security="critical"><span class="tree-glyph">    ├──</span><span>export-account.ts</span><i data-marker>!</i></div>
+          <div class="tree-row file" data-row data-conventions="warning"><span class="tree-glyph">    └──</span><span>cleanup.ts</span><i data-marker>!</i></div>
         </div>
-        <p>The same doctor runs on the next agent change. Broad review stays focused on what is new and difficult.</p>
-      </aside>
+      </div>
+
+      <div class="scan-result is-scanning" data-scan-result aria-live="polite">
+        <strong data-result-count>0</strong>
+        <span data-result-label>findings</span>
+      </div>
     </div>
   </div>
 </section>
 
 <style>
-  .demo { margin-top: 4rem; }
-  .demo-heading { display: flex; align-items: end; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.25rem; }
-  h2 { max-width: 23ch; margin: 0; color: var(--color-foreground); font-size: clamp(1.45rem, 3vw, 2rem); line-height: 1.12; letter-spacing: -0.03em; font-weight: 700; text-wrap: balance; }
-  .demo-heading p { max-width: 62ch; margin: 0.55rem 0 0; color: var(--color-muted-foreground); font-size: 0.94rem; line-height: 1.6; }
-  .playback { display: grid; place-items: center; flex: none; width: 2.65rem; height: 2.65rem; border: 1px solid var(--color-border); border-radius: 0.65rem; color: var(--color-muted-foreground); background: transparent; cursor: pointer; transition: color 150ms ease, border-color 150ms ease; }
-  .playback:hover { color: var(--color-foreground); border-color: var(--color-border-strong); }
-  .playback:focus-visible, .stage-nav button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
-  .playback svg { width: 0.9rem; height: 0.9rem; }
-  .icon-hidden { display: none; }
-
-  .stage-nav { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--color-border); border-bottom: 0; border-radius: 0.8rem 0.8rem 0 0; overflow: hidden; }
-  .stage-nav button { min-width: 0; padding: 0.8rem 0.9rem; border: 0; border-right: 1px solid var(--color-border); background: var(--color-muted); color: var(--color-muted-foreground); text-align: left; cursor: pointer; }
-  .stage-nav button:last-child { border-right: 0; }
-  .stage-nav button[aria-selected="true"] { background: var(--color-card); color: var(--color-foreground); box-shadow: inset 0 -2px var(--color-primary); }
-  .stage-nav span, .stage-nav small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .stage-nav span { font-size: 0.82rem; font-weight: 700; }
-  .stage-nav small { margin-top: 0.1rem; font-size: 0.7rem; }
-
-  .window { overflow: hidden; border: 1px solid #2a3039; border-radius: 0 0 0.8rem 0.8rem; background: #0b0d12; box-shadow: 0 20px 48px -24px rgb(0 0 0 / 0.55); }
-  .window-bar { min-height: 2.55rem; display: flex; align-items: center; gap: 0.38rem; padding: 0 0.9rem; border-bottom: 1px solid #252a33; color: #aeb8c6; font: 0.7rem/1 var(--nb-font-mono); }
-  .window-bar > span { width: 0.58rem; height: 0.58rem; border-radius: 50%; background: #4a5260; }
-  .window-bar strong { margin-left: 0.4rem; color: #e8edf4; font-weight: 600; }
-  .window-bar em { margin-left: auto; font-style: normal; }
-  .stage { min-height: 20rem; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(15rem, 0.8fr); }
-  .stage[hidden] { display: none; }
-  .stage.entering { animation: stage-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both; }
-  @keyframes stage-in { from { opacity: 0; clip-path: inset(0 0 7% 0); transform: translateY(6px); } }
-  pre { min-width: 0; margin: 0; padding: 1.35rem; overflow-x: auto; border-right: 1px solid #252a33; color: #eef2f7; font: 500 clamp(0.71rem, 1.35vw, 0.84rem)/1.85 var(--nb-font-mono); }
-  code { display: block; width: max-content; min-width: 100%; }
-  code span { display: block; box-sizing: border-box; min-height: 1.85em; padding: 0 0.45rem; border-radius: 0.25rem; white-space: pre; }
-  .dim { color: #b8c1ce; }
-  .focus { color: #fff0d1; background: rgb(245 166 35 / 0.1); }
-  .flagged { color: #ffe2ad; background: rgb(245 166 35 / 0.13); text-decoration: underline wavy #f5a623 1px; text-underline-offset: 0.3em; }
-  .good { color: #c7f7e4; background: rgb(52 211 153 / 0.08); }
-  aside { display: flex; flex-direction: column; justify-content: center; padding: 1.5rem; color: #d7dee8; }
-  aside p { margin: 0; color: #bdc7d4; font-size: 0.88rem; line-height: 1.65; }
-  .label { margin-bottom: 0.7rem !important; color: #79d9b2 !important; font: 700 0.68rem/1.4 var(--nb-font-mono) !important; text-transform: uppercase; letter-spacing: 0.03em; }
-  blockquote { margin: 0 0 1rem; color: #fff; font-size: clamp(1.05rem, 2.2vw, 1.35rem); font-weight: 650; line-height: 1.3; letter-spacing: -0.02em; }
-  aside h3 { margin: 0 0 0.55rem; color: #fff; font-size: 1.2rem; letter-spacing: -0.02em; }
-  .facts { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1rem; }
-  .facts span { border: 1px solid #3a4351; border-radius: 999px; padding: 0.28rem 0.5rem; color: #d1d8e2; font: 0.64rem/1 var(--nb-font-mono); }
-  .clean { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.9rem; color: #7ee2bc; font-size: 1.2rem; }
-  .clean svg { width: 1.25rem; height: 1.25rem; }
-
-  @media (max-width: 640px) {
-    .demo { margin-top: 3.25rem; }
-    .stage-nav button { padding: 0.75rem 0.45rem; text-align: center; }
-    .stage-nav small { display: none; }
-    .stage { min-height: 32rem; grid-template-columns: 1fr; align-content: start; }
-    pre { border-right: 0; border-bottom: 1px solid #252a33; padding: 1rem; overflow-x: hidden; }
-    code { width: 100%; }
-    code span { white-space: pre-wrap; overflow-wrap: anywhere; }
-    aside { min-height: 13rem; padding: 1.2rem; }
-    .window-bar em { display: none; }
+  .scan-demo { margin-top: 4rem; }
+  .demo-heading { margin: 0 auto 1.25rem; text-align: center; }
+  .demo-heading p { margin: 0 0 0.45rem; color: var(--color-primary); font: 700 0.68rem/1.4 var(--nb-font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
+  .demo-heading h2 { margin: 0; color: var(--color-foreground); font-size: clamp(1.45rem, 3vw, 2rem); font-weight: 630; line-height: 1.2; letter-spacing: -0.03em; }
+  .scan-card { overflow: hidden; border: 1px solid #29313c; border-radius: 0.9rem; color: #e8edf3; background: #090d12; box-shadow: 0 22px 52px -34px rgb(0 0 0 / 0.78); }
+  .card-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3.1rem; padding: 0.55rem 0.85rem; border-bottom: 1px solid #252d37; background: #0e131a; }
+  .card-bar > span { display: flex; align-items: center; gap: 0.55rem; color: #a9b3c0; font: 600 0.66rem/1 var(--nb-font-mono); }
+  .card-bar i { width: 0.42rem; height: 0.42rem; border-radius: 50%; background: #69dbae; box-shadow: 0 0 11px rgb(105 219 174 / 0.65); }
+  .severity-legend { display: flex; gap: 0.8rem; color: #788592; font: 600 0.52rem/1 var(--nb-font-mono); }
+  .severity-legend span { display: flex; align-items: center; gap: 0.35rem; }
+  .severity-legend span::before { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: #ff6577; box-shadow: 0 0 7px rgb(255 101 119 / 0.4); content: ""; }
+  .severity-legend span:last-child::before { background: #f2b95e; box-shadow: 0 0 7px rgb(242 185 94 / 0.35); }
+  .tree-stage { position: relative; min-height: 31.5rem; padding: 1.4rem 1.2rem 4.8rem; background: radial-gradient(circle at 50% 18%, rgb(30 55 46 / 0.48), transparent 34%), #090d12; }
+  .scan-heading { width: min(100%, 24rem); margin: 0 auto 1.15rem; color: #dff8ec; font-family: var(--nb-font-mono); }
+  .scan-index { display: block; margin-bottom: 0.32rem; color: #65776f; font-size: 0.5rem; font-weight: 700; letter-spacing: 0.14em; }
+  .scan-carousel { height: 1.65rem; overflow: hidden; }
+  .scan-carousel [data-scan-label] { display: block; color: #7be0b8; font-size: 1.12rem; font-weight: 650; line-height: 1.45rem; letter-spacing: 0.09em; text-shadow: 0 0 18px rgb(105 219 174 / 0.18); transition: opacity 260ms ease, transform 320ms cubic-bezier(.25,.8,.25,1); }
+  .scan-carousel [data-scan-label].is-leaving { opacity: 0; transform: translateY(-120%); }
+  .scan-carousel [data-scan-label].is-entering { opacity: 0; transform: translateY(120%); }
+  .scan-carousel [data-scan-label].no-transition { transition: none; }
+  .scan-heading > i { display: block; width: 100%; height: 1px; margin-top: 0.5rem; background: linear-gradient(90deg, #447461, rgb(68 116 97 / 0.16), transparent); }
+  .tree-wrap { position: relative; width: min(100%, 24rem); margin: 0 auto; }
+  .scan-sweep { position: absolute; z-index: 3; top: -0.25rem; bottom: -0.25rem; left: -1.8rem; width: 1.8rem; pointer-events: none; opacity: 0; background: linear-gradient(to right, transparent 0%, rgb(105 219 174 / 0.05) 28%, rgb(105 219 174 / 0.48) 49%, rgb(105 219 174 / 0.1) 56%, transparent 100%); filter: drop-shadow(0 0 8px rgb(105 219 174 / 0.38)); }
+  .scan-demo.is-scanning .scan-sweep { animation: sweep-tree 1350ms linear forwards; }
+  .repo-tree { display: grid; width: min(100%, 24rem); margin: 0 auto; }
+  .tree-row { position: relative; z-index: 2; display: grid; grid-template-columns: 5.5rem max-content 1rem; align-items: center; column-gap: 0.6rem; min-height: 1.55rem; color: #8e9ba8; font: 0.71rem/1.2 var(--nb-font-mono); opacity: 0.68; transition: color 420ms ease, opacity 420ms ease, text-shadow 420ms ease; }
+  .tree-row.file { grid-template-columns: 7rem max-content 1rem; }
+  .tree-row strong { color: #d5dde6; font-weight: 650; transition: color 420ms ease; }
+  .tree-glyph { color: #556573; white-space: pre; transition: color 420ms ease, text-shadow 420ms ease; }
+  .tree-row.root { grid-template-columns: 1.5rem max-content 1rem; margin-bottom: 0.12rem; }
+  .tree-row.root .tree-glyph { color: #69dbae; }
+  .tree-row > i { display: grid; width: 1rem; height: 1rem; place-items: center; border: 1px solid currentColor; border-radius: 50%; color: inherit; font-size: 0.58rem; font-style: normal; opacity: 0; transform: scale(0.4); transition: opacity 320ms ease, transform 420ms cubic-bezier(.2,.8,.2,1), background 320ms ease; }
+  .tree-row.is-scanned { opacity: 0.5; }
+  .tree-row.severity-warning { color: #f2bd66; opacity: 1; text-shadow: 0 0 10px rgb(242 185 94 / 0.18); }
+  .tree-row.severity-critical { color: #ff7181; opacity: 1; text-shadow: 0 0 11px rgb(255 101 119 / 0.22); }
+  .tree-row.severity-warning .tree-glyph,
+  .tree-row.severity-warning > i { color: #f2bd66; }
+  .tree-row.severity-critical .tree-glyph,
+  .tree-row.severity-critical > i { color: #ff7181; }
+  .tree-row.severity-warning > i,
+  .tree-row.severity-critical > i { opacity: 1; transform: scale(1); }
+  .tree-row.severity-warning > i { color: #241703; background: #f2b95e; }
+  .tree-row.severity-critical > i { color: #27070c; background: #ff6577; }
+  .scan-result { position: absolute; right: 0; bottom: 1.15rem; left: 0; display: flex; min-height: 2.8rem; align-items: baseline; justify-content: center; gap: 0.5rem; margin: auto; opacity: 1; transition: opacity 180ms ease; }
+  .scan-result.is-scanning { opacity: 0; }
+  .scan-result strong { color: #f2bd66; font: 650 2.25rem/1 var(--nb-font-mono); letter-spacing: -0.06em; text-shadow: 0 0 18px rgb(242 185 94 / 0.15); }
+  .scan-result > span { color: #aeb9c3; font: 650 0.62rem/1 var(--nb-font-mono); letter-spacing: 0.12em; text-transform: uppercase; }
+  .scan-result.is-updating strong { animation: result-pulse 320ms ease-out; }
+  @keyframes sweep-tree {
+    0% { left: -1.8rem; opacity: 0; }
+    7% { opacity: 1; }
+    93% { opacity: 1; }
+    100% { left: 100%; opacity: 0; }
   }
-  @media (prefers-reduced-motion: reduce) { .stage { animation: none; } }
+  @keyframes result-pulse { 50% { color: #ffe0a6; transform: translateY(-2px); } }
+  @media (max-width: 640px) {
+    .scan-demo { margin-top: 3rem; }
+    .demo-heading { text-align: left; }
+    .tree-stage { min-height: 29.5rem; padding: 1.1rem 0.8rem 4.6rem; }
+    .scan-heading, .tree-wrap, .repo-tree { width: min(100%, 20rem); }
+    .scan-carousel [data-scan-label] { font-size: 1rem; }
+    .tree-row { grid-template-columns: 4.65rem max-content 1rem; font-size: 0.64rem; }
+    .tree-row.file { grid-template-columns: 5.85rem max-content 1rem; }
+    .scan-result { bottom: 0.8rem; }
+    .scan-result strong { font-size: 2rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scan-carousel [data-scan-label], .tree-row, .tree-row strong, .tree-glyph, .tree-row > i { transition: none; }
+    .scan-demo.is-scanning .scan-sweep { animation: none; }
+    .scan-result.is-updating strong { animation: none; }
+  }
 </style>
 
 <script>
-  const DURATION = 4200;
+  const demos = document.querySelectorAll<HTMLElement>('[data-scan-demo]');
+  for (const demo of demos) {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const rows = [...demo.querySelectorAll<HTMLElement>('[data-row]')];
+    const scanLabel = demo.querySelector<HTMLElement>('[data-scan-label]');
+    const scanIndex = demo.querySelector<HTMLElement>('[data-scan-index]');
+    const result = demo.querySelector<HTMLElement>('[data-scan-result]');
+    const resultCount = demo.querySelector<HTMLElement>('[data-result-count]');
+    const resultLabel = demo.querySelector<HTMLElement>('[data-result-label]');
+    const categories = [
+      { key: 'security', label: 'SECURITY RULES' },
+      { key: 'conventions', label: 'CODE CONVENTIONS' },
+      { key: 'architecture', label: 'ARCHITECTURE RULES' },
+    ] as const;
+    let timers: number[] = [];
+    let visible = false;
+    let categoryIndex = 0;
 
-  function bindDemo(root: HTMLElement) {
-    if (root.dataset.bound) return;
-    root.dataset.bound = "true";
-    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-stage-button]"));
-    const stages = Array.from(root.querySelectorAll<HTMLElement>("[data-stage]"));
-    const playback = root.querySelector<HTMLButtonElement>("[data-playback]")!;
-    const pauseIcon = root.querySelector<SVGElement>("[data-pause]")!;
-    const playIcon = root.querySelector<SVGElement>("[data-play]")!;
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let index = 0;
-    let playing = !reduced;
-    let timer: number | undefined;
+    const schedule = (callback: () => void, delay: number) => {
+      timers.push(window.setTimeout(callback, delay));
+    };
+    const clearTimers = () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      timers = [];
+    };
+    const clearRows = () => {
+      rows.forEach((row) => row.classList.remove('is-active', 'is-scanned', 'severity-warning', 'severity-critical'));
+    };
+    const setResult = (count: number, scanning = false) => {
+      if (resultCount) resultCount.textContent = scanning ? '' : String(count);
+      if (resultLabel) resultLabel.textContent = scanning ? '' : count === 1 ? 'finding' : 'findings';
+      result?.classList.toggle('is-scanning', scanning);
+      result?.classList.remove('is-updating');
+      if (!scanning) {
+        void result?.offsetWidth;
+        result?.classList.add('is-updating');
+      }
+    };
+    const setLabel = (label: string) => {
+      if (scanLabel) scanLabel.textContent = label;
+      if (scanIndex) scanIndex.textContent = `SCAN ${String(categoryIndex + 1).padStart(2, '0')} / ${String(categories.length).padStart(2, '0')}`;
+    };
+    const severityFor = (row: HTMLElement, key: string) => row.getAttribute(`data-${key}`);
+    const showStatic = () => {
+      clearTimers();
+      demo.classList.remove('is-scanning');
+      scanLabel?.classList.remove('is-leaving', 'is-entering', 'no-transition');
+      clearRows();
+      const category = categories[categoryIndex];
+      setLabel(category.label);
+      let findings = 0;
+      rows.forEach((row) => {
+        row.classList.add('is-scanned');
+        const severity = severityFor(row, category.key);
+        if (severity) {
+          findings += 1;
+          row.classList.add(`severity-${severity}`);
+        }
+      });
+      setResult(findings);
+    };
 
-    const updateControl = () => {
-      playback.setAttribute("aria-label", playing ? "Pause example" : "Play example");
-      pauseIcon.classList.toggle("icon-hidden", !playing);
-      playIcon.classList.toggle("icon-hidden", playing);
-    };
-    const schedule = () => {
-      if (timer !== undefined) window.clearTimeout(timer);
-      if (playing && !document.hidden) timer = window.setTimeout(() => show((index + 1) % stages.length), DURATION);
-    };
-    const show = (next: number, focus = false) => {
-      index = next;
-      stages.forEach((stage, i) => {
-        const active = i === index;
-        stage.hidden = !active;
-        stage.classList.toggle("entering", active && !reduced);
-      });
-      tabs.forEach((tab, i) => {
-        const active = i === index;
-        tab.setAttribute("aria-selected", String(active));
-        tab.tabIndex = active ? 0 : -1;
-      });
-      if (focus) tabs[index].focus();
-      schedule();
+    const run = () => {
+      clearTimers();
+      if (reduceMotion.matches) {
+        showStatic();
+        return;
+      }
+      if (document.hidden || !visible) return;
+      const category = categories[categoryIndex];
+      setLabel(category.label);
+      scanLabel?.classList.remove('is-leaving', 'is-entering', 'no-transition');
+      clearRows();
+      setResult(0, true);
+      void demo.offsetWidth;
+      demo.classList.add('is-scanning');
+
+      const scanDuration = 1350;
+      schedule(() => {
+        demo.classList.remove('is-scanning');
+        let findings = 0;
+        rows.forEach((row) => {
+          row.classList.add('is-scanned');
+          const severity = severityFor(row, category.key);
+          if (severity) {
+            findings += 1;
+            row.classList.add(`severity-${severity}`);
+          }
+        });
+        setResult(findings);
+        schedule(() => {
+          scanLabel?.classList.add('is-leaving');
+          clearRows();
+          schedule(() => {
+            categoryIndex = (categoryIndex + 1) % categories.length;
+            scanLabel?.classList.add('no-transition');
+            scanLabel?.classList.remove('is-leaving');
+            scanLabel?.classList.add('is-entering');
+            setLabel(categories[categoryIndex].label);
+            void scanLabel?.offsetWidth;
+            scanLabel?.classList.remove('no-transition');
+            schedule(() => scanLabel?.classList.remove('is-entering'), 20);
+          }, 280);
+          schedule(run, 850);
+        }, 3400);
+      }, scanDuration);
     };
 
-    tabs.forEach((tab, i) => {
-      tab.addEventListener("click", () => { playing = false; updateControl(); show(i); });
-      tab.addEventListener("keydown", (event) => {
-        if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
-        event.preventDefault();
-        playing = false;
-        updateControl();
-        show((i + (event.key === "ArrowRight" ? 1 : stages.length - 1)) % stages.length, true);
-      });
-    });
-    playback.addEventListener("click", () => { playing = !playing; updateControl(); schedule(); });
-    document.addEventListener("visibilitychange", schedule);
-    updateControl();
-    show(0);
+    const stop = () => {
+      clearTimers();
+      demo.classList.remove('is-scanning');
+    };
+    reduceMotion.addEventListener('change', () => { if (reduceMotion.matches) showStatic(); else run(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); else run(); });
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible) run(); else stop();
+    }, { threshold: 0.35 });
+    observer.observe(demo);
   }
-
-  function bindDemos() {
-    document.querySelectorAll<HTMLElement>("[data-demo]").forEach(bindDemo);
-  }
-  bindDemos();
-  document.addEventListener("astro:page-load", bindDemos);
 </script>

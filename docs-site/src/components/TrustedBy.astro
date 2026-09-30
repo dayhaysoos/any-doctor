@@ -2,26 +2,66 @@
 const tools = ["Apple", "GitHub", "Cloudflare", "Anthropic", "Convex", "Effect", "OpenRouter", "React", "npm", "Motion", "Astro", "Tailwind"];
 ---
 
-<aside class="trusted" aria-labelledby="trusted-title">
-  <p id="trusted-title"><strong>Trusted by one guy.</strong> <span>Yes, that is the whole list.</span></p>
-  <p class="setup">He uses it around:</p>
-  <div class="tools" aria-label="Tools used by that one guy">
-    {tools.map((name) => <span>{name}</span>)}
+<aside class="trusted" data-trusted data-active="true" aria-labelledby="trusted-title">
+  <p id="trusted-title">
+    Trusted by <a href="https://x.com/dayhaysoos" target="_blank" rel="noopener">one guy</a>.
+  </p>
+  <p class="setup">He uses<span class="sr-only"> {tools.join(", ")}</span></p>
+  <div class="marquee" aria-hidden="true">
+    <div class="track">
+      {Array.from({ length: 2 }).map(() => (
+        <div class="set">
+          {tools.map((name) => (
+            <span class="name">{name}<span class="sep">·</span></span>
+          ))}
+        </div>
+      ))}
+    </div>
   </div>
 </aside>
 
 <style>
-  .trusted { margin-top: 2.5rem; padding: 2rem 0; border-block: 1px solid var(--color-border); text-align: center; }
+  .trusted { margin-top: 2.5rem; padding: 2rem 0; border-block: 1px solid var(--color-border); text-align: center; overflow: hidden; }
   .trusted p { margin: 0; }
-  .trusted > p:first-child { color: var(--color-foreground); font-size: clamp(1.2rem, 2.5vw, 1.55rem); }
-  .trusted strong { font-weight: 780; }
-  .trusted > p:first-child span { color: var(--color-muted-foreground); }
-  .setup { margin-top: 0.35rem !important; color: var(--color-muted-foreground); font-size: 0.88rem; }
-  .tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.45rem 1rem; margin-top: 1rem; color: var(--color-muted-foreground); font: 600 0.78rem/1.5 var(--nb-font-mono); }
-  .tools span { position: relative; }
-  .tools span:not(:last-child)::after { content: "·"; position: absolute; left: calc(100% + 0.45rem); color: var(--color-border-strong); }
-  @media (max-width: 520px) {
-    .tools { gap: 0.4rem 0.85rem; }
-    .tools span:not(:last-child)::after { left: calc(100% + 0.36rem); }
+  .trusted > p:first-child { color: var(--color-foreground); font-size: clamp(1.2rem, 2.5vw, 1.55rem); font-weight: 780; }
+  .trusted a { color: inherit; text-decoration-color: var(--color-primary); text-decoration-thickness: 2px; text-underline-offset: 0.16em; transition: color 150ms ease; }
+  .trusted a:hover { color: var(--color-primary); }
+  .trusted a:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; border-radius: 2px; }
+  .setup { margin-top: 0.4rem !important; color: var(--color-muted-foreground); font-size: 0.88rem; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  .marquee { margin-top: 1rem; overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent); mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent); }
+  .track { display: flex; width: max-content; animation: marquee 36s linear infinite; animation-play-state: paused; will-change: transform; }
+  .trusted[data-active="true"] .track { animation-play-state: running; }
+  .set { display: flex; align-items: baseline; }
+  .name { padding-inline: 0.9rem; color: var(--color-muted-foreground); font: 600 1rem/1.5 var(--nb-font-mono); white-space: nowrap; }
+  .sep { padding-left: 1.8rem; color: var(--color-border-strong); }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .trusted { overflow: visible; }
+    .marquee { overflow: visible; -webkit-mask-image: none; mask-image: none; }
+    .track { width: auto; animation: none; will-change: auto; }
+    .set { flex-wrap: wrap; justify-content: center; row-gap: 0.25rem; }
+    .set:last-child { display: none; }
   }
 </style>
+
+<script>
+  function bindTrusted(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = "true";
+    let visible = true;
+    const update = () => { root.dataset.active = String(visible && !document.hidden); };
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      update();
+    });
+    observer.observe(root);
+    document.addEventListener("visibilitychange", update);
+  }
+
+  function bindTrustedRows() {
+    document.querySelectorAll<HTMLElement>("[data-trusted]").forEach(bindTrusted);
+  }
+  bindTrustedRows();
+  document.addEventListener("astro:page-load", bindTrustedRows);
+</script>
