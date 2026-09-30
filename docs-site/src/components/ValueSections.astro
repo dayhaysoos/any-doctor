@@ -1,36 +1,35 @@
 <div class="values">
   <section class="value">
     <div>
-      <h2>Stop paying to find the same problem twice.</h2>
-      <p>Doctors run without model inference. Put the checks you already trust first, then spend AI and human review on unfamiliar behavior, architecture, and risk.</p>
+      <h2>Spend your tokens on harder problems</h2>
+      <p>Doctors run without model inference. Catch those bad patterns quickly with more confidence so you and your agents can spend time on higher-value issues.</p>
     </div>
     <div class="snippet">
-      <span class="dim">$</span> npx any-doctor@latest run --all<br />
-      <span class="ok">✓</span> 221 files scanned <span class="dim">· local · 0 tokens</span>
+      <span class="dim">$</span> any-doctor run --all<br />
+      <span class="ok">✔</span> Scanned 221 files in 842ms
     </div>
   </section>
 
   <section class="value">
     <div>
-      <h2>Make your codebase's rules executable.</h2>
-      <p>A doctor is a JavaScript file with named checks and evidence. Give your agent a real mistake, the correction you want, and innocent examples that must stay quiet.</p>
+      <h2>Built for agents to use and improve</h2>
+      <p>Agents can run doctors, summarize their findings, and turn repetitive code-review feedback into checks tailored to your repos. Any Doctor provides the guidance, guardrails, and verification needed to create doctors you can trust.</p>
     </div>
     <div class="snippet">
-      <span class="dim">check:</span> abort-signal-required<br />
-      <span class="dim">find:</span> request helper without signal<br />
-      <span class="dim">skip:</span> unresolved or unrelated calls
+      <span class="dim">$</span> any-doctor verify doctors/refresh-session.mjs<br />
+      <span class="ok">7/7</span> fixtures passed for refresh-session
     </div>
   </section>
 
   <section class="value">
     <div>
-      <h2>Keep the decision, not just the finding.</h2>
-      <p>Fix a real problem, or mark intentional code as accepted with a reason. Reviewed findings stay inspectable and return when their evidence or the doctor's meaning changes.</p>
+      <h2>Remember what you've already reviewed</h2>
+      <p>Not every finding needs to be addressed. Mark intentional code or exceptions as reviewed. Future scans will be less noisy and you won't lose the decisions you've made.</p>
     </div>
     <div class="snippet">
-      <span class="ok">✓</span> accepted as intended<br />
-      <span class="dim">reason:</span> admin-only path<br />
-      <span class="dim">view:</span> reviewed findings
+      <span class="dim">$</span> any-doctor decisions<br />
+      <span class="ok">✓ accepted</span> team-network/abort-signal-required src/admin.ts:42<br />
+      <span class="dim">&nbsp;&nbsp;reason:</span> admin-only path
     </div>
   </section>
 </div>

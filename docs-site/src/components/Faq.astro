@@ -3,26 +3,34 @@
 ---
 
 <section class="faq" aria-labelledby="faq-title">
-  <h2 id="faq-title">A few honest answers.</h2>
+  <h2 id="faq-title">FAQ</h2>
   <div class="questions">
     <details name="faq">
       <summary>What is a doctor?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
       <div class="a"><p>
-        A doctor is a JavaScript file that scans a repository for a bounded
-        class of mistakes and reports evidence. You can author one for a
-        recurring project rule, test it with fixtures, and share it with your team.
+        A doctor is a JavaScript file that scans your repo for specific kinds of
+        mistakes. It could scan for patterns you've seen from code reviews,
+        library specific anti-patterns, stylistic coding practices, and do
+        cross-file linting. Normally, you'd keep this kind of guidance in a
+        skill, but a doctor searches for those patterns deterministically,
+        saving you and your team time and money.
       </p></div>
     </details>
 
     <details name="faq">
       <summary>How is this different from ESLint or Oxlint?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
-      <div class="a"><p>
-        Use a trustworthy existing lint rule whenever it fits. Consider a doctor
-        when recurring project-specific policy depends on relationships among
-        calls, values, files, ownership, ordering, or domain identity. A custom
-        lint plugin can do sophisticated analysis too; Any Doctor supplies the
-        authoring, fixtures, evidence, explicit limits, and decision workflow.
-      </p></div>
+      <div class="a">
+        <p><strong>DO NOT STOP USING LINT TOOLS!</strong> Use ESLint or Oxlint whenever an existing rule handles the problem well.</p>
+        <p>Create a doctor when:</p>
+        <ul>
+          <li>The rule is specific to your repository or team.</li>
+          <li>The same feedback keeps appearing in code reviews.</li>
+          <li>Detecting the issue requires looking across files.</li>
+          <li>The guidance lives in a skill or document, but agents still miss it.</li>
+          <li>You want to check a known pattern without paying for another LLM review.</li>
+        </ul>
+        <p>Doctors sit between traditional linting and open-ended AI review: deterministic and inexpensive to run like a linter, but tailored to the project-specific knowledge you would otherwise ask an agent to remember.</p>
+      </div>
     </details>
 
     <details name="faq">
@@ -55,6 +63,14 @@
     </details>
 
     <details name="faq">
+      <summary>Does Any Doctor support every language?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="a"><p>
+        Not yet. Any Doctor currently supports JavaScript and TypeScript. We
+        plan to explore support for other languages in the future.
+      </p></div>
+    </details>
+
+    <details name="faq">
       <summary>Can it run in CI?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
       <div class="a"><p>
         It is designed for CI with JSON output, exit codes, and base-branch
@@ -66,9 +82,9 @@
     <details name="faq">
       <summary>Why “doctor”?<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
       <div class="a"><p>
-        React Doctor showed how useful a fast, agent-friendly health check could
-        feel. Any Doctor asks what happens when teams can create that experience
-        for the recurring review knowledge specific to their own code.
+        This project is heavily inspired by React Doctor. Imagine having that
+        “doctor” experience, but for checks tailored specifically to your org.
+        That's the goal of this project.
       </p></div>
     </details>
   </div>
@@ -77,8 +93,13 @@
 <style>
   .faq { margin-top: 5.5rem; }
   .faq > h2 { margin: 0 0 1.25rem; color: var(--color-foreground); font-size: 1.5rem; line-height: 1.2; letter-spacing: -0.025em; font-weight: 700; }
-  details { border-bottom: 1px solid var(--color-border); }
+  details { border-bottom: 1px solid var(--color-border); interpolate-size: allow-keywords; }
   details:first-of-type { border-top: 1px solid var(--color-border); }
+  details::details-content { height: 0; overflow: hidden; opacity: 0; transform: translateY(-0.3rem); transition: height 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1), content-visibility 260ms allow-discrete; }
+  details[open]::details-content { height: auto; opacity: 1; transform: translateY(0); }
+  @starting-style {
+    details[open]::details-content { height: 0; opacity: 0; transform: translateY(-0.3rem); }
+  }
   summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.05rem 0.25rem; cursor: pointer; list-style: none; font-weight: 650; font-size: 1rem; color: var(--color-foreground); }
   summary::-webkit-details-marker { display: none; }
   summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; border-radius: 4px; }
@@ -86,7 +107,14 @@
   details[open] .chev { transform: rotate(90deg); }
   details[open] summary { color: var(--color-primary); }
   .a { padding: 0 2rem 1.2rem 0.25rem; }
-  .a p { max-width: 65ch; margin: 0; color: var(--color-muted-foreground); font-size: 0.94rem; line-height: 1.75; }
+  .a p { max-width: 65ch; margin: 0; color: color-mix(in srgb, var(--color-foreground) 78%, var(--color-muted-foreground)); font-size: 0.94rem; line-height: 1.75; }
+  .a p + p, .a ul + p { margin-top: 0.85rem; }
+  .a strong { color: var(--color-foreground); font-weight: 750; }
+  .a ul { max-width: 65ch; margin: 0.45rem 0 0; padding-left: 1.2rem; list-style: disc; color: color-mix(in srgb, var(--color-foreground) 78%, var(--color-muted-foreground)); font-size: 0.94rem; line-height: 1.65; }
+  .a li::marker { color: var(--color-primary); }
+  .a li + li { margin-top: 0.25rem; }
   @media (max-width: 760px) { .faq { margin-top: 4.5rem; } }
-  @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    details::details-content, .chev { transition: none; }
+  }
 </style>
